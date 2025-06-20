@@ -1,25 +1,35 @@
-import { KAKAO_AUTH_URL } from "../../config";
+import KakaoLogo from "../../assets/images/kakaologo.png";
 
-interface LoginButtonProps {
-  onClick: () => void;
-}
-
-const LoginButton = ({ onClick }: LoginButtonProps) => {
-  return <button onClick={onClick}>카카오 로그인</button>;
-};
-
-const KakaoLogin = () => {
-  const link: string = KAKAO_AUTH_URL;
+const LoginButton = () => {
+  const url = "http://localhost:5173/oauth";
 
   const handleLogin = () => {
-    window.location.href = link;
+    const { Kakao } = window as any;
+    if (!Kakao || !Kakao.Auth) {
+      console.error("Kakao SDK not loaded");
+      return;
+    }
+
+    Kakao.Auth.authorize({
+      redirectUri: url,
+      scope: "profile_nickname,profile_image,account_email",
+    });
   };
 
   return (
-    <div>
-      <LoginButton onClick={handleLogin} />
-    </div>
+    <button type="button" onClick={handleLogin}>
+      <img
+        src={KakaoLogo}
+        alt="kakao logo"
+        style={{
+          display: "inline-block",
+          width: "24px",
+          marginRight: "8px",
+        }}
+      />
+      Kakao Login
+    </button>
   );
 };
 
-export default KakaoLogin;
+export default LoginButton;
