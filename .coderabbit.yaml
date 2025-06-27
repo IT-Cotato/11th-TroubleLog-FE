@@ -1,0 +1,27 @@
+language: "ko-KR"
+
+tone_instructions: >
+  리뷰는 간결하고 명확하게 작성해주세요.
+  불필요한 반복이나 과한 설명은 피하고, 요청 시에만 자세한 설명을 추가합니다.
+
+reviews:
+  profile: "chill"
+  high_level_summary: true
+  poem: false
+  review_status: true
+
+  auto_review:
+    enabled: true
+    drafts: false
+
+  path_instructions:
+    - path: "src/**"
+      instructions: |
+        - 코드의 가독성과 일관성을 확인해주세요.
+        - 중복된 코드나 불필요한 로직이 있는지 검토해주세요.
+        - 함수와 컴포넌트는 하나의 책임만 가지도록 구성했는지 확인해주세요.
+        - 네이밍이 명확하고 일관되게 작성되었는지 확인해주세요.
+        - 상태 관리, API 호출, 예외 처리 등이 적절히 이루어졌는지 살펴봐주세요.
+
+chat:
+  auto_reply: true
