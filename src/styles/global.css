@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* Head */
+.text-head-48 {
+  @apply text-black text-5xl font-bold font-sans;
+}
+
+.text-head-32-bold {
+  @apply text-black text-3xl font-semibold font-sans;
+}
+
+.text-head-32-regular {
+  @apply text-black text-3xl font-normal font-sans;
+}
+
+.text-head-24-bold {
+  @apply text-black text-2xl font-bold font-sans;
+}
+
+.text-head-20-semibold {
+  @apply text-black text-xl font-semibold font-sans;
+}
+
+/* Body */
+.text-body-20-regular {
+  @apply text-black text-xl font-normal font-sans;
+}
+
+.text-body-16-semibold {
+  @apply text-black text-base font-semibold font-sans;
+}
+
+.text-body-16-regular {
+  @apply text-black text-base font-normal font-sans;
+}
+
+.text-body-14-regular {
+  @apply text-black text-sm font-normal font-sans;
+}
