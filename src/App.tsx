@@ -1,5 +1,9 @@
-function App() {
-  return <div className="text-2xl font-bold text-center mt-10">트러블로그</div>;
-}
+import MainLayout from "@/layouts/MainLayout";
 
-export default App;
+export default function App() {
+  return (
+    <MainLayout>
+      <div></div>
+    </MainLayout>
+  );
+}
