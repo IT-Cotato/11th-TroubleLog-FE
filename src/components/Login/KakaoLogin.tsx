@@ -1,7 +1,8 @@
 import KakaoLogo from "../../assets/images/kakaologo.png";
+import { KAKAO_REDIRECT_URI } from "../../config";
 
 const LoginButton = () => {
-  const url = "http://localhost:5173/oauth"; // 이건 실제 배포 시에는 redirectUri로 바꾸기!
+  const url = KAKAO_REDIRECT_URI;
 
   const handleLogin = () => {
     const { Kakao } = window as any;

@@ -1,16 +1,15 @@
-// src/pages/Oauth.tsx
 import { useEffect } from "react";
 import axios from "axios";
-
+import { KAKAO_CLIENT_ID, KAKAO_REDIRECT_URI, KAKAO_BASE_URL } from "../config";
 const Oauth = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 
     const GRANT_TYPE = "authorization_code";
-    const client_id = import.meta.env.VITE_KAKAO_CLIENT_ID;
-    const redirect_uri = import.meta.env.VITE_APP_REDIRECT_URI;
-    const tokenUrl = "https://kauth.kakao.com/oauth/token";
+    const client_id = KAKAO_CLIENT_ID;
+    const redirect_uri = KAKAO_REDIRECT_URI;
+    const tokenUrl = KAKAO_BASE_URL;
     const userInfoUrl = "https://kapi.kakao.com/v2/user/me";
 
     const getTokenAndUserInfo = async () => {
@@ -53,8 +52,12 @@ const Oauth = () => {
         console.error("카카오 로그인 오류:", error);
       }
     };
-
-    if (code) getTokenAndUserInfo();
+    if (code) {
+      getTokenAndUserInfo();
+    } else {
+      console.error("Authorization code not found in URL");
+      window.location.href = "/"; // Redirect to home on error
+    }
   }, []);
 
   return <div>카카오 로그인 중입니다...</div>;
