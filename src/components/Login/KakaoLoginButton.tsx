@@ -1,7 +1,7 @@
-import KakaoLogo from "../../assets/images/kakaologo.png";
+import KakaoLogo from "../../assets/images/kakaologo.svg";
 import { KAKAO_REDIRECT_URI } from "../../config";
-
-const LoginButton = () => {
+import "./KakaoLoginButton.css";
+const KakaoLoginButton = () => {
   const url = KAKAO_REDIRECT_URI;
 
   const handleLogin = () => {
@@ -18,15 +18,11 @@ const LoginButton = () => {
   };
 
   return (
-    <button type="button" onClick={handleLogin}>
-      <img
-        src={KakaoLogo}
-        alt="kakao logo"
-        style={{ display: "inline-block", width: "24px", marginRight: "8px" }}
-      />
-      Kakao Login
+    <button type="button" className="KakaoLogin" onClick={handleLogin}>
+      <img src={KakaoLogo} className="KakaoLogo" />
+      <span className="KakaoLoginText"> 카카오 로그인</span>
     </button>
   );
 };
 
-export default LoginButton;
+export default KakaoLoginButton;
