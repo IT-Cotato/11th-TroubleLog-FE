@@ -1,0 +1,24 @@
+.KakaoLogin {
+  display: flex;
+  padding: 12px 208px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  border-radius: 8px;
+  background: #fee500;
+}
+.KakaoLogo {
+  width: 18px;
+  height: 18px;
+}
+.KakaoLoginText {
+  color: var(--kakao-text, rgba(0, 0, 0, 0.85));
+
+  /* Head_SemiBold_20 */
+  font-family: Pretendard;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+}
