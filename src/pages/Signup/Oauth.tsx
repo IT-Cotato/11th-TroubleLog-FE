@@ -1,6 +1,10 @@
 import { useEffect } from "react";
 import axios from "axios";
-import { KAKAO_CLIENT_ID, KAKAO_REDIRECT_URI, KAKAO_BASE_URL } from "../config";
+import {
+  KAKAO_CLIENT_ID,
+  KAKAO_REDIRECT_URI,
+  KAKAO_BASE_URL,
+} from "../../config";
 const Oauth = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
