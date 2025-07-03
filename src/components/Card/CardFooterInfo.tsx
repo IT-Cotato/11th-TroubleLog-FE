@@ -1,0 +1,68 @@
+interface CardFooterInfoProps {
+  isMine: boolean;
+  status: "inProgress" | "complete" | "created";
+  visibility: "public" | "private";
+  likeCount?: number;
+  commentCount?: number;
+  importance?: number;
+}
+
+export default function CardFooterInfo({
+  isMine,
+  status,
+  visibility,
+  likeCount,
+  commentCount,
+  importance,
+}: CardFooterInfoProps) {
+  if (isMine) {
+    if (status === "complete" && visibility === "public") {
+      return (
+        <div className="flex items-center gap-[6px]">
+          <LikeCount count={likeCount} />
+          <CommentCount count={commentCount} />
+        </div>
+      );
+    }
+
+    if (status !== "inProgress" && importance !== undefined) {
+      return (
+        <div className="flex items-center gap-1">
+          <img
+            src="/icons/star.svg"
+            alt="중요도 아이콘"
+            className="w-[20px] h-[20px]"
+          />
+          <span className="text-gray3 text-body-16-regular">{importance}</span>
+        </div>
+      );
+    }
+
+    return null;
+  }
+
+  return (
+    <div className="flex items-center gap-[6px]">
+      <LikeCount count={likeCount} />
+      <CommentCount count={commentCount} />
+    </div>
+  );
+}
+
+function LikeCount({ count = 0 }: { count?: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      <img src="/icons/heart.svg" className="w-[20px] h-[20px]" alt="좋아요" />
+      <span className="text-gray3 text-body-16-regular">{count}</span>
+    </div>
+  );
+}
+
+function CommentCount({ count = 0 }: { count?: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      <img src="/icons/comment.svg" className="w-[20px] h-[20px]" alt="댓글" />
+      <span className="text-gray3 text-body-16-regular">{count}</span>
+    </div>
+  );
+}
