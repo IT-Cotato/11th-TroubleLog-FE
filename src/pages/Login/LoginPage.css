@@ -1,0 +1,114 @@
+.big {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.mockimg {
+  width: 50vw;
+  height: 100vh;
+  object-fit: cover;
+}
+
+.LoginWrapper {
+  width: 50vw;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.LoginBox {
+  display: flex;
+  width: 560px;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+.LoginForm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 48px;
+  align-self: stretch;
+}
+.LoginInputWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  align-self: stretch;
+}
+.LoginTitle {
+  color: #000;
+  align-self: stretch;
+  /* Head_Bold_48 */
+  font-family: Pretendard;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+}
+.LoginButton {
+  display: flex;
+  height: 48px;
+  padding: 12px 0px;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  border-radius: 8px;
+  background: var(--PrimaryColor, #9737fd);
+}
+.LoginText {
+  color: var(--White, #fff);
+
+  /* Botton_SemiBold_20 */
+  font-family: Pretendard;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+}
+.SignupWrapper {
+  display: flex;
+  width: 200px;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.SignupTitle {
+  color: var(--Gray3, #7a7a7a);
+
+  /* Body_Regular_18 */
+  font-family: Pretendard;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+.ConnectSignup {
+  color: var(--Gray3, #7a7a7a);
+  text-align: center;
+  font-family: Pretendard;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-skip-ink: none;
+  text-decoration-thickness: auto;
+  text-underline-offset: auto;
+  text-underline-position: from-font;
+  align-self: stretch;
+}
+
+.BottomWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  align-self: stretch;
+}
