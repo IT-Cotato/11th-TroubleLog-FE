@@ -119,3 +119,8 @@
   align-self: self-end;
   gap: 16px;
 }
+.FormError {
+  color: #ff4d4f;
+  font-size: 16px;
+  margin-top: 4px;
+}

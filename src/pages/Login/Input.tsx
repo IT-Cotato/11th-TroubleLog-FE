@@ -7,6 +7,7 @@ interface InputProps {
   value: string;
   placeholder?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   error?: string;
   name?: string;
 }
@@ -17,6 +18,7 @@ const Input: React.FC<InputProps> = ({
   value,
   placeholder,
   onChange,
+  onBlur,
   error,
   name,
 }) => {
@@ -28,6 +30,7 @@ const Input: React.FC<InputProps> = ({
         type={type}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         placeholder={placeholder}
         className={`CustomInput ${error ? "InputError" : ""}`}
       />

@@ -1,11 +1,14 @@
 import { useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import {
   KAKAO_CLIENT_ID,
   KAKAO_REDIRECT_URI,
   KAKAO_BASE_URL,
 } from "../../config";
+
 const Oauth = () => {
+  const navigate = useNavigate();
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
@@ -51,18 +54,19 @@ const Oauth = () => {
         localStorage.setItem("kakao_user", JSON.stringify(profile));
 
         // 홈으로 이동
-        window.location.href = "/";
+        navigate("/signuptwo");
       } catch (error) {
         console.error("카카오 로그인 오류:", error);
+        navigate("/");
       }
     };
     if (code) {
       getTokenAndUserInfo();
     } else {
       console.error("Authorization code not found in URL");
-      window.location.href = "/"; // Redirect to home on error
+      navigate("/");
     }
-  }, []);
+  }, [navigate]);
 
   return <div>카카오 로그인 중입니다...</div>;
 };

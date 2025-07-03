@@ -6,6 +6,7 @@ import SignPageOne from "@/pages/Login/SignPageOne";
 import ProtectedRoute from "@/components/Common/ProtectedRouter";
 import MainLayout from "@/layouts/MainLayout";
 import LoginPage from "@/pages/Login/LoginPage";
+import SignPageTwo from "@/pages/Login/SignPageTwo";
 
 export const router = createBrowserRouter([
   {
@@ -16,6 +17,10 @@ export const router = createBrowserRouter([
   {
     path: "signup",
     element: <SignPageOne />,
+  },
+  {
+    path: "signuptwo",
+    element: <SignPageTwo />,
   },
   {
     path: "user",
