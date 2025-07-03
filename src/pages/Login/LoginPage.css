@@ -1,26 +1,25 @@
 .big {
   display: flex;
-  width: 1920px;
-  height: 1080px;
-  justify-content: center;
-  align-items: flex-start;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
+
 .mockimg {
-  width: 961.807px;
-  height: 1082px;
-  flex-shrink: 0;
-  aspect-ratio: 961.81/1082;
+  width: 50vw;
+  height: 100vh;
+  object-fit: cover;
 }
+
 .LoginWrapper {
+  width: 50vw;
+  height: 100vh;
+
   display: flex;
-  width: 960px;
-  height: 1080px;
-  padding: 281px 200px 278px 200px;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  flex-shrink: 0;
 }
+
 .LoginBox {
   display: flex;
   width: 560px;
