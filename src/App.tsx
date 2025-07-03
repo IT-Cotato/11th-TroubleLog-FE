@@ -1,10 +1,13 @@
-import MainLayout from "@/layouts/MainLayout";
-import TestCardPage from "./pages/TestCardPage";
+import "./App.css";
+import { router } from "./routes/Router";
+import { RouterProvider } from "react-router-dom";
 
-export default function App() {
+function App() {
   return (
-    <MainLayout>
-      <TestCardPage />
-    </MainLayout>
+    <>
+      <RouterProvider router={router} />
+    </>
   );
 }
+
+export default App;
