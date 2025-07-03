@@ -1,10 +1,13 @@
-import MainLayout from "@/layouts/MainLayout";
-import LoginPage from "./components/Login/LoginPage";
 import "./App.css";
-export default function App() {
+import { router } from "./routes/Router";
+import { RouterProvider } from "react-router-dom";
+
+function App() {
   return (
-    <MainLayout>
-      <LoginPage />
-    </MainLayout>
+    <>
+      <RouterProvider router={router} />
+    </>
   );
 }
+
+export default App;

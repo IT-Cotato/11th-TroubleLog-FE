@@ -1,15 +1,13 @@
-import type { ReactNode } from "react";
-import Header from "@/components/Header";
+import Header from "@/components/Header/Header";
+import { Outlet } from "react-router-dom";
 
-interface MainLayoutProps {
-  children: ReactNode;
-}
-
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
-      <main className="flex-1 max-w-screen-xl mx-auto w-full">{children}</main>
+      <main className="flex-1 max-w-screen-xl mx-auto w-full">
+        <Outlet />
+      </main>
     </div>
   );
 }
