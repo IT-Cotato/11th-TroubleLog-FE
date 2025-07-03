@@ -79,7 +79,7 @@
   align-items: center;
   gap: 16px;
 }
-.SignupTitle {
+.HaveAcTitle {
   color: var(--Gray3, #7a7a7a);
 
   /* Body_Regular_18 */
@@ -90,8 +90,7 @@
   line-height: normal;
 }
 .ConnectSignup {
-  color: var(--Gray3, #7a7a7a);
-  text-align: center;
+  color: var(--PrimaryColor, #9737fd);
   font-family: Pretendard;
   font-size: 18px;
   font-style: normal;
@@ -103,13 +102,20 @@
   text-decoration-thickness: auto;
   text-underline-offset: auto;
   text-underline-position: from-font;
-  align-self: stretch;
 }
 
 .BottomWrapper {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 16px;
   align-self: stretch;
+}
+
+.HaveAcWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  align-self: self-end;
+  gap: 16px;
 }
