@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import { login } from "@/services/auth";
 import "./LoginPage.css";
@@ -12,6 +13,7 @@ const LoginPage = () => {
   const [passwordError, setPasswordError] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const validateForm = () => {
     let valid = true;
@@ -91,7 +93,12 @@ const LoginPage = () => {
 
           <div className="SignupWrapper">
             <h2 className="SignupTitle">트러블로그가 처음이신가요?</h2>
-            <button className="ConnectSignup">회원가입</button>
+            <button
+              className="ConnectSignup"
+              onClick={() => navigate("/signup")}
+            >
+              회원가입
+            </button>
           </div>
         </div>
       </div>
