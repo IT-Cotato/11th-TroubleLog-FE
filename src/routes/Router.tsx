@@ -7,6 +7,7 @@ import ProtectedRoute from "@/components/Common/ProtectedRouter";
 import MainLayout from "@/layouts/MainLayout";
 import LoginPage from "@/pages/Login/LoginPage";
 import SignPageTwo from "@/pages/Login/SignPageTwo";
+import ProjectDetailPage from "@/pages/Project/ProjectDetailPage";
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
         element: <Home />,
       },
       { path: "mypage", element: <MyPage /> },
+      {
+        path: "project/:id",
+        element: <ProjectDetailPage projectName="Cotato" />,
+      },
     ],
   },
 ]);

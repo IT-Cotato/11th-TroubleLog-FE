@@ -2,11 +2,9 @@ import CardFooterInfo from "./CardFooterInfo";
 import CardPreviewArea from "./CardPreviewArea";
 import CardTitleSection from "./CardTitleSection";
 import TagList from "./TagList";
+import type { StatusType, VisibilityType } from "@/types/project";
 
-type StatusType = "inProgress" | "complete" | "created";
-type VisibilityType = "public" | "private";
-
-interface TroublogCardProps {
+export interface TroublogCardProps {
   isMine: boolean;
   status: StatusType;
   visibility: VisibilityType;

@@ -1,6 +1,5 @@
 import CardHeaderRight from "./CardHeaderRight";
-
-type StatusType = "inProgress" | "complete" | "created";
+import type { StatusType } from "@/types/project";
 
 interface CardPreviewAreaProps {
   errorCategory: string;

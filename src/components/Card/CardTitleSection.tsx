@@ -15,7 +15,9 @@ export default function CardTitleSection({
     <div className="gap-2">
       {/* 제목 + 공개 여부 아이콘 */}
       <div className="flex items-start gap-2">
-        <div className="text-head-20-semibold">{title}</div>
+        <div className="text-head-20-semibold truncate overflow-hidden whitespace-nowrap max-w-[250px]">
+          {title}
+        </div>
         {isMine && (
           <img
             src={
