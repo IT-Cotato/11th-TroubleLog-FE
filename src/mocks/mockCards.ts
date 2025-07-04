@@ -36,6 +36,7 @@ export const mockCards: TroublogCardProps[] = [
     likeCount: 3,
     commentCount: 0,
     importance: 2,
+    summaryType: "면접대비",
   },
   {
     isMine: true,
@@ -48,5 +49,6 @@ export const mockCards: TroublogCardProps[] = [
     likeCount: 1,
     commentCount: 0,
     importance: 1,
+    summaryType: "이슈관리",
   },
 ];

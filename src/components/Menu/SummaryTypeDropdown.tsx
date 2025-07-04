@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 
-interface VisibilityFilterDropdownProps {
-  selected: "전체" | "공개" | "비공개";
-  onSelect: (value: "전체" | "공개" | "비공개") => void;
+interface SummaryTypeDropdownProps {
+  selected: string;
+  onSelect: (value: string) => void;
 }
 
-export default function VisibilityFilterDropdown({
+const OPTIONS = ["전체", "자기소개서", "면접대비", "블로그", "이슈관리"];
+
+export default function SummaryTypeDropdown({
   selected,
   onSelect,
-}: VisibilityFilterDropdownProps) {
+}: SummaryTypeDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -21,8 +23,6 @@ export default function VisibilityFilterDropdown({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const options: ("전체" | "공개" | "비공개")[] = ["전체", "공개", "비공개"];
 
   return (
     <div className="relative" ref={ref}>
@@ -41,7 +41,7 @@ export default function VisibilityFilterDropdown({
       </button>
       {open && (
         <div className="absolute top-[48px] sm:top-[52px] left-0 min-w-[100px] sm:min-w-[120px] py-[8px] bg-white border border-gray2 rounded-[4px] shadow-card z-10 overflow-hidden">
-          {options.map((option) => (
+          {OPTIONS.map((option) => (
             <div
               key={option}
               className={`px-4 py-2 sm:py-3 cursor-pointer hover:bg-gray1 border-b border-gray1 ${

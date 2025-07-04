@@ -1,5 +1,6 @@
 import PostButton from "@/components/Button/PostButton";
 import TroublogCard from "@/components/Card/TroublogCard";
+import SummaryTypeDropdown from "@/components/Menu/SummaryTypeDropdown";
 import VisibilityFilterDropdown from "@/components/Menu/VisibilityFilterDropdown";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import SortButtonGroup from "@/components/Project/SortButtonGroup";
@@ -23,18 +24,25 @@ export default function ProjectDetailPage({
   const [selectedVisibility, setSelectedVisibility] = useState<
     "전체" | "공개" | "비공개"
   >("전체");
+  const [selectedSummaryType, setSelectedSummaryType] = useState("전체"); // 👈 추가
 
-  // 트러블로그 카드 목록 필터링
   const statusFiltered = mockCards.filter(
     (card) => card.status === selectedStatus
   );
-  const visibilityFiltered = statusFiltered.filter((card) => {
-    if (selectedVisibility === "전체") return true;
-    return selectedVisibility === "공개"
-      ? card.visibility === "public"
-      : card.visibility === "private";
+
+  const filteredByVisibilityOrSummary = statusFiltered.filter((card) => {
+    if (selectedStatus === "complete") {
+      if (selectedVisibility === "전체") return true;
+      return selectedVisibility === "공개"
+        ? card.visibility === "public"
+        : card.visibility === "private";
+    } else {
+      if (selectedSummaryType === "전체") return true;
+      return card.summaryType === selectedSummaryType;
+    }
   });
-  const filteredCards = visibilityFiltered.sort((a, b) =>
+
+  const filteredCards = filteredByVisibilityOrSummary.sort((a, b) =>
     selectedSort === "latest"
       ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       : (b.importance ?? 0) - (a.importance ?? 0)
@@ -67,16 +75,23 @@ export default function ProjectDetailPage({
               onClick={() => setSelectedStatus("created")}
             />
           </div>
-          {/* 정렬 기준 버튼 (최신순/중요도순) 및 공개/비공개 필터 드롭다운 */}
+          {/* 정렬 기준 버튼 (최신순/중요도순) 및 공개/비공개 필터 드롭다운 or 요약 유형 필터 드롭다운 */}
           <div className="inline-flex items-center gap-[40px]">
             <SortButtonGroup
               selected={selectedSort}
               onSelect={setSelectedSort}
             />
-            <VisibilityFilterDropdown
-              selected={selectedVisibility}
-              onSelect={setSelectedVisibility}
-            />
+            {selectedStatus === "complete" ? (
+              <VisibilityFilterDropdown
+                selected={selectedVisibility}
+                onSelect={setSelectedVisibility}
+              />
+            ) : (
+              <SummaryTypeDropdown
+                selected={selectedSummaryType}
+                onSelect={setSelectedSummaryType}
+              />
+            )}
           </div>
         </div>
 

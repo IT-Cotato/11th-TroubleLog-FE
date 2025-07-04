@@ -16,6 +16,7 @@ export interface TroublogCardProps {
   likeCount?: number;
   commentCount?: number;
   importance?: number;
+  summaryType?: "자기소개서" | "면접대비" | "블로그" | "이슈관리";
 }
 
 export default function TroublogCard({
@@ -30,6 +31,7 @@ export default function TroublogCard({
   likeCount,
   commentCount,
   importance,
+  summaryType,
 }: TroublogCardProps) {
   return (
     <div className="w-full max-w-[384px] h-[300px] sm:h-[330px] shrink-0 rounded-2xl bg-white shadow-card">
@@ -49,6 +51,8 @@ export default function TroublogCard({
             visibility={visibility}
             createdAt={createdAt}
             isMine={isMine}
+            status={status}
+            summaryType={summaryType}
           />
           <TagList tags={tags} />
         </div>
