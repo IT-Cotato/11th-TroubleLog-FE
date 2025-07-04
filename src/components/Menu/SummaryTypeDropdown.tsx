@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import useClickOutside from "../../hooks/useClickOutside";
 
 interface SummaryTypeDropdownProps {
   selected: string;
@@ -12,17 +13,7 @@ export default function SummaryTypeDropdown({
   onSelect,
 }: SummaryTypeDropdownProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const ref = useClickOutside(() => setOpen(false));
 
   return (
     <div className="relative" ref={ref}>

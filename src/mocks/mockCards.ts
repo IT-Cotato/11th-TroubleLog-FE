@@ -2,6 +2,7 @@ import type { TroublogCardProps } from "@/components/Card/TroublogCard";
 
 export const mockCards: TroublogCardProps[] = [
   {
+    id: 1,
     isMine: true,
     status: "complete",
     visibility: "public",
@@ -14,6 +15,7 @@ export const mockCards: TroublogCardProps[] = [
     importance: 4,
   },
   {
+    id: 2,
     isMine: true,
     status: "complete",
     visibility: "private",
@@ -26,6 +28,7 @@ export const mockCards: TroublogCardProps[] = [
     importance: 5,
   },
   {
+    id: 3,
     isMine: true,
     status: "created",
     visibility: "public",
@@ -39,6 +42,7 @@ export const mockCards: TroublogCardProps[] = [
     summaryType: "면접대비",
   },
   {
+    id: 4,
     isMine: true,
     status: "created",
     visibility: "private",

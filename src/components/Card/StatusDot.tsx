@@ -1,5 +1,7 @@
+import type { StatusType } from "@/types/project";
+
 interface StatusDotProps {
-  status: "inProgress" | "complete" | "created";
+  status: StatusType;
 }
 
 export default function StatusDot({ status }: StatusDotProps) {

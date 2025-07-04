@@ -5,6 +5,7 @@ import TagList from "./TagList";
 import type { StatusType, VisibilityType } from "@/types/project";
 
 export interface TroublogCardProps {
+  id: number;
   isMine: boolean;
   status: StatusType;
   visibility: VisibilityType;

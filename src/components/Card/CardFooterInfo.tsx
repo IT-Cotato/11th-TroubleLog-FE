@@ -1,7 +1,9 @@
+import type { StatusType, VisibilityType } from "@/types/project";
+
 interface CardFooterInfoProps {
   isMine: boolean;
-  status: "inProgress" | "complete" | "created";
-  visibility: "public" | "private";
+  status: StatusType;
+  visibility: VisibilityType;
   likeCount?: number;
   commentCount?: number;
   importance?: number;

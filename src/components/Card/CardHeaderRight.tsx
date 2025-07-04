@@ -1,12 +1,13 @@
 import { useState } from "react";
 import StatusDot from "./StatusDot";
-import useClickOutside from "../Menu/useClickOutside";
+import useClickOutside from "../../hooks/useClickOutside";
 import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
+import type { StatusType } from "@/types/project";
 
 interface CardHeaderRightProps {
   isMine: boolean;
-  status: "inProgress" | "complete" | "created";
+  status: StatusType;
   authorProfileImageUrl?: string;
 }
 
@@ -21,7 +22,7 @@ export default function CardHeaderRight({
   if (!isMine) {
     return (
       <img
-        src={authorProfileImageUrl}
+        src={authorProfileImageUrl || "/icons/image.svg"}
         alt="작성자 프로필"
         className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] rounded-full"
       />

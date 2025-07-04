@@ -7,12 +7,11 @@ import SortButtonGroup from "@/components/Project/SortButtonGroup";
 import StatusFilterButton from "@/components/Project/StatusFilterButton";
 import { mockCards } from "@/mocks/mockCards";
 import { useState } from "react";
+import type { StatusType } from "@/types/project";
 
 interface ProjectDetailPageProps {
   projectName: string;
 }
-
-type StatusType = "complete" | "created";
 
 export default function ProjectDetailPage({
   projectName,
@@ -98,7 +97,7 @@ export default function ProjectDetailPage({
         {/* 트러블로그 카드 목록 (조건부) */}
         <div className="flex flex-wrap justify-center sm:justify-start gap-[24px] w-full">
           {filteredCards.map((card, idx) => (
-            <TroublogCard key={idx} {...card} />
+            <TroublogCard key={card.id || idx} {...card} />
           ))}
         </div>
       </ProjectAccordion>

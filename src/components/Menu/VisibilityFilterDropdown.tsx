@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import useClickOutside from "../../hooks/useClickOutside";
 
 interface VisibilityFilterDropdownProps {
   selected: "전체" | "공개" | "비공개";
@@ -10,17 +11,7 @@ export default function VisibilityFilterDropdown({
   onSelect,
 }: VisibilityFilterDropdownProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const ref = useClickOutside(() => setOpen(false));
 
   const options: ("전체" | "공개" | "비공개")[] = ["전체", "공개", "비공개"];
 

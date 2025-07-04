@@ -20,7 +20,11 @@ export default function StatusFilterButton({
     >
       <div className="flex items-center gap-[6px] sm:gap-[8px]">
         <div
-          className={`w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] rounded-full bg-status-${statusKey}`}
+          className={`w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] rounded-full ${
+            statusKey === "complete"
+              ? "bg-status-complete"
+              : "bg-status-created"
+          }`}
         />
         <span className="text-body-20-regular">{label}</span>
       </div>
