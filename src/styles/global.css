@@ -25,38 +25,38 @@
 
 /* Head */
 .text-head-48 {
-  @apply text-black text-5xl font-bold font-sans;
+  @apply text-4xl sm:text-5xl font-bold font-sans;
 }
 
 .text-head-32-bold {
-  @apply text-black text-3xl font-semibold font-sans;
+  @apply text-2xl sm:text-3xl font-semibold font-sans;
 }
 
 .text-head-32-regular {
-  @apply text-black text-3xl font-normal font-sans;
+  @apply text-2xl sm:text-3xl font-normal font-sans;
 }
 
 .text-head-24-bold {
-  @apply text-black text-2xl font-bold font-sans;
+  @apply text-xl sm:text-2xl font-bold font-sans;
 }
 
 .text-head-20-semibold {
-  @apply text-black text-xl font-semibold font-sans;
+  @apply text-lg sm:text-xl font-semibold font-sans;
 }
 
 /* Body */
 .text-body-20-regular {
-  @apply text-black text-xl font-normal font-sans;
+  @apply text-lg sm:text-xl font-normal font-sans;
 }
 
 .text-body-16-semibold {
-  @apply text-black text-base font-semibold font-sans;
+  @apply text-sm sm:text-base font-semibold font-sans;
 }
 
 .text-body-16-regular {
-  @apply text-black text-base font-normal font-sans;
+  @apply text-sm sm:text-base font-normal font-sans;
 }
 
 .text-body-14-regular {
-  @apply text-black text-sm font-normal font-sans;
+  @apply text-xs sm:text-sm font-normal font-sans;
 }
