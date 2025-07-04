@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 
-export default function useClickOutside(onClose: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
+export default function useClickOutside<T extends HTMLElement = HTMLDivElement>(
+  onClose: () => void
+) {
+  const ref = useRef<T>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
