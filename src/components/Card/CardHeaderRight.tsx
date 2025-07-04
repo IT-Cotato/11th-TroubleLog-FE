@@ -23,13 +23,13 @@ export default function CardHeaderRight({
       <img
         src={authorProfileImageUrl}
         alt="작성자 프로필"
-        className="w-[36px] h-[36px] rounded-full"
+        className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] rounded-full"
       />
     );
   }
 
   return (
-    <div className="relative flex items-center gap-2" ref={menuRef}>
+    <div className="relative flex items-center gap-1 sm:gap-2" ref={menuRef}>
       <StatusDot status={status} />
       {status !== "inProgress" && (
         <>

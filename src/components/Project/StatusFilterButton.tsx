@@ -14,13 +14,13 @@ export default function StatusFilterButton({
   return (
     <button
       onClick={onClick}
-      className={`flex h-[38px] py-[6px] px-[10px] justify-center items-center gap-[2px] rounded-[20px] ${
+      className={`flex h-[32px] sm:h-[38px] py-[4px] sm:py-[6px] px-[8px] sm:px-[10px] justify-center items-center gap-[2px] rounded-[20px] ${
         isSelected ? "bg-subColor1" : "bg-gray1"
       }`}
     >
-      <div className="flex items-center gap-[8px]">
+      <div className="flex items-center gap-[6px] sm:gap-[8px]">
         <div
-          className={`w-[18px] h-[18px] rounded-full bg-status-${statusKey}`}
+          className={`w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] rounded-full bg-status-${statusKey}`}
         />
         <span className="text-body-20-regular">{label}</span>
       </div>

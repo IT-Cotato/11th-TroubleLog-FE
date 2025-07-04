@@ -16,12 +16,12 @@ export default function ProjectAccordion({
       {/* 아코디언 버튼 */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-[12px] mb-[36px]"
+        className="flex items-center gap-[8px] sm:gap-[12px] mb-[24px] sm:mb-[36px]"
       >
         <img
           src="/icons/arrow-forward.svg"
           alt="arrow"
-          className={`w-[36px] h-[36px] transition-transform duration-200 ${
+          className={`w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] transition-transform duration-200 ${
             isOpen ? "rotate-0" : "-rotate-90"
           }`}
         />
@@ -29,7 +29,9 @@ export default function ProjectAccordion({
       </button>
 
       {/* 펼쳐진 내용 */}
-      {isOpen && <div className="flex flex-col gap-[60px]">{children}</div>}
+      {isOpen && (
+        <div className="flex flex-col gap-[36px] sm:gap-[60px]">{children}</div>
+      )}
     </div>
   );
 }

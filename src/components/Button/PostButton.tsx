@@ -2,11 +2,11 @@ export default function PostButton() {
   return (
     <button
       type="button"
-      className="flex w-[184px] h-[56px] pt-[10px] pr-[52px] pb-[10px] pl-[24px] items-center gap-5 rounded-[50px] bg-primary"
+      className="flex min-w-[140px] sm:w-[184px] h-[48px] sm:h-[56px] px-4 sm:pl-[24px] sm:pr-[52px] items-center gap-3 sm:gap-5 rounded-[50px] bg-primary"
     >
       <img
         src="/icons/create.svg"
-        className="w-[36px] h-[36px] shrink-0"
+        className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] shrink-0"
         alt="create"
       />
       <span className="text-white text-head-20-semibold">글쓰기</span>

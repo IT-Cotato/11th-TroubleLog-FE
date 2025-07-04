@@ -14,10 +14,11 @@ export default function CardTitleSection({
   return (
     <div className="gap-2">
       {/* 제목 + 공개 여부 아이콘 */}
-      <div className="flex items-start gap-2">
-        <div className="text-head-20-semibold truncate overflow-hidden whitespace-nowrap max-w-[250px]">
+      <div className="flex items-start gap-1 sm:gap-2">
+        <div className="truncate overflow-hidden whitespace-nowrap max-w-[160px] sm:max-w-[250px] text-head-20-semibold">
           {title}
         </div>
+
         {isMine && (
           <img
             src={

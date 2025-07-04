@@ -5,7 +5,7 @@ export default function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
-      <main className="flex-1 max-w-screen-xl mx-auto w-full">
+      <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 sm:px-6 md:px-8">
         <Outlet />
       </main>
     </div>

@@ -15,7 +15,11 @@ export default function CardPreviewArea({
   authorProfileImageUrl,
 }: CardPreviewAreaProps) {
   return (
-    <div className="bg-gray1 rounded-2xl h-[210px] flex flex-col p-4">
+    <div
+      className="bg-gray1 rounded-2xl h-[180px] sm:h-[210px]
+ flex flex-col p-3 sm:p-4
+"
+    >
       <div className="flex justify-between items-start">
         <span className="text-body-16-semibold">[{errorCategory}]</span>
         <CardHeaderRight

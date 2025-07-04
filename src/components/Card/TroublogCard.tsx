@@ -32,7 +32,7 @@ export default function TroublogCard({
   importance,
 }: TroublogCardProps) {
   return (
-    <div className="w-[384px] h-[330px] shrink-0 rounded-2xl bg-white shadow-card">
+    <div className="w-full max-w-[384px] h-[300px] sm:h-[330px] shrink-0 rounded-2xl bg-white shadow-card">
       {/* 프리뷰 영역 */}
       <CardPreviewArea
         errorCategory={errorCategory}
@@ -42,19 +42,16 @@ export default function TroublogCard({
       />
 
       {/* 제목, 날짜, 태그 영역 */}
-      <div className="flex justify-between items-end p-4">
-        <div className="flex flex-col items-start gap-[18px]">
-          {/* 제목, 공개여부, 생성일 */}
+      <div className="flex justify-between items-end p-3 sm:p-4">
+        <div className="flex flex-col items-start gap-[14px] sm:gap-[18px]">
           <CardTitleSection
             title={title}
             visibility={visibility}
             createdAt={createdAt}
             isMine={isMine}
           />
-          {/* 태그 부분 */}
           <TagList tags={tags} />
         </div>
-        {/* 중요도 or 좋아요/댓글 */}
         <CardFooterInfo
           isMine={isMine}
           status={status}

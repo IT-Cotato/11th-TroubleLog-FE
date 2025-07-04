@@ -31,7 +31,7 @@ export default function CardFooterInfo({
           <img
             src="/icons/star.svg"
             alt="중요도 아이콘"
-            className="w-[20px] h-[20px]"
+            className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
           />
           <span className="text-gray3 text-body-16-regular">{importance}</span>
         </div>
@@ -52,7 +52,11 @@ export default function CardFooterInfo({
 function LikeCount({ count = 0 }: { count?: number }) {
   return (
     <div className="flex items-center gap-1">
-      <img src="/icons/heart.svg" className="w-[20px] h-[20px]" alt="좋아요" />
+      <img
+        src="/icons/heart.svg"
+        className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
+        alt="좋아요"
+      />
       <span className="text-gray3 text-body-16-regular">{count}</span>
     </div>
   );
@@ -61,7 +65,11 @@ function LikeCount({ count = 0 }: { count?: number }) {
 function CommentCount({ count = 0 }: { count?: number }) {
   return (
     <div className="flex items-center gap-1">
-      <img src="/icons/comment.svg" className="w-[20px] h-[20px]" alt="댓글" />
+      <img
+        src="/icons/comment.svg"
+        className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
+        alt="댓글"
+      />
       <span className="text-gray3 text-body-16-regular">{count}</span>
     </div>
   );

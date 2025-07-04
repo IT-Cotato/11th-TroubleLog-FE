@@ -41,15 +41,15 @@ export default function ProjectDetailPage({
   );
 
   return (
-    <div className="py-[79px] flex flex-col items-start gap-[36px]">
+    <div className="px-4 sm:px-6 md:px-8 py-[60px] sm:py-[79px] flex flex-col items-start gap-[36px]">
       {/* 상단 나의 프로젝트 텍스트 및 글쓰기 버튼 */}
-      <div className="flex justify-between items-start self-stretch">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">나의 프로젝트</span>
         <PostButton />
       </div>
       {/* 프로젝트 아코디언 영역 */}
       <ProjectAccordion projectName={projectName}>
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row justify-between gap-4 w-full">
           {/* 작성 상태 필터 버튼 */}
           <div className="flex items-center gap-[24px] self-stretch">
             {/* 작성 완료 필터 버튼 (선택된 상태)*/}
@@ -81,7 +81,7 @@ export default function ProjectDetailPage({
         </div>
 
         {/* 트러블로그 카드 목록 (조건부) */}
-        <div className="flex flex-wrap items-center gap-[24px] self-stretch">
+        <div className="flex flex-wrap justify-center sm:justify-start gap-[24px] w-full">
           {filteredCards.map((card, idx) => (
             <TroublogCard key={idx} {...card} />
           ))}
