@@ -87,7 +87,7 @@ const SignPageOne = () => {
   };
 
   return (
-    <div className="flex w-screen h-screen justify-center items-start">
+    <div className="flex w-screen h-screen overflow-hidden">
       <img
         src={mockimg}
         className="w-[961.807px] h-full object-cover shrink-0"
