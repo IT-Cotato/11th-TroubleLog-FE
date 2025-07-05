@@ -1,8 +1,10 @@
 import { useState } from "react";
 import Input from "./Input";
 import mockimg from "../../assets/images/mockimg.jpg";
+import { useNavigate } from "react-router-dom";
 
 const SignPageTwo = () => {
+  const navigate = useNavigate();
   const [nickname, setNickname] = useState("");
   const [field, setField] = useState("");
   const [bio, setBio] = useState("");
@@ -117,7 +119,10 @@ const SignPageTwo = () => {
             <h2 className="text-[18px] text-gray-500 font-pretendard">
               이미 계정이 있으신가요?
             </h2>
-            <button className="text-[18px] text-[#9737fd] underline font-pretendard">
+            <button
+              className="text-[18px] text-[#9737fd] underline font-pretendard"
+              onClick={() => navigate("/")}
+            >
               로그인
             </button>
           </div>

@@ -41,7 +41,7 @@ const LoginPage = () => {
     try {
       const res = await login(email, password);
       localStorage.setItem("token", res.token);
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
       setFormError("로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.");

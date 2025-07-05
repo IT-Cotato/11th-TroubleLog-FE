@@ -83,7 +83,7 @@ const SignPageOne = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    navigate("/signuptwo");
+    navigate("/signup/detail");
   };
 
   return (
