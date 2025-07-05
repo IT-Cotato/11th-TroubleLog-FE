@@ -1,5 +1,4 @@
 import React from "react";
-import "./Input.css";
 
 interface InputProps {
   label: string;
@@ -23,8 +22,10 @@ const Input: React.FC<InputProps> = ({
   name,
 }) => {
   return (
-    <div className="InputHolder">
-      <label className="InputLabel">{label}</label>
+    <div className="flex flex-col justify-center items-start gap-2 min-h-[84px] w-full">
+      <label className="text-black font-pretendard text-[18px] font-normal leading-normal">
+        {label}
+      </label>
       <input
         name={name}
         type={type}
@@ -32,9 +33,10 @@ const Input: React.FC<InputProps> = ({
         onChange={onChange}
         onBlur={onBlur}
         placeholder={placeholder}
-        className={`CustomInput ${error ? "InputError" : ""}`}
+        className={`w-[560px] h-12 px-4 py-3 rounded-lg border text-black font-pretendard placeholder:text-gray-500 placeholder:text-sm placeholder:font-normal placeholder:leading-normal
+        ${error ? "border-red-500" : "border-gray-300 bg-white"}`}
       />
-      {error && <p className="InputErrorMessage">{error}</p>}
+      {error && <p className="text-red-500 text-[13px] mt-1">{error}</p>}
     </div>
   );
 };

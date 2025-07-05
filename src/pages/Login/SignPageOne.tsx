@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
-import "./SignPageone.css";
 import mockimg from "../../assets/images/mockimg.jpg";
 
 const SignPageOne = () => {
@@ -81,21 +80,30 @@ const SignPageOne = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     navigate("/signuptwo");
   };
 
   return (
-    <div className="big">
-      <img src={mockimg} className="mockimg" />
-      <div className="LoginWrapper">
-        <div className="LoginBox">
-          <h2 className="LoginTitle">회원가입</h2>
+    <div className="flex w-screen h-screen justify-center items-start">
+      <img
+        src={mockimg}
+        className="w-[961.807px] h-full object-cover shrink-0"
+        alt="signup"
+      />
+      <div className="w-[960px] h-full px-[200px] py-[281px] flex flex-col justify-center items-center">
+        <div className="w-[560px] flex flex-col items-center gap-10">
+          <h2 className="text-black text-[48px] font-bold w-full font-pretendard">
+            회원가입
+          </h2>
 
-          <form onSubmit={handleSubmit} className="LoginForm">
-            <div className="LoginInputWrapper">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col items-start gap-12 w-full"
+          >
+            <div className="flex flex-col items-start gap-4 w-full">
               <Input
                 label="이메일"
                 type="email"
@@ -105,7 +113,6 @@ const SignPageOne = () => {
                 placeholder="이메일을 입력해주세요."
                 error={emailError}
               />
-
               <Input
                 label="비밀번호"
                 type="password"
@@ -115,7 +122,6 @@ const SignPageOne = () => {
                 placeholder="비밀번호를 입력해주세요."
                 error={passwordError}
               />
-
               <Input
                 label="비밀번호 확인"
                 type="password"
@@ -127,21 +133,31 @@ const SignPageOne = () => {
               />
             </div>
 
-            {formError && <p className="FormError">{formError}</p>}
-            <div className="BottomWrapper">
+            {formError && (
+              <p className="text-red-500 text-[16px] mt-1">{formError}</p>
+            )}
+
+            <div className="flex flex-col items-start gap-4 w-full">
               <button
                 type="submit"
-                className="LoginButton"
                 disabled={!isFormValid}
+                className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center disabled:opacity-50"
               >
-                <span className="LoginText">다음으로</span>
+                <span className="text-white text-[20px] font-semibold font-pretendard">
+                  다음으로
+                </span>
               </button>
             </div>
           </form>
 
-          <div className="HaveAcWrapper">
-            <h2 className="HaveAcTitle">이미 계정이 있으신가요?</h2>
-            <button className="ConnectSignup" onClick={() => navigate("/")}>
+          <div className="flex flex-row items-end self-end gap-4">
+            <h2 className="text-[18px] text-gray-500 font-pretendard">
+              이미 계정이 있으신가요?
+            </h2>
+            <button
+              className="text-[18px] text-[#9737fd] underline font-pretendard"
+              onClick={() => navigate("/")}
+            >
               로그인
             </button>
           </div>
