@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import { login } from "@/services/auth";
-import "./LoginPage.css";
 import mockimg from "../../assets/images/mockimg.jpg";
 import KakaoLoginButton from "./KakaoLoginButton";
+
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +41,7 @@ const LoginPage = () => {
     try {
       const res = await login(email, password);
       localStorage.setItem("token", res.token);
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
       setFormError("로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.");
@@ -51,14 +51,23 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="big">
-      <img src={mockimg} className="mockimg" />
-      <div className="LoginWrapper">
-        <div className="LoginBox">
-          <h2 className="LoginTitle">로그인</h2>
+    <div className="flex w-screen h-screen overflow-hidden">
+      <img
+        src={mockimg}
+        alt="login visual"
+        className="w-1/2 h-full object-cover"
+      />
+      <div className="w-1/2 h-full flex justify-center items-center">
+        <div className="w-[560px] flex flex-col items-center gap-10">
+          <h2 className="text-black font-bold text-[48px] w-full font-pretendard">
+            로그인
+          </h2>
 
-          <form onSubmit={handleSubmit} className="LoginForm">
-            <div className="LoginInputWrapper">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col items-start gap-12 w-full"
+          >
+            <div className="flex flex-col items-start gap-4 w-full">
               <Input
                 label="이메일"
                 type="email"
@@ -80,22 +89,32 @@ const LoginPage = () => {
               />
             </div>
 
-            {formError && <p className="FormError">{formError}</p>}
-            <div className="BottomWrapper">
-              <button type="submit" className="LoginButton" disabled={loading}>
-                <span className="LoginText">
+            {formError && (
+              <p className="text-red-500 text-[14px]">{formError}</p>
+            )}
+
+            <div className="flex flex-col items-start gap-2 w-full">
+              <button
+                type="submit"
+                className="flex justify-center items-center w-full h-12 bg-[#9737fd] rounded-lg"
+                disabled={loading}
+              >
+                <span className="text-white font-semibold text-[20px] font-pretendard">
                   {loading ? "로그인 중..." : "로그인"}
                 </span>
               </button>
+
               <KakaoLoginButton />
             </div>
           </form>
 
-          <div className="SignupWrapper">
-            <h2 className="SignupTitle">트러블로그가 처음이신가요?</h2>
+          <div className="w-[200px] flex flex-col items-center gap-4">
+            <h2 className="text-gray-500 text-[18px] font-pretendard">
+              트러블로그가 처음이신가요?
+            </h2>
             <button
-              className="ConnectSignup"
               onClick={() => navigate("/signup")}
+              className="text-gray-500 underline text-[18px] font-pretendard w-full text-center"
             >
               회원가입
             </button>

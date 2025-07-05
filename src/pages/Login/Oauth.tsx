@@ -54,7 +54,7 @@ const Oauth = () => {
         localStorage.setItem("kakao_user", JSON.stringify(profile));
 
         // 홈으로 이동
-        navigate("/signuptwo");
+        navigate("/signup/detail");
       } catch (error) {
         console.error("카카오 로그인 오류:", error);
         navigate("/");
