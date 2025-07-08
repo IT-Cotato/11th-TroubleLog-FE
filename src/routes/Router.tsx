@@ -8,6 +8,7 @@ import MainLayout from "@/layouts/MainLayout";
 import LoginPage from "@/pages/Login/LoginPage";
 import SignPageTwo from "@/pages/Login/SignPageTwo";
 import ProjectDetailPage from "@/pages/Project/ProjectDetailPage";
+import TempWritePage from "@/pages/TempWrite/TempWritePage";
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
         element: <ProjectDetailPage projectName="Cotato" />,
       },
     ],
+  },
+  {
+    path: "tempwriting",
+    element: <TempWritePage />,
   },
 ]);
 
