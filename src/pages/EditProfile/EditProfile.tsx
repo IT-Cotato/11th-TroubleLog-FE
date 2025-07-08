@@ -99,7 +99,7 @@ const EditProfile = () => {
       {/* 버튼 영역 */}
       <div className="flex gap-4">
         <CancelButton onClick={handleCancel} />
-        <SaveButton onClick={handleSave} label="수정 완료" />
+        <SaveButton onClick={handleSave} label="저장" />
       </div>
 
       <WithdrawBox onWithdraw={handleWithdraw} />
