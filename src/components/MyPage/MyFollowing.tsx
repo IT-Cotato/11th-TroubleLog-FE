@@ -39,7 +39,6 @@ const MyFollowing = () => {
   const [followList, setFollowList] = useState<FollowingData[]>(mockData);
 
   useEffect(() => {
-    // URL 끝 path 추출
     const path = location.pathname.split("/").pop();
 
     const fetchData = async () => {
