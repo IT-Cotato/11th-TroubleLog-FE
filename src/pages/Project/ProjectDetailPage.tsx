@@ -48,14 +48,14 @@ export default function ProjectDetailPage({
   );
 
   return (
-    <div className="px-4 sm:px-6 md:px-8 py-[60px] sm:py-[79px] flex flex-col items-start gap-[36px]">
+    <div className="flex w-full px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[36px]">
       {/* 상단 나의 프로젝트 텍스트 및 글쓰기 버튼 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">나의 프로젝트</span>
         <PostButton />
       </div>
       {/* 프로젝트 아코디언 영역 */}
-      <ProjectAccordion projectName={projectName}>
+      <ProjectAccordion title={projectName}>
         <div className="flex flex-col sm:flex-row justify-between gap-4 w-full">
           {/* 작성 상태 필터 버튼 */}
           <div className="flex items-center gap-[24px] self-stretch">
