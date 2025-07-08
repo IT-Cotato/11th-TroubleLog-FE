@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Following from "./Following";
 
 export interface FollowingData {
@@ -38,7 +38,27 @@ const mockData: FollowingData[] = [
 const MyFollowing = () => {
   const [followList, setFollowList] = useState<FollowingData[]>(mockData);
 
-  // 백 API로 팔로잉/팔로우
+  useEffect(() => {
+    // URL 끝 path 추출
+    const path = location.pathname.split("/").pop();
+
+    const fetchData = async () => {
+      try {
+        if (path === "following") {
+          // 백엔드 팔로잉 목록 API 호출
+        } else if (path === "follower") {
+          // 백엔드 팔로워 목록 API 호출
+        }
+        setFollowList(mockData);
+      } catch (e) {
+        console.log(e);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // 백 팔로잉/팔로우 T/F API 호출
   const handleFollowClick = async (id: number) => {
     try {
       // axios 사용

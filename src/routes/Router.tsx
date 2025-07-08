@@ -49,6 +49,10 @@ export const router = createBrowserRouter([
             path: "following",
             element: <MyFollowing />,
           },
+          {
+            path: "follower",
+            element: <MyFollowing />,
+          },
         ],
       },
       {
