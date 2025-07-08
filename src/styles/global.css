@@ -44,6 +44,10 @@
   @apply text-lg sm:text-xl font-semibold font-sans;
 }
 
+.text-head-32-semibold {
+  @apply text-[32px] sm:text-xl font-semibold font-sans;
+}
+
 /* Body */
 .text-body-20-regular {
   @apply text-lg sm:text-xl font-normal font-sans;
