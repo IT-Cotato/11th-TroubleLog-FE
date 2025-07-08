@@ -10,6 +10,7 @@ import ProjectDetailPage from "@/pages/Project/ProjectDetailPage";
 import MyPageLayout from "@/layouts/MyPageLayout";
 import MyTroubleShooting from "@/components/MyPage/MyTroubleShooting";
 import MyFollowing from "@/components/MyPage/MyFollowing";
+import EditProfile from "@/pages/EditProfile/EditProfile";
 
 export const router = createBrowserRouter([
   {
@@ -38,7 +39,7 @@ export const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: "mypage",
+        path: "mypage/:id",
         element: <MyPageLayout />,
         children: [
           {
@@ -54,6 +55,10 @@ export const router = createBrowserRouter([
             element: <MyFollowing />,
           },
         ],
+      },
+      {
+        path: "mypage/:id/editprofile",
+        element: <EditProfile />,
       },
       {
         path: "project/:id",
