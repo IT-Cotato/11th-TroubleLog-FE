@@ -3,8 +3,10 @@ import { BsFillBellFill } from "react-icons/bs";
 import { FaUserCircle } from "react-icons/fa";
 import { MdSearch } from "react-icons/md";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -13,7 +15,12 @@ const Header = () => {
 
   return (
     <div className="flex w-full py-[25px] px-[88px] gap-[10px] justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
-      <img src="/icons/logo.svg" alt="logo" className="w-[70px] h-[51px]" />
+      <img
+        src="/icons/logo.svg"
+        alt="logo"
+        className="w-[70px] h-[51px]"
+        onClick={() => navigate("home")}
+      />
       <div className="flex gap-[72px] items-center">
         <div className="flex w-[1200px] h-12 p-2 justify-between items-center gap-1 rounded-md border border-gray1">
           <input
