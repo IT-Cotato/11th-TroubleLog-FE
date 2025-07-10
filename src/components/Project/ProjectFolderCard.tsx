@@ -4,6 +4,7 @@ import TagList from "../Card/TagList";
 import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import FolderModal from "../Modal/FolderModal";
+import ConfirmDeleteModal from "../Modal/ConfirmDeleteModal";
 
 export interface ProjectFolderCardProps {
   id: string;
@@ -21,6 +22,7 @@ export default function ProjectFolderCard({
 }: ProjectFolderCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
   const handleEdit = () => {
@@ -30,6 +32,15 @@ export default function ProjectFolderCard({
 
   const handleModalClose = () => {
     setShowEditModal(false);
+  };
+
+  const handleDelete = () => {
+    setShowMenu(false);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteModalClose = () => {
+    setShowDeleteModal(false);
   };
 
   return (
@@ -69,10 +80,7 @@ export default function ProjectFolderCard({
                   },
                   {
                     label: "삭제",
-                    onClick: () => {
-                      setShowMenu(false);
-                      console.log("삭제 동작 실행");
-                    },
+                    onClick: handleDelete,
                   },
                 ]}
               />
@@ -92,6 +100,18 @@ export default function ProjectFolderCard({
           onSubmit={(data) => {
             console.log("수정된 폴더 데이터:", data);
             setShowEditModal(false);
+          }}
+        />
+      )}
+
+      {/* 폴더 삭제 모달 */}
+      {showDeleteModal && (
+        <ConfirmDeleteModal
+          onClose={handleDeleteModalClose}
+          onConfirm={() => {
+            // 삭제 로직 실행
+            console.log("삭제 확정");
+            setShowDeleteModal(false);
           }}
         />
       )}
