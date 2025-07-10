@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import useClickOutside from "../../hooks/useClickOutside";
 import TagList from "../Card/TagList";
 import KebabMenuButton from "../Menu/KebabMenuButton";
@@ -25,23 +25,25 @@ export default function ProjectFolderCard({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     setShowMenu(false);
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleModalClose = () => {
-    setShowEditModal(false);
-  };
-
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     setShowMenu(false);
     setShowDeleteModal(true);
-  };
+  }, []);
 
-  const handleDeleteModalClose = () => {
+  const handleModalClose = useCallback(() => setShowEditModal(false), []);
+  const handleDeleteModalClose = useCallback(
+    () => setShowDeleteModal(false),
+    []
+  );
+  const handleDeleteConfirm = useCallback(() => {
+    console.log("삭제 확정");
     setShowDeleteModal(false);
-  };
+  }, []);
 
   return (
     <>
@@ -108,11 +110,7 @@ export default function ProjectFolderCard({
       {showDeleteModal && (
         <ConfirmDeleteModal
           onClose={handleDeleteModalClose}
-          onConfirm={() => {
-            // 삭제 로직 실행
-            console.log("삭제 확정");
-            setShowDeleteModal(false);
-          }}
+          onConfirm={handleDeleteConfirm}
         />
       )}
     </>

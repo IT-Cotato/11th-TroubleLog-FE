@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
+import CancelButton from "../Button/CancelButton";
+import SaveButton from "../Button/SaveButton";
 
 interface FolderModalProps {
   mode: "new" | "edit";
@@ -150,21 +152,9 @@ export default function FolderModal({
         {/* 버튼 영역 */}
         <div className="flex justify-end gap-[17px] mb-[24px] px-[36px]">
           {/* 취소 */}
-          <button
-            onClick={onClose}
-            className="flex py-[16px] px-[57px] justify-center items-center rounded-[12px] border border-gray1 bg-white"
-          >
-            <span className="text-primaryColor text-head-20-semibold">
-              취소
-            </span>
-          </button>
+          <CancelButton onClick={onClose} />
           {/* 완료 */}
-          <button
-            onClick={handleSubmit}
-            className="flex py-[16px] px-[57px] justify-center items-center rounded-[12px] border border-gray1 bg-primary"
-          >
-            <span className="text-white text-head-20-semibold">완료</span>
-          </button>
+          <SaveButton onClick={handleSubmit} label="완료" />
         </div>
       </div>
     </div>

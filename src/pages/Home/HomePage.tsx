@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import PostButton from "@/components/Button/PostButton";
 import Snackbar from "@/components/Feedback/Snackbar";
 import TroublogCard from "@/components/Card/TroublogCard";
@@ -14,19 +14,19 @@ export default function HomePage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handlePostClick = () => {
+  const handlePostClick = useCallback(() => {
     if (mockFolders.length === 0) {
       setShowSnackbar(true);
       setTimeout(() => setShowSnackbar(false), 1000);
     } else {
-      setShowDropdown((prev) => !prev); // 글쓰기 템플릿 드롭다운 토글
+      setShowDropdown((prev) => !prev);
     }
-  };
+  }, []);
+
+  const handleOpenModal = useCallback(() => setIsModalOpen(true), []);
+  const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
 
   const dropdownRef = useClickOutside(() => setShowDropdown(false));
-
-  const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
 
   return (
     <div className="flex px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[40px]">
