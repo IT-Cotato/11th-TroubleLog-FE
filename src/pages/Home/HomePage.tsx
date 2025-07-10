@@ -1,4 +1,6 @@
+import { useState } from "react";
 import PostButton from "@/components/Button/PostButton";
+import Snackbar from "@/components/Feedback/Snackbar";
 import TroublogCard from "@/components/Card/TroublogCard";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
@@ -6,12 +8,30 @@ import { mockCards } from "@/mocks/mockCards";
 import { mockFolders } from "@/mocks/mockFolders";
 
 export default function HomePage() {
+  const [showSnackbar, setShowSnackbar] = useState(false);
+
+  const handlePostClick = () => {
+    if (mockFolders.length === 0) {
+      setShowSnackbar(true);
+      setTimeout(() => setShowSnackbar(false), 1000);
+    } else {
+      console.log("글쓰기 가능");
+    }
+  };
+
   return (
     <div className="flex px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[40px]">
       {/* 상단 영역 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">나의 프로젝트</span>
-        <PostButton />
+        <div className="relative">
+          <PostButton onClick={handlePostClick} />
+          {showSnackbar && (
+            <div className="absolute top-[-60px] right-0">
+              <Snackbar message="프로젝트 폴더를 먼저 생성해주세요." />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Project Folders 영역 */}
