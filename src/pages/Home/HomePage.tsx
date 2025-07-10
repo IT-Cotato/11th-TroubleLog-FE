@@ -96,7 +96,7 @@ export default function HomePage() {
         {/* 트러블슈팅 존재 시 카드 목록, 없으면 텍스트 */}
         {mockCards.length === 0 ? (
           <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
-            <span className="text-body-20-regula">
+            <span className="text-body-20-regular">
               아직 확인한 트러블슈팅이 없어요.
             </span>
           </div>
