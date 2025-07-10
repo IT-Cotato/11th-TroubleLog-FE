@@ -1,15 +1,34 @@
 import { useRef, useState } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
 
-interface NewFolderModalProps {
+interface FolderModalProps {
+  mode: "new" | "edit";
   onClose: () => void;
+  onSubmit?: (data: {
+    name: string;
+    description: string;
+    thumbnail: string | null;
+  }) => void;
+  initialName?: string;
+  initialDescription?: string;
+  initialThumbnail?: string | null;
 }
 
-export default function NewFolderModal({ onClose }: NewFolderModalProps) {
+export default function FolderModal({
+  mode,
+  onClose,
+  onSubmit,
+  initialName = "",
+  initialDescription = "",
+  initialThumbnail = null,
+}: FolderModalProps) {
   const modalRef = useClickOutside(onClose);
 
   // 썸네일 상태
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [thumbnail, setThumbnail] = useState<string | null>(initialThumbnail);
+  const [name, setName] = useState(initialName);
+  const [description, setDescription] = useState(initialDescription);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,6 +43,10 @@ export default function NewFolderModal({ onClose }: NewFolderModalProps) {
     fileInputRef.current?.click();
   };
 
+  const handleSubmit = () => {
+    onSubmit?.({ name, description, thumbnail });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center">
       {/* 배경 블러 */}
@@ -36,7 +59,9 @@ export default function NewFolderModal({ onClose }: NewFolderModalProps) {
       >
         {/* 헤더 */}
         <div className="flex justify-between items-center px-[36px] mb-[24px] mt-[36px]">
-          <span className="text-head-24-bold">새 폴더</span>
+          <span className="text-head-24-bold">
+            {mode === "edit" ? "폴더 수정하기" : "새 폴더"}
+          </span>
           <button onClick={onClose}>
             <img
               src="/icons/close.svg"
@@ -103,6 +128,8 @@ export default function NewFolderModal({ onClose }: NewFolderModalProps) {
             <div className="flex flex-col justify-center items-start gap-[8px]">
               <span className="text-head-20-semibold">폴더 이름</span>
               <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="flex pl-[15px] pt-[15px] pr-[230px] pb-[14px] items-center rounded-[8px] border border-gray1 bg-white text-body-14-regular"
                 placeholder="폴어 이름을 입력해주세요."
               />
@@ -111,6 +138,8 @@ export default function NewFolderModal({ onClose }: NewFolderModalProps) {
             <div className="flex flex-col justify-center items-start gap-[8px]">
               <span className="text-head-20-semibold">한 줄 소개</span>
               <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 className="flex pl-[15px] pt-[15px] pr-[230px] pb-[14px] items-center rounded-[8px] border border-gray1 bg-white text-body-14-regular"
                 placeholder="한 줄 소개를 입력해주세요."
               />
@@ -129,9 +158,12 @@ export default function NewFolderModal({ onClose }: NewFolderModalProps) {
               취소
             </span>
           </button>
-          {/* 생성 */}
-          <button className="flex py-[16px] px-[57px] justify-center items-center rounded-[12px] border border-gray1 bg-primary">
-            <span className="text-white text-head-20-semibold">생성</span>
+          {/* 완료 */}
+          <button
+            onClick={handleSubmit}
+            className="flex py-[16px] px-[57px] justify-center items-center rounded-[12px] border border-gray1 bg-primary"
+          >
+            <span className="text-white text-head-20-semibold">완료</span>
           </button>
         </div>
       </div>

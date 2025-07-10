@@ -4,7 +4,7 @@ import Snackbar from "@/components/Feedback/Snackbar";
 import TroublogCard from "@/components/Card/TroublogCard";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
-import NewFolderModal from "@/components/Modal/NewFolderModal";
+import NewFolderModal from "@/components/Modal/FolderModal";
 import { mockCards } from "@/mocks/mockCards";
 import { mockFolders } from "@/mocks/mockFolders";
 import useClickOutside from "@/hooks/useClickOutside";
@@ -110,7 +110,7 @@ export default function HomePage() {
       </ProjectAccordion>
 
       {/* 모달 표시 */}
-      {isModalOpen && <NewFolderModal onClose={handleCloseModal} />}
+      {isModalOpen && <NewFolderModal mode="new" onClose={handleCloseModal} />}
     </div>
   );
 }
