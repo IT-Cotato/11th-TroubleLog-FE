@@ -4,11 +4,13 @@ import Snackbar from "@/components/Feedback/Snackbar";
 import TroublogCard from "@/components/Card/TroublogCard";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
+import NewFolderModal from "@/components/Modal/NewFolderModal";
 import { mockCards } from "@/mocks/mockCards";
 import { mockFolders } from "@/mocks/mockFolders";
 
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handlePostClick = () => {
     if (mockFolders.length === 0) {
@@ -18,6 +20,9 @@ export default function HomePage() {
       console.log("글쓰기 가능");
     }
   };
+
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
 
   return (
     <div className="flex px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[40px]">
@@ -35,7 +40,22 @@ export default function HomePage() {
       </div>
 
       {/* Project Folders 영역 */}
-      <ProjectAccordion title="Project Folders">
+      <ProjectAccordion
+        title={
+          <div className="flex">
+            <span className="pr-[10px] text-head-32-regular">
+              Project Folders
+            </span>
+            <button onClick={handleOpenModal}>
+              <img
+                src="/icons/plus.svg"
+                alt="plus"
+                className="w-[36px] h-[36px]"
+              />
+            </button>
+          </div>
+        }
+      >
         {/* 폴더 존재 시 폴더 카드 목록, 없으면 텍스트 */}
         {mockFolders.length === 0 ? (
           <div className="w-full flex h-[132px] justify-center items-center self-stretch rounded-[8px] bg-white shadow-card">
@@ -69,6 +89,9 @@ export default function HomePage() {
           </div>
         )}
       </ProjectAccordion>
+
+      {/* 모달 표시 */}
+      {isModalOpen && <NewFolderModal onClose={handleCloseModal} />}
     </div>
   );
 }
