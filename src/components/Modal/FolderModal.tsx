@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
 import CancelButton from "../Button/CancelButton";
 import SaveButton from "../Button/SaveButton";
@@ -36,10 +36,22 @@ export default function FolderModal({
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // 이전 blob URL 해제
+      if (thumbnail && thumbnail.startsWith("blob:")) {
+        URL.revokeObjectURL(thumbnail);
+      }
       const imageUrl = URL.createObjectURL(file);
       setThumbnail(imageUrl);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (thumbnail && thumbnail.startsWith("blob:")) {
+        URL.revokeObjectURL(thumbnail);
+      }
+    };
+  }, [thumbnail]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
