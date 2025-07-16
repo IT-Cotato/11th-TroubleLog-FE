@@ -1,4 +1,5 @@
 import { useState } from "react";
+import dropdownicon from "/src/assets/images/dropdown_icon.svg";
 
 const errorOptions = [
   "Build / Compile Error",
@@ -24,12 +25,13 @@ const DropDownButton = () => {
   };
 
   return (
-    <div className="relative w-full max-w-md">
+    <div className="relative w-[340px]">
       <button
+        className="flex justify-between items-center w-[300px] h-[36px] px-[15px] py-[7px] border border-[#B8B8E2] rounded-[5px] bg-white text-sm text-black"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full text-left border border-gray-300 rounded-md px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
       >
-        {selected}
+        <span className="truncate">{selected}</span>
+        <img src={dropdownicon} alt="dropdown icon" className="w-6 h-6" />
       </button>
 
       {isOpen && (
@@ -38,7 +40,7 @@ const DropDownButton = () => {
             <li
               key={option}
               onClick={() => handleSelect(option)}
-              className="px-4 py-2 hover:bg-purple-100 cursor-pointer"
+              className="px-4 py-2 hover:bg-purple-100 cursor-pointer text-sm whitespace-nowrap overflow-hidden text-ellipsis"
             >
               {option}
             </li>
