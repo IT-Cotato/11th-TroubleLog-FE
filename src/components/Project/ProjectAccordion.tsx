@@ -1,12 +1,12 @@
 import { useState } from "react";
 
 interface ProjectAccordionProps {
-  projectName: string;
+  title: React.ReactNode;
   children: React.ReactNode;
 }
 
 export default function ProjectAccordion({
-  projectName,
+  title,
   children,
 }: ProjectAccordionProps) {
   const [isOpen, setIsOpen] = useState(true);
@@ -25,7 +25,11 @@ export default function ProjectAccordion({
             isOpen ? "rotate-0" : "-rotate-90"
           }`}
         />
-        <span className="text-head-32-regular">{projectName}</span>
+        {typeof title === "string" ? (
+          <span className="text-head-32-regular">{title}</span>
+        ) : (
+          title
+        )}
       </button>
 
       {/* 펼쳐진 내용 */}

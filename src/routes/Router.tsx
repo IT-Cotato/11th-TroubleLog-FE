@@ -1,5 +1,4 @@
 import { createBrowserRouter } from "react-router-dom";
-import Home from "@/pages/Home/Home";
 import Oauth from "@/pages/Login/Oauth";
 import SignPageOne from "@/pages/Login/SignPageOne";
 import ProtectedRoute from "@/components/Common/ProtectedRouter";
@@ -11,6 +10,7 @@ import MyPageLayout from "@/layouts/MyPageLayout";
 import MyTroubleShooting from "@/components/MyPage/MyTroubleShooting";
 import MyFollowing from "@/components/MyPage/MyFollowing";
 import EditProfile from "@/pages/EditProfile/EditProfile";
+import HomePage from "@/pages/Home/HomePage";
 
 export const router = createBrowserRouter([
   {
@@ -36,7 +36,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "home",
-        element: <Home />,
+        element: <HomePage />,
       },
       {
         path: "mypage/:id",

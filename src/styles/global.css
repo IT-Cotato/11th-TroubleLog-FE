@@ -29,7 +29,7 @@
 }
 
 .text-head-32-bold {
-  @apply text-2xl sm:text-3xl font-semibold font-sans;
+  @apply text-2xl sm:text-3xl font-bold font-sans;
 }
 
 .text-head-32-regular {
@@ -45,7 +45,7 @@
 }
 
 .text-head-32-semibold {
-  @apply text-[32px] sm:text-xl font-semibold font-sans;
+  @apply text-2xl sm:text-3xl font-semibold font-sans;
 }
 
 /* Body */
