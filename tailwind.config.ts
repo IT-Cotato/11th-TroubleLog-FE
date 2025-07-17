@@ -15,6 +15,8 @@ export default {
         gray2: "#B8B8B8",
         gray1: "#E0E0E0",
 
+        red1: "#DC4745",
+
         status: {
           inProgress: "#FFEA65",
           complete: "#00B279",

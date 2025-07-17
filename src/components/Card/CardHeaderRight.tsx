@@ -37,10 +37,15 @@ export default function CardHeaderRight({
           <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
           {showMenu && (
             <KebabDropdown
-              onDelete={() => {
-                setShowMenu(false);
-                console.log("삭제 동작 실행");
-              }}
+              options={[
+                {
+                  label: "삭제",
+                  onClick: () => {
+                    setShowMenu(false);
+                    console.log("삭제 동작 실행");
+                  },
+                },
+              ]}
             />
           )}
         </>
