@@ -34,7 +34,7 @@ const MyTroubleShooting = () => {
       <SortButtonGroup selected={selectedSort} onSelect={setSelectedSort} />
 
       {/* 트러블로그 목록 */}
-      <div className="flex flex-col items-start self-stertch">
+      <div className="flex flex-col items-start self-stretch">
         {sortedCards.map((card) => (
           <TroubleShootingCard
             key={card.id}
