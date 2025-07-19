@@ -7,6 +7,7 @@ export type TagCategory =
   | "데브옵스"
   | "인프라"
   | "데이터베이스"
+  | "인프라"
   | "기타";
 
 export interface Tag {
@@ -108,25 +109,30 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
             )}
           </div>
         </div>
-        <div className=" flex px-[27px] py-[10px] flex-col justify-center items-start gap-[28px] self-stretch">
+        <div className=" flex px-[27px] pt-[10px] flex-col justify-center items-start gap-[8px] self-stretch">
           {/* 카테고리 버튼 */}
           <div className="flex justify-center items-center self-stretch px-6 mb-2">
             <div className="flex  gap-[40px] text-sm">
-              {["프론트엔드", "백엔드", "데브옵스", "데이터베이스", "기타"].map(
-                (cat) => (
-                  <button
-                    key={cat}
-                    className={`pb-1 border-b-2 ${
-                      activeCategory === cat
-                        ? "border-purple-500 font-semibold"
-                        : "border-transparent text-gray-400"
-                    }`}
-                    onClick={() => setActiveCategory(cat as TagCategory)}
-                  >
-                    {cat}
-                  </button>
-                )
-              )}
+              {[
+                "프론트엔드",
+                "백엔드",
+                "데브옵스",
+                "인프라",
+                "데이터베이스",
+                "기타",
+              ].map((cat) => (
+                <button
+                  key={cat}
+                  className={`pb-1 border-b-2 ${
+                    activeCategory === cat
+                      ? "border-purple-500 font-semibold"
+                      : "border-transparent text-gray-400"
+                  }`}
+                  onClick={() => setActiveCategory(cat as TagCategory)}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
           </div>
 

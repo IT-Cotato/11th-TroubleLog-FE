@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import MDEditor from "@uiw/react-md-editor";
-import Header from "@/components/Header/Header";
+import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import DropDownButton from "./DropDownButton";
 import CategoryTag from "./CategoryTag";
 import EditorBlock from "../../components/TemplateWrite/EditorBlock";
@@ -76,7 +76,7 @@ const TempWritePage = () => {
 
   return (
     <div>
-      <Header />
+      <HeaderWoSearch />
       <div className="flex justify-center px-[225px] pt-[68px]  items-start">
         <div className="flex-1 flex w-[1500px] flex-col gap-[36px]">
           {/* 제목 + 태그 */}
@@ -94,7 +94,7 @@ const TempWritePage = () => {
             </div>
           </div>
 
-          {/* 추가된 블록들 */}
+          {/* 추가될 블록들 */}
           {blocks
             .slice()
             .reverse()
@@ -110,7 +110,7 @@ const TempWritePage = () => {
               />
             ))}
 
-          {/* 메인 에디터 (맨 아래 고정) */}
+          {/* 어떤오류~ 블록*/}
           <div className="flex flex-row gap-[25px]">
             <div className="flex flex-col gap-[16px] w-[1200px]">
               <div className="flex justify-between items-start">
@@ -147,7 +147,7 @@ const TempWritePage = () => {
                 />
               </div>
             </div>
-
+            {/*체크리스트*/}
             <div className="flex flex-col gap-2 mt-14">
               <h3 className="text-base font-semibold text-gray4">
                 {questionData[0].title}
