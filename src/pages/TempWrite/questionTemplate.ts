@@ -31,5 +31,7 @@ export const questionData = [
   },
   {
     question: "검증 및 회고",
+    title: "검증 및 회고",
+    checklistItems: [],
   },
 ];

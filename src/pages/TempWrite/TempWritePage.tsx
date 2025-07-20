@@ -13,10 +13,11 @@ const TempWritePage = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [blocks, setBlocks] = useState<BlockData[]>([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
 
   const handleAddBlock = () => {
     setBlocks((prev) => {
-      const nextStep = prev.length + 1; // ← 핵심 수정
+      const nextStep = prev.length + 1;
       if (nextStep >= questionData.length) return prev;
 
       const stepData = questionData[nextStep];
@@ -34,6 +35,7 @@ const TempWritePage = () => {
 
       return [...prev, newBlock];
     });
+    setActiveIndex(blocks.length);
   };
 
   const handleToggleChecklist = (
@@ -98,17 +100,22 @@ const TempWritePage = () => {
           {blocks
             .slice()
             .reverse()
-            .map((block, index) => (
-              <EditorBlock
-                key={block.id}
-                block={block}
-                index={index}
-                onChange={handleAddBlock}
-                onToggleChecklist={handleToggleChecklist}
-                onAddBlock={handleAddBlock}
-                onSave={handleSave}
-              />
-            ))}
+            .map((block, index) => {
+              const originalIndex = blocks.length - 1 - index;
+              return (
+                <EditorBlock
+                  key={block.id}
+                  block={block}
+                  index={originalIndex}
+                  isActive={originalIndex === activeIndex}
+                  isLast={index === blocks.length - 1}
+                  onChange={handleAddBlock}
+                  onToggleChecklist={handleToggleChecklist}
+                  onAddBlock={handleAddBlock}
+                  onSave={handleSave}
+                />
+              );
+            })}
 
           {/* 어떤오류~ 블록*/}
           <div className="flex flex-row gap-[25px]">
@@ -118,20 +125,22 @@ const TempWritePage = () => {
                   {questionData[0].question}
                 </span>
                 <div className="flex flex-col items-end gap-2 min-w-[160px]">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setIsSaved(true)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={handleAddBlock}
-                      className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
-                    >
-                      Next
-                    </button>
-                  </div>
+                  {activeIndex === -1 && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setIsSaved(true)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleAddBlock}
+                        className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
                   {isSaved && (
                     <p className="text-sm text-gray-600">✔ 저장되었습니다.</p>
                   )}
@@ -149,7 +158,12 @@ const TempWritePage = () => {
             </div>
             {/*체크리스트*/}
             <div className="flex flex-col gap-2 mt-14">
-              <h3 className="text-base font-semibold text-gray4">
+              <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
+                <img
+                  src="src/assets/images/alerticon.svg"
+                  alt="alert icon"
+                  className="w-4 h-4"
+                />
                 {questionData[0].title}
               </h3>
               {defaultCheckListItems.map((item, index) => (

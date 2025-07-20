@@ -8,7 +8,7 @@ export interface BlockData {
   checklistItems: string[];
   isSaved: boolean;
   question: string;
-  checklistTitle: string; // 👈 추가된 필드
+  checklistTitle: string;
 }
 
 interface Props {
@@ -18,6 +18,8 @@ interface Props {
   onToggleChecklist: (index: number, item: string, checked: boolean) => void;
   onAddBlock?: () => void;
   onSave?: (index: number) => void;
+  isActive: boolean;
+  isLast: boolean;
 }
 
 const EditorBlock = ({
@@ -27,6 +29,8 @@ const EditorBlock = ({
   onToggleChecklist,
   onAddBlock,
   onSave,
+  isActive,
+  isLast,
 }: Props) => {
   return (
     <div className="flex flex-row gap-[25px]">
@@ -35,25 +39,27 @@ const EditorBlock = ({
           <span className="font-bold text-black text-[24px]">
             {block.question}
           </span>
-          <div className="flex flex-col items-end gap-2 min-w-[160px]">
-            <div className="flex gap-2">
-              <button
-                onClick={() => onSave?.(index)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Save
-              </button>
-              <button
-                onClick={onAddBlock}
-                className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
-              >
-                Next
-              </button>
+          {isActive && (
+            <div className="flex flex-col items-end gap-2 min-w-[160px]">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onSave?.(index)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={onAddBlock}
+                  className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
+                >
+                  {isLast ? "End" : "Next"}
+                </button>
+              </div>
+              {block.isSaved && (
+                <p className="text-sm text-gray-600">✔ 저장되었습니다.</p>
+              )}
             </div>
-            {block.isSaved && (
-              <p className="text-sm text-gray-600">✔ 저장되었습니다.</p>
-            )}
-          </div>
+          )}
         </div>
 
         <div data-color-mode="light">
@@ -69,9 +75,16 @@ const EditorBlock = ({
 
       {/* 오른쪽 체크리스트 */}
       <div className="flex flex-col gap-2 mt-14">
-        <h3 className="text-base font-semibold text-gray4">
-          {block.checklistTitle}
-        </h3>
+        {block.checklistItems.length > 0 && (
+          <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
+            <img
+              src="src/assets/images/alerticon.svg"
+              alt="alert icon"
+              className="w-5 h-5"
+            />
+            {block.checklistTitle}
+          </h3>
+        )}
         {block.checklistItems.map((item) => (
           <label
             key={item}
