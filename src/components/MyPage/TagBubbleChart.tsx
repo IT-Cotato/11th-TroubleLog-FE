@@ -1,17 +1,21 @@
-const TagBubbleChart = () => {
-  const bubbleData = [
-    { label: "JAVA", count: 25, color: "#9C4FFF" },
-    { label: "Spring", count: 18, color: "#FFDC69" },
-    { label: "Spring Boot", count: 12, color: "#D5A7FF" },
-    { label: "JPA", count: 6, color: "#FFEFB0" },
-    { label: "MySQL", count: 4, color: "#E8C6FF" },
-  ];
+interface TagBubbleChartProps {
+  bubbleData: Array<{ label: string; count: number; color: string }>;
+}
 
+const TagBubbleChart = ({ bubbleData }: TagBubbleChartProps) => {
   const getSize = (count: number) => {
     if (count >= 20) return { size: 150, textClass: "text-head-32-regular" };
     if (count >= 10) return { size: 110, textClass: "text-body-20-regular" };
     return { size: 80, textClass: "text-body-16-regular" };
   };
+
+  const positions = [
+    { top: "30%", left: "30%" },
+    { top: "35%", left: "64%" },
+    { top: "73%", left: "50%" },
+    { top: "75%", left: "25%" },
+    { top: "70%", left: "75%" },
+  ];
 
   return (
     <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
@@ -24,24 +28,18 @@ const TagBubbleChart = () => {
       <div className="relative w-full h-full mt-[24px] flex justify-center items-center">
         {bubbleData.map((item, idx) => {
           const { size, textClass } = getSize(item.count);
-          const positions = [
-            { top: "30%", left: "30%" },
-            { top: "35%", left: "64%" },
-            { top: "73%", left: "50%" },
-            { top: "75%", left: "25%" },
-            { top: "70%", left: "75%" },
-          ];
+          const position = positions[idx] || { top: "50%", left: "50%" };
 
           return (
             <div
-              key={idx}
+              key={item.label}
               className={`absolute flex justify-center items-center rounded-full text-white ${textClass}`}
               style={{
                 width: size,
                 height: size,
                 backgroundColor: item.color,
-                top: positions[idx].top,
-                left: positions[idx].left,
+                top: position.top,
+                left: position.left,
                 transform: "translate(-50%, -50%)",
               }}
             >

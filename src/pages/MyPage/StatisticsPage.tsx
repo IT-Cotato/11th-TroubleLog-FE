@@ -5,6 +5,7 @@ import TroublogActivityChart from "@/components/MyPage/TroublogActivityChart";
 import {
   mockErrorCategoryData,
   mockSummaryTypeData,
+  mockTagBubbleData,
 } from "@/mocks/mockStatisticsData";
 
 const StatisticsPage = () => {
@@ -18,7 +19,7 @@ const StatisticsPage = () => {
 
       <div className="flex items-center gap-[24px] self-stretch">
         {/* 내 태그 분석 */}
-        <TagBubbleChart />
+        <TagBubbleChart bubbleData={mockTagBubbleData} />
 
         {/* 내 요약본 종류 */}
         <SummaryTypeBarChart summaryData={mockSummaryTypeData} />
