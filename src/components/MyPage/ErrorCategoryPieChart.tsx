@@ -9,19 +9,10 @@ import { Doughnut } from "react-chartjs-2";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// 임시 데이터
-const data = {
-  labels: ["Build/Compile", "Dependency", "Syntax"],
-  datasets: [
-    {
-      label: "에러 빈도수",
-      data: [3, 2, 3],
-      backgroundColor: ["#FFDC69", "#E4CBFE", "#9737FD"],
-      borderWidth: 0,
-      cutout: "55%",
-    },
-  ],
-};
+export interface ErrorCategoryPieChartProps {
+  labels: string[];
+  data: number[];
+}
 
 const options: ChartOptions<"doughnut"> = {
   plugins: {
@@ -36,8 +27,26 @@ const options: ChartOptions<"doughnut"> = {
   maintainAspectRatio: false,
 };
 
-const ErrorCategoryPieChart = () => {
-  const total = data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+const backgroundColor = ["#FFDC69", "#E4CBFE", "#9737FD"];
+
+const ErrorCategoryPieChart = ({
+  labels,
+  data,
+}: ErrorCategoryPieChartProps) => {
+  const chartData = {
+    labels,
+    datasets: [
+      {
+        label: "에러 빈도수",
+        data,
+        backgroundColor,
+        borderWidth: 0,
+        cutout: "55%",
+      },
+    ],
+  };
+
+  const total = data.reduce((sum, val) => sum + val, 0);
 
   return (
     <div className="flex flex-col w-full p-[36px] h-[412px] rounded-[16px] bg-white shadow-card">
@@ -49,7 +58,7 @@ const ErrorCategoryPieChart = () => {
       <div className="flex px-[123px] py-[39px] justify-between w-full items-center">
         {/* 파이 차트 */}
         <div className="relative w-[233px] h-[233px]">
-          <Doughnut data={data} options={options} />
+          <Doughnut data={chartData} options={options} />
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-head-24-bold text-primary">{total}개</span>
           </div>
@@ -57,14 +66,14 @@ const ErrorCategoryPieChart = () => {
 
         {/* 에러 종류 목록 */}
         <div className="flex flex-col w-[239px] items-start gap-[30px]">
-          {data.labels.map((label, i) => (
+          {labels.map((label, i) => (
             <div
               key={label}
               className="flex items-center gap-[16px] self-stretch"
             >
               <div
                 className="w-[24px] h-[24px] rounded-full"
-                style={{ backgroundColor: data.datasets[0].backgroundColor[i] }}
+                style={{ backgroundColor: backgroundColor[i] }}
               />
               <span className="text-body-18-regular">{label}</span>
             </div>

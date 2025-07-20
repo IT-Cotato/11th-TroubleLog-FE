@@ -1,15 +1,11 @@
-// 데이터 (임시)
-const summaryData = [
-  { label: "자소서", value: 30 },
-  { label: "면접대비", value: 80 },
-  { label: "블로그", value: 60 },
-  { label: "이슈관리", value: 20 },
-];
+interface SummaryTypeBarChartProps {
+  summaryData: Array<{ label: string; value: number }>;
+}
 
-const maxValue = Math.max(...summaryData.map((d) => d.value));
-
-const SummaryTypeBarChart = () => {
+const SummaryTypeBarChart = ({ summaryData }: SummaryTypeBarChartProps) => {
+  const maxValue = Math.max(...summaryData.map((d) => d.value));
   const mostUsed = summaryData.reduce((a, b) => (a.value > b.value ? a : b));
+
   return (
     <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
       <span className="text-head-24-bold">내 요약본 종류</span>

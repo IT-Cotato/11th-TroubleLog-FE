@@ -2,6 +2,10 @@ import ErrorCategoryPieChart from "@/components/MyPage/ErrorCategoryPieChart";
 import SummaryTypeBarChart from "@/components/MyPage/SummaryTypeBarChart";
 import TagBubbleChart from "@/components/MyPage/TagBubbleChart";
 import TroublogActivityChart from "@/components/MyPage/TroublogActivityChart";
+import {
+  mockErrorCategoryData,
+  mockSummaryTypeData,
+} from "@/mocks/mockStatisticsData";
 
 const StatisticsPage = () => {
   return (
@@ -10,14 +14,14 @@ const StatisticsPage = () => {
       <TroublogActivityChart />
 
       {/* 에러 종류 분석 */}
-      <ErrorCategoryPieChart />
+      <ErrorCategoryPieChart {...mockErrorCategoryData} />
 
       <div className="flex items-center gap-[24px] self-stretch">
         {/* 내 태그 분석 */}
         <TagBubbleChart />
 
         {/* 내 요약본 종류 */}
-        <SummaryTypeBarChart />
+        <SummaryTypeBarChart summaryData={mockSummaryTypeData} />
       </div>
     </div>
   );
