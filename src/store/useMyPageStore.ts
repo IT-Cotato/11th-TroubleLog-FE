@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { StatusType } from "@/types/project";
 
-type StatusFilter = StatusType | "all";
+type StatusFilter = StatusType | "all" | null;
 type MenuType = "trouble" | "statistics" | "likes";
 
 interface MyPageStore {
@@ -10,6 +10,8 @@ interface MyPageStore {
 
   selectedMenu: MenuType;
   setSelectedMenu: (menu: MenuType) => void;
+
+  resetSelectedStatus: () => void;
 }
 
 export const useMyPageStore = create<MyPageStore>((set) => ({
@@ -18,4 +20,6 @@ export const useMyPageStore = create<MyPageStore>((set) => ({
 
   selectedMenu: "trouble",
   setSelectedMenu: (menu) => set({ selectedMenu: menu }),
+
+  resetSelectedStatus: () => set({ selectedStatus: null }),
 }));

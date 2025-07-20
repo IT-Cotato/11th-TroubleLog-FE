@@ -24,14 +24,16 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
-  const { selectedStatus, setSelectedStatus } = useMyPageStore();
+  const { selectedStatus, setSelectedStatus, resetSelectedStatus } =
+    useMyPageStore();
 
   const basePath = `/user/mypage/${id}`;
   const isOnMainPage = location.pathname === basePath;
 
   const handleNavigate =
-    (subPath: string = "") =>
+    (subPath: string = "", clearStatus = false) =>
     () => {
+      if (clearStatus) resetSelectedStatus();
       navigate(`${basePath}${subPath ? `/${subPath}` : ""}`);
     };
 
@@ -40,8 +42,8 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
       selectedStatus === status ? "text-black text-body-16-semibold" : ""
     }`;
 
-  const getMenuButtonClass = (active: boolean) =>
-    active ? "text-black text-head-20-semibold" : "";
+  const getMenuButtonClass = (match: boolean) =>
+    `${match ? "text-black" : "text-gray3"} text-head-20-semibold`;
 
   return (
     <div className="flex w-[296px] flex-col items-start gap-[140px]">
@@ -83,7 +85,9 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
           {/* 헤더 텍스트 */}
           <div
             className={`pb-2 border-b ${
-              isOnMainPage ? "text-black border-black" : "border-gray3"
+              isOnMainPage && selectedStatus
+                ? "text-black border-black"
+                : "border-gray3"
             } `}
           >
             내 트러블 슈팅
@@ -135,7 +139,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
 
         {/* 일반 메뉴 버튼들 */}
         <button
-          onClick={handleNavigate("statistics")}
+          onClick={handleNavigate("statistics", true)}
           className={getMenuButtonClass(
             location.pathname.includes("statistics")
           )}
@@ -143,7 +147,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
           통계 시각화
         </button>
         <button
-          onClick={handleNavigate("likes")}
+          onClick={handleNavigate("likes", true)}
           className={getMenuButtonClass(location.pathname.includes("likes"))}
         >
           좋아요한 포스트
