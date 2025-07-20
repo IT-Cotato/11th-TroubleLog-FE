@@ -1,5 +1,5 @@
 import ErrorCategoryPieChart from "@/components/MyPage/ErrorCategoryPieChart";
-// import SummaryTypeBarChart from "@/components/MyPage/SummaryTypeBarChart";
+import SummaryTypeBarChart from "@/components/MyPage/SummaryTypeBarChart";
 import TagBubbleChart from "@/components/MyPage/TagBubbleChart";
 import TroublogActivityChart from "@/components/MyPage/TroublogActivityChart";
 
@@ -17,7 +17,7 @@ const StatisticsPage = () => {
         <TagBubbleChart />
 
         {/* 내 요약본 종류 */}
-        {/* <SummaryTypeBarChart /> */}
+        <SummaryTypeBarChart />
       </div>
     </div>
   );
