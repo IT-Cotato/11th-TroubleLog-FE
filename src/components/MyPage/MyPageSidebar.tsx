@@ -1,8 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import FollowButton from "../Button/FollowButton";
+import type { StatusType } from "@/types/project";
+import { useMyPageStore } from "@/store/useMyPageStore";
 
 interface MyPageSideBarProps {
   isMyPage: boolean;
+  counts: {
+    all: number;
+    inProgress: number;
+    complete: number;
+    created: number;
+  };
 }
 
 const mockProfile = {
@@ -12,27 +20,18 @@ const mockProfile = {
   bio: "안녕하세요. 프론트엔드 개발자입니다!",
 };
 
-const MyPageSideBar = ({ isMyPage }: MyPageSideBarProps) => {
+const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
   const navigate = useNavigate();
+  const { selectedStatus, setSelectedStatus } = useMyPageStore();
 
   const handleNavigate = (path: string) => () => {
     navigate(path);
   };
 
-  const troubleShootingItems = [
-    {
-      icon: "/icons/circle_y.svg",
-      label: "작성 중 (1)",
-    },
-    {
-      icon: "/icons/circle_g.svg",
-      label: "작성 완료 (2)",
-    },
-    {
-      icon: "/icons/circle_b.svg",
-      label: "작성+요약 완료 (1)",
-    },
-  ];
+  const getButtonClass = (status: StatusType | "all") =>
+    `flex items-center gap-[8px] self-stretch ${
+      selectedStatus === status ? "text-black text-body-16-semibold" : ""
+    }`;
 
   return (
     <div className="flex w-[296px] flex-col items-start gap-[140px]">
@@ -78,13 +77,33 @@ const MyPageSideBar = ({ isMyPage }: MyPageSideBarProps) => {
           </div>
 
           <div className="flex flex-col items-start gap-[13px] pt-2 text-body-16-regular text-gray3">
-            <span>전체보기 (4)</span>
-            {troubleShootingItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <img src={item.icon} alt="icon" className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
-              </div>
-            ))}
+            <button
+              onClick={() => setSelectedStatus("all")}
+              className={getButtonClass("all")}
+            >
+              전체보기 ({counts.all})
+            </button>
+            <button
+              onClick={() => setSelectedStatus("inProgress")}
+              className={getButtonClass("inProgress")}
+            >
+              <img src="/icons/circle_y.svg" className="w-3.5 h-3.5" />
+              <span>작성 중 ({counts.inProgress})</span>
+            </button>
+            <button
+              onClick={() => setSelectedStatus("complete")}
+              className={getButtonClass("complete")}
+            >
+              <img src="/icons/circle_g.svg" className="w-3.5 h-3.5" />
+              작성 완료 ({counts.complete})
+            </button>
+            <button
+              onClick={() => setSelectedStatus("created")}
+              className={getButtonClass("created")}
+            >
+              <img src="/icons/circle_b.svg" className="w-3.5 h-3.5" />
+              작성+요약 완료 ({counts.created})
+            </button>
           </div>
         </div>
 
