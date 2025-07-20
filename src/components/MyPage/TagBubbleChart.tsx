@@ -8,9 +8,9 @@ const TagBubbleChart = () => {
   ];
 
   const getSize = (count: number) => {
-    if (count >= 20) return { size: 150, textClass: "text-head-20-semibold" };
-    if (count >= 10) return { size: 110, textClass: "text-body-16-semibold" };
-    return { size: 80, textClass: "text-body-14-regular" };
+    if (count >= 20) return { size: 150, textClass: "text-head-32-regular" };
+    if (count >= 10) return { size: 110, textClass: "text-body-20-regular" };
+    return { size: 80, textClass: "text-body-16-regular" };
   };
 
   return (
