@@ -7,6 +7,10 @@ import {
   getDay,
 } from "date-fns";
 
+interface TroublogActivityChartProps {
+  activityData?: Record<string, number>;
+}
+
 const generateMockActivityData = () => {
   const today = new Date();
   const start = startOfYear(today);
@@ -22,8 +26,6 @@ const generateMockActivityData = () => {
 
   return activityMap;
 };
-
-const activityData = generateMockActivityData();
 
 const getColorClass = (count: number) => {
   if (count === 0) return "bg-[#E0E0E0]";
@@ -62,12 +64,15 @@ const months = [
   "Dec",
 ];
 
-const TroublogActivityChart = () => {
+const TroublogActivityChart = ({
+  activityData: providedData,
+}: TroublogActivityChartProps) => {
+  const activityData = providedData || generateMockActivityData();
+
   const today = new Date();
   const start = startOfYear(today);
   const end = endOfYear(today);
   const allDays = eachDayOfInterval({ start, end });
-
   const columns = groupByWeek(allDays);
 
   const totalActivities = Object.values(activityData).reduce(
