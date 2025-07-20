@@ -1,4 +1,4 @@
-// import ErrorCategoryPieChart from "@/components/MyPage/ErrorCategoryPieChart";
+import ErrorCategoryPieChart from "@/components/MyPage/ErrorCategoryPieChart";
 // import SummaryTypeBarChart from "@/components/MyPage/SummaryTypeBarChart";
 // import TagBubbleChart from "@/components/MyPage/TagBubbleChart";
 import TroublogActivityChart from "@/components/MyPage/TroublogActivityChart";
@@ -10,7 +10,7 @@ const StatisticsPage = () => {
       <TroublogActivityChart />
 
       {/* 에러 종류 분석 */}
-      {/* <ErrorCategoryPieChart /> */}
+      <ErrorCategoryPieChart />
 
       <div className="flex items-center gap-[24px] self-stretch">
         {/* 내 태그 분석 */}
