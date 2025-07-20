@@ -5,7 +5,7 @@ import TroublogActivityChart from "@/components/MyPage/TroublogActivityChart";
 
 const StatisticsPage = () => {
   return (
-    <div className="flex w-[948px] flex-col items-start gap-[56px]">
+    <div className="flex w-[948px] flex-col items-start gap-[56px] pb-[349px]">
       {/* 트러블로그 활동 */}
       <TroublogActivityChart />
 
