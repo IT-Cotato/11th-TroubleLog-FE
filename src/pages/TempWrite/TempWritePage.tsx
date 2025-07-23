@@ -6,6 +6,7 @@ import CategoryTag from "./CategoryTag";
 import EditorBlock from "../../components/TemplateWrite/EditorBlock";
 import type { BlockData } from "../../components/TemplateWrite/EditorBlock";
 import { questionData } from "./questionTemplate";
+import PostSaveModal from "@/components/Modal/PostSaveModal";
 
 const TempWritePage = () => {
   const [title, setTitle] = useState("");
@@ -14,6 +15,11 @@ const TempWritePage = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleEnd = () => {
+    setIsModalOpen(true); // 모달 열기
+  };
 
   const handleAddBlock = () => {
     setBlocks((prev) => {
@@ -32,7 +38,8 @@ const TempWritePage = () => {
         question,
         isSaved: false,
       };
-
+      const newBlocks = [...prev, newBlock];
+      setActiveIndex(newBlocks.length - 1);
       return [...prev, newBlock];
     });
     setActiveIndex(blocks.length);
@@ -97,99 +104,108 @@ const TempWritePage = () => {
           </div>
 
           {/* 추가될 블록들 */}
-          {blocks
-            .slice()
-            .reverse()
-            .map((block, index) => {
-              const originalIndex = blocks.length - 1 - index;
-              return (
-                <EditorBlock
-                  key={block.id}
-                  block={block}
-                  index={originalIndex}
-                  isActive={originalIndex === activeIndex}
-                  isLast={index === blocks.length - 1}
-                  onChange={handleAddBlock}
-                  onToggleChecklist={handleToggleChecklist}
-                  onAddBlock={handleAddBlock}
-                  onSave={handleSave}
-                />
-              );
-            })}
+          <div className="">
+            {blocks
+              .slice()
+              .reverse()
+              .map((block, index) => {
+                const originalIndex = blocks.length - 1 - index;
+                return (
+                  <EditorBlock
+                    key={block.id}
+                    block={block}
+                    index={originalIndex}
+                    isActive={originalIndex === activeIndex}
+                    isLast={originalIndex === questionData.length - 2}
+                    onChange={handleAddBlock}
+                    onToggleChecklist={handleToggleChecklist}
+                    onAddBlock={handleAddBlock}
+                    onSave={handleSave}
+                    onEnd={handleEnd}
+                  />
+                );
+              })}
 
-          {/* 어떤오류~ 블록*/}
-          <div className="flex flex-row gap-[25px]">
-            <div className="flex flex-col gap-[16px] w-[1200px]">
-              <div className="flex justify-between items-start">
-                <span className="font-bold text-black text-[24px]">
-                  {questionData[0].question}
-                </span>
-                <div className="flex flex-col items-end gap-2 min-w-[160px]">
-                  {activeIndex === -1 && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setIsSaved(true)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={handleAddBlock}
-                        className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                  {isSaved && (
-                    <p className="text-sm text-gray-600">✔ 저장되었습니다.</p>
-                  )}
+            {/* 어떤오류~ 블록*/}
+            <div className="flex flex-row gap-[25px]">
+              <div className="flex flex-col gap-[16px] w-[1200px]">
+                <div className="flex justify-between items-start">
+                  <span className="font-bold text-black text-[24px]">
+                    {questionData[0].question}
+                  </span>
+                  <div className="flex flex-col items-end gap-2 min-w-[160px]">
+                    {activeIndex === -1 && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setIsSaved(true)}
+                          className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleAddBlock}
+                          className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                    {isSaved && (
+                      <p className="text-sm text-gray-600">✔ 저장되었습니다.</p>
+                    )}
+                  </div>
+                </div>
+                <div data-color-mode="light">
+                  <MDEditor
+                    value={content}
+                    onChange={(value) => setContent(value || "")}
+                    height={240}
+                    style={{ width: "1200px" }}
+                    preview="edit"
+                  />
                 </div>
               </div>
-              <div data-color-mode="light">
-                <MDEditor
-                  value={content}
-                  onChange={(value) => setContent(value || "")}
-                  height={240}
-                  style={{ width: "1200px" }}
-                  preview="edit"
-                />
-              </div>
-            </div>
-            {/*체크리스트*/}
-            <div className="flex flex-col gap-2 mt-14">
-              <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
-                <img
-                  src="src/assets/images/alerticon.svg"
-                  alt="alert icon"
-                  className="w-4 h-4"
-                />
-                {questionData[0].title}
-              </h3>
-              {defaultCheckListItems.map((item, index) => (
-                <label
-                  key={index}
-                  className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    className="peer hidden"
-                    id={`check-${index}`}
+              {/*체크리스트*/}
+              <div className="flex flex-col gap-2 mt-14">
+                <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
+                  <img
+                    src="src/assets/images/alerticon.svg"
+                    alt="alert icon"
+                    className="w-4 h-4"
                   />
+                  {questionData[0].title}
+                </h3>
+                {defaultCheckListItems.map((item, index) => (
+                  <label
+                    key={index}
+                    className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      className="peer hidden"
+                      id={`check-${index}`}
+                    />
 
-                  <span
-                    className={`
+                    <span
+                      className={`
         inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
         peer-checked:bg-[url('src/assets/images/checkedbox.svg')]
         bg-[url('src/assets/images/noncheckedbox.svg')]
       `}
-                  ></span>
-                  <span>{item}</span>
-                </label>
-              ))}
+                    ></span>
+                    <span>{item}</span>
+                  </label>
+                ))}
+              </div>
             </div>
+            <div />
           </div>
         </div>
+        {isModalOpen && (
+          <div>
+            <PostSaveModal onClose={() => setIsModalOpen(false)} />
+          </div>
+        )}
       </div>
     </div>
   );

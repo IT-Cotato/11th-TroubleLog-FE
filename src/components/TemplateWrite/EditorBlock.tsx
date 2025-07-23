@@ -20,6 +20,7 @@ interface Props {
   onSave?: (index: number) => void;
   isActive: boolean;
   isLast: boolean;
+  onEnd?: () => void;
 }
 
 const EditorBlock = ({
@@ -31,6 +32,7 @@ const EditorBlock = ({
   onSave,
   isActive,
   isLast,
+  onEnd,
 }: Props) => {
   return (
     <div className="flex flex-row gap-[25px]">
@@ -49,7 +51,7 @@ const EditorBlock = ({
                   Save
                 </button>
                 <button
-                  onClick={onAddBlock}
+                  onClick={isLast ? onEnd : onAddBlock}
                   className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
                 >
                   {isLast ? "End" : "Next"}
@@ -67,7 +69,7 @@ const EditorBlock = ({
             value={block.content}
             onChange={(val) => onChange(index, { content: val || "" })}
             height={240}
-            preview="edit"
+            preview={isActive ? "edit" : "preview"}
             style={{ width: "1200px" }}
           />
         </div>
