@@ -3,6 +3,7 @@ import BaseModal from "./BaseModal";
 import SaveButton from "../Button/SaveButton";
 import CancelButton from "../Button/CancelButton";
 import exitIcon from "../../assets/images/exiticon.svg";
+import DropDownButton from "@/pages/TempWrite/DropDownButton";
 
 export default function PostSaveModal({ onClose }: { onClose: () => void }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -10,7 +11,8 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
   const [description, setDescription] = useState("");
   const [selectedVisibility, setSelectedVisibility] = useState("public");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [hoverIndex, setHoverIndex] = useState(0); // 마우스 올린 상태
+  const [hoverIndex, setHoverIndex] = useState(0);
+  const folderOptions = ["AI카츠", "Spring Boot"];
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -30,10 +32,10 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
     <BaseModal
       onClose={onClose}
       width="w-[800px]"
-      className="bg-white rounded-[12px]"
+      className="bg-white rounded-[12px] px-[36px]"
     >
       {/* 헤더 */}
-      <div className="flex w-[728px] justify-between gap-[500px] mt-[36px] mb-[24px]">
+      <div className="flex w-full justify-between gap-[500px] mt-[36px] mb-[24px]">
         <span className="text-head-24-bold">포스트 미리 보기</span>
         <button onClick={onClose} className="w-6 h-6">
           <img src={exitIcon} alt="닫기" className="w-full h-full" />
@@ -42,7 +44,7 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
       <div className="flex flex-col gap-[10px]">
         <div className="items-center gap-[40px]">
           {/* 썸네일 + 별점 */}
-          <div className="inline-flex items-center pt-[33px] pl-[36px] pr-[97px] gap-[108px]">
+          <div className="inline-flex items-center pt-[33px] pr-[65px] gap-[108px]">
             {/* 썸네일 */}
             <div className=" relative flex w-[351px] h-[154px] overflow-hidden justify-center items-center border-dashed border-[2px] border-gray1 bg-[#FCFCFC] rounded-[16px]">
               {thumbnail ? (
@@ -87,7 +89,7 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
             </div>
 
             {/* 별점 */}
-            <div className="flex flex-col gap-[28px]">
+            <div className="flex flex-col w-[208px] gap-[28px]">
               <span className="text-xl font-semibold text-black">
                 중요도를 표시해주세요!
               </span>
@@ -114,7 +116,7 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
           </div>
 
           {/*썸네일 아래 모든 컴포넌트(버튼 제외)*/}
-          <div className="flex-col items-center gap-[16px] w-[728px] pt-[40px] px-[36px]">
+          <div className="flex-col items-center gap-[16px] w-[728px] pt-[40px] ">
             {/* (에러타입+tag) + 소개 */}
             <div className="flex flex-row gap-[26px]">
               {/*에러 +태그 */}
@@ -123,14 +125,14 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
                   <span className="text-head-20-semibold text-black ">
                     에러타입
                   </span>
-                  <div className="grid w-[351px] h-[46px] px-[15px] py-[14px] border rounded border-purple-300 bg-white ">
+                  <div className="grid w-[345px] h-[46px] px-[15px] py-[14px] border rounded border-purple-300 bg-white ">
                     <span className="flex flex-1 self-stretch font-normal text-sm text-purple-700">
                       Build / Compile
                     </span>
                   </div>
                 </div>
                 {/* 태그 */}
-                <div className="flex w-[351px]  flex-col pt-[16px] ">
+                <div className="flex w-[351px] flex-col pt-[26px] ">
                   <span className="text-head-20-semibold text-black">
                     카테고리 태그
                   </span>
@@ -160,9 +162,9 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
                     onChange={(e) => setDescription(e.target.value)}
                     maxLength={200}
                     placeholder="포스트를 짧게 소개해주세요."
-                    className="w-[351px]  h-[119px] resize-none px-[12px] py-[8px] border border-gray2 rounded-[8px] text-body-14-regular"
+                    className="w-[351px]  h-[119px] resize-none px-[12px] py-[8px] border border-gray1 rounded-[8px] text-body-14-regular"
                   />
-                  <div className="text-right text-caption-12-regular text-gray4 mt-[4px]">
+                  <div className="text-right text-caption-12-regular text-gray2 mt-[4px]">
                     {description.length}/200
                   </div>
                 </div>
@@ -175,25 +177,64 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
                 <span className="text-head-20-semibold text-gray7">
                   공개 설정
                 </span>
-                <div className="flex gap-[12px]">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="public"
-                      checked={selectedVisibility === "public"}
-                      onChange={(e) => setSelectedVisibility(e.target.value)}
+                <div className="flex gap-3">
+                  {/* 전체 공개 */}
+                  <button
+                    type="button"
+                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition
+      ${
+        selectedVisibility === "public"
+          ? "border-purple-500  text-purple-500 bg-opacity-10"
+          : "border-gray2"
+      }`}
+                    onClick={() => setSelectedVisibility("public")}
+                  >
+                    <img
+                      src="/src/assets/images/publicicon.svg"
+                      className={`w-5 h-5 transition ${
+                        selectedVisibility === "public" ? "" : "grayscale"
+                      }`}
+                      alt="공개 아이콘"
                     />
-                    전체 공개
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="private"
-                      checked={selectedVisibility === "private"}
-                      onChange={(e) => setSelectedVisibility(e.target.value)}
+                    <span
+                      className={
+                        selectedVisibility === "public"
+                          ? "text-purple"
+                          : "text-gray2"
+                      }
+                    >
+                      전체 공개
+                    </span>
+                  </button>
+
+                  {/* 비공개 */}
+                  <button
+                    type="button"
+                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition
+      ${
+        selectedVisibility === "private"
+          ? "border-purple-500  text-purple-500 bg-opacity-10"
+          : "border-gray2"
+      }`}
+                    onClick={() => setSelectedVisibility("private")}
+                  >
+                    <img
+                      src="/src/assets/images/privateicon.svg"
+                      className={`w-5 h-5 transition ${
+                        selectedVisibility === "private" ? "" : "grayscale"
+                      }`}
+                      alt="비공개 아이콘"
                     />
-                    비공개
-                  </label>
+                    <span
+                      className={
+                        selectedVisibility === "private"
+                          ? "text-purple"
+                          : "text-gray2"
+                      }
+                    >
+                      비공개
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -201,18 +242,21 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
                 <span className="text-head-20-semibold text-black">
                   폴더 경로
                 </span>
-                <select className="mt-[8px] px-[12px] py-[8px] border border-gray2 rounded-[8px] w-full">
-                  <option>폴더를 선택해주세요.</option>
-                  <option>AI카츠</option>
-                  <option>Spring Boot</option>
-                </select>
+                <DropDownButton
+                  options={folderOptions}
+                  placeholder="폴더를 선택해주세요."
+                  width="w-full"
+                  onSelect={(selected) => {
+                    console.log("선택된 폴더:", selected);
+                  }}
+                />
               </div>
             </div>
           </div>
         </div>
 
         {/* 버튼 */}
-        <div className="flex justify-end px-[36px] gap-[12px] pt-[12px] pb-[32px]">
+        <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
           <CancelButton onClick={onClose} />
           <SaveButton onClick={() => alert("제출")} label="다음" />
         </div>

@@ -82,7 +82,19 @@ const TempWritePage = () => {
   };
 
   const defaultCheckListItems = questionData[0]?.checklistItems || [];
-
+  const errorOptions = [
+    "Build / Compile Error",
+    "Runtime Error",
+    "Dependency / Version Error",
+    "Network / API Error",
+    "Authentication / Authorization Error",
+    "Database Error",
+    "UI / Rendering Error",
+    "Configuration Error",
+    "Timeout / Error Handling",
+    "Third-Party Library Error",
+    "Others",
+  ];
   return (
     <div>
       <HeaderWoSearch />
@@ -98,7 +110,14 @@ const TempWritePage = () => {
               className="text-[36px] md:text-[48px] font-bold text-black outline-none w-full leading-tight"
             />
             <div className="flex gap-[36px] items-center">
-              <DropDownButton />
+              <DropDownButton
+                options={errorOptions}
+                placeholder="에러 종류를 선택하세요"
+                width="w-[340px]"
+                onSelect={(selectedError) => {
+                  console.log("선택된 에러 종류:", selectedError);
+                }}
+              />
               <CategoryTag value={selectedTags} onChange={setSelectedTags} />
             </div>
           </div>
