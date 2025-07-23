@@ -1,6 +1,6 @@
 interface CardTitleSectionProps {
   title: string;
-  visibility: "public" | "private";
+  visibility: "public" | "private" | undefined;
   createdAt: string;
   isMine: boolean;
   status: "inProgress" | "complete" | "created";
