@@ -5,11 +5,15 @@ import SaveButton from "../Button/SaveButton";
 interface ConfirmDeleteModalProps {
   onClose: () => void;
   onConfirm: () => void;
+  title: string;
+  description: string;
 }
 
 export default function ConfirmDeleteModal({
   onClose,
   onConfirm,
+  title,
+  description,
 }: ConfirmDeleteModalProps) {
   return (
     <BaseModal
@@ -17,11 +21,9 @@ export default function ConfirmDeleteModal({
       className="px-[64px] pt-[67px] pb-[66px] gap-[40px]"
     >
       <div className="flex flex-col items-center gap-[40px] self-stretch">
-        <span className="text-head-32-semibold">프로젝트 삭제</span>
-        <p className="text-center text-body-20-regular text-gray3">
-          정말 삭제하시겠습니까?
-          <br />
-          삭제 후 복구되지 않습니다.
+        <span className="text-head-32-semibold">{title}</span>
+        <p className="text-center text-body-20-regular text-gray3 whitespace-pre-line">
+          {description}
         </p>
       </div>
 
