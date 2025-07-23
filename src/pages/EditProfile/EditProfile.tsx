@@ -4,6 +4,7 @@ import SaveButton from "@/components/Button/SaveButton";
 import MyInput from "@/components/MyPage/MyInput";
 import WithdrawBox from "@/components/MyPage/WithdrawBox";
 import FollowButton from "@/components/Button/FollowButton";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface ProfileData {
   name: string;
@@ -13,6 +14,8 @@ interface ProfileData {
 }
 
 const EditProfile = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
   const [profile, setProfile] = useState<ProfileData>({
     name: "",
     sort: "",
@@ -40,10 +43,11 @@ const EditProfile = () => {
 
   const handleSave = () => {
     console.log("저장할 데이터:", profile);
+    navigate(`/user/mypage/${id}`);
   };
 
   const handleCancel = () => {
-    console.log("취소 클릭");
+    navigate(-1);
   };
 
   const handleWithdraw = () => {
@@ -51,58 +55,60 @@ const EditProfile = () => {
   };
 
   return (
-    <div className="flex flex-col gap-14 items-end">
-      <div className="flex items-start gap-[68px] pt-20">
-        {/* 왼쪽 */}
-        <div className="flex flex-col items-center gap-12 self-stretch">
-          <img
-            src="/icons/user.svg"
-            alt="user"
-            className="w-[288px] h-[288px]"
-          />
-          <div className="flex flex-col gap-[18px]">
-            <FollowButton label="이미지 업로드" colorClass="bg-primary" />
-            <FollowButton label="이미지 삭제" colorClass="bg-subColor1" />
+    <div className="flex justify-center min-h-screen">
+      <div className="flex flex-col items-end gap-14">
+        <div className="flex items-start gap-[68px] pt-20">
+          {/* 왼쪽 */}
+          <div className="flex flex-col items-center gap-12 self-stretch">
+            <img
+              src="/icons/user.svg"
+              alt="user"
+              className="w-[288px] h-[288px]"
+            />
+            <div className="flex flex-col gap-[18px]">
+              <FollowButton label="이미지 업로드" colorClass="bg-primary" />
+              <FollowButton label="이미지 삭제" colorClass="bg-subColor1" />
+            </div>
+          </div>
+
+          {/* 오른쪽 */}
+          <div className="flex flex-col items-start gap-12 w-[948px]">
+            <p className="text-head-48 pb-2">프로필 수정</p>
+            <MyInput
+              label="닉네임"
+              placeholder="닉네임을 입력해주세요"
+              value={profile.name}
+              onChange={handleChange("name")}
+            />
+            <MyInput
+              label="분야"
+              placeholder="관심분야를 입력해주세요"
+              value={profile.sort}
+              onChange={handleChange("sort")}
+            />
+            <MyInput
+              label="한 줄 소개"
+              placeholder="한 줄 소개를 입력해주세요"
+              value={profile.bio}
+              onChange={handleChange("bio")}
+            />
+            <MyInput
+              label="깃허브 주소"
+              placeholder="깃허브 주소를 입력해주세요"
+              value={profile.git}
+              onChange={handleChange("git")}
+            />
           </div>
         </div>
 
-        {/* 오른쪽 */}
-        <div className="flex flex-col items-start gap-14 w-[948px]">
-          <p className="text-head-48">프로필 수정</p>
-          <MyInput
-            label="닉네임"
-            placeholder="닉네임을 입력해주세요"
-            value={profile.name}
-            onChange={handleChange("name")}
-          />
-          <MyInput
-            label="분야"
-            placeholder="관심분야를 입력해주세요"
-            value={profile.sort}
-            onChange={handleChange("sort")}
-          />
-          <MyInput
-            label="한 줄 소개"
-            placeholder="한 줄 소개를 입력해주세요"
-            value={profile.bio}
-            onChange={handleChange("bio")}
-          />
-          <MyInput
-            label="깃허브 주소"
-            placeholder="깃허브 주소를 입력해주세요"
-            value={profile.git}
-            onChange={handleChange("git")}
-          />
+        {/* 버튼 영역 */}
+        <div className="flex gap-4">
+          <CancelButton onClick={handleCancel} />
+          <SaveButton onClick={handleSave} label="저장" />
         </div>
-      </div>
 
-      {/* 버튼 영역 */}
-      <div className="flex gap-4">
-        <CancelButton onClick={handleCancel} />
-        <SaveButton onClick={handleSave} label="저장" />
+        <WithdrawBox onWithdraw={handleWithdraw} />
       </div>
-
-      <WithdrawBox onWithdraw={handleWithdraw} />
     </div>
   );
 };
