@@ -11,6 +11,7 @@ import MyTroubleShooting from "@/components/MyPage/MyTroubleShooting";
 import MyFollowing from "@/components/MyPage/MyFollowing";
 import EditProfile from "@/pages/EditProfile/EditProfile";
 import HomePage from "@/pages/Home/HomePage";
+import StatisticsPage from "@/pages/MyPage/StatisticsPage";
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +54,10 @@ export const router = createBrowserRouter([
           {
             path: "follower",
             element: <MyFollowing />,
+          },
+          {
+            path: "statistics",
+            element: <StatisticsPage />,
           },
         ],
       },
