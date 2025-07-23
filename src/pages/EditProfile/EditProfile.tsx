@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import CancelButton from "@/components/Button/CancelButton";
 import SaveButton from "@/components/Button/SaveButton";
 import MyInput from "@/components/MyPage/MyInput";
 import WithdrawBox from "@/components/MyPage/WithdrawBox";
 import FollowButton from "@/components/Button/FollowButton";
 import { useNavigate, useParams } from "react-router-dom";
+import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 
 interface ProfileData {
   name: string;
@@ -22,6 +23,12 @@ const EditProfile = () => {
     bio: "",
     git: "",
   });
+
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const handleModalClose = useCallback(() => setShowWithdrawModal(false), []);
+  const handleWithdrawConfirm = useCallback(() => {
+    setShowWithdrawModal(false);
+  }, []);
 
   useEffect(() => {
     const mockData = {
@@ -48,10 +55,6 @@ const EditProfile = () => {
 
   const handleCancel = () => {
     navigate(-1);
-  };
-
-  const handleWithdraw = () => {
-    console.log("회원 탈퇴 클릭");
   };
 
   return (
@@ -107,8 +110,17 @@ const EditProfile = () => {
           <SaveButton onClick={handleSave} label="저장" />
         </div>
 
-        <WithdrawBox onWithdraw={handleWithdraw} />
+        <WithdrawBox onWithdraw={() => setShowWithdrawModal(true)} />
       </div>
+
+      {showWithdrawModal && (
+        <ConfirmDeleteModal
+          onClose={handleModalClose}
+          onConfirm={handleWithdrawConfirm}
+          title="회원 탈퇴"
+          description={`정말 탈퇴하시겠습니까?\n탈퇴하시면 작성하신 내용들도 사라집니다!`}
+        />
+      )}
     </div>
   );
 };
