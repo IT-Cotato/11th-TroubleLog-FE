@@ -6,6 +6,7 @@ import WithdrawBox from "@/components/MyPage/WithdrawBox";
 import FollowButton from "@/components/Button/FollowButton";
 import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
+import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
 
 interface ProfileData {
   name: string;
@@ -25,10 +26,23 @@ const EditProfile = () => {
   });
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const handleModalClose = useCallback(() => setShowWithdrawModal(false), []);
-  const handleWithdrawConfirm = useCallback(() => {
+  const [showWithdrawCompleteModal, setShowWithdrawCompleteModal] =
+    useState(false);
+
+  const handleWithdrawClose = useCallback(() => {
     setShowWithdrawModal(false);
   }, []);
+
+  const handleWithdrawConfirm = useCallback(() => {
+    setShowWithdrawModal(false);
+    setShowWithdrawCompleteModal(true);
+  }, []);
+
+  // 회원 탈퇴 추가 예정
+  const handleWithdrawComplete = useCallback(() => {
+    setShowWithdrawCompleteModal(false);
+    navigate("/");
+  }, [navigate]);
 
   useEffect(() => {
     const mockData = {
@@ -115,11 +129,15 @@ const EditProfile = () => {
 
       {showWithdrawModal && (
         <ConfirmDeleteModal
-          onClose={handleModalClose}
+          onClose={handleWithdrawClose}
           onConfirm={handleWithdrawConfirm}
           title="회원 탈퇴"
           description={`정말 탈퇴하시겠습니까?\n탈퇴하시면 작성하신 내용들도 사라집니다!`}
         />
+      )}
+
+      {showWithdrawCompleteModal && (
+        <WithdrawCompleteModal onClose={handleWithdrawComplete} />
       )}
     </div>
   );
