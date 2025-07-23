@@ -1,2 +1,2 @@
 export type StatusType = "inProgress" | "complete" | "created";
-export type VisibilityType = "public" | "private";
+export type VisibilityType = "public" | "private" | undefined;

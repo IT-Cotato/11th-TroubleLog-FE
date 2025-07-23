@@ -12,6 +12,7 @@ import MyFollowing from "@/components/MyPage/MyFollowing";
 import EditProfile from "@/pages/EditProfile/EditProfile";
 import HomePage from "@/pages/Home/HomePage";
 import StatisticsPage from "@/pages/MyPage/StatisticsPage";
+import LikedPostsPage from "@/pages/MyPage/LikedPostsPage";
 
 export const router = createBrowserRouter([
   {
@@ -58,6 +59,10 @@ export const router = createBrowserRouter([
           {
             path: "statistics",
             element: <StatisticsPage />,
+          },
+          {
+            path: "likes",
+            element: <LikedPostsPage />,
           },
         ],
       },

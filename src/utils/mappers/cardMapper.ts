@@ -16,4 +16,6 @@ export const mapToTroubleShootingCard = (
   visibility: card.visibility,
   summaryType: card.summaryType,
   status: card.status,
+  likeCount: card.likeCount,
+  commentCount: card.commentCount,
 });

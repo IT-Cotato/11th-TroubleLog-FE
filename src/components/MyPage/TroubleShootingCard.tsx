@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import type { StatusType, VisibilityType } from "@/types/project";
-import TagList from "../Card/TagList";
 import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import useClickOutside from "@/hooks/useClickOutside";
+import MyPageTagList from "./MyPageTagList";
 
 export interface TroubleShootingCardProps {
   id: string;
@@ -17,6 +17,8 @@ export interface TroubleShootingCardProps {
   visibility?: VisibilityType;
   summaryType?: string;
   status: StatusType;
+  likeCount?: number;
+  commentCount?: number;
 }
 
 const TroubleShootingCard = ({
@@ -30,6 +32,8 @@ const TroubleShootingCard = ({
   visibility,
   summaryType,
   status,
+  likeCount,
+  commentCount,
 }: TroubleShootingCardProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const handleCloseMenu = useCallback(() => setShowMenu(false), []);
@@ -94,7 +98,7 @@ const TroubleShootingCard = ({
             </div>
             {/* 태그 + 중요도 + 날짜 */}
             <div className="flex flex-wrap items-center gap-[12px]">
-              <TagList tags={tags} />
+              <MyPageTagList tags={tags} />
               <div className="flex items-center gap-[12px]">
                 {importance !== undefined && (
                   <>
@@ -109,6 +113,36 @@ const TroubleShootingCard = ({
                       </span>
                     </div>
                   </>
+                )}
+
+                {/* 좋아요 + 댓글 수 */}
+                {(likeCount !== undefined || commentCount !== undefined) && (
+                  <div className="flex items-center gap-[12px]">
+                    {likeCount !== undefined && (
+                      <div className="flex items-center gap-[4px]">
+                        <img
+                          src="/icons/heart.svg"
+                          alt="likes"
+                          className="w-[20px] h-[20px]"
+                        />
+                        <span className="text-gray3 text-body-16-regular">
+                          {likeCount}
+                        </span>
+                      </div>
+                    )}
+                    {commentCount !== undefined && (
+                      <div className="flex items-center gap-[4px]">
+                        <img
+                          src="/icons/comment.svg"
+                          alt="comments"
+                          className="w-[20px] h-[20px]"
+                        />
+                        <span className="text-gray3 text-body-16-regular">
+                          {commentCount}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 )}
                 <div className="text-gray3 text-body-16-regular">·</div>
                 <div className="text-gray3 text-body-16-regular">
