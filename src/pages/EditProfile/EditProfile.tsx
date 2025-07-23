@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import CancelButton from "@/components/Button/CancelButton";
 import SaveButton from "@/components/Button/SaveButton";
 import MyInput from "@/components/MyPage/MyInput";
@@ -25,6 +25,34 @@ const EditProfile = () => {
     git: "",
   });
 
+  //프로필 사진 변경
+  const [profileImage, setProfileImage] = useState<string>("/icons/user.svg");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleImageUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setProfileImage(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageDelete = () => {
+    setProfileImage("/icons/user.svg");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // input 초기화
+    }
+  };
+
+  // 회원 탈퇴
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showWithdrawCompleteModal, setShowWithdrawCompleteModal] =
     useState(false);
@@ -38,7 +66,6 @@ const EditProfile = () => {
     setShowWithdrawCompleteModal(true);
   }, []);
 
-  // 회원 탈퇴 추가 예정
   const handleWithdrawComplete = useCallback(() => {
     setShowWithdrawCompleteModal(false);
     navigate("/");
@@ -54,6 +81,7 @@ const EditProfile = () => {
     setProfile(mockData);
   }, []);
 
+  // 프로필 수정 완료
   const handleChange =
     (field: keyof ProfileData) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setProfile((prev) => ({
@@ -78,13 +106,30 @@ const EditProfile = () => {
           {/* 왼쪽 */}
           <div className="flex flex-col items-center gap-12 self-stretch">
             <img
-              src="/icons/user.svg"
+              src={profileImage}
               alt="user"
-              className="w-[288px] h-[288px]"
+              className="w-[288px] h-[288px] object-cover rounded-full"
             />
+
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={handleImageChange}
+            />
+
             <div className="flex flex-col gap-[18px]">
-              <FollowButton label="이미지 업로드" colorClass="bg-primary" />
-              <FollowButton label="이미지 삭제" colorClass="bg-subColor1" />
+              <FollowButton
+                label="이미지 업로드"
+                colorClass="bg-primary"
+                onClick={handleImageUpload}
+              />
+              <FollowButton
+                label="이미지 삭제"
+                colorClass="bg-subColor1"
+                onClick={handleImageDelete}
+              />
             </div>
           </div>
 
