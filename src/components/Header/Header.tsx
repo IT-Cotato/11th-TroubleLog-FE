@@ -1,16 +1,65 @@
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FaUserGroup } from "react-icons/fa6";
 import { BsFillBellFill } from "react-icons/bs";
 import { FaUserCircle } from "react-icons/fa";
 import { MdSearch } from "react-icons/md";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useSearchStore } from "@/store/useSearchStore";
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [search, setSearch] = useState("");
+  const { placeholder, setPlaceholder } = useSearchStore();
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (path.startsWith("/user/profile/")) {
+      const username = path.split("/user/profile/")[1]?.split("/")[0];
+      setPlaceholder(
+        `키워드나 태그 등의 검색어를 통해 ${username}님의 트러블슈팅을 검색해보세요!`
+      );
+    } else if (
+      path.startsWith("/user/mypage") ||
+      path.startsWith("/user/home")
+    ) {
+      setPlaceholder(
+        "`키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
+      );
+    } else {
+      setPlaceholder(
+        "키워드나 태그 등의 검색어를 통해 다른 사람들의 트러블슈팅을 검색해보세요!"
+      );
+    }
+  }, [location.pathname, setPlaceholder]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
+  };
+
+  const handleSubmitSearch = () => {
+    if (!search.trim()) return;
+
+    const currentPath = location.pathname;
+    let scope = "community";
+    let username = "";
+
+    if (currentPath.startsWith("/user/profile/")) {
+      scope = "user";
+      username = currentPath.split("/user/profile/")[1]?.split("/")[0];
+    } else if (currentPath === "/user/mypage") {
+      scope = "mypage";
+    } else if (currentPath.includes("/user/home")) {
+      scope = "my";
+    }
+
+    const searchParams = new URLSearchParams();
+    searchParams.set("query", search);
+    searchParams.set("scope", scope);
+    if (username) searchParams.set("username", username);
+
+    navigate(`/user/search?${searchParams.toString()}`);
   };
 
   return (
@@ -19,17 +68,18 @@ const Header = () => {
         src="/icons/logo.svg"
         alt="logo"
         className="w-[70px] h-[51px]"
-        onClick={() => navigate("home")}
+        onClick={() => navigate("/user/home")}
       />
       <div className="flex gap-[72px] items-center">
         <div className="flex w-[1200px] h-12 p-2 justify-between items-center gap-1 rounded-md border border-gray1">
           <input
             className="text-body-14-regular w-full"
-            placeholder="키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
+            placeholder={placeholder}
             value={search}
             onChange={handleSearch}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmitSearch()}
           />
-          <MdSearch size={24} />
+          <MdSearch size={24} onClick={handleSubmitSearch} />
         </div>
         <div className="flex gap-10 items-center">
           <FaUserGroup size={40} color="#525252" />
