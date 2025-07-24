@@ -1,5 +1,6 @@
 interface CancelButtonProps {
   onClick: () => void;
+  label?: string;
 }
 
 const CancelButton = ({ onClick }: CancelButtonProps) => {

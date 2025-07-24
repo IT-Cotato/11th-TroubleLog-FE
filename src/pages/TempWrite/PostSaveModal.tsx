@@ -1,11 +1,16 @@
 import { useState, useRef } from "react";
-import BaseModal from "./BaseModal";
-import SaveButton from "../Button/SaveButton";
-import CancelButton from "../Button/CancelButton";
+import BaseModal from "../../components/Modal/BaseModal";
+import SaveButton from "../../components/Button/SaveButton";
+import CancelButton from "../../components/Button/CancelButton";
 import exitIcon from "../../assets/images/exiticon.svg";
-import DropDownButton from "@/pages/TempWrite/DropDownButton";
-
-export default function PostSaveModal({ onClose }: { onClose: () => void }) {
+import DropDownButton from "@/components/Button/DropDownButton";
+export default function PostSaveModal({
+  onClose,
+  onNext,
+}: {
+  onClose: () => void;
+  onNext: () => void;
+}) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [importance, setImportance] = useState(0);
   const [description, setDescription] = useState("");
@@ -258,7 +263,7 @@ export default function PostSaveModal({ onClose }: { onClose: () => void }) {
         {/* 버튼 */}
         <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
           <CancelButton onClick={onClose} />
-          <SaveButton onClick={() => alert("제출")} label="다음" />
+          <SaveButton onClick={onNext} label="다음" />
         </div>
       </div>
     </BaseModal>

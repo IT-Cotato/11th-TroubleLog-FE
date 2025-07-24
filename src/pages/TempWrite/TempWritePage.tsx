@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
-import DropDownButton from "./DropDownButton";
+import DropDownButton from "../../components/Button/DropDownButton";
 import CategoryTag from "./CategoryTag";
 import EditorBlock from "../../components/TemplateWrite/EditorBlock";
 import type { BlockData } from "../../components/TemplateWrite/EditorBlock";
 import { questionData } from "./questionTemplate";
-import PostSaveModal from "@/components/Modal/PostSaveModal";
+import PostSaveModal from "@/pages/TempWrite/PostSaveModal";
+import PostLoadingModal from "./PostLoadingModal";
+import TemplateSelectModal from "./TemplateSelectModal";
 
 const TempWritePage = () => {
   const [title, setTitle] = useState("");
@@ -15,10 +17,13 @@ const TempWritePage = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
+  const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
+    useState(false);
+  const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
 
   const handleEnd = () => {
-    setIsModalOpen(true); // 모달 열기
+    setIsPostSaveModalOpen(true); // 모달 열기
   };
 
   const handleAddBlock = () => {
@@ -79,6 +84,23 @@ const TempWritePage = () => {
         return newBlocks;
       });
     }, 3000);
+  };
+
+  // PostSaveModal에서 다음
+  const handleNextInPostSaveModal = () => {
+    setIsPostSaveModalOpen(false);
+    setIsTemplateSelectModalOpen(true);
+  };
+
+  // TemplateSelectModal에서 요약
+  const handleConfirmTemplate = () => {
+    setIsTemplateSelectModalOpen(false);
+    setIsLoadingModalOpen(true);
+
+    setTimeout(() => {
+      setIsLoadingModalOpen(false);
+      // 모든 모달 닫기
+    }, 300000);
   };
 
   const defaultCheckListItems = questionData[0]?.checklistItems || [];
@@ -220,10 +242,22 @@ const TempWritePage = () => {
             <div />
           </div>
         </div>
-        {isModalOpen && (
-          <div>
-            <PostSaveModal onClose={() => setIsModalOpen(false)} />
-          </div>
+        {isPostSaveModalOpen && (
+          <PostSaveModal
+            onClose={() => setIsPostSaveModalOpen(false)}
+            onNext={handleNextInPostSaveModal}
+          />
+        )}
+
+        {isTemplateSelectModalOpen && (
+          <TemplateSelectModal
+            onConfirm={handleConfirmTemplate}
+            onClose={() => setIsTemplateSelectModalOpen(false)}
+          />
+        )}
+
+        {isLoadingModalOpen && (
+          <PostLoadingModal onClose={() => setIsLoadingModalOpen(false)} />
         )}
       </div>
     </div>
