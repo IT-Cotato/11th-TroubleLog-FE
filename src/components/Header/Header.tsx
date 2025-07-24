@@ -56,7 +56,7 @@ const Header = () => {
       username = currentPath.split("/user/profile/")[1]?.split("/")[0];
     } else if (currentPath === "/user/mypage") {
       scope = "mypage";
-    } else if (currentPath.includes("/user/home")) {
+    } else if (currentPath.startsWith("/user/home")) {
       scope = "my";
     }
 
@@ -85,7 +85,11 @@ const Header = () => {
             onChange={handleSearch}
             onKeyDown={(e) => e.key === "Enter" && handleSubmitSearch()}
           />
-          <MdSearch size={24} onClick={handleSubmitSearch} />
+          <MdSearch
+            size={24}
+            onClick={handleSubmitSearch}
+            className="cursor-pointer"
+          />
         </div>
         <div className="flex gap-10 items-center relative" ref={dropdownRef}>
           <FaUserGroup size={40} color="#525252" />
