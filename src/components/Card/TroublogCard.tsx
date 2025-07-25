@@ -8,7 +8,7 @@ export interface TroublogCardProps {
   id: number;
   isMine: boolean;
   status: StatusType;
-  visibility: VisibilityType;
+  visibility?: VisibilityType;
   errorCategory: string;
   title: string;
   createdAt: string;

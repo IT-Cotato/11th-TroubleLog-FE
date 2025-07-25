@@ -1,7 +1,7 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import FollowButton from "../Button/FollowButton";
-import type { StatusType } from "@/types/project";
 import { useMyPageStore } from "@/store/useMyPageStore";
+import type { StatusType } from "@/types/project";
 
 interface MyPageSideBarProps {
   isMyPage: boolean;
@@ -22,16 +22,28 @@ const mockProfile = {
 
 const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
   const navigate = useNavigate();
-  const { selectedStatus, setSelectedStatus } = useMyPageStore();
+  const location = useLocation();
+  const { id } = useParams<{ id: string }>();
+  const { selectedStatus, setSelectedStatus, resetSelectedStatus } =
+    useMyPageStore();
 
-  const handleNavigate = (path: string) => () => {
-    navigate(path);
-  };
+  const basePath = `/user/mypage/${id}`;
+  const isOnMainPage = location.pathname === basePath;
 
-  const getButtonClass = (status: StatusType | "all") =>
+  const handleNavigate =
+    (subPath: string = "", clearStatus = false) =>
+    () => {
+      if (clearStatus) resetSelectedStatus();
+      navigate(`${basePath}${subPath ? `/${subPath}` : ""}`);
+    };
+
+  const getFilterButtonClass = (status: StatusType | "all") =>
     `flex items-center gap-[8px] self-stretch ${
       selectedStatus === status ? "text-black text-body-16-semibold" : ""
     }`;
+
+  const getMenuButtonClass = (match: boolean) =>
+    `${match ? "text-black" : "text-gray3"} text-head-20-semibold`;
 
   return (
     <div className="flex w-[296px] flex-col items-start gap-[140px]">
@@ -58,9 +70,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
               <FollowButton
                 label="프로필 수정"
                 colorClass="bg-primary"
-                onClick={() => {
-                  navigate("editprofile");
-                }}
+                onClick={handleNavigate("editprofile")}
               />
             ) : (
               <FollowButton label="팔로우" colorClass="bg-primary" />
@@ -72,43 +82,76 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
       {/* 하단 메뉴 */}
       <div className="flex flex-col items-start gap-9 self-stretch text-gray3 text-head-20-semibold">
         <div className="w-full">
-          <div className="border-b border-gray3 w-full pb-2">
+          {/* 헤더 텍스트 */}
+          <div
+            className={`pb-2 border-b ${
+              isOnMainPage && selectedStatus
+                ? "text-black border-black"
+                : "border-gray3"
+            } `}
+          >
             내 트러블 슈팅
           </div>
 
+          {/* 트러블슈팅 필터 버튼들 */}
           <div className="flex flex-col items-start gap-[13px] pt-2 text-body-16-regular text-gray3">
             <button
-              onClick={() => setSelectedStatus("all")}
-              className={getButtonClass("all")}
+              onClick={() => {
+                setSelectedStatus("all");
+                handleNavigate()();
+              }}
+              className={getFilterButtonClass("all")}
             >
               전체보기 ({counts.all})
             </button>
             <button
-              onClick={() => setSelectedStatus("inProgress")}
-              className={getButtonClass("inProgress")}
+              onClick={() => {
+                setSelectedStatus("inProgress");
+                handleNavigate()();
+              }}
+              className={getFilterButtonClass("inProgress")}
             >
               <img src="/icons/circle_y.svg" className="w-3.5 h-3.5" />
               <span>작성 중 ({counts.inProgress})</span>
             </button>
             <button
-              onClick={() => setSelectedStatus("complete")}
-              className={getButtonClass("complete")}
+              onClick={() => {
+                setSelectedStatus("complete");
+                handleNavigate()();
+              }}
+              className={getFilterButtonClass("complete")}
             >
               <img src="/icons/circle_g.svg" className="w-3.5 h-3.5" />
-              작성 완료 ({counts.complete})
+              <span>작성 완료 ({counts.complete})</span>
             </button>
             <button
-              onClick={() => setSelectedStatus("created")}
-              className={getButtonClass("created")}
+              onClick={() => {
+                setSelectedStatus("created");
+                handleNavigate()();
+              }}
+              className={getFilterButtonClass("created")}
             >
               <img src="/icons/circle_b.svg" className="w-3.5 h-3.5" />
-              작성+요약 완료 ({counts.created})
+              <span>작성+요약 완료 ({counts.created})</span>
             </button>
           </div>
         </div>
 
-        <button>통계 시각화</button>
-        <button>좋아요한 포스트</button>
+        {/* 일반 메뉴 버튼들 */}
+        <button
+          onClick={handleNavigate("statistics", true)}
+          className={getMenuButtonClass(
+            location.pathname.includes("statistics")
+          )}
+        >
+          통계 시각화
+        </button>
+        <button
+          onClick={handleNavigate("likes", true)}
+          className={getMenuButtonClass(location.pathname.includes("likes"))}
+        >
+          좋아요한 포스트
+        </button>
       </div>
     </div>
   );

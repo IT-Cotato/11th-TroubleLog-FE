@@ -111,6 +111,8 @@ export default function ProjectFolderCard({
         <ConfirmDeleteModal
           onClose={handleDeleteModalClose}
           onConfirm={handleDeleteConfirm}
+          title="프로젝트 삭제"
+          description={`정말 삭제하시겠습니까?\n삭제 후 복구되지 않습니다.`}
         />
       )}
     </>

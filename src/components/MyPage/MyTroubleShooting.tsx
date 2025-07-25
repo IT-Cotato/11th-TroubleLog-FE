@@ -29,7 +29,7 @@ const MyTroubleShooting = () => {
   });
 
   return (
-    <div className="flex flex-col items-end gap-[40px] w-[948px]">
+    <div className="flex flex-col items-end gap-[40px] w-[948px] pb-[78px]">
       {/* 정렬 기준 선택 */}
       <SortButtonGroup selected={selectedSort} onSelect={setSelectedSort} />
 
