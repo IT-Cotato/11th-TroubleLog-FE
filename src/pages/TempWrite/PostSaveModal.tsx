@@ -17,6 +17,9 @@ export default function PostSaveModal({
   const [selectedVisibility, setSelectedVisibility] = useState("public");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hoverIndex, setHoverIndex] = useState(0);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
+
   const folderOptions = ["AI카츠", "Spring Boot"];
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,6 +34,14 @@ export default function PostSaveModal({
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleNextClick = () => {
+    setHasTriedSubmit(true);
+
+    if (!selectedFolder || importance === 0) return;
+
+    onNext();
   };
 
   return (
@@ -95,7 +106,13 @@ export default function PostSaveModal({
 
             {/* 별점 */}
             <div className="flex flex-col w-[208px] gap-[28px]">
-              <span className="text-xl font-semibold text-black">
+              <span
+                className={`text-xl font-semibold transition ${
+                  hasTriedSubmit && importance === 0
+                    ? "text-purple-500"
+                    : "text-black"
+                }`}
+              >
                 중요도를 표시해주세요!
               </span>
               <div className="flex gap-[4px]">
@@ -247,14 +264,30 @@ export default function PostSaveModal({
                 <span className="text-head-20-semibold text-black">
                   폴더 경로
                 </span>
-                <DropDownButton
-                  options={folderOptions}
-                  placeholder="폴더를 선택해주세요."
-                  width="w-full"
-                  onSelect={(selected) => {
-                    console.log("선택된 폴더:", selected);
-                  }}
-                />
+
+                <div
+                  className={`transition-all ${
+                    !selectedFolder && hasTriedSubmit
+                      ? "border border-purple-500 rounded-[8px] p-[4px]"
+                      : ""
+                  }`}
+                >
+                  <DropDownButton
+                    options={folderOptions}
+                    placeholder="폴더를 선택해주세요."
+                    width="w-full"
+                    onSelect={(selected) => {
+                      setSelectedFolder(selected);
+                    }}
+                  />
+                </div>
+
+                {/* 경고 메시지 */}
+                {!selectedFolder && hasTriedSubmit && (
+                  <span className="text-sm text-purple-500 pl-[4px] pt-[2px]">
+                    폴더를 선택해주세요.
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -263,7 +296,7 @@ export default function PostSaveModal({
         {/* 버튼 */}
         <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
           <CancelButton onClick={onClose} />
-          <SaveButton onClick={onNext} label="다음" />
+          <SaveButton onClick={handleNextClick} label="다음" />
         </div>
       </div>
     </BaseModal>

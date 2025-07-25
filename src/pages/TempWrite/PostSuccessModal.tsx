@@ -19,12 +19,12 @@ export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex flex-col w-[381px] gap-[40px] items-center">
           <img
-            src="/src/assets/images/searchicon.svg"
-            className="w-[86px] h-[86px]"
+            src="/src/assets/images/postsuccess.svg"
+            className="w-[88px] h-[86px]"
           />
           <span className="text-head-32-bold ">
-            {/* {$제목}을 {양식}으로 요약중입니다! */}제목을 양식으로
-            요약중입니다???
+            {/* {$제목}을 {양식}으로 요약중입니다! */} 양식 요약이
+            완료되었습니다!
           </span>
           <button className="flex w-[184px] h-[46px] px-[25px] py-[14px] justify-center items-center  rounded-[50px] bg-purple-500 border-purple-500 text-white text-semibold">
             완성 페이지로 이동

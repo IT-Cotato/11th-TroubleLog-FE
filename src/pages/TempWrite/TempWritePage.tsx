@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import DropDownButton from "../../components/Button/DropDownButton";
@@ -21,9 +21,20 @@ const TempWritePage = () => {
   const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
     useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
+  const [selectedErrorType, setSelectedErrorType] = useState<string | null>(
+    null
+  );
+  const [showAlert, setShowAlert] = useState(false);
 
   const handleEnd = () => {
-    setIsPostSaveModalOpen(true); // 모달 열기
+    if (!title.trim() || !selectedErrorType) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000); // 3초 후 사라짐
+      return;
+    }
+
+    setShowAlert(false);
+    setIsPostSaveModalOpen(true);
   };
 
   const handleAddBlock = () => {
@@ -132,6 +143,12 @@ const TempWritePage = () => {
       <HeaderWoSearch />
       <div className="flex justify-center px-[225px] pt-[68px]  items-start">
         <div className="flex-1 flex w-[1500px] flex-col gap-[36px]">
+          {showAlert && (
+            <div className="fixed top-[100px] left-1/2 transform -translate-x-1/2 z-50 bg-purple-100-100 border border-purple-400 text-purple-700 px-4 py-2 rounded shadow">
+              제목과 에러 종류를 모두 입력해주세요.
+            </div>
+          )}
+
           {/* 제목 + 태그 */}
           <div className="flex flex-col items-start gap-[40px]">
             <input
@@ -148,8 +165,10 @@ const TempWritePage = () => {
                 width="w-[340px]"
                 onSelect={(selectedError) => {
                   console.log("선택된 에러 종류:", selectedError);
+                  setSelectedErrorType(selectedError);
                 }}
               />
+
               <CategoryTag value={selectedTags} onChange={setSelectedTags} />
             </div>
           </div>
@@ -173,6 +192,8 @@ const TempWritePage = () => {
                     onAddBlock={handleAddBlock}
                     onSave={handleSave}
                     onEnd={handleEnd}
+                    title={title}
+                    selectedErrorType={selectedErrorType}
                   />
                 );
               })}
@@ -225,7 +246,7 @@ const TempWritePage = () => {
               <div className="flex flex-col gap-2 mt-14">
                 <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
                   <img
-                    src="src/assets/images/alerticon.svg"
+                    src="/src/assets/images/alerticon.svg"
                     alt="alert icon"
                     className="w-4 h-4"
                   />
@@ -272,7 +293,10 @@ const TempWritePage = () => {
         )}
 
         {isLoadingModalOpen && (
-          <PostLoadingModal onClose={() => setIsLoadingModalOpen(false)} />
+          <PostLoadingModal
+            onClose={() => setIsLoadingModalOpen(false)}
+            progress={100}
+          />
         )}
       </div>
     </div>

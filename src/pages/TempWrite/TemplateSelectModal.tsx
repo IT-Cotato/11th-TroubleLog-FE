@@ -13,6 +13,16 @@ export default function TemplateSelectModal({
   onConfirm: () => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
+
+  const handleConfirm = () => {
+    setHasTriedSubmit(true);
+
+    if (selectedIndex === null) return;
+
+    onConfirm();
+  };
+
   return (
     <BaseModal
       onClose={onClose}
@@ -20,6 +30,12 @@ export default function TemplateSelectModal({
       className="bg-white rounded-[12px] px-[36px]"
     >
       {/* 헤더 */}
+      {hasTriedSubmit && selectedIndex === null && (
+        <div className="fixed top-[100px] left-1/2 transform -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded shadow">
+          템플릿을 선택해주세요.
+        </div>
+      )}
+
       <div className="flex w-full mt-[36px] mb-[24px] pl-[500px]">
         <div className="flex w-[763px] justify-between items-center">
           <span className="text-head-32-bold ">어떤 방식으로 요약할까요?</span>
@@ -65,7 +81,7 @@ export default function TemplateSelectModal({
         {/* 버튼 */}
         <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
           <CancelButton onClick={onClose} label="다음에" />
-          <SaveButton onClick={onConfirm} label="요약" />
+          <SaveButton onClick={handleConfirm} label="요약" />
         </div>
       </div>
     </BaseModal>

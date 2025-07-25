@@ -1,4 +1,3 @@
-import React from "react";
 import MDEditor from "@uiw/react-md-editor";
 
 export interface BlockData {
@@ -12,6 +11,8 @@ export interface BlockData {
 }
 
 interface Props {
+  title: string;
+  selectedErrorType: string | null;
   block: BlockData;
   index: number;
   onChange: (index: number, updated: Partial<BlockData>) => void;
@@ -33,6 +34,8 @@ const EditorBlock = ({
   isActive,
   isLast,
   onEnd,
+  title,
+  selectedErrorType,
 }: Props) => {
   return (
     <div className="flex flex-row gap-[25px] pb-[25px]">
@@ -61,7 +64,13 @@ const EditorBlock = ({
                     if (isLast) onEnd?.();
                     else onAddBlock?.();
                   }}
-                  className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
+                  className={`px-4 py-2 rounded-lg text-sm ${
+                    isLast
+                      ? title.trim() && selectedErrorType
+                        ? "bg-purple-500 text-white hover:bg-purple-600"
+                        : "bg-gray-300 text-white cursor-not-allowed"
+                      : "bg-purple-500 text-white hover:bg-purple-600"
+                  }`}
                 >
                   {isLast ? "End" : "Next"}
                 </button>
@@ -87,7 +96,7 @@ const EditorBlock = ({
         {block.checklistItems.length > 0 && (
           <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
             <img
-              src="src/assets/images/alerticon.svg"
+              src="/src/assets/images/alerticon.svg"
               alt="alert icon"
               className="w-5 h-5"
             />
