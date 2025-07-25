@@ -117,8 +117,8 @@ const EditorBlock = ({
             <span
               className={`
         inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-        peer-checked:bg-[url('src/assets/images/checkedbox.svg')]
-        bg-[url('src/assets/images/noncheckedbox.svg')]
+        peer-checked:bg-[url('/src/assets/images/checkedbox.svg')]
+        bg-[url('/src/assets/images/noncheckedbox.svg')]
       `}
             ></span>
             <span>{item}</span>

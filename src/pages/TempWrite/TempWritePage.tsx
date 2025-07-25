@@ -14,7 +14,6 @@ const TempWritePage = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [isSaved, setIsSaved] = useState(false);
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
@@ -25,6 +24,7 @@ const TempWritePage = () => {
     null
   );
   const [showAlert, setShowAlert] = useState(false);
+  const [isFirstBlockSaved, setIsFirstBlockSaved] = useState(false);
 
   const handleEnd = () => {
     if (!title.trim() || !selectedErrorType) {
@@ -206,21 +206,29 @@ const TempWritePage = () => {
                     {questionData[0].question}
                   </span>
                   <div className="flex flex-col items-end gap-2 min-w-[160px]">
-                    {isSaved && (
-                      <div className="inline-flex gap-[5px] px-[16px] justify-center bg-white shadow-2xs  items-center rounded-lg ">
+                    {isFirstBlockSaved && (
+                      <div className="inline-flex gap-[5px] px-[16px] justify-center bg-white shadow-2xs items-center rounded-lg ">
                         <img src="/src/assets/images/checkicon.svg" />
                         <p className="text-14-black"> 저장되었습니다.</p>
                       </div>
                     )}
+
                     <div className="flex flex-col items-end gap-2 min-w-[160px]">
                       {activeIndex === -1 && (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => setIsSaved(true)}
+                            onClick={() => {
+                              setIsFirstBlockSaved(true);
+                              setTimeout(
+                                () => setIsFirstBlockSaved(false),
+                                3000
+                              );
+                            }}
                             className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
                           >
                             Save
                           </button>
+
                           <button
                             onClick={handleAddBlock}
                             className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
@@ -266,8 +274,8 @@ const TempWritePage = () => {
                     <span
                       className={`
         inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-        peer-checked:bg-[url('src/assets/images/checkedbox.svg')]
-        bg-[url('src/assets/images/noncheckedbox.svg')]
+        peer-checked:bg-[url('/src/assets/images/checkedbox.svg')]
+        bg-[url('/src/assets/images/noncheckedbox.svg')]
       `}
                     ></span>
                     <span>{item}</span>
