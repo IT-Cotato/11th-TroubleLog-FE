@@ -35,7 +35,7 @@ const EditorBlock = ({
   onEnd,
 }: Props) => {
   return (
-    <div className="flex flex-row gap-[25px]">
+    <div className="flex flex-row gap-[25px] pb-[25px]">
       <div className="flex flex-col gap-[16px] w-[1200px]">
         <div className="flex justify-between items-start">
           <span className="font-bold text-black text-[24px]">
@@ -43,6 +43,12 @@ const EditorBlock = ({
           </span>
           {isActive && (
             <div className="flex flex-col items-end gap-2 min-w-[160px]">
+              {block.isSaved && (
+                <div className="inline-flex gap-[5px] px-[16px] justify-center bg-white shadow-2xs  items-center rounded-lg ">
+                  <img src="/src/assets/images/checkicon.svg" />
+                  <p className="text-14-black"> 저장되었습니다.</p>
+                </div>
+              )}
               <div className="flex gap-2">
                 <button
                   onClick={() => onSave?.(index)}
@@ -51,15 +57,15 @@ const EditorBlock = ({
                   Save
                 </button>
                 <button
-                  onClick={isLast ? onEnd : onAddBlock}
+                  onClick={() => {
+                    if (isLast) onEnd?.();
+                    else onAddBlock?.();
+                  }}
                   className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
                 >
                   {isLast ? "End" : "Next"}
                 </button>
               </div>
-              {block.isSaved && (
-                <p className="text-sm text-gray-600">✔ 저장되었습니다.</p>
-              )}
             </div>
           )}
         </div>
@@ -71,6 +77,7 @@ const EditorBlock = ({
             height={240}
             preview={isActive ? "edit" : "preview"}
             style={{ width: "1200px" }}
+            autoFocus={isActive}
           />
         </div>
       </div>

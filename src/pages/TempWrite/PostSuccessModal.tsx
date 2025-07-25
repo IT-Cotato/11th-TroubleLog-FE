@@ -1,8 +1,8 @@
 import BaseModal from "../../components/Modal/BaseModal";
 import exitIcon from "../../assets/images/exiticon.svg";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate();
+  //   const navigate = useNavigate();
 
   return (
     <BaseModal
@@ -23,7 +23,8 @@ export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
             className="w-[86px] h-[86px]"
           />
           <span className="text-head-32-bold ">
-            {/* {$제목}을 {양식}으로 요약중입니다! */}dfdfdfdf
+            {/* {$제목}을 {양식}으로 요약중입니다! */}제목을 양식으로
+            요약중입니다???
           </span>
           <button className="flex w-[184px] h-[46px] px-[25px] py-[14px] justify-center items-center  rounded-[50px] bg-purple-500 border-purple-500 text-white text-semibold">
             완성 페이지로 이동

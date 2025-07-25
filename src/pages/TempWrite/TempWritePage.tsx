@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import DropDownButton from "../../components/Button/DropDownButton";
-import CategoryTag from "./CategoryTag";
+import CategoryTag from "../../components/TemplateWrite/CategoryTag";
 import EditorBlock from "../../components/TemplateWrite/EditorBlock";
 import type { BlockData } from "../../components/TemplateWrite/EditorBlock";
-import { questionData } from "./questionTemplate";
-import PostSaveModal from "@/pages/TempWrite/PostSaveModal";
+import { questionData } from "../../components/TemplateWrite/questionTemplate";
+import PostSaveModal from "./PostSaveModal";
 import PostLoadingModal from "./PostLoadingModal";
 import TemplateSelectModal from "./TemplateSelectModal";
 
@@ -48,6 +48,16 @@ const TempWritePage = () => {
       return [...prev, newBlock];
     });
     setActiveIndex(blocks.length);
+  };
+  const handleChangeBlockContent = (
+    index: number,
+    updated: Partial<BlockData>
+  ) => {
+    setBlocks((prev) => {
+      const newBlocks = [...prev];
+      newBlocks[index] = { ...newBlocks[index], ...updated };
+      return newBlocks;
+    });
   };
 
   const handleToggleChecklist = (
@@ -158,7 +168,7 @@ const TempWritePage = () => {
                     index={originalIndex}
                     isActive={originalIndex === activeIndex}
                     isLast={originalIndex === questionData.length - 2}
-                    onChange={handleAddBlock}
+                    onChange={handleChangeBlockContent}
                     onToggleChecklist={handleToggleChecklist}
                     onAddBlock={handleAddBlock}
                     onSave={handleSave}
@@ -175,25 +185,30 @@ const TempWritePage = () => {
                     {questionData[0].question}
                   </span>
                   <div className="flex flex-col items-end gap-2 min-w-[160px]">
-                    {activeIndex === -1 && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setIsSaved(true)}
-                          className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleAddBlock}
-                          className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
-                        >
-                          Next
-                        </button>
+                    {isSaved && (
+                      <div className="inline-flex gap-[5px] px-[16px] justify-center bg-white shadow-2xs  items-center rounded-lg ">
+                        <img src="/src/assets/images/checkicon.svg" />
+                        <p className="text-14-black"> 저장되었습니다.</p>
                       </div>
                     )}
-                    {isSaved && (
-                      <p className="text-sm text-gray-600">✔ 저장되었습니다.</p>
-                    )}
+                    <div className="flex flex-col items-end gap-2 min-w-[160px]">
+                      {activeIndex === -1 && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setIsSaved(true)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={handleAddBlock}
+                            className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div data-color-mode="light">
