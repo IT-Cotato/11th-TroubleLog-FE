@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import BaseModal from "../../components/Modal/BaseModal";
 import SaveButton from "../../components/Button/SaveButton";
 import CancelButton from "../../components/Button/CancelButton";
-import exitIcon from "../../assets/images/exiticon.svg";
+import exitIcon from "../../../public/icons/exiticon.svg";
 import DropDownButton from "@/components/Button/DropDownButton";
 export default function PostSaveModal({
   onClose,
@@ -126,8 +126,8 @@ export default function PostSaveModal({
                     <img
                       src={
                         i <= (hoverIndex || importance)
-                          ? "/src/assets/images/starfilled.svg"
-                          : "/src/assets/images/starunfilled.svg"
+                          ? "/public/icons/starfilled.svg"
+                          : "/public/icons/starunfilled.svg"
                       }
                       className="w-[32px] h-[32px]"
                     />
@@ -212,7 +212,7 @@ export default function PostSaveModal({
                     onClick={() => setSelectedVisibility("public")}
                   >
                     <img
-                      src="/src/assets/images/publicicon.svg"
+                      src="/public/icons/publicicon.svg"
                       className={`w-5 h-5 transition ${
                         selectedVisibility === "public" ? "" : "grayscale"
                       }`}
@@ -241,7 +241,7 @@ export default function PostSaveModal({
                     onClick={() => setSelectedVisibility("private")}
                   >
                     <img
-                      src="/src/assets/images/privateicon.svg"
+                      src="/public/icons/privateicon.svg"
                       className={`w-5 h-5 transition ${
                         selectedVisibility === "private" ? "" : "grayscale"
                       }`}

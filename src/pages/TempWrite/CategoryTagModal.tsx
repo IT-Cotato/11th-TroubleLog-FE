@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import exitIcon from "../../assets/images/exiticon.svg";
-
+import exitIcon from "../../../public/icons/exiticon.svg";
 export type TagCategory =
   | "프론트엔드"
   | "백엔드"

@@ -254,9 +254,9 @@ const TempWritePage = () => {
               <div className="flex flex-col gap-2 mt-14">
                 <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
                   <img
-                    src="/src/assets/images/alerticon.svg"
+                    src="/public/icons/alerticon.svg"
                     alt="alert icon"
-                    className="w-4 h-4"
+                    className="w-5 h-5"
                   />
                   {questionData[0].title}
                 </h3>

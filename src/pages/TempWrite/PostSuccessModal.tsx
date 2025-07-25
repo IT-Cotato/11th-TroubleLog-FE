@@ -1,5 +1,5 @@
 import BaseModal from "../../components/Modal/BaseModal";
-import exitIcon from "../../assets/images/exiticon.svg";
+import exitIcon from "../../../public/icons/exiticon.svg";
 // import { useNavigate } from "react-router-dom";
 export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
   //   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex flex-col w-[381px] gap-[40px] items-center">
           <img
-            src="/src/assets/images/postsuccess.svg"
+            src="/public/icons/postsuccess.svg"
             className="w-[88px] h-[86px]"
           />
           <span className="text-head-32-bold ">
