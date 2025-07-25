@@ -120,8 +120,7 @@ const TempWritePage = () => {
 
     setTimeout(() => {
       setIsLoadingModalOpen(false);
-      // 모든 모달 닫기
-    }, 300000);
+    }, 60000);
   };
 
   const defaultCheckListItems = questionData[0]?.checklistItems || [];

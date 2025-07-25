@@ -1,6 +1,6 @@
 // components/DropDownButton.tsx
 import { useState } from "react";
-import dropdownicon from "../../../public/icons/dropdowndown_icon.svg";
+import dropdownicon from "/icons/dropdowndown_icon.svg";
 
 interface DropDownButtonProps {
   options: string[];

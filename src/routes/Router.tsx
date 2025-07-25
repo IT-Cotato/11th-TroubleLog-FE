@@ -79,7 +79,11 @@ export const router = createBrowserRouter([
   },
   {
     path: "tempwriting",
-    element: <TempWritePage />,
+    element: (
+      <ProtectedRoute>
+        <TempWritePage />
+      </ProtectedRoute>
+    ),
   },
 ]);
 
