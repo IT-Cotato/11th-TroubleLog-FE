@@ -19,6 +19,8 @@ export interface TroubleShootingCardProps {
   status: StatusType;
   likeCount?: number;
   commentCount?: number;
+  authorName?: string;
+  isSearchResult?: boolean;
 }
 
 const TroubleShootingCard = ({
@@ -34,6 +36,8 @@ const TroubleShootingCard = ({
   status,
   likeCount,
   commentCount,
+  authorName,
+  isSearchResult,
 }: TroubleShootingCardProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const handleCloseMenu = useCallback(() => setShowMenu(false), []);
@@ -43,27 +47,41 @@ const TroubleShootingCard = ({
   const shouldShowSummaryType = status === "created";
 
   return (
-    <div className="w-full max-w-[948px] py-[30px] px-[20px] sm:px-[24px] md:px-[30px] flex flex-col items-start gap-[10px] border-b border-gray3 bg-white">
-      <div className="flex flex-col">
+    <div className="w-full py-[30px] flex flex-col items-start gap-[10px] border-b border-gray3 bg-white">
+      <div className="w-full flex flex-col">
+        {/* 작성자 */}
+        {isSearchResult && (
+          <div className="mb-[25px] flex items-center gap-[12px]">
+            <img
+              src="/icons/image.svg"
+              alt="profile"
+              className="w-[52px] h-[52px]"
+            />
+            <span className="text-head-24-bold">{authorName}</span>
+          </div>
+        )}
+
         {/* 에러 종류 + 케밥 메뉴 */}
         <div className="flex justify-between items-start mb-[24px]">
           <div className="text-body-16-regular">{errorCategory}</div>
-          <div ref={menuRef} className="relative">
-            <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
-            {showMenu && (
-              <KebabDropdown
-                options={[
-                  {
-                    label: "삭제",
-                    onClick: () => {
-                      setShowMenu(false);
-                      console.log("삭제 동작 실행");
+          {!isSearchResult && (
+            <div ref={menuRef} className="relative">
+              <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
+              {showMenu && (
+                <KebabDropdown
+                  options={[
+                    {
+                      label: "삭제",
+                      onClick: () => {
+                        setShowMenu(false);
+                        console.log("삭제 동작 실행");
+                      },
                     },
-                  },
-                ]}
-              />
-            )}
-          </div>
+                  ]}
+                />
+              )}
+            </div>
+          )}
         </div>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center self-stretch gap-[20px]">
           {/* 트러블로그 내용 영역 */}
