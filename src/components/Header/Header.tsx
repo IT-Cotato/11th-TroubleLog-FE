@@ -7,14 +7,16 @@ import { MdSearch } from "react-icons/md";
 import { useSearchStore } from "@/store/useSearchStore";
 import useClickOutside from "@/hooks/useClickOutside";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
+import NotificationModal from "../Modal/NotificationModal";
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState("");
   const { placeholder, setPlaceholder } = useSearchStore();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useClickOutside(() => setIsDropdownOpen(false));
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
 
   const myUserId = "123"; // 실제 로그인한 사용자 ID로 대체 필요
 
@@ -91,26 +93,44 @@ const Header = () => {
             className="cursor-pointer"
           />
         </div>
-        <div className="flex gap-10 items-center relative" ref={dropdownRef}>
+        <div className="flex gap-10 items-center relative">
           <FaUserGroup size={40} color="#525252" />
-          <BsFillBellFill size={40} color="#525252" />
-          <FaUserCircle
-            size={40}
-            color="#525252"
-            className="cursor-pointer"
-            onClick={() => setIsDropdownOpen((prev) => !prev)}
-          />
-          {isDropdownOpen && (
-            <div className="absolute left-1/3 top-full mt-2 z-10">
-              <UserMenuDropdown
-                onClose={() => setIsDropdownOpen(false)}
-                onNavigateToMyPage={() => {
-                  navigate(`/user/mypage/${myUserId}`);
-                  setIsDropdownOpen(false);
-                }}
-              />
-            </div>
-          )}
+          {/* 알림 영역 (hover 시 열림 + 벗어나면 닫힘) */}
+          <div
+            className="relative"
+            onMouseEnter={() => setIsNotificationModalOpen(true)}
+            onMouseLeave={() => setIsNotificationModalOpen(false)}
+          >
+            <BsFillBellFill
+              size={40}
+              color="#525252"
+              className="cursor-pointer"
+            />
+            {isNotificationModalOpen && (
+              <div className="absolute right-1/3 top-full mt-2 z-10">
+                <NotificationModal />
+              </div>
+            )}
+          </div>
+          <div ref={userDropdownRef}>
+            <FaUserCircle
+              size={40}
+              color="#525252"
+              className="cursor-pointer"
+              onClick={() => setIsUserDropdownOpen((prev) => !prev)}
+            />
+            {isUserDropdownOpen && (
+              <div className="absolute left-1/3 top-full mt-2 z-10">
+                <UserMenuDropdown
+                  onClose={() => setIsUserDropdownOpen(false)}
+                  onNavigateToMyPage={() => {
+                    navigate(`/user/mypage/${myUserId}`);
+                    setIsUserDropdownOpen(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
