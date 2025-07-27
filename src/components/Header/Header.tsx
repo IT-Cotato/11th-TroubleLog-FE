@@ -107,7 +107,7 @@ const Header = () => {
               className="cursor-pointer"
             />
             {isNotificationModalOpen && (
-              <div className="absolute right-1/3 top-full mt-2 z-10">
+              <div className="absolute right-[-10px] top-full mt-[41.5px] z-10">
                 <NotificationModal />
               </div>
             )}
