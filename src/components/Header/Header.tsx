@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaUserGroup } from "react-icons/fa6";
 import { BsFillBellFill } from "react-icons/bs";
@@ -17,6 +17,20 @@ const Header = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setIsNotificationModalOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setIsNotificationModalOpen(false);
+    }, 200);
+  };
 
   const myUserId = "123"; // 실제 로그인한 사용자 ID로 대체 필요
 
@@ -98,8 +112,8 @@ const Header = () => {
           {/* 알림 영역 (hover 시 열림 + 벗어나면 닫힘) */}
           <div
             className="relative"
-            onMouseEnter={() => setIsNotificationModalOpen(true)}
-            onMouseLeave={() => setIsNotificationModalOpen(false)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             <BsFillBellFill
               size={40}
