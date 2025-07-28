@@ -1,19 +1,19 @@
 import { useState } from "react";
 import useClickOutside from "../../hooks/useClickOutside";
 
-interface VisibilityFilterDropdownProps {
-  selected: "전체" | "공개" | "비공개";
-  onSelect: (value: "전체" | "공개" | "비공개") => void;
+interface GenericDropdownProps<T extends string> {
+  options: readonly T[];
+  selected: T;
+  onSelect: (value: T) => void;
 }
 
-export default function VisibilityFilterDropdown({
+export default function GenericDropdown<T extends string>({
+  options,
   selected,
   onSelect,
-}: VisibilityFilterDropdownProps) {
+}: GenericDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useClickOutside(() => setOpen(false));
-
-  const options: ("전체" | "공개" | "비공개")[] = ["전체", "공개", "비공개"];
 
   return (
     <div className="relative" ref={ref}>

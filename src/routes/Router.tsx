@@ -14,6 +14,7 @@ import HomePage from "@/pages/Home/HomePage";
 import StatisticsPage from "@/pages/MyPage/StatisticsPage";
 import LikedPostsPage from "@/pages/MyPage/LikedPostsPage";
 import SearchResultPage from "@/pages/Search/SearchResultPage";
+import CommunityPage from "@/pages/Community/CommunityPage";
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
         path: "home",
         element: <HomePage />,
       },
+
       {
         path: "search",
         children: [
@@ -83,6 +85,10 @@ export const router = createBrowserRouter([
       {
         path: "project/:id",
         element: <ProjectDetailPage projectName="Cotato" />,
+      },
+      {
+        path: "community",
+        element: <CommunityPage />,
       },
     ],
   },
