@@ -1,4 +1,4 @@
-import KakaoLogo from "../../assets/images/kakaologo.svg";
+import KakaoLogo from "../../../public/icons/kakaologo.svg";
 import { KAKAO_REDIRECT_URI } from "../../config";
 
 const KakaoLoginButton = () => {

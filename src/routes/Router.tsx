@@ -13,7 +13,11 @@ import EditProfile from "@/pages/EditProfile/EditProfile";
 import HomePage from "@/pages/Home/HomePage";
 import StatisticsPage from "@/pages/MyPage/StatisticsPage";
 import LikedPostsPage from "@/pages/MyPage/LikedPostsPage";
+
+import TempWritePage from "@/pages/TempWrite/TempWritePage";
+
 import SearchResultPage from "@/pages/Search/SearchResultPage";
+
 
 export const router = createBrowserRouter([
   {
@@ -85,6 +89,14 @@ export const router = createBrowserRouter([
         element: <ProjectDetailPage projectName="Cotato" />,
       },
     ],
+  },
+  {
+    path: "tempwriting",
+    element: (
+      <ProtectedRoute>
+        <TempWritePage />
+      </ProtectedRoute>
+    ),
   },
 ]);
 
