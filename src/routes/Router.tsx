@@ -12,9 +12,13 @@ import EditProfile from "@/pages/EditProfile/EditProfile";
 import HomePage from "@/pages/Home/HomePage";
 import StatisticsPage from "@/pages/MyPage/StatisticsPage";
 import LikedPostsPage from "@/pages/MyPage/LikedPostsPage";
+
+import TempWritePage from "@/pages/TempWrite/TempWritePage";
+
 import SearchResultPage from "@/pages/Search/SearchResultPage";
 import CommunityPage from "@/pages/Community/CommunityPage";
 import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
+
 
 export const router = createBrowserRouter([
   {
@@ -91,6 +95,14 @@ export const router = createBrowserRouter([
         element: <CommunityPage />,
       },
     ],
+  },
+  {
+    path: "tempwriting",
+    element: (
+      <ProtectedRoute>
+        <TempWritePage />
+      </ProtectedRoute>
+    ),
   },
 ]);
 
