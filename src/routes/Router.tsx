@@ -7,7 +7,6 @@ import LoginPage from "@/pages/Login/LoginPage";
 import SignPageTwo from "@/pages/Login/SignPageTwo";
 import ProjectDetailPage from "@/pages/Project/ProjectDetailPage";
 import MyPageLayout from "@/layouts/MyPageLayout";
-import MyTroubleShooting from "@/components/MyPage/MyTroubleShooting";
 import MyFollowing from "@/components/MyPage/MyFollowing";
 import EditProfile from "@/pages/EditProfile/EditProfile";
 import HomePage from "@/pages/Home/HomePage";
@@ -15,6 +14,7 @@ import StatisticsPage from "@/pages/MyPage/StatisticsPage";
 import LikedPostsPage from "@/pages/MyPage/LikedPostsPage";
 import SearchResultPage from "@/pages/Search/SearchResultPage";
 import CommunityPage from "@/pages/Community/CommunityPage";
+import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 
 export const router = createBrowserRouter([
   {
@@ -58,7 +58,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <MyTroubleShooting />,
+            element: <TroubleShootingList />,
           },
           {
             path: "following",

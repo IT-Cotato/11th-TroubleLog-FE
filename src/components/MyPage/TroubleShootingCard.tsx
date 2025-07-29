@@ -7,6 +7,7 @@ import MyPageTagList from "./MyPageTagList";
 
 export interface TroubleShootingCardProps {
   id: string;
+  isMine: boolean;
   errorCategory: string;
   title: string;
   content: string;
@@ -24,6 +25,7 @@ export interface TroubleShootingCardProps {
 }
 
 const TroubleShootingCard = ({
+  isMine,
   errorCategory,
   title,
   content,
@@ -64,7 +66,7 @@ const TroubleShootingCard = ({
         {/* 에러 종류 + 케밥 메뉴 */}
         <div className="flex justify-between items-start mb-[24px]">
           <div className="text-body-16-regular">{errorCategory}</div>
-          {!isSearchResult && (
+          {!isSearchResult && isMine && (
             <div ref={menuRef} className="relative">
               <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
               {showMenu && (
