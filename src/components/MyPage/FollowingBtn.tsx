@@ -1,11 +1,16 @@
-export interface FollowingProps {
+interface FollowingProps {
   name: string;
   email: string;
   follow: boolean;
   onFollowClick: () => void;
 }
 
-const Following = ({ name, email, follow, onFollowClick }: FollowingProps) => {
+const FollowingBtn = ({
+  name,
+  email,
+  follow,
+  onFollowClick,
+}: FollowingProps) => {
   return (
     <div className="flex justify-between w-[948px] items-center self-stretch py-[25px] border-b border-gray1">
       <div className="flex items-center gap-3">
@@ -34,4 +39,4 @@ const Following = ({ name, email, follow, onFollowClick }: FollowingProps) => {
   );
 };
 
-export default Following;
+export default FollowingBtn;

@@ -7,13 +7,7 @@ import FollowButton from "@/components/Button/FollowButton";
 import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
-
-interface ProfileData {
-  name: string;
-  sort: string;
-  bio: string;
-  git: string;
-}
+import type { ProfileData } from "@/models/user.model";
 
 const EditProfile = () => {
   const navigate = useNavigate();
