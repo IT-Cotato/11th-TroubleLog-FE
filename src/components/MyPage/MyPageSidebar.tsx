@@ -2,17 +2,21 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import FollowButton from "../Button/FollowButton";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import type { StatusType } from "@/types/project";
-import { mockCards } from "@/mocks/mockCards";
 
-interface MyPageSideBarProps {
-  isMyPage: boolean;
-  counts: {
-    all: number;
-    inProgress: number;
-    complete: number;
-    created: number;
-  };
-}
+type MyPageSideBarProps =
+  | {
+      isMyPage: true;
+      counts: {
+        all: number;
+        inProgress: number;
+        complete: number;
+        created: number;
+      };
+    }
+  | {
+      isMyPage: false;
+      sortedTags: [string, number][];
+    };
 
 const mockProfile = {
   name: "안수이",
@@ -21,7 +25,7 @@ const mockProfile = {
   bio: "안녕하세요. 프론트엔드 개발자입니다!",
 };
 
-const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
+const MyPageSideBar = (props: MyPageSideBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
@@ -49,16 +53,6 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
 
   const getMenuButtonClass = (match: boolean) =>
     `${match ? "text-black" : "text-gray3"} text-head-20-semibold`;
-
-  // 다른 사용자의 카드만 (임시)
-  const publicCards = mockCards.filter((card) => !card.isMine);
-
-  const allTags = publicCards.flatMap((card) => card.tags);
-  const tagCounts: Record<string, number> = {};
-  allTags.forEach((tag) => {
-    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-  });
-  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
 
   const handleTagClick = (tag: string) => {
     if (selectedTag === tag) {
@@ -89,7 +83,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
 
             <p className="text-body-20-regular pt-4 pb-1">{mockProfile.bio}</p>
 
-            {isMyPage ? (
+            {props.isMyPage ? (
               <FollowButton
                 label="프로필 수정"
                 colorClass="bg-primary"
@@ -103,7 +97,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
       </div>
 
       {/* 하단 메뉴 */}
-      {isMyPage ? (
+      {props.isMyPage ? (
         <div className="flex flex-col items-start gap-9 self-stretch text-gray3 text-head-20-semibold">
           <div className="w-full">
             {/* 헤더 텍스트 */}
@@ -126,7 +120,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
                 }}
                 className={getFilterButtonClass("all")}
               >
-                전체보기 ({counts.all})
+                전체보기 ({props.counts.all})
               </button>
               <button
                 onClick={() => {
@@ -136,7 +130,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
                 className={getFilterButtonClass("inProgress")}
               >
                 <img src="/icons/circle_y.svg" className="w-3.5 h-3.5" />
-                <span>작성 중 ({counts.inProgress})</span>
+                <span>작성 중 ({props.counts.inProgress})</span>
               </button>
               <button
                 onClick={() => {
@@ -146,7 +140,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
                 className={getFilterButtonClass("complete")}
               >
                 <img src="/icons/circle_g.svg" className="w-3.5 h-3.5" />
-                <span>작성 완료 ({counts.complete})</span>
+                <span>작성 완료 ({props.counts.complete})</span>
               </button>
               <button
                 onClick={() => {
@@ -156,7 +150,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
                 className={getFilterButtonClass("created")}
               >
                 <img src="/icons/circle_b.svg" className="w-3.5 h-3.5" />
-                <span>작성+요약 완료 ({counts.created})</span>
+                <span>작성+요약 완료 ({props.counts.created})</span>
               </button>
             </div>
           </div>
@@ -188,7 +182,7 @@ const MyPageSideBar = ({ isMyPage, counts }: MyPageSideBarProps) => {
 
             {/* 태그 목록 */}
             <div className="flex flex-col items-start gap-[10px] pt-[12px]">
-              {sortedTags.map(([tag, count]) => {
+              {props.sortedTags.map(([tag, count]) => {
                 const isSelected = tag === selectedTag;
                 return (
                   <button
