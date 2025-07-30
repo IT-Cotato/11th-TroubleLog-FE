@@ -45,7 +45,7 @@ instance.interceptors.response.use(
               },
             }
           );
-          if (res.status == 200) {
+          if (res.status === 200) {
             const { accessToken, refreshToken } = res.data.data;
             localStorage.setItem("accessToken", accessToken);
             localStorage.setItem("refreshToken", refreshToken);

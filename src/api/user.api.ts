@@ -33,14 +33,14 @@ export const postFollow = () =>
 
 // 팔로워 목록 조회
 export const getFollowers = () =>
-  getAPIResponseData<FollowingData>({
+  getAPIResponseData<FollowingData[]>({
     url: "/user/follower",
     method: "GET",
   });
 
 // 팔로잉 목록 조회
 export const getFollowings = () =>
-  getAPIResponseData<FollowingData>({
+  getAPIResponseData<FollowingData[]>({
     url: "/user/following",
     method: "GET",
   });
