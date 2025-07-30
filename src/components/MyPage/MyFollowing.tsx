@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
-import Following from "./Following";
-
-export interface FollowingData {
-  id: number;
-  name: string;
-  email: string;
-  follow: boolean;
-}
+import FollowingBtn from "./FollowingBtn";
+import type { FollowingData } from "@/models/user.model";
 
 const mockData: FollowingData[] = [
   {
@@ -74,7 +68,7 @@ const MyFollowing = () => {
   return (
     <div className="flex flex-col gap-4">
       {followList.map((user) => (
-        <Following
+        <FollowingBtn
           key={user.id}
           name={user.name}
           email={user.email}
