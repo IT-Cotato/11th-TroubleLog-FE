@@ -22,7 +22,11 @@ const KakaoLoginButton = () => {
       onClick={KakaoLogin}
       className="flex items-center justify-center gap-2 py-3 px-[208px] rounded-lg bg-[#FEE500] w-full"
     >
-      <img src="/public/icons/.svg" className="w-[18px] h-[18px]" alt="kakao" />
+      <img
+        src="/icons/kakaologo.svg"
+        className="w-[18px] h-[18px]"
+        alt="kakao"
+      />
       <span className="text-[20px] font-semibold leading-normal text-[rgba(0,0,0,0.85)] font-pretendard">
         카카오 로그인
       </span>

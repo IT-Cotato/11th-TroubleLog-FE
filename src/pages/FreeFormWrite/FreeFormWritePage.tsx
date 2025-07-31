@@ -111,7 +111,7 @@ const FreeFormWritePage = () => {
           )}
 
           {showSaveAlert && (
-            <div className="fixed top-[120px] left-1/2 transform -translate-x-1/2 z-50 bg-purple-100-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+            <div className="fixed top-[120px] left-1/2 transform -translate-x-1/2 z-50 bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               저장되었습니다.
             </div>
           )}
