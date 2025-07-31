@@ -1,5 +1,4 @@
 import BaseModal from "../../components/Modal/BaseModal";
-import exitIcon from "/public/icons/exiticon.svg";
 // import { useNavigate } from "react-router-dom";
 export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
   //   const navigate = useNavigate();
@@ -14,7 +13,7 @@ export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
       <div className="flex flex-col justify-center mt-[39px] ml-[100px] ">
         <div className="flex w-full pl-[420px] ">
           <button onClick={onClose} className="w-6 h-6">
-            <img src={exitIcon} alt="닫기" className="" />
+            <img src="/icons/exiticon.svg" alt="닫기" className="" />
           </button>
         </div>
         <div className="flex flex-col w-[381px] gap-[40px] items-center">

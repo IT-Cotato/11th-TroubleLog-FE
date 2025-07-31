@@ -1,7 +1,6 @@
 import { useState } from "react";
 import BaseModal from "../../components/Modal/BaseModal";
 import CancelButton from "../../components/Button/CancelButton";
-import exitIcon from "/public/icons/exiticon.svg";
 import SaveButton from "@/components/Button/SaveButton";
 const templates = ["자기소개서", "면접 대비", "블로그", "Issue 관리"];
 
@@ -40,7 +39,11 @@ export default function TemplateSelectModal({
         <div className="flex w-[763px] justify-between items-center">
           <span className="text-head-32-bold ">어떤 방식으로 요약할까요?</span>
           <button onClick={onClose} className="w-6 h-6">
-            <img src={exitIcon} alt="닫기" className="w-full h-full" />
+            <img
+              src="/icons/exiticon.svg"
+              alt="닫기"
+              className="w-full h-full"
+            />
           </button>
         </div>
       </div>

@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import BaseModal from "../../components/Modal/BaseModal";
 import SaveButton from "../../components/Button/SaveButton";
 import CancelButton from "../../components/Button/CancelButton";
-import exitIcon from "/public/icons/exiticon.svg";
 import DropDownButton from "@/components/Button/DropDownButton";
 export default function PostSaveModal({
   onClose,
@@ -54,7 +53,7 @@ export default function PostSaveModal({
       <div className="flex w-full justify-between gap-[500px] mt-[36px] mb-[24px]">
         <span className="text-head-24-bold">포스트 미리 보기</span>
         <button onClick={onClose} className="w-6 h-6">
-          <img src={exitIcon} alt="닫기" className="w-full h-full" />
+          <img src="/icons/exiticon.svg" alt="닫기" className="w-full h-full" />
         </button>
       </div>
       <div className="flex flex-col gap-[10px]">
