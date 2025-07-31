@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import BaseModal from "../../components/Modal/BaseModal";
 import SaveButton from "../../components/Button/SaveButton";
 import CancelButton from "../../components/Button/CancelButton";
-import exitIcon from "../../../public/icons/exiticon.svg";
+import exitIcon from "/public/icons/exiticon.svg";
 import DropDownButton from "@/components/Button/DropDownButton";
 export default function PostSaveModal({
   onClose,

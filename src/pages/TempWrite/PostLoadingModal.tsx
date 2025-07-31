@@ -1,5 +1,5 @@
 import BaseModal from "../../components/Modal/BaseModal";
-import exitIcon from "../../../public/icons/exiticon.svg";
+import exitIcon from "/public/icons/exiticon.svg";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import PostSuccessModal from "./PostSuccessModal";

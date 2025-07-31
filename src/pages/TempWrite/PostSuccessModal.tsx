@@ -1,5 +1,5 @@
 import BaseModal from "../../components/Modal/BaseModal";
-import exitIcon from "../../../public/icons/exiticon.svg";
+import exitIcon from "/public/icons/exiticon.svg";
 // import { useNavigate } from "react-router-dom";
 export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
   //   const navigate = useNavigate();

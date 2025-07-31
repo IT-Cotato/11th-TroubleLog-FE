@@ -1,7 +1,7 @@
 import { useState } from "react";
 import BaseModal from "../../components/Modal/BaseModal";
 import CancelButton from "../../components/Button/CancelButton";
-import exitIcon from "../../../public/icons/exiticon.svg";
+import exitIcon from "/public/icons/exiticon.svg";
 import SaveButton from "@/components/Button/SaveButton";
 const templates = ["자기소개서", "면접 대비", "블로그", "Issue 관리"];
 
