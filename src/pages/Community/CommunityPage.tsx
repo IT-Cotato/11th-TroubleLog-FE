@@ -2,8 +2,11 @@ import TroublogCard from "@/components/Card/TroublogCard";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
 import { mockCards } from "@/mocks/mockCards";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function CommunityPage() {
+  const navigate = useNavigate();
+
   const sortOptions = ["전체", "최신순", "추천순", "좋아요순"] as const;
   type SortOption = (typeof sortOptions)[number];
 
@@ -69,7 +72,13 @@ export default function CommunityPage() {
       {/* 트러블로그 카드 */}
       <div className="w-full mx-auto grid grid-cols-4 gap-x-[24px] gap-y-[60px]">
         {publicCards.map((card) => (
-          <TroublogCard key={card.id} {...card} />
+          <div
+            key={card.id}
+            className="cursor-pointer"
+            onClick={() => navigate(`/user/community/${card.id}`)}
+          >
+            <TroublogCard {...card} />
+          </div>
         ))}
       </div>
     </div>

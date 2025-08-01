@@ -18,7 +18,7 @@ import TempWritePage from "@/pages/TempWrite/TempWritePage";
 import SearchResultPage from "@/pages/Search/SearchResultPage";
 import CommunityPage from "@/pages/Community/CommunityPage";
 import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
-
+import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
 
 export const router = createBrowserRouter([
   {
@@ -93,6 +93,10 @@ export const router = createBrowserRouter([
       {
         path: "community",
         element: <CommunityPage />,
+      },
+      {
+        path: "community/:postId",
+        element: <CommunityPostDetail />,
       },
     ],
   },
