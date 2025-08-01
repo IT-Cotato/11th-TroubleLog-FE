@@ -344,7 +344,7 @@ export default function CommunityPostDetail() {
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
                   placeholder="댓글을 작성해주세요."
-                  className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-nonerounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
+                  className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
                 ></textarea>
               </div>
 
