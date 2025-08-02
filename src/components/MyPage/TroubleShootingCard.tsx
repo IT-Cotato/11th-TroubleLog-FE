@@ -3,7 +3,7 @@ import type { StatusType, VisibilityType } from "@/types/project";
 import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import useClickOutside from "@/hooks/useClickOutside";
-import MyPageTagList from "./MyPageTagList";
+import TagList from "../Card/TagList";
 
 export interface TroubleShootingCardProps {
   id: string;
@@ -118,7 +118,7 @@ const TroubleShootingCard = ({
             </div>
             {/* 태그 + 중요도 + 날짜 */}
             <div className="flex flex-wrap items-center gap-[12px]">
-              <MyPageTagList tags={tags} />
+              <TagList tags={tags} variant="mypage" />
               <div className="flex items-center gap-[12px]">
                 {importance !== undefined && (
                   <>

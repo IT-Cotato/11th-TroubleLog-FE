@@ -1,8 +1,8 @@
+import TagList from "@/components/Card/TagList";
 import PostComment, {
   type PostCommentProps,
 } from "@/components/Community/PostComment";
 import PostGuide from "@/components/Community/PostGuide";
-import PostTagList from "@/components/Community/PostTagList";
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import useClickOutside from "@/hooks/useClickOutside";
@@ -195,7 +195,7 @@ export default function CommunityPostDetail() {
               {/* 태그 & 작성일 */}
               <div className="flex items-center gap-[16px]">
                 {/* 태그 */}
-                <PostTagList tags={post.tags} />
+                <TagList tags={post.tags} variant="post" />
 
                 {/* 구분점 */}
                 <div className="text-body-16-regular text-gray3">·</div>
