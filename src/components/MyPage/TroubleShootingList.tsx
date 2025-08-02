@@ -17,7 +17,7 @@ const TroubleShootingList = () => {
     "latest"
   );
   const selectedStatus = useMyPageStore((state) => state.selectedStatus);
-  const selectedTag = useMyPageStore((tag) => tag.selectedTag);
+  const selectedTag = useMyPageStore((state) => state.selectedTag);
 
   const cards = isMyPage
     ? mockCards.filter((c) => c.isMine)
