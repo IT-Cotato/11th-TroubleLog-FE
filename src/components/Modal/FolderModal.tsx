@@ -69,7 +69,7 @@ export default function FolderModal({
         </span>
         <button onClick={onClose}>
           <img
-            src="/icons/close.svg"
+            src="/icons/exiticon.svg"
             alt="close"
             className="w-[24px] h-[24px] mb-[12px] mt-[3px]"
           />

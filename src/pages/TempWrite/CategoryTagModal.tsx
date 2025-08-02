@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import exitIcon from "../../../public/icons/exiticon.svg";
 export type TagCategory =
   | "프론트엔드"
   | "백엔드"
@@ -67,7 +66,11 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
         <div className="flex justify-between items-center p-5 pb-0">
           <h2 className="text-xl font-bold">기술 태그 검색</h2>
           <button onClick={onClose} className="w-6 h-6">
-            <img src={exitIcon} alt="닫기" className="w-full h-full" />
+            <img
+              src="/icons/exiticon.svg"
+              alt="닫기"
+              className="w-full h-full"
+            />
           </button>
         </div>
 

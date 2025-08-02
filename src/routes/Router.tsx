@@ -13,11 +13,9 @@ import EditProfile from "@/pages/EditProfile/EditProfile";
 import HomePage from "@/pages/Home/HomePage";
 import StatisticsPage from "@/pages/MyPage/StatisticsPage";
 import LikedPostsPage from "@/pages/MyPage/LikedPostsPage";
-
 import TempWritePage from "@/pages/TempWrite/TempWritePage";
-
+import FreeFormWritePage from "@/pages/FreeFormWrite/FreeFormWritePage";
 import SearchResultPage from "@/pages/Search/SearchResultPage";
-
 
 export const router = createBrowserRouter([
   {
@@ -95,6 +93,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <TempWritePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "freeformwriting",
+    element: (
+      <ProtectedRoute>
+        <FreeFormWritePage />
       </ProtectedRoute>
     ),
   },

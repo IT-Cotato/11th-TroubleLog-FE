@@ -16,24 +16,31 @@ const TempWritePage = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
+
   const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
   const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
     useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
+
   const [selectedErrorType, setSelectedErrorType] = useState<string | null>(
     null
   );
-  const [showAlert, setShowAlert] = useState(false);
-  const [isFirstBlockSaved, setIsFirstBlockSaved] = useState(false);
+
+  const [showAlert, setShowAlert] = useState(false); // 제목/에러 종류 미입력 alert
+  const [showSaveAlert, setShowSaveAlert] = useState(false); // 저장되었습니다 alert
+  const [showBlockAlert, setShowBlockAlert] = useState(false); // 첫번째 블록 비었을 때 alert
 
   const handleEnd = () => {
     if (!title.trim() || !selectedErrorType) {
       setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000); // 3초 후 사라짐
+      setTimeout(() => setShowAlert(false), 3000);
       return;
     }
-
-    setShowAlert(false);
+    if (!blocks[0]?.content.trim()) {
+      setShowBlockAlert(true);
+      setTimeout(() => setShowBlockAlert(false), 3000);
+      return;
+    }
     setIsPostSaveModalOpen(true);
   };
 
@@ -43,23 +50,22 @@ const TempWritePage = () => {
       if (nextStep >= questionData.length) return prev;
 
       const stepData = questionData[nextStep];
-      const { question, title, checklistItems } = stepData;
-
       const newBlock: BlockData = {
         id: Date.now(),
         content: "",
         checklist: [],
-        checklistItems: checklistItems ?? [],
-        checklistTitle: title ?? "",
-        question,
+        checklistItems: stepData.checklistItems ?? [],
+        checklistTitle: stepData.title ?? "",
+        question: stepData.question,
         isSaved: false,
       };
+
       const newBlocks = [...prev, newBlock];
       setActiveIndex(newBlocks.length - 1);
-      return [...prev, newBlock];
+      return newBlocks;
     });
-    setActiveIndex(blocks.length);
   };
+
   const handleChangeBlockContent = (
     index: number,
     updated: Partial<BlockData>
@@ -91,36 +97,23 @@ const TempWritePage = () => {
     });
   };
 
-  const handleSave = (index: number) => {
-    setBlocks((prev) => {
-      const newBlocks = [...prev];
-      newBlocks[index].isSaved = true;
-      return newBlocks;
-    });
-
-    setTimeout(() => {
-      setBlocks((prev) => {
-        const newBlocks = [...prev];
-        if (newBlocks[index]) newBlocks[index].isSaved = false;
-        return newBlocks;
-      });
-    }, 3000);
+  // Save Alert 보여주기
+  const handleShowSaveAlert = () => {
+    setShowSaveAlert(true);
+    setTimeout(() => setShowSaveAlert(false), 3000);
   };
 
-  // PostSaveModal에서 다음
+  // PostSaveModal → 다음
   const handleNextInPostSaveModal = () => {
     setIsPostSaveModalOpen(false);
     setIsTemplateSelectModalOpen(true);
   };
 
-  // TemplateSelectModal에서 요약
+  // TemplateSelectModal → 요약
   const handleConfirmTemplate = () => {
     setIsTemplateSelectModalOpen(false);
     setIsLoadingModalOpen(true);
-
-    setTimeout(() => {
-      setIsLoadingModalOpen(false);
-    }, 60000);
+    setTimeout(() => setIsLoadingModalOpen(false), 60000);
   };
 
   const defaultCheckListItems = questionData[0]?.checklistItems || [];
@@ -137,14 +130,26 @@ const TempWritePage = () => {
     "Third-Party Library Error",
     "Others",
   ];
+
   return (
     <div>
       <HeaderWoSearch />
-      <div className="flex justify-center px-[225px] pt-[68px]  items-start">
+      <div className="flex justify-center px-[225px] pt-[68px] items-start">
         <div className="flex-1 flex w-[1500px] flex-col gap-[36px]">
+          {/* Alert 메시지 */}
           {showAlert && (
-            <div className="fixed top-[100px] left-1/2 transform -translate-x-1/2 z-50 bg-purple-100-100 border border-purple-400 text-purple-700 px-4 py-2 rounded shadow">
+            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               제목과 에러 종류를 모두 입력해주세요.
+            </div>
+          )}
+          {showBlockAlert && (
+            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+              첫 번째 블록의 내용을 입력해주세요.
+            </div>
+          )}
+          {showSaveAlert && (
+            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+              저장되었습니다.
             </div>
           )}
 
@@ -162,18 +167,16 @@ const TempWritePage = () => {
                 options={errorOptions}
                 placeholder="에러 종류를 선택하세요"
                 width="w-[340px]"
-                onSelect={(selectedError) => {
-                  console.log("선택된 에러 종류:", selectedError);
-                  setSelectedErrorType(selectedError);
-                }}
+                onSelect={(selectedError) =>
+                  setSelectedErrorType(selectedError)
+                }
               />
-
               <CategoryTag value={selectedTags} onChange={setSelectedTags} />
             </div>
           </div>
 
-          {/* 추가될 블록들 */}
-          <div className="">
+          {/* 블록들 */}
+          <div>
             {blocks
               .slice()
               .reverse()
@@ -189,67 +192,52 @@ const TempWritePage = () => {
                     onChange={handleChangeBlockContent}
                     onToggleChecklist={handleToggleChecklist}
                     onAddBlock={handleAddBlock}
-                    onSave={handleSave}
                     onEnd={handleEnd}
                     title={title}
                     selectedErrorType={selectedErrorType}
+                    onShowSaveAlert={handleShowSaveAlert}
                   />
                 );
               })}
 
-            {/* 어떤오류~ 블록*/}
+            {/* 첫 번째 블록 (어떤오류~) */}
             <div className="flex flex-row gap-[25px]">
               <div className="flex flex-col gap-[16px] w-[1200px]">
                 <div className="flex justify-between items-start">
                   <span className="font-bold text-black text-[24px]">
                     {questionData[0].question}
                   </span>
-                  <div className="flex flex-col items-end gap-2 min-w-[160px]">
-                    {isFirstBlockSaved && (
-                      <div className="inline-flex gap-[5px] px-[16px] justify-center bg-white shadow-2xs items-center rounded-lg ">
-                        <img src="/src/assets/images/checkicon.svg" />
-                        <p className="text-14-black"> 저장되었습니다.</p>
-                      </div>
-                    )}
-
+                  {/* Save / Next 버튼을 조건부로 렌더링 */}
+                  {blocks.length === 0 && (
                     <div className="flex flex-col items-end gap-2 min-w-[160px]">
-                      {activeIndex === -1 && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setIsFirstBlockSaved(true);
-                              setTimeout(
-                                () => setIsFirstBlockSaved(false),
-                                3000
-                              );
-                            }}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Save
-                          </button>
-
-                          <button
-                            onClick={handleAddBlock}
-                            className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleShowSaveAlert}
+                          className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleAddBlock}
+                          className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600"
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-                <div data-color-mode="light">
-                  <MDEditor
-                    value={content}
-                    onChange={(value) => setContent(value || "")}
-                    height={240}
-                    style={{ width: "1200px" }}
-                    preview="edit"
-                  />
-                </div>
+
+                <MDEditor
+                  value={content}
+                  onChange={(value) => setContent(value || "")}
+                  height={240}
+                  style={{ width: "1200px" }}
+                  preview="edit"
+                />
               </div>
-              {/*체크리스트*/}
+
+              {/* 체크리스트 */}
               <div className="flex flex-col gap-2 mt-14">
                 <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
                   <img
@@ -264,47 +252,34 @@ const TempWritePage = () => {
                     key={index}
                     className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer"
                   >
-                    <input
-                      type="checkbox"
-                      className="peer hidden"
-                      id={`check-${index}`}
-                    />
-
-                    <span
-                      className={`
-        inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-        peer-checked:bg-[url('/public/icons/checkedbox.svg')]
-        bg-[url('/public/icons/noncheckedbox.svg')]
-      `}
-                    ></span>
+                    <input type="checkbox" className="peer hidden" />
+                    <span className="inline-block w-5 h-5 bg-no-repeat bg-center bg-contain peer-checked:bg-[url('/public/icons/checkedbox.svg')] bg-[url('/public/icons/noncheckedbox.svg')]"></span>
                     <span>{item}</span>
                   </label>
                 ))}
               </div>
             </div>
-            <div />
           </div>
+
+          {isPostSaveModalOpen && (
+            <PostSaveModal
+              onClose={() => setIsPostSaveModalOpen(false)}
+              onNext={handleNextInPostSaveModal}
+            />
+          )}
+          {isTemplateSelectModalOpen && (
+            <TemplateSelectModal
+              onConfirm={handleConfirmTemplate}
+              onClose={() => setIsTemplateSelectModalOpen(false)}
+            />
+          )}
+          {isLoadingModalOpen && (
+            <PostLoadingModal
+              onClose={() => setIsLoadingModalOpen(false)}
+              progress={100}
+            />
+          )}
         </div>
-        {isPostSaveModalOpen && (
-          <PostSaveModal
-            onClose={() => setIsPostSaveModalOpen(false)}
-            onNext={handleNextInPostSaveModal}
-          />
-        )}
-
-        {isTemplateSelectModalOpen && (
-          <TemplateSelectModal
-            onConfirm={handleConfirmTemplate}
-            onClose={() => setIsTemplateSelectModalOpen(false)}
-          />
-        )}
-
-        {isLoadingModalOpen && (
-          <PostLoadingModal
-            onClose={() => setIsLoadingModalOpen(false)}
-            progress={100}
-          />
-        )}
       </div>
     </div>
   );
