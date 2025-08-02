@@ -38,7 +38,7 @@ export default function CommunityPage() {
   }, [publicCards, selectedSort]);
 
   return (
-    <div className="flex flex-col mt-[79px] mb-[104px] w-[1600px] mx-auto gap-[50px]">
+    <div className="flex flex-col mt-[79px] mb-[104px] max-w-[1600px] w-full mx-auto px-4 gap-[50px]">
       <div className="flex w-full justify-between">
         {/* 옵션 탭 */}
         <div className="flex gap-[40px]">
@@ -90,7 +90,7 @@ export default function CommunityPage() {
       </div>
 
       {/* 트러블로그 카드 */}
-      <div className="w-full mx-auto grid grid-cols-4 gap-x-[24px] gap-y-[60px]">
+      <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-[24px] gap-y-[60px]">
         {selectedTab === "trouble"
           ? sortedCards.map((card) => (
               <div
