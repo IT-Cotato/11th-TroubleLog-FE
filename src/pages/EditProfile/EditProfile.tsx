@@ -8,7 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
 import type { ProfileData } from "@/models/user.model";
-import { getMyProfile } from "@/api/user.api";
+import { getMyProfile, patchProfile } from "@/api/user.api";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -101,9 +101,13 @@ const EditProfile = () => {
       }));
     };
 
-  const handleSave = () => {
-    console.log("저장할 데이터:", profile);
-    navigate(`/user/mypage/${id}`);
+  const handleSave = async () => {
+    try {
+      await patchProfile(profile);
+      navigate(`/user/mypage/${id}`);
+    } catch (error) {
+      console.error("프로필 수정 실패:", error);
+    }
   };
 
   const handleCancel = () => {
