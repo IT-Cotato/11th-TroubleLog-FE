@@ -8,7 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
 import type { ProfileData } from "@/models/user.model";
-import { getMyProfile, patchProfile } from "@/api/user.api";
+import { deleteUser, getMyProfile, patchProfile } from "@/api/user.api";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -57,9 +57,14 @@ const EditProfile = () => {
     setShowWithdrawModal(false);
   }, []);
 
-  const handleWithdrawConfirm = useCallback(() => {
-    setShowWithdrawModal(false);
-    setShowWithdrawCompleteModal(true);
+  const handleWithdrawConfirm = useCallback(async () => {
+    try {
+      await deleteUser();
+      setShowWithdrawModal(false);
+      setShowWithdrawCompleteModal(true);
+    } catch (error) {
+      console.error("회원 탈퇴 실패:", error);
+    }
   }, []);
 
   const handleWithdrawComplete = useCallback(() => {

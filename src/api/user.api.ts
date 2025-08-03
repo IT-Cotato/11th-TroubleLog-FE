@@ -13,7 +13,7 @@ export const getMyProfile = () =>
   });
 
 // 사용자 정보 조회
-export const getUserInfo = (userId: string) =>
+export const getUserInfo = (userId: number) =>
   getAPIResponseData<UserInfoData>({
     url: `/user/${userId}`,
     method: "GET",
@@ -30,7 +30,7 @@ export const patchProfile = (updatedProfile: ProfileData) =>
 // 팔로워 목록 조회
 export const getFollowers = (userId: number) =>
   getAPIResponseData<FollowingData[]>({
-    url: "/user/follower",
+    url: "/user/followers",
     method: "GET",
     params: { userId },
   });
@@ -38,7 +38,7 @@ export const getFollowers = (userId: number) =>
 // 팔로잉 목록 조회
 export const getFollowings = (userId: number) =>
   getAPIResponseData<FollowingData[]>({
-    url: "/user/following",
+    url: "/user/followings",
     method: "GET",
     params: { userId },
   });
@@ -62,7 +62,6 @@ export const postUnfollow = (userId: number) =>
 // 탈퇴
 export const deleteUser = () =>
   getAPIResponseData({
-    url: "/user/withdraw",
-    method: "POST",
-    data: {},
+    url: "/user",
+    method: "DELETE",
   });
