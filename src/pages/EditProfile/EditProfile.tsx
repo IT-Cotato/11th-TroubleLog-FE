@@ -198,6 +198,7 @@ const EditProfile = () => {
           onConfirm={handleWithdrawConfirm}
           title="회원 탈퇴"
           description={`정말 탈퇴하시겠습니까?\n탈퇴하시면 작성하신 내용들도 사라집니다!`}
+          label="탈퇴"
         />
       )}
 

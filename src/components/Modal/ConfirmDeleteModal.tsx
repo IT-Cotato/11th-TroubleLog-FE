@@ -6,6 +6,7 @@ interface ConfirmDeleteModalProps {
   onConfirm: () => void;
   title: string;
   description: string;
+  label?: string;
 }
 
 export default function ConfirmDeleteModal({
@@ -13,6 +14,7 @@ export default function ConfirmDeleteModal({
   onConfirm,
   title,
   description,
+  label,
 }: ConfirmDeleteModalProps) {
   return (
     <BaseModal
@@ -28,7 +30,7 @@ export default function ConfirmDeleteModal({
 
       <div className="flex items-center gap-[17px]">
         <CancelButton onClick={onClose} />
-        <SaveButton onClick={onConfirm} label="삭제" />
+        <SaveButton onClick={onConfirm} label={label ?? "삭제"} />
       </div>
     </BaseModal>
   );
