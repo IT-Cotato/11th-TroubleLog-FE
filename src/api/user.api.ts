@@ -1,4 +1,8 @@
-import type { FollowingData, ProfileData } from "@/models/user.model";
+import type {
+  FollowingData,
+  ProfileData,
+  UserInfoData,
+} from "@/models/user.model";
 import getAPIResponseData from "../utils/getAPIResponseData";
 
 // 내 프로필 조회
@@ -10,7 +14,7 @@ export const getMyProfile = () =>
 
 // 사용자 정보 조회
 export const getUserInfo = (userId: string) =>
-  getAPIResponseData<ProfileData>({
+  getAPIResponseData<UserInfoData>({
     url: `/user/${userId}`,
     method: "GET",
   });
