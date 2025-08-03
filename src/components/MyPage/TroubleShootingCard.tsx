@@ -3,10 +3,11 @@ import type { StatusType, VisibilityType } from "@/types/project";
 import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import useClickOutside from "@/hooks/useClickOutside";
-import MyPageTagList from "./MyPageTagList";
+import TagList from "../Card/TagList";
 
 export interface TroubleShootingCardProps {
   id: string;
+  isMine: boolean;
   errorCategory: string;
   title: string;
   content: string;
@@ -24,6 +25,7 @@ export interface TroubleShootingCardProps {
 }
 
 const TroubleShootingCard = ({
+  isMine,
   errorCategory,
   title,
   content,
@@ -64,7 +66,7 @@ const TroubleShootingCard = ({
         {/* 에러 종류 + 케밥 메뉴 */}
         <div className="flex justify-between items-start mb-[24px]">
           <div className="text-body-16-regular">{errorCategory}</div>
-          {!isSearchResult && (
+          {!isSearchResult && isMine && (
             <div ref={menuRef} className="relative">
               <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
               {showMenu && (
@@ -116,7 +118,7 @@ const TroubleShootingCard = ({
             </div>
             {/* 태그 + 중요도 + 날짜 */}
             <div className="flex flex-wrap items-center gap-[12px]">
-              <MyPageTagList tags={tags} />
+              <TagList tags={tags} variant="mypage" />
               <div className="flex items-center gap-[12px]">
                 {importance !== undefined && (
                   <>

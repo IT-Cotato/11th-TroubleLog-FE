@@ -1,16 +1,27 @@
 interface TagListProps {
   tags: string[];
+  variant?: "default" | "post" | "mypage";
 }
 
-export default function TagList({ tags }: TagListProps) {
+export default function TagList({ tags, variant = "default" }: TagListProps) {
+  const wrapperClass = variant === "post" ? "gap-[16px]" : "gap-[6px]";
+
+  const getTagClass = () => {
+    switch (variant) {
+      case "post":
+        return "py-[6px] px-[10px] bg-subColor2 rounded-[20px] text-body-16-regular text-primary truncate";
+      case "mypage":
+        return "flex py-[6px] px-[10px] justify-center items-center gap-[2px] rounded-[20px] bg-gray1 text-primary text-body-14-regular truncate";
+      case "default":
+      default:
+        return "py-[2px] px-[6px] bg-subColor2 rounded-2xl text-body-14-regular truncate";
+    }
+  };
+
   return (
-    <div className="flex gap-[6px] flex-wrap">
+    <div className={`flex flex-wrap ${wrapperClass}`}>
       {tags.map((tag) => (
-        <div
-          key={tag}
-          className="py-[1px] px-[4px] sm:py-[2px] sm:px-[6px] bg-subColor2 rounded-2xl text-body-14-regular max-w-[120px] truncate"
-          title={tag}
-        >
+        <div key={tag} className={getTagClass()} title={tag}>
           #{tag}
         </div>
       ))}

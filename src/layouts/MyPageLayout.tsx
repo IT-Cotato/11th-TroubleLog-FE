@@ -2,15 +2,11 @@ import MyPageSideBar from "@/components/MyPage/MyPageSidebar";
 import { Outlet } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { mockCards } from "@/mocks/mockCards";
-import { useMyPageStore } from "@/store/useMyPageStore";
 
 const MyPageLayout = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const myUserId = "123";
   const isMyPage = id === myUserId;
-
-  // 필터 상태
-  const selectedStatus = useMyPageStore((state) => state.selectedStatus);
 
   // 사용자의 카드만 필터링 (임시)
   const myCards = mockCards.filter((card) => card.isMine);
@@ -23,18 +19,26 @@ const MyPageLayout = () => {
     created: myCards.filter((c) => c.status === "created").length,
   };
 
-  // 현재 선택된 상태에 맞는 트러블슈팅 목록 필터링
-  const filteredCards =
-    selectedStatus === "all"
-      ? myCards
-      : myCards.filter((c) => c.status === selectedStatus);
+  // 태그 정렬 / 태그별 개수 계산 (다른 사용자의 페이지)
+  const publicCards = mockCards.filter((card) => !card.isMine);
+  const tagCounts: Record<string, number> = {};
+  publicCards
+    .flatMap((card) => card.tags)
+    .forEach((tag) => {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="flex items-start gap-[68px] pt-20 justify-center">
-      <MyPageSideBar isMyPage={isMyPage} counts={counts} />
+      <MyPageSideBar
+        {...(isMyPage
+          ? { isMyPage: true as const, counts }
+          : { isMyPage: false as const, sortedTags })}
+      />
 
       <div className="flex flex-col items-start">
-        <Outlet context={{ filteredCards }} />
+        <Outlet context={{ isMyPage }} />
       </div>
     </div>
   );
