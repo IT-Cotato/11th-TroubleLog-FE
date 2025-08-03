@@ -18,10 +18,11 @@ interface Props {
   onChange: (index: number, updated: Partial<BlockData>) => void;
   onToggleChecklist: (index: number, item: string, checked: boolean) => void;
   onAddBlock?: () => void;
-  onSave?: (index: number) => void;
+
   isActive: boolean;
   isLast: boolean;
   onEnd?: () => void;
+  onShowSaveAlert?: () => void;
 }
 
 const EditorBlock = ({
@@ -30,41 +31,43 @@ const EditorBlock = ({
   onChange,
   onToggleChecklist,
   onAddBlock,
-  onSave,
+
   isActive,
   isLast,
   onEnd,
   title,
   selectedErrorType,
+  onShowSaveAlert,
 }: Props) => {
   return (
     <div className="flex flex-row gap-[25px] pb-[25px]">
       <div className="flex flex-col gap-[16px] w-[1200px]">
+        {/* 상단 제목 + 버튼 영역 */}
         <div className="flex justify-between items-start">
           <span className="font-bold text-black text-[24px]">
             {block.question}
           </span>
+
           {isActive && (
             <div className="flex flex-col items-end gap-2 min-w-[160px]">
-              {block.isSaved && (
-                <div className="inline-flex gap-[5px] px-[16px] justify-center bg-white shadow-2xs  items-center rounded-lg ">
-                  <img src="/src/assets/images/checkicon.svg" />
-                  <p className="text-14-black"> 저장되었습니다.</p>
-                </div>
-              )}
               <div className="flex gap-2">
+                {/* Save 버튼 */}
                 <button
-                  onClick={() => onSave?.(index)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => {
+                    onShowSaveAlert?.();
+                  }}
+                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100"
                 >
                   Save
                 </button>
+
+                {/* End / Next 버튼 */}
                 <button
                   onClick={() => {
                     if (isLast) onEnd?.();
                     else onAddBlock?.();
                   }}
-                  className={`px-4 py-2 rounded-lg text-sm ${
+                  className={`px-4 py-2 rounded-xl text-sm ${
                     isLast
                       ? title.trim() && selectedErrorType
                         ? "bg-purple-500 text-white hover:bg-purple-600"
@@ -79,6 +82,7 @@ const EditorBlock = ({
           )}
         </div>
 
+        {/* 에디터 */}
         <div data-color-mode="light">
           <MDEditor
             value={block.content}
@@ -103,6 +107,7 @@ const EditorBlock = ({
             {block.checklistTitle}
           </h3>
         )}
+
         {block.checklistItems.map((item) => (
           <label
             key={item}
@@ -116,10 +121,10 @@ const EditorBlock = ({
             />
             <span
               className={`
-        inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-        peer-checked:bg-[url('/public/icons/checkedbox.svg')]
-        bg-[url('/public/icons/noncheckedbox.svg')]
-      `}
+                inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
+                peer-checked:bg-[url('/public/icons/checkedbox.svg')]
+                bg-[url('/public/icons/noncheckedbox.svg')]
+              `}
             ></span>
             <span>{item}</span>
           </label>
