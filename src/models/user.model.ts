@@ -17,8 +17,9 @@ export interface UserInfoData {
 }
 
 export interface FollowingData {
-  id: number;
-  name: string;
+  userId: number;
+  nickname: string;
   email: string;
-  follow: boolean;
+  profileUrl: string;
+  isFollowed: boolean;
 }
