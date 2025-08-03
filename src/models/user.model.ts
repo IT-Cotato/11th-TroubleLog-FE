@@ -1,8 +1,9 @@
 export interface ProfileData {
-  name: string;
-  sort: string;
+  userId: number;
+  nickame: string;
+  field: string;
   bio: string;
-  git: string;
+  githubUrl: string;
 }
 
 export interface FollowingData {
