@@ -3,6 +3,7 @@ import FollowButton from "../Button/FollowButton";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import type { StatusType } from "@/types/project";
 import { PATH } from "@/constants/paths";
+import { MYPAGE_SUBPATH } from "@/constants/routes";
 
 type MyPageSideBarProps =
   | {
@@ -73,11 +74,11 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
             <p className="text-head-32-semibold">{mockProfile.name}</p>
 
             <div className="flex gap-1 text-body-20-regular text-gray4">
-              <button onClick={handleNavigate("following")}>
+              <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWING)}>
                 팔로잉 {mockProfile.followingCount}
               </button>
               <span>·</span>
-              <button onClick={handleNavigate("follower")}>
+              <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWER)}>
                 팔로워 {mockProfile.followerCount}
               </button>
             </div>
@@ -88,7 +89,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               <FollowButton
                 label="프로필 수정"
                 colorClass="bg-primary"
-                onClick={handleNavigate("editprofile")}
+                onClick={handleNavigate(MYPAGE_SUBPATH.EDIT_PROFILE)}
               />
             ) : (
               <FollowButton label="팔로우" colorClass="bg-primary" />
@@ -158,16 +159,18 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
 
           {/* 일반 메뉴 버튼들 */}
           <button
-            onClick={handleNavigate("statistics", true)}
+            onClick={handleNavigate(MYPAGE_SUBPATH.STATISTICS, true)}
             className={getMenuButtonClass(
-              location.pathname.includes("statistics")
+              location.pathname.includes(MYPAGE_SUBPATH.STATISTICS)
             )}
           >
             통계 시각화
           </button>
           <button
-            onClick={handleNavigate("likes", true)}
-            className={getMenuButtonClass(location.pathname.includes("likes"))}
+            onClick={handleNavigate(MYPAGE_SUBPATH.LIKES, true)}
+            className={getMenuButtonClass(
+              location.pathname.includes(MYPAGE_SUBPATH.LIKES)
+            )}
           >
             좋아요한 포스트
           </button>

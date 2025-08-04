@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { PATH } from "@/constants/paths";
+import { ROUTE } from "@/constants/routes";
 import Oauth from "@/pages/Login/Oauth";
 import SignPageOne from "@/pages/Login/SignPageOne";
 import ProtectedRoute from "@/components/Common/ProtectedRouter";
@@ -57,7 +58,7 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "mypage/:id",
+        path: ROUTE.MYPAGE,
         element: <MyPageLayout />,
         children: [
           {
@@ -83,11 +84,11 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "mypage/:id/editprofile",
+        path: ROUTE.MYPAGE_EDIT,
         element: <EditProfile />,
       },
       {
-        path: "project/:id",
+        path: ROUTE.PROJECT_DETAIL,
         element: <ProjectDetailPage projectName="Cotato" />,
       },
       {
@@ -95,7 +96,7 @@ export const router = createBrowserRouter([
         element: <CommunityPage />,
       },
       {
-        path: "community/:postId",
+        path: ROUTE.COMMUNITY_POST,
         element: <CommunityPostDetail />,
       },
     ],
