@@ -2,6 +2,7 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import FollowButton from "../Button/FollowButton";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import type { StatusType } from "@/types/project";
+import { PATH } from "@/constants/paths";
 
 type MyPageSideBarProps =
   | {
@@ -33,7 +34,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     useMyPageStore();
   const { selectedTag, setSelectedTag, resetSelectedTag } = useMyPageStore();
 
-  const basePath = `/user/mypage/${id}`;
+  const basePath = PATH.MYPAGE(id!);
   const isOnMainPage = location.pathname === basePath;
 
   const handleNavigate =

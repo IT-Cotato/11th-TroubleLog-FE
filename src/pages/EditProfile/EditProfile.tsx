@@ -8,6 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
 import type { ProfileData } from "@/models/user.model";
+import { PATH } from "@/constants/paths";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -86,7 +87,7 @@ const EditProfile = () => {
 
   const handleSave = () => {
     console.log("저장할 데이터:", profile);
-    navigate(`/user/mypage/${id}`);
+    navigate(PATH.MYPAGE(id!));
   };
 
   const handleCancel = () => {
