@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import mockimg from "../../assets/images/mockimg.jpg";
+import instance from "../../api/axios";
 
 const SignPageOne = () => {
   const [email, setEmail] = useState("");
@@ -50,11 +51,25 @@ const SignPageOne = () => {
     return valid;
   };
 
-  const handleEmailBlur = () => {
+  const handleEmailBlur = async () => {
     if (!email.trim()) {
       setEmailError("이메일을 입력해주세요.");
-    } else {
+      return;
+    }
+
+    try {
+      await instance.post(`/auth/email-check`, null, {
+        params: { email },
+      });
+
       setEmailError("");
+    } catch (error: any) {
+      // 409 대신에 상수 사용..? (export const conflict_error)
+      if (error.response?.status === 409) {
+        setEmailError("이미 사용 중인 이메일입니다.");
+      } else {
+        setEmailError("이메일 확인 중 오류가 발생했습니다.");
+      }
     }
   };
 
@@ -83,15 +98,20 @@ const SignPageOne = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    navigate("/signup/detail");
+    navigate("/signup/detail", {
+      state: {
+        email,
+        password,
+      },
+    });
   };
 
   return (
     <div className="flex w-screen h-screen overflow-hidden">
       <img
         src={mockimg}
-        className="w-[961.807px] h-full object-cover shrink-0"
-        alt="signup"
+        alt="login visual"
+        className="w-1/2 h-full object-cover"
       />
       <div className="w-[960px] h-full px-[200px] py-[281px] flex flex-col justify-center items-center">
         <div className="w-[560px] flex flex-col items-center gap-10">

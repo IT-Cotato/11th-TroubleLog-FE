@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
-import { login } from "@/services/auth";
+// import { login } from "@/services/auth";
 import mockimg from "../../assets/images/mockimg.jpg";
 import KakaoLoginButton from "./KakaoLoginButton";
+import instance from "../../api/axios";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -39,14 +40,21 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const res = await login(email, password);
-      localStorage.setItem("token", res.token);
+      const payload = {
+        email,
+        password,
+      };
+
+      const response = await instance.post("/auth/login", payload);
+      console.log("로그인 성공", response.data);
       navigate("/dashboard");
-    } catch (err: any) {
-      console.error(err);
-      setFormError("로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.");
-    } finally {
-      setLoading(false);
+    } catch (error: any) {
+      console.error("로그인 실패:", error);
+      if (error.response?.data?.message) {
+        setFormError(error.response.data.message);
+      } else {
+        setFormError("로그인 중 오류가 발생했습니다.");
+      }
     }
   };
 

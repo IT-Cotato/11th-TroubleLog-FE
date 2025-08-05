@@ -1,14 +1,18 @@
 import { useState } from "react";
 import Input from "./Input";
 import mockimg from "../../assets/images/mockimg.jpg";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import instance from "../../api/axios";
 
 const SignPageTwo = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [nickname, setNickname] = useState("");
   const [field, setField] = useState("");
   const [bio, setBio] = useState("");
   const [githubad, setGithubad] = useState("");
+  const { email, password } = location.state || {};
 
   const [nicknameError, setNicknameError] = useState("");
   const [fieldError, setFieldError] = useState("");
@@ -38,9 +42,31 @@ const SignPageTwo = () => {
     return valid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+
+    try {
+      const payload = {
+        email,
+        password,
+        nickname,
+        field,
+        bio,
+        githubUrl: githubad,
+      };
+
+      const response = await instance.post("/auth/register", payload);
+      console.log("회원가입 성공", response.data);
+      navigate("/login");
+    } catch (error: any) {
+      console.error("회원가입 실패:", error);
+      if (error.response?.data?.message) {
+        setFormError(error.response.data.message);
+      } else {
+        setFormError("회원가입 중 오류가 발생했습니다.");
+      }
+    }
   };
 
   return (
@@ -109,7 +135,7 @@ const SignPageTwo = () => {
                 className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center"
               >
                 <span className="text-white text-[20px] font-semibold font-pretendard">
-                  다음으로
+                  회원가입
                 </span>
               </button>
             </div>
