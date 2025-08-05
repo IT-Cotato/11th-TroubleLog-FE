@@ -5,6 +5,7 @@ export const mapToTroubleShootingCard = (
   card: TroublogCardProps
 ): TroubleShootingCardProps => ({
   id: String(card.id),
+  isMine: card.isMine,
   errorCategory: card.errorCategory,
   title: card.title,
   content:
