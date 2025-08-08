@@ -5,6 +5,7 @@ import PostComment, {
 import PostGuide from "@/components/Community/PostGuide";
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
+import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { mockPost } from "@/mocks/mockPost";
 import { useEffect, useRef, useState } from "react";
@@ -41,7 +42,7 @@ export default function CommunityPostDetail() {
 
   // 작성자 프로필 클릭 핸들러
   const handleProfileClick = () => {
-    navigate(`/user/mypage/1`); // 임시
+    navigate(PATH.MYPAGE("1")); // 임시
   };
 
   // 케밥 메뉴

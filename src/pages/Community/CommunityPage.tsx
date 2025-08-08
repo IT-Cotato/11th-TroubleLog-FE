@@ -1,5 +1,6 @@
 import TroublogCard from "@/components/Card/TroublogCard";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
+import { PATH } from "@/constants/paths";
 import { mockCards } from "@/mocks/mockCards";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -96,7 +97,7 @@ export default function CommunityPage() {
               <div
                 key={card.id}
                 className="cursor-pointer"
-                onClick={() => navigate(`/user/community/${card.id}`)}
+                onClick={() => navigate(PATH.COMMUNITY_POST(card.id))}
               >
                 <TroublogCard {...card} />
               </div>

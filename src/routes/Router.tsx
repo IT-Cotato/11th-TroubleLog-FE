@@ -1,4 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
+import { PATH } from "@/constants/paths";
+import { ROUTE } from "@/constants/routes";
 import Oauth from "@/pages/Login/Oauth";
 import SignPageOne from "@/pages/Login/SignPageOne";
 import ProtectedRoute from "@/components/Common/ProtectedRouter";
@@ -21,20 +23,20 @@ import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    path: PATH.ROOT,
     element: <LoginPage />,
   },
-  { path: "oauth", element: <Oauth /> },
+  { path: PATH.OAUTH, element: <Oauth /> },
   {
-    path: "signup",
+    path: PATH.SIGNUP,
     element: <SignPageOne />,
   },
   {
-    path: "signup/detail",
+    path: PATH.SIGNUP_DETAIL,
     element: <SignPageTwo />,
   },
   {
-    path: "user",
+    path: PATH.USER,
     element: (
       <ProtectedRoute>
         <MainLayout />
@@ -42,12 +44,12 @@ export const router = createBrowserRouter([
     ),
     children: [
       {
-        path: "home",
+        path: PATH.HOME,
         element: <HomePage />,
       },
 
       {
-        path: "search",
+        path: PATH.SEARCH,
         children: [
           {
             index: true,
@@ -56,7 +58,7 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "mypage/:id",
+        path: ROUTE.MYPAGE,
         element: <MyPageLayout />,
         children: [
           {
@@ -82,25 +84,25 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "mypage/:id/editprofile",
+        path: ROUTE.MYPAGE_EDIT,
         element: <EditProfile />,
       },
       {
-        path: "project/:id",
+        path: ROUTE.PROJECT_DETAIL,
         element: <ProjectDetailPage projectName="Cotato" />,
       },
       {
-        path: "community",
+        path: PATH.COMMUNITY,
         element: <CommunityPage />,
       },
       {
-        path: "community/:postId",
+        path: ROUTE.COMMUNITY_POST,
         element: <CommunityPostDetail />,
       },
     ],
   },
   {
-    path: "tempwriting",
+    path: PATH.TEMP_WRITING,
     element: (
       <ProtectedRoute>
         <TempWritePage />
@@ -108,7 +110,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "freeformwriting",
+    path: PATH.FREEFORM_WRITING,
     element: (
       <ProtectedRoute>
         <FreeFormWritePage />

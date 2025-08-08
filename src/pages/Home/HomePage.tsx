@@ -4,15 +4,41 @@ import Snackbar from "@/components/Feedback/Snackbar";
 import TroublogCard from "@/components/Card/TroublogCard";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
-import NewFolderModal from "@/components/Modal/FolderModal";
+import FolderModal from "@/components/Modal/FolderModal";
 import { mockCards } from "@/mocks/mockCards";
 import { mockFolders } from "@/mocks/mockFolders";
 import useClickOutside from "@/hooks/useClickOutside";
+import { postCreateProject } from "@/api/project.api";
+import type { CreateProjectRequest } from "@/types/project.model";
 
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 새 프로젝트 생성 핸들러
+  const handleCreateProject = async (data: {
+    name: string;
+    description: string;
+    thumbnail: string | null;
+  }) => {
+    try {
+      const payload: CreateProjectRequest = {
+        name: data.name,
+        description: data.description,
+        thumbnailImageUrl: data.thumbnail ?? "",
+      };
+
+      const response = await postCreateProject(payload);
+
+      console.log("생성된 프로젝트:", response);
+      alert("프로젝트가 생성되었습니다!");
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("프로젝트 생성 실패", error);
+      alert("프로젝트 생성에 실패했습니다.");
+    }
+  };
 
   const handlePostClick = useCallback(() => {
     if (mockFolders.length === 0) {
@@ -110,7 +136,13 @@ export default function HomePage() {
       </ProjectAccordion>
 
       {/* 모달 표시 */}
-      {isModalOpen && <NewFolderModal mode="new" onClose={handleCloseModal} />}
+      {isModalOpen && (
+        <FolderModal
+          mode="new"
+          onClose={handleCloseModal}
+          onSubmit={handleCreateProject}
+        />
+      )}
     </div>
   );
 }
