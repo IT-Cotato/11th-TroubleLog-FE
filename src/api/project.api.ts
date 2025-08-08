@@ -29,3 +29,22 @@ export const getProjectDetail = (projectId: number) =>
     url: `/project/${projectId}`,
     method: "GET",
   });
+
+/// 프로젝트 수정
+
+export const putUpdateProject = (
+  projectId: number,
+  payload: CreateProjectRequest
+) =>
+  getAPIResponseData<ProjectData, CreateProjectRequest>({
+    url: `/project/${projectId}`,
+    method: "PUT",
+    data: payload,
+  });
+
+/// 프로젝트 삭제
+export const deleteProject = (projectId: number) =>
+  getAPIResponseData<null>({
+    url: `/project/${projectId}`,
+    method: "DELETE",
+  });

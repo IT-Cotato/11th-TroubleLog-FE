@@ -17,6 +17,7 @@ export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   // 프로젝트 목록 상태
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
@@ -42,28 +43,25 @@ export default function HomePage() {
   }, [fetchProjects]);
 
   // 새 프로젝트 생성 핸들러
-  const handleCreateProject = async (data: {
-    name: string;
-    description: string;
-    thumbnail: string | null;
-  }) => {
+  const handleCreateProject = async (data: CreateProjectRequest) => {
     try {
+      setCreating(true);
       const payload: CreateProjectRequest = {
         name: data.name,
         description: data.description,
-        thumbnailImageUrl: data.thumbnail ?? "",
+        thumbnailImageUrl: data.thumbnailImageUrl ?? "",
       };
 
-      const response = await postCreateProject(payload);
-
+      await postCreateProject(payload);
       await fetchProjects();
 
-      console.log("생성된 프로젝트:", response);
       alert("프로젝트가 생성되었습니다!");
       setIsModalOpen(false);
     } catch (error) {
       console.error("프로젝트 생성 실패", error);
       alert("프로젝트 생성에 실패했습니다.");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -79,6 +77,15 @@ export default function HomePage() {
   const handleOpenModal = useCallback(() => setIsModalOpen(true), []);
   const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
   const dropdownRef = useClickOutside(() => setShowDropdown(false));
+
+  // 프로젝트 폴더 수정/삭제 후 목록 리프레시
+  const handleCardUpdated = useCallback(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const handleCardDeleted = useCallback(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   return (
     <div className="flex px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[40px]">
@@ -154,6 +161,8 @@ export default function HomePage() {
                 description={p.description}
                 thumbnail={p.thumbnailImageUrl}
                 tags={p.tags}
+                onUpdated={handleCardUpdated}
+                onDeleted={handleCardDeleted}
               />
             ))}
           </div>
@@ -184,6 +193,7 @@ export default function HomePage() {
           mode="new"
           onClose={handleCloseModal}
           onSubmit={handleCreateProject}
+          loading={creating}
         />
       )}
     </div>
