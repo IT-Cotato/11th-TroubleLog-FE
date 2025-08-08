@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import mockimg from "../../assets/images/mockimg.jpg";
-import instance from "../../api/axios";
+import { postEmailCheck } from "@/api/auth.api";
 
 const SignPageOne = () => {
   const [email, setEmail] = useState("");
@@ -52,19 +52,28 @@ const SignPageOne = () => {
   };
 
   const handleEmailBlur = async () => {
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+
+    // 1) 빈 이메일
+    if (!trimmedEmail) {
       setEmailError("이메일을 입력해주세요.");
       return;
     }
 
-    try {
-      await instance.post(`/auth/email-check`, null, {
-        params: { email },
-      });
+    // 2) 이메일 형식 유효성
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setEmailError("유효한 이메일 형식을 입력해주세요.");
+      return;
+    }
 
-      setEmailError("");
+    // 형식이 맞으면 에러 초기화
+    setEmailError("");
+
+    try {
+      await postEmailCheck(trimmedEmail);
+      setEmailError(""); // 서버에서 중복 아님 → 에러 없음
     } catch (error: any) {
-      // 409 대신에 상수 사용..? (export const conflict_error)
       if (error.response?.status === 409) {
         setEmailError("이미 사용 중인 이메일입니다.");
       } else {
@@ -121,9 +130,9 @@ const SignPageOne = () => {
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col items-start gap-12 w-full"
+            className="flex flex-col items-start gap-4 w-full"
           >
-            <div className="flex flex-col items-start gap-4 w-full">
+            <div className="flex flex-col items-start w-full">
               <Input
                 label="이메일"
                 type="email"

@@ -63,7 +63,12 @@ const TempWritePage = () => {
     setBlocks((prev) => {
       const newBlocks = [...prev];
       const checklist = new Set(newBlocks[index].checklist);
-      checked ? checklist.add(item) : checklist.delete(item);
+      if (checked) {
+        checklist.add(item);
+      } else {
+        checklist.delete(item);
+      }
+
       newBlocks[index].checklist = Array.from(checklist);
       return newBlocks;
     });
@@ -142,7 +147,7 @@ const TempWritePage = () => {
       <HeaderWoSearch />
       <div className="flex justify-center px-[225px] pt-[68px] items-start">
         <div className="flex-1 flex w-[1500px] flex-col gap-[36px]">
-          {/* ✅ Alert */}
+          {/* Alert */}
           {showAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               제목, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요.
@@ -154,7 +159,7 @@ const TempWritePage = () => {
             </div>
           )}
 
-          {/* ✅ 제목 + 태그 */}
+          {/*  제목 + 태그 */}
           <div className="flex flex-col items-start gap-[40px]">
             <input
               type="text"
@@ -176,33 +181,31 @@ const TempWritePage = () => {
             </div>
           </div>
 
-          {/* ✅ 블록 렌더링 (역순 표시) */}
+          {/* 블록 렌더링 (역순 표시) */}
           <div>
-            {[...blocks] // 원본 복사
-              .reverse() // 화면에 역순으로 표시
-              .map((block, index) => {
-                const originalIndex = blocks.length - 1 - index; // 실제 index
-                return (
-                  <EditorBlock
-                    key={block.id}
-                    block={block}
-                    index={originalIndex}
-                    isActive={originalIndex === activeIndex}
-                    isLast={originalIndex === questionData.length - 1}
-                    onChange={handleChangeBlockContent}
-                    onToggleChecklist={handleToggleChecklist}
-                    onAddBlock={handleAddBlock}
-                    onEnd={handleEnd}
-                    title={title}
-                    selectedErrorType={selectedErrorType}
-                    onShowSaveAlert={handleShowSaveAlert}
-                    onActivate={(i) => setActiveIndex(i)}
-                  />
-                );
-              })}
+            {[...blocks].reverse().map((block, index) => {
+              const originalIndex = blocks.length - 1 - index; // 실제 index
+              return (
+                <EditorBlock
+                  key={block.id}
+                  block={block}
+                  index={originalIndex}
+                  isActive={originalIndex === activeIndex}
+                  isLast={originalIndex === questionData.length - 1}
+                  onChange={handleChangeBlockContent}
+                  onToggleChecklist={handleToggleChecklist}
+                  onAddBlock={handleAddBlock}
+                  onEnd={handleEnd}
+                  title={title}
+                  selectedErrorType={selectedErrorType}
+                  onShowSaveAlert={handleShowSaveAlert}
+                  onActivate={(i) => setActiveIndex(i)}
+                />
+              );
+            })}
           </div>
 
-          {/* ✅ 모달들 */}
+          {/* 모달 */}
           {isPostSaveModalOpen && (
             <PostSaveModal
               onClose={() => setIsPostSaveModalOpen(false)}

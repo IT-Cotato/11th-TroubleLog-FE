@@ -1,5 +1,5 @@
-import instance from "../../api/axios";
 import { useNavigate } from "react-router-dom";
+import { postLogout } from "@/api/auth.api";
 
 interface UserMenuDropdownProps {
   onNavigateToMyPage: () => void;
@@ -14,25 +14,13 @@ export default function UserMenuDropdown({
 
   const handleLogout = async () => {
     try {
-      const refreshToken = localStorage.getItem("refreshToken");
+      const response = await postLogout();
+      console.log("로그아웃 성공:", response.data);
 
-      if (!refreshToken) {
-        console.warn("No refresh token found.");
-        return;
-      }
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken"); // 저장되어있으면
 
-      const response = await instance.post(
-        "/auth/logout",
-        {},
-        {
-          headers: {
-            refreshToken: refreshToken,
-          },
-        }
-      );
-
-      console.log("로그아웃 성공", response.data);
-
+      onClose();
       navigate("/login");
     } catch (error: any) {
       console.error("로그아웃 실패:", error);
@@ -49,11 +37,7 @@ export default function UserMenuDropdown({
       </div>
       <div
         className="px-4 py-2 cursor-pointer hover:bg-gray1"
-        onClick={() => {
-          handleLogout();
-          console.log("로그아웃 처리");
-          onClose();
-        }}
+        onClick={handleLogout}
       >
         로그아웃
       </div>

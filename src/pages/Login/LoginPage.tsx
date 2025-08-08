@@ -4,7 +4,7 @@ import Input from "./Input";
 // import { login } from "@/services/auth";
 import mockimg from "../../assets/images/mockimg.jpg";
 import KakaoLoginButton from "./KakaoLoginButton";
-import instance from "../../api/axios";
+import { postLogin } from "@/api/auth.api";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +15,26 @@ const LoginPage = () => {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleEmailBlur = async () => {
+    const trimmedEmail = email.trim();
+
+    // 1) 빈 이메일
+    if (!trimmedEmail) {
+      setEmailError("이메일을 입력해주세요.");
+      return;
+    }
+
+    // 2) 이메일 형식 유효성
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setEmailError("유효한 이메일 형식을 입력해주세요.");
+      return;
+    }
+
+    // 형식이 맞으면 에러 초기화
+    setEmailError("");
+  };
 
   const validateForm = () => {
     let valid = true;
@@ -40,13 +60,13 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const payload = {
-        email,
-        password,
-      };
+      const response = await postLogin(email, password);
+      const data = response.data;
 
-      const response = await instance.post("/auth/login", payload);
-      console.log("로그인 성공", response.data);
+      console.log("로그인 성공!", data);
+
+      localStorage.setItem("accessToken", data.accessToken);
+
       navigate("/dashboard");
     } catch (error: any) {
       console.error("로그인 실패:", error);
@@ -55,6 +75,8 @@ const LoginPage = () => {
       } else {
         setFormError("로그인 중 오류가 발생했습니다.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,14 +95,15 @@ const LoginPage = () => {
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col items-start gap-12 w-full"
+            className="flex flex-col items-start gap-4 w-full"
           >
-            <div className="flex flex-col items-start gap-4 w-full">
+            <div className="flex flex-col items-start w-full">
               <Input
                 label="이메일"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={handleEmailBlur}
                 placeholder="이메일을 입력해주세요"
                 error={emailError}
                 name="email"
@@ -101,7 +124,7 @@ const LoginPage = () => {
               <p className="text-red-500 text-[14px]">{formError}</p>
             )}
 
-            <div className="flex flex-col items-start gap-2 w-full">
+            <div className="flex flex-col items-start gap-3 w-full">
               <button
                 type="submit"
                 className="flex justify-center items-center w-full h-12 bg-[#9737fd] rounded-lg"
