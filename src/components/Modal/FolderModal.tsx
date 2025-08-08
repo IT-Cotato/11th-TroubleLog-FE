@@ -2,9 +2,11 @@ import { useRef, useState, useEffect } from "react";
 import BaseModal from "./BaseModal";
 import CancelButton from "../Button/CancelButton";
 import SaveButton from "../Button/SaveButton";
+import { getProjectDetail } from "@/api/project.api";
 
 interface FolderModalProps {
   mode: "new" | "edit";
+  projectId?: number;
   onClose: () => void;
   onSubmit?: (data: {
     name: string;
@@ -18,6 +20,7 @@ interface FolderModalProps {
 
 export default function FolderModal({
   mode,
+  projectId,
   onClose,
   onSubmit,
   initialName = "",
@@ -27,6 +30,35 @@ export default function FolderModal({
   const [thumbnail, setThumbnail] = useState<string | null>(initialThumbnail);
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
+  const [syncing, setSyncing] = useState(false);
+
+  // edit 모드일 때 프로젝트 상세 조회 api 호출
+  useEffect(() => {
+    if (mode !== "edit" || !projectId) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        setSyncing(true);
+        const detail = await getProjectDetail(projectId);
+        if (!isMounted) return;
+
+        // 상세 응답으로 폼 값 덮어쓰기
+        setName(detail.name ?? "");
+        setDescription(detail.description ?? "");
+        setThumbnail(detail.thumbnailImageUrl ?? null);
+      } catch (e) {
+        console.error("프로젝트 상세 조회 실패:", e);
+      } finally {
+        if (isMounted) setSyncing(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [mode, projectId]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,7 +180,10 @@ export default function FolderModal({
       {/* 버튼 영역 */}
       <div className="flex justify-end gap-[17px] mb-[24px] px-[36px] w-full">
         <CancelButton onClick={onClose} />
-        <SaveButton onClick={handleSubmit} label="완료" />
+        <SaveButton
+          onClick={handleSubmit}
+          label={syncing ? "동기화 중..." : "완료"}
+        />
       </div>
     </BaseModal>
   );

@@ -21,3 +21,11 @@ export const getProjectList = () =>
     url: "/project/list",
     method: "GET",
   });
+
+/// 프로젝트 상세 조회
+
+export const getProjectDetail = (projectId: number) =>
+  getAPIResponseData<ProjectListItem>({
+    url: `/project/${projectId}`,
+    method: "GET",
+  });

@@ -15,6 +15,7 @@ export interface ProjectFolderCardProps {
 }
 
 export default function ProjectFolderCard({
+  id,
   name,
   description = "",
   tags,
@@ -95,10 +96,8 @@ export default function ProjectFolderCard({
       {showEditModal && (
         <FolderModal
           mode="edit"
+          projectId={id}
           onClose={handleModalClose}
-          initialName={name}
-          initialDescription={description}
-          initialThumbnail={thumbnail ?? null}
           onSubmit={(data) => {
             console.log("수정된 폴더 데이터:", data);
             setShowEditModal(false);

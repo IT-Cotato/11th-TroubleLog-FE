@@ -30,3 +30,11 @@ export interface GetProjectListResponse {
   message: string;
   data: ProjectListItem[];
 }
+
+/// 프로젝트 상세 조회
+
+export interface GetProjectDetailResponse {
+  status: number;
+  message: string;
+  data: ProjectListItem;
+}
