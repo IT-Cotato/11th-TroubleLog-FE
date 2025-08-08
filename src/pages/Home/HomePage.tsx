@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import PostButton from "@/components/Button/PostButton";
 import Snackbar from "@/components/Feedback/Snackbar";
 import TroublogCard from "@/components/Card/TroublogCard";
@@ -6,15 +6,40 @@ import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
 import FolderModal from "@/components/Modal/FolderModal";
 import { mockCards } from "@/mocks/mockCards";
-import { mockFolders } from "@/mocks/mockFolders";
 import useClickOutside from "@/hooks/useClickOutside";
-import { postCreateProject } from "@/api/project.api";
-import type { CreateProjectRequest } from "@/types/project.model";
+import { getProjectList, postCreateProject } from "@/api/project.api";
+import type {
+  ProjectListItem,
+  CreateProjectRequest,
+} from "@/types/project.model";
 
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 프로젝트 목록 상태
+  const [projects, setProjects] = useState<ProjectListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
+
+  // 최초 로드 시 목록 가져오기
+  const fetchProjects = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const list = await getProjectList();
+      setProjects(Array.isArray(list) ? list : []);
+    } catch (e) {
+      setLoadError(e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   // 새 프로젝트 생성 핸들러
   const handleCreateProject = async (data: {
@@ -31,6 +56,8 @@ export default function HomePage() {
 
       const response = await postCreateProject(payload);
 
+      await fetchProjects();
+
       console.log("생성된 프로젝트:", response);
       alert("프로젝트가 생성되었습니다!");
       setIsModalOpen(false);
@@ -41,17 +68,16 @@ export default function HomePage() {
   };
 
   const handlePostClick = useCallback(() => {
-    if (mockFolders.length === 0) {
+    if (projects.length === 0) {
       setShowSnackbar(true);
       setTimeout(() => setShowSnackbar(false), 1000);
     } else {
       setShowDropdown((prev) => !prev);
     }
-  }, []);
+  }, [projects.length]);
 
   const handleOpenModal = useCallback(() => setIsModalOpen(true), []);
   const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
-
   const dropdownRef = useClickOutside(() => setShowDropdown(false));
 
   return (
@@ -102,7 +128,17 @@ export default function HomePage() {
         }
       >
         {/* 폴더 존재 시 폴더 카드 목록, 없으면 텍스트 */}
-        {mockFolders.length === 0 ? (
+        {isLoading ? (
+          <div className="w-full flex h-[132px] justify-center items-center rounded-[8px] bg-white shadow-card">
+            <span className="text-body-20-regular">불러오는 중...</span>
+          </div>
+        ) : loadError ? (
+          <div className="w-full flex h-[132px] justify-center items-center rounded-[8px] bg-white shadow-card">
+            <span className="text-body-20-regular text-red-500">
+              목록 로드 실패
+            </span>
+          </div>
+        ) : projects.length === 0 ? (
           <div className="w-full flex h-[132px] justify-center items-center self-stretch rounded-[8px] bg-white shadow-card">
             <span className="text-body-20-regular">
               아직 요약하신 폴더가 없어요.
@@ -110,8 +146,15 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-[24px] self-stretch">
-            {mockFolders.map((folder) => (
-              <ProjectFolderCard key={folder.id} {...folder} />
+            {projects.map((p) => (
+              <ProjectFolderCard
+                key={p.id}
+                id={p.id}
+                name={p.name}
+                description={p.description}
+                thumbnail={p.thumbnailImageUrl}
+                tags={p.tags}
+              />
             ))}
           </div>
         )}

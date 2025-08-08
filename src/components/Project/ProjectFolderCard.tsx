@@ -7,18 +7,18 @@ import FolderModal from "../Modal/FolderModal";
 import ConfirmDeleteModal from "../Modal/ConfirmDeleteModal";
 
 export interface ProjectFolderCardProps {
-  id: string;
+  id: number;
   name: string;
   description?: string;
   tags: string[];
-  thumbnailUrl?: string;
+  thumbnail?: string;
 }
 
 export default function ProjectFolderCard({
   name,
   description = "",
   tags,
-  thumbnailUrl,
+  thumbnail,
 }: ProjectFolderCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -52,9 +52,9 @@ export default function ProjectFolderCard({
           <div className="flex items-center gap-[16px]">
             {/* 썸네일 자리 */}
             <div className="flex w-[100px] h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden">
-              {thumbnailUrl && (
+              {thumbnail && (
                 <img
-                  src={thumbnailUrl}
+                  src={thumbnail}
                   alt="thumbnail"
                   className="w-full h-full object-cover"
                 />
@@ -98,7 +98,7 @@ export default function ProjectFolderCard({
           onClose={handleModalClose}
           initialName={name}
           initialDescription={description}
-          initialThumbnail={thumbnailUrl ?? null}
+          initialThumbnail={thumbnail ?? null}
           onSubmit={(data) => {
             console.log("수정된 폴더 데이터:", data);
             setShowEditModal(false);
