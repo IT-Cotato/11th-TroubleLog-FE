@@ -8,6 +8,7 @@ import { useSearchStore } from "@/store/useSearchStore";
 import useClickOutside from "@/hooks/useClickOutside";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
 import NotificationModal from "../Modal/NotificationModal";
+import { PATH } from "@/constants/paths";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -37,15 +38,20 @@ const Header = () => {
   useEffect(() => {
     const path = location.pathname;
 
-    if (path.startsWith("/user/profile/")) {
-      const username = path.split("/user/profile/")[1]?.split("/")[0];
-      setPlaceholder(
-        `키워드나 태그 등의 검색어를 통해 ${username}님의 트러블슈팅을 검색해보세요!`
-      );
-    } else if (
-      path.startsWith("/user/mypage") ||
-      path.startsWith("/user/home")
-    ) {
+    const mypageMatch = path.match(/^\/user\/mypage\/([^/]+)/);
+    const pageUserId = mypageMatch?.[1];
+
+    if (path.startsWith(PATH.MYPAGE(""))) {
+      if (pageUserId === myUserId) {
+        setPlaceholder(
+          "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
+        );
+      } else {
+        setPlaceholder(
+          `키워드나 태그 등의 검색어를 통해 ${pageUserId}님의 트러블슈팅을 검색해보세요!`
+        );
+      }
+    } else if (path.startsWith(PATH.HOME)) {
       setPlaceholder(
         "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
       );
@@ -54,7 +60,7 @@ const Header = () => {
         "키워드나 태그 등의 검색어를 통해 다른 사람들의 트러블슈팅을 검색해보세요!"
       );
     }
-  }, [location.pathname, setPlaceholder]);
+  }, [location.pathname, setPlaceholder, myUserId]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -65,23 +71,23 @@ const Header = () => {
 
     const currentPath = location.pathname;
     let scope = "community";
-    let username = "";
+    let pageUserId = "";
 
-    if (currentPath.startsWith("/user/profile/")) {
-      scope = "user";
-      username = currentPath.split("/user/profile/")[1]?.split("/")[0];
-    } else if (currentPath === "/user/mypage") {
-      scope = "mypage";
-    } else if (currentPath.startsWith("/user/home")) {
+    const mypageMatch = currentPath.match(/^\/user\/mypage\/([^/]+)/);
+    pageUserId = mypageMatch?.[1] ?? "";
+
+    if (currentPath.startsWith(PATH.MYPAGE(""))) {
+      scope = pageUserId === myUserId ? "mypage" : "user";
+    } else if (currentPath.startsWith(PATH.HOME)) {
       scope = "my";
     }
 
     const searchParams = new URLSearchParams();
     searchParams.set("query", search);
     searchParams.set("scope", scope);
-    if (username) searchParams.set("username", username);
+    if (scope === "user") searchParams.set("userId", pageUserId);
 
-    navigate(`/user/search?${searchParams.toString()}`);
+    navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
   };
 
   return (
@@ -90,7 +96,7 @@ const Header = () => {
         src="/icons/logo.svg"
         alt="logo"
         className="w-[70px] h-[51px] cursor-pointer"
-        onClick={() => navigate("/user/home")}
+        onClick={() => navigate(PATH.HOME)}
       />
       <div className="flex gap-[72px] items-center">
         <div className="flex w-[1200px] h-12 p-2 justify-between items-center gap-1 rounded-md border border-gray1">
@@ -138,7 +144,7 @@ const Header = () => {
                 <UserMenuDropdown
                   onClose={() => setIsUserDropdownOpen(false)}
                   onNavigateToMyPage={() => {
-                    navigate(`/user/mypage/${myUserId}`);
+                    navigate(PATH.MYPAGE(myUserId));
                     setIsUserDropdownOpen(false);
                   }}
                 />
