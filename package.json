@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "tailwind:init": "tailwindcss init -p"
+    "tailwind:init": "tailwindcss init -p",
+    "msw:init": "msw init public --save",
+    "postinstall": "msw init public --save --no-open || true"
   },
   "dependencies": {
     "@uiw/react-md-editor": "^4.0.7",
