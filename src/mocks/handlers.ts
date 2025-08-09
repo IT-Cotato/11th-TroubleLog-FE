@@ -38,6 +38,14 @@ export const handlers = [
   // GET /project/:projectId - 프로젝트 상세 조회
   http.get("/project/:projectId", ({ params }) => {
     const id = Number(params.projectId);
+
+    if (Number.isNaN(id)) {
+      return HttpResponse.json(
+        { status: 400, message: "잘못된 프로젝트 ID입니다.", data: null },
+        { status: 400 }
+      );
+    }
+
     const found = mockProjectList.find((p) => p.id === id);
 
     if (!found) {
