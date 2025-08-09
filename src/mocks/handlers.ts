@@ -108,6 +108,14 @@ export const handlers = [
   // DELETE /project/:projectId - 프로젝트 삭제
   http.delete("/project/:projectId", ({ params }) => {
     const id = Number(params.projectId);
+
+    if (Number.isNaN(id)) {
+      return HttpResponse.json<DeleteProjectResponse>(
+        { status: 400, message: "잘못된 프로젝트 ID입니다.", data: null },
+        { status: 400 }
+      );
+    }
+
     const index = mockProjectList.findIndex((p) => p.id === id);
 
     if (index === -1) {
