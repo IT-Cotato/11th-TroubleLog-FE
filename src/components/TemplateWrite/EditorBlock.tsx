@@ -32,7 +32,7 @@ const EditorBlock = ({
   onChange,
   onToggleChecklist,
   onAddBlock,
-  onActivate, // ✅ 추가
+  onActivate,
   isActive,
   isLast,
   onEnd,
@@ -43,7 +43,7 @@ const EditorBlock = ({
   return (
     <div
       className="flex flex-row gap-[25px] pb-[25px]"
-      onClick={() => onActivate(index)} // ✅ 블록 클릭 시 활성화 변경
+      onClick={() => onActivate(index)}
     >
       <div className="flex flex-col gap-[16px] w-[1200px]">
         <div className="flex justify-between items-start">
@@ -86,7 +86,7 @@ const EditorBlock = ({
             height={240}
             preview={isActive ? "edit" : "preview"}
             style={{ width: "1200px" }}
-            autoFocus={isActive} // ✅ 활성화 시 자동 포커스
+            autoFocus={isActive}
           />
         </div>
       </div>
@@ -96,7 +96,7 @@ const EditorBlock = ({
         {block.checklistItems.length > 0 && (
           <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
             <img
-              src="/public/icons/alerticon.svg"
+              src="/icons/alerticon.svg"
               alt="alert icon"
               className="w-5 h-5"
             />

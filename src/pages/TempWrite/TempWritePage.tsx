@@ -9,6 +9,9 @@ import { questionData } from "../../components/TemplateWrite/questionTemplate";
 import PostSaveModal from "./PostSaveModal";
 import PostLoadingModal from "./PostLoadingModal";
 import TemplateSelectModal from "./TemplateSelectModal";
+import { useNavigate } from "react-router-dom";
+import { PATH } from "@/constants/paths";
+import type { PostSavePayload } from "./PostSaveModal";
 
 const TempWritePage = () => {
   const [title, setTitle] = useState("");
@@ -25,6 +28,8 @@ const TempWritePage = () => {
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [showSaveAlert, setShowSaveAlert] = useState(false);
+  const navigate = useNavigate();
+  const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
 
   // 첫번째 블록 생성
   useEffect(() => {
@@ -117,11 +122,6 @@ const TempWritePage = () => {
     setTimeout(() => setShowSaveAlert(false), 3000);
   };
 
-  const handleNextInPostSaveModal = () => {
-    setIsPostSaveModalOpen(false);
-    setIsTemplateSelectModalOpen(true);
-  };
-
   const handleConfirmTemplate = () => {
     setIsTemplateSelectModalOpen(false);
     setIsLoadingModalOpen(true);
@@ -141,6 +141,42 @@ const TempWritePage = () => {
     "Third-Party Library Error",
     "Others",
   ];
+
+  function toGuideContent(text: string) {
+    // 빈 줄 기준 문단으로 쪼개기
+    const paragraphs = (text ?? "").split(/\n{2,}/).map((s) => s.trim());
+
+    return paragraphs; // string[] 그대로 반환
+  }
+  const handleNextInPostSaveModal = (payload: PostSavePayload) => {
+    setPreviewMeta(payload);
+    setIsPostSaveModalOpen(false);
+    setIsTemplateSelectModalOpen(true);
+  };
+
+  const handleLater = () => {
+    const filledBlocks = blocks.filter((b) => b.content?.trim().length > 0);
+
+    const questions = filledBlocks.map((b) => b.question);
+    const contents = filledBlocks.map((b) => toGuideContent(b.content));
+
+    navigate(PATH.PREVIEW, {
+      state: {
+        title,
+        tags: selectedTags,
+        errorType: selectedErrorType,
+
+        importance: previewMeta?.importance,
+        authorName: "나",
+        authorProfile: null,
+        authorBio: "",
+        date: new Date().toISOString().slice(2, 10).replace(/-/g, "."),
+
+        questions,
+        contents,
+      },
+    });
+  };
 
   return (
     <div>
@@ -172,7 +208,7 @@ const TempWritePage = () => {
               <DropDownButton
                 options={errorOptions}
                 placeholder="에러 종류를 선택하세요"
-                width="w-[340px]"
+                width="w-[340px] h-[36px]"
                 onSelect={(selectedError) =>
                   setSelectedErrorType(selectedError)
                 }
@@ -216,6 +252,7 @@ const TempWritePage = () => {
             <TemplateSelectModal
               onConfirm={handleConfirmTemplate}
               onClose={() => setIsTemplateSelectModalOpen(false)}
+              onLater={handleLater}
             />
           )}
           {isLoadingModalOpen && (

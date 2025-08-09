@@ -84,7 +84,7 @@ const SignPageTwo = () => {
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col items-start gap-4 w-full"
+            className="flex flex-col items-start w-full"
           >
             <div className="flex flex-col items-start  w-full">
               <Input
@@ -125,10 +125,6 @@ const SignPageTwo = () => {
               />
             </div>
 
-            {formError && (
-              <p className="text-red-500 text-[16px] mt-1">{formError}</p>
-            )}
-
             <div className="flex flex-col items-start gap-4 w-full">
               <button
                 type="submit"
@@ -140,6 +136,17 @@ const SignPageTwo = () => {
               </button>
             </div>
           </form>
+          {formError && (
+            <p
+              className={`text-[13px] mb min-h-[25px] transition-opacity duration-150
+                ${formError ? "text-red-500 opacity-100" : "opacity-0"}`}
+              aria-live={formError ? "polite" : undefined}
+              role={formError ? "alert" : undefined}
+              aria-hidden={!formError}
+            >
+              {formError}
+            </p>
+          )}
 
           <div className="flex flex-row items-end self-end gap-4">
             <h2 className="text-[18px] text-gray-500 font-pretendard">

@@ -20,6 +20,7 @@ import SearchResultPage from "@/pages/Search/SearchResultPage";
 import CommunityPage from "@/pages/Community/CommunityPage";
 import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
+import PreviewPage from "@/pages/TempWrite/PreviewPage";
 
 export const router = createBrowserRouter([
   {
@@ -106,6 +107,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <TempWritePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: PATH.PREVIEW,
+    element: (
+      <ProtectedRoute>
+        <PreviewPage />
       </ProtectedRoute>
     ),
   },

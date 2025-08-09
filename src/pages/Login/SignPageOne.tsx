@@ -72,7 +72,7 @@ const SignPageOne = () => {
 
     try {
       await postEmailCheck(trimmedEmail);
-      setEmailError(""); // 서버에서 중복 아님 → 에러 없음
+      setEmailError(""); // 서버에서 중복 아님 -> 에러 없음
     } catch (error: any) {
       if (error.response?.status === 409) {
         setEmailError("이미 사용 중인 이메일입니다.");
