@@ -11,7 +11,7 @@ export const mockProject: ProjectData = {
 
 /// 전체 프로젝트 목록 조회
 
-export const mockProjectList: ProjectListItem[] = [
+const initialProjectList: ProjectListItem[] = [
   {
     id: 1,
     name: "Troublog",
@@ -27,3 +27,9 @@ export const mockProjectList: ProjectListItem[] = [
     tags: ["Next.js", "Typescript"],
   },
 ];
+
+export let mockProjectList: ProjectListItem[] = [...initialProjectList];
+
+export const resetMockProjectList = () => {
+  mockProjectList = [...initialProjectList];
+};
