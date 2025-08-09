@@ -113,11 +113,11 @@ export const handlers = [
 
     return HttpResponse.json<DeleteProjectResponse>(
       {
-        status: 204,
+        status: 200,
         message: "프로젝트가 삭제되었습니다.",
         data: null,
       },
-      { status: 204 }
+      { status: 200 }
     );
   }),
 ];

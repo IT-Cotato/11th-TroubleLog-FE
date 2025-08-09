@@ -2,6 +2,7 @@ import type {
   ProjectData,
   CreateProjectRequest,
   ProjectListItem,
+  DeleteProjectResponse,
 } from "@/types/project.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 
@@ -44,7 +45,7 @@ export const putUpdateProject = (
 
 /// 프로젝트 삭제
 export const deleteProject = (projectId: number) =>
-  getAPIResponseData<null>({
+  getAPIResponseData<DeleteProjectResponse>({
     url: `/project/${projectId}`,
     method: "DELETE",
   });
