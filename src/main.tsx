@@ -10,7 +10,7 @@ async function enableMocking() {
     await worker.start({
       onUnhandledRequest: "bypass", // 지정하지 않은 api는 실제 호출
       serviceWorker: {
-        url: "/mockServiceWorker.js",
+        url: `${import.meta.env.BASE_URL}mockServiceWorker.js`,
       },
     });
   }
