@@ -31,11 +31,7 @@ export type GetProjectListResponse = ApiResponse<ProjectListItem[]>;
 
 /// 프로젝트 상세 조회
 
-export interface GetProjectDetailResponse {
-  status: number;
-  message: string;
-  data: ProjectListItem;
-}
+export type GetProjectDetailResponse = ApiResponse<ProjectListItem>;
 
 /// 프로젝트 삭제
 
