@@ -4,6 +4,7 @@ import mockimg from "../../assets/images/mockimg.jpg";
 import { useLocation, useNavigate } from "react-router-dom";
 import { postRegister } from "@/api/auth.api";
 import type { RegisterRequest } from "@/models/auth.model";
+import { PATH } from "@/constants/paths";
 
 const SignPageTwo = () => {
   const navigate = useNavigate();
@@ -133,6 +134,7 @@ const SignPageTwo = () => {
                 <span className="text-white text-[20px] font-semibold font-pretendard">
                   회원가입
                 </span>
+                onClick={PATH.HOME}
               </button>
             </div>
           </form>

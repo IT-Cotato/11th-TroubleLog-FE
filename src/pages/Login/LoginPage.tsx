@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
-// import { login } from "@/services/auth";
 import mockimg from "../../assets/images/mockimg.jpg";
 import KakaoLoginButton from "./KakaoLoginButton";
 import { postLogin } from "@/api/auth.api";
+import { PATH } from "@/constants/paths";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -66,8 +66,6 @@ const LoginPage = () => {
       console.log("로그인 성공!", data);
 
       localStorage.setItem("accessToken", data.accessToken);
-
-      navigate("/dashboard");
     } catch (error: any) {
       console.error("로그인 실패:", error);
       if (error.response?.data?.message) {
@@ -129,6 +127,7 @@ const LoginPage = () => {
                 type="submit"
                 className="flex justify-center items-center w-full h-12 bg-[#9737fd] rounded-lg"
                 disabled={loading}
+                onClick={() => navigate(PATH.HOME)}
               >
                 <span className="text-white font-semibold text-[20px] font-pretendard">
                   {loading ? "로그인 중..." : "로그인"}
