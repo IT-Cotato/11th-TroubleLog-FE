@@ -43,7 +43,12 @@ export default function PostComment({
     <div className="flex w-[1200px]">
       {isReply && (
         <div className="mt-[31px] ml-[38px] mr-[16px]">
-          <img src={replyIcon} alt="reply" className="w-[20px] h-[21px]" />
+          <img
+            src={replyIcon}
+            alt=""
+            aria-hidden="true"
+            className="w-[20px] h-[21px]"
+          />
         </div>
       )}
       <div className="flex w-full py-[24px] items-center border-b border-gray1 bg-white">
