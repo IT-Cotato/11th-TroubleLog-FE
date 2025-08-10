@@ -19,3 +19,7 @@ export interface TroubleListItem {
 /// 전체 트러블슈팅 목록 조회
 
 export type GetTroubleListResponse = ApiResponse<TroubleListItem[]>;
+
+/// 프로젝트 내 트러블슈팅 목록 조회
+
+export type GetProjectTroubleListResponse = ApiResponse<TroubleListItem[]>;
