@@ -135,7 +135,12 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                 }}
                 className={getFilterButtonClass("inProgress")}
               >
-                <img src={circleYIcon} className="w-3.5 h-3.5" />
+                <img
+                  src={circleYIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-3.5 h-3.5"
+                />
                 <span>작성 중 ({props.counts.inProgress})</span>
               </button>
               <button
@@ -145,7 +150,12 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                 }}
                 className={getFilterButtonClass("complete")}
               >
-                <img src={circleGIcon} className="w-3.5 h-3.5" />
+                <img
+                  src={circleGIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-3.5 h-3.5"
+                />
                 <span>작성 완료 ({props.counts.complete})</span>
               </button>
               <button
@@ -155,7 +165,12 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                 }}
                 className={getFilterButtonClass("created")}
               >
-                <img src={circleBIcon} className="w-3.5 h-3.5" />
+                <img
+                  src={circleBIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-3.5 h-3.5"
+                />
                 <span>작성+요약 완료 ({props.counts.created})</span>
               </button>
             </div>
