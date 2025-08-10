@@ -1,6 +1,7 @@
 import MDEditor from "@uiw/react-md-editor";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 
 type ImageItem = { type: "image"; src: string; alt?: string };
 type GuideContent = string | ImageItem;
@@ -28,7 +29,7 @@ export default function PostGuideMd({
                 key={i}
                 source={item}
                 remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
+                rehypePlugins={[rehypeRaw, rehypeSanitize]}
                 style={{ width: "1150px" }}
               />
             );
@@ -42,7 +43,9 @@ export default function PostGuideMd({
               alt={item.alt ?? ""}
               className="rounded-lg my-4"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = "/icons/image.svg";
+                const img = e.currentTarget as HTMLImageElement;
+                img.onerror = null;
+                img.src = "/icons/image.svg";
               }}
             />
           );

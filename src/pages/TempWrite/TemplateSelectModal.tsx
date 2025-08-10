@@ -10,7 +10,7 @@ export default function TemplateSelectModal({
   onLater,
 }: {
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (selectedIndex: number) => void;
   onLater: () => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -21,7 +21,7 @@ export default function TemplateSelectModal({
 
     if (selectedIndex === null) return;
 
-    onConfirm();
+    onConfirm(selectedIndex);
   };
 
   return (
