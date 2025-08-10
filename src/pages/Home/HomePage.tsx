@@ -13,12 +13,26 @@ import type {
 } from "@/types/project.model";
 import useTroubleCards from "@/hooks/useTroubleCards";
 import { PATH } from "@/constants/paths";
+import { useNavigate } from "react-router-dom";
 
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  const navigate = useNavigate();
+
+  // 글쓰기 드롭다운 버튼 클릭 핸들러
+  const handleGoGuideTemplate = useCallback(() => {
+    setShowDropdown(false);
+    navigate(PATH.TEMP_WRITING);
+  }, [navigate]);
+
+  const handleGoFreeformTemplate = useCallback(() => {
+    setShowDropdown(false);
+    navigate(PATH.FREEFORM_WRITING);
+  }, [navigate]);
 
   // 프로젝트 목록 상태
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
@@ -115,10 +129,18 @@ export default function HomePage() {
               ref={dropdownRef}
               className="absolute top-full left-1/2 translate-x-[-50%] mt-[8px] w-[184px] rounded-[8px] shadow-card bg-subColor2"
             >
-              <button className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular">
+              <button
+                type="button"
+                onClick={handleGoGuideTemplate}
+                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
+              >
                 가이드 템플릿
               </button>
-              <button className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular">
+              <button
+                type="button"
+                onClick={handleGoFreeformTemplate}
+                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
+              >
                 자유 템플릿
               </button>
             </div>
