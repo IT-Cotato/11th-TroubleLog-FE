@@ -47,11 +47,15 @@ export default function ProjectAccordion({
       </div>
 
       {/* 펼쳐진 내용 */}
-      {isOpen && (
-        <div id={panelId} className="flex flex-col gap-[36px] sm:gap-[60px]">
-          {children}
-        </div>
-      )}
+      <div
+        id={panelId}
+        aria-hidden={!isOpen}
+        className={
+          (isOpen ? "flex" : "hidden") + " flex-col gap-[36px] sm:gap-[60px]"
+        }
+      >
+        {children}
+      </div>
     </div>
   );
 }
