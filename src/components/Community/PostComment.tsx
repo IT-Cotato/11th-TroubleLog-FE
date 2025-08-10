@@ -1,5 +1,7 @@
 import { useState } from "react";
 import ConfirmDeleteModal from "../Modal/ConfirmDeleteModal";
+import replyIcon from "@/assets/icons/reply_icon.svg";
+import image from "@/assets/icons/image.svg";
 
 export interface PostCommentProps {
   id: string;
@@ -41,11 +43,7 @@ export default function PostComment({
     <div className="flex w-[1200px]">
       {isReply && (
         <div className="mt-[31px] ml-[38px] mr-[16px]">
-          <img
-            src="/icons/reply_icon.svg"
-            alt="reply"
-            className="w-[20px] h-[21px]"
-          />
+          <img src={replyIcon} alt="reply" className="w-[20px] h-[21px]" />
         </div>
       )}
       <div className="flex w-full py-[24px] items-center border-b border-gray1 bg-white">
@@ -57,9 +55,9 @@ export default function PostComment({
               <div className="flex items-center gap-[11px]">
                 {/* 프로필 이미지 */}
                 <img
-                  src={profile || "/icons/image.svg"}
+                  src={profile || image}
                   onError={(e) => {
-                    e.currentTarget.src = "/icons/image.svg";
+                    e.currentTarget.src = image;
                   }}
                   alt="profile"
                   className="w-[52px] h-[52px]"

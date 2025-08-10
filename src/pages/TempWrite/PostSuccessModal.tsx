@@ -1,5 +1,8 @@
 import BaseModal from "../../components/Modal/BaseModal";
 // import { useNavigate } from "react-router-dom";
+import exitIcon from "@/assets/icons/exiticon.svg";
+import postSuccessIcon from "@/assets/icons/postsuccess.svg";
+
 export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
   //   const navigate = useNavigate();
 
@@ -13,14 +16,11 @@ export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
       <div className="flex flex-col justify-center mt-[39px] ml-[100px] ">
         <div className="flex w-full pl-[420px] ">
           <button onClick={onClose} className="w-6 h-6">
-            <img src="/icons/exiticon.svg" alt="닫기" className="" />
+            <img src={exitIcon} alt="닫기" className="" />
           </button>
         </div>
         <div className="flex flex-col w-[381px] gap-[40px] items-center">
-          <img
-            src="/public/icons/postsuccess.svg"
-            className="w-[88px] h-[86px]"
-          />
+          <img src={postSuccessIcon} className="w-[88px] h-[86px]" />
           <span className="text-head-32-bold ">
             {/* {$제목}을 {양식}으로 요약중입니다! */} 양식 요약이
             완료되었습니다!
