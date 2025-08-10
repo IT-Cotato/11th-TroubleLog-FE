@@ -62,6 +62,7 @@ export default function PostComment({
                 <img
                   src={profile || image}
                   onError={(e) => {
+                    e.currentTarget.onerror = null;
                     e.currentTarget.src = image;
                   }}
                   alt="profile"
