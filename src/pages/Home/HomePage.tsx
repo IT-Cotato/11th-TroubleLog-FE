@@ -1,17 +1,20 @@
 import { useState, useCallback, useEffect } from "react";
 import PostButton from "@/components/Button/PostButton";
 import Snackbar from "@/components/Feedback/Snackbar";
-import TroublogCard from "@/components/Card/TroublogCard";
+import TroublogCard, {
+  type TroublogCardProps,
+} from "@/components/Card/TroublogCard";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
 import FolderModal from "@/components/Modal/FolderModal";
-import { mockCards } from "@/mocks/mockCards";
 import useClickOutside from "@/hooks/useClickOutside";
 import { getProjectList, postCreateProject } from "@/api/project.api";
 import type {
   ProjectListItem,
   CreateProjectRequest,
 } from "@/types/project.model";
+import type { TroubleListItem } from "@/types/trouble.model";
+import { getTroubleList } from "@/api/trouble.api";
 
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
@@ -37,10 +40,6 @@ export default function HomePage() {
       setIsLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
 
   // 새 프로젝트 생성 핸들러
   const handleCreateProject = async (data: CreateProjectRequest) => {
@@ -86,6 +85,69 @@ export default function HomePage() {
   const handleCardDeleted = useCallback(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  // 날짜 포맷터
+  const formatYYMMDD = (iso: string) => {
+    const d = new Date(iso);
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yy}.${mm}.${dd}`;
+  };
+
+  // 작성 상태 매핑
+  const mapStatus = (statusKo: string): TroublogCardProps["status"] => {
+    switch (statusKo) {
+      case "작성 완료":
+        return "complete";
+      case "임시 저장":
+        return "inProgress";
+      default:
+        return "created";
+    }
+  };
+
+  // 가시성 매핑
+  const mapVisibility = (
+    isVisibile: boolean
+  ): TroublogCardProps["visibility"] => (isVisibile ? "public" : "private");
+
+  // 전체 트러블슈팅 목록 조회 api -> 카드 props 매핑 (summaryType 추가 필요)
+  const mapTroubleToCard = (t: TroubleListItem): TroublogCardProps => ({
+    id: t.id,
+    isMine: true,
+    status: mapStatus(t.status),
+    visibility: mapVisibility(t.isVisible),
+    title: t.title,
+    errorCategory: t.error,
+    createdAt: formatYYMMDD(t.date),
+    tags: t.techs,
+  });
+
+  // 트러블로그 목록 관련
+  const [recentCards, setRecentCards] = useState<TroublogCardProps[]>([]);
+  const [isLoadingRecents, setIsLoadingRecents] = useState(false);
+  const [recentsError, setRecentsError] = useState<unknown>(null);
+
+  // 트러블로그 목록 불러오기
+  const fetchTroubles = useCallback(async () => {
+    setIsLoadingRecents(true);
+    setRecentsError(null);
+    try {
+      const list = await getTroubleList();
+      setRecentCards(list.map(mapTroubleToCard));
+    } catch (e) {
+      setRecentsError(e);
+    } finally {
+      setIsLoadingRecents(false);
+    }
+  }, []);
+
+  // 최초 로드 시 프로젝트, 트러블로그 목록 호출
+  useEffect(() => {
+    fetchProjects();
+    fetchTroubles();
+  }, [fetchProjects, fetchTroubles]);
 
   return (
     <div className="flex px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[40px]">
@@ -171,8 +233,17 @@ export default function HomePage() {
 
       {/* Recents 영역 */}
       <ProjectAccordion title="Recents">
-        {/* 트러블슈팅 존재 시 카드 목록, 없으면 텍스트 */}
-        {mockCards.length === 0 ? (
+        {isLoadingRecents ? (
+          <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
+            <span className="text-body-20-regular">불러오는 중…</span>
+          </div>
+        ) : recentsError ? (
+          <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
+            <span className="text-body-20-regular text-red-500">
+              목록 로드 실패
+            </span>
+          </div>
+        ) : recentCards.length === 0 ? (
           <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
             <span className="text-body-20-regular">
               아직 확인한 트러블슈팅이 없어요.
@@ -180,7 +251,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-[24px] self-stretch">
-            {mockCards.map((card) => (
+            {recentCards.map((card) => (
               <TroublogCard key={card.id} {...card} />
             ))}
           </div>

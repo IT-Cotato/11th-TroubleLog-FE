@@ -8,7 +8,9 @@ import type {
   ProjectData,
   DeleteProjectResponse,
 } from "@/types/project.model";
-import { mockProject, mockProjectList } from "./mockProject";
+import { mockProject, mockProjectList } from "@/mocks/mockProject";
+import type { GetTroubleListResponse } from "@/types/trouble.model";
+import { mockTroubleList } from "@/mocks/mockTroubles";
 
 export const handlers = [
   // POST /project - 프로젝트 생성
@@ -132,6 +134,18 @@ export const handlers = [
         status: 200,
         message: "프로젝트가 삭제되었습니다.",
         data: null,
+      },
+      { status: 200 }
+    );
+  }),
+
+  // GET /troubles/list - 전체 트러블슈팅 목록 조회
+  http.get("/troubles/list", () => {
+    return HttpResponse.json<GetTroubleListResponse>(
+      {
+        status: 200,
+        message: "전체 트러블슈팅 조회 성공",
+        data: mockTroubleList,
       },
       { status: 200 }
     );
