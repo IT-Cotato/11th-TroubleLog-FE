@@ -119,19 +119,19 @@ export default function HomePage() {
 
       {/* Project Folders 영역 */}
       <ProjectAccordion
-        title={
-          <div className="flex">
-            <span className="pr-[10px] text-head-32-regular">
-              Project Folders
-            </span>
-            <button onClick={handleOpenModal}>
-              <img
-                src="/icons/plus.svg"
-                alt="plus"
-                className="w-[36px] h-[36px]"
-              />
-            </button>
-          </div>
+        title="Project Folders"
+        headerExtra={
+          <button
+            type="button"
+            onClick={handleOpenModal}
+            aria-label="새 폴더 추가"
+          >
+            <img
+              src="/icons/plus.svg"
+              alt="plus"
+              className="w-[36px] h-[36px]"
+            />
+          </button>
         }
       >
         {/* 폴더 존재 시 폴더 카드 목록, 없으면 텍스트 */}
