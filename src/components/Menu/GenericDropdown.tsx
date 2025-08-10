@@ -28,7 +28,8 @@ export default function GenericDropdown<T extends string>({
           className={`w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] transition-transform duration-200 ${
             open ? "rotate-180" : "rotate-0"
           }`}
-          alt="dropdown_icon"
+          alt=""
+          aria-hidden="true"
         />
       </button>
       {open && (
