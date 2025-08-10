@@ -12,13 +12,31 @@ async function enableMocking() {
   if (typeof window !== "undefined" && (window as any).__MSW_STARTED) return;
 
   const { worker } = await import("./mocks/browser.ts");
-  await worker.start({
+  const start = Date.now();
+
+  const startPromise = worker.start({
     onUnhandledRequest: "bypass", // 지정하지 않은 api는 실제 호출
     serviceWorker: {
       url: `${import.meta.env.BASE_URL}mockServiceWorker.js`,
     },
   });
-  (window as any).__MSW_STARTED = true;
+
+  function withTimeout<T>(p: Promise<T>, ms = 3000) {
+    return Promise.race([
+      p,
+      new Promise<T>((_, rej) =>
+        setTimeout(() => rej(new Error("MSW start timeout")), ms)
+      ),
+    ]);
+  }
+
+  try {
+    await withTimeout(startPromise, 3000);
+    console.log(`[MSW] started in ${Date.now() - start}ms`);
+    (window as any).__MSW_STARTED = true;
+  } catch (e) {
+    console.warn("[MSW] start 실패/타임아웃. 실제 API로 진행합니다.", e);
+  }
 }
 
 async function bootstrap() {
