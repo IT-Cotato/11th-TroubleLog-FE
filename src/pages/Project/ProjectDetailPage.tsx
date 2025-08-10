@@ -4,24 +4,44 @@ import SummaryTypeDropdown from "@/components/Menu/SummaryTypeDropdown";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import SortButtonGroup from "@/components/Project/SortButtonGroup";
 import StatusFilterButton from "@/components/Project/StatusFilterButton";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { StatusType } from "@/types/project";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import useTroubleCards from "@/hooks/useTroubleCards";
+import { getProjectList } from "@/api/project.api";
 
-interface ProjectDetailPageProps {
-  projectName: string;
-}
+type VisibilityOption = "전체" | "공개" | "비공개";
 
-export default function ProjectDetailPage({
-  projectName,
-}: ProjectDetailPageProps) {
+export default function ProjectDetailPage() {
   const { id: routeProjectId } = useParams<{ id: string }>();
   const projectId = Number(routeProjectId);
 
-  const visibilityOptions = ["전체", "공개", "비공개"] as const;
-  type VisibilityOption = (typeof visibilityOptions)[number];
+  // 라우팅 시 폴더 카드에서 넘겨준 이름 사용, 없으면 api로 조회
+  const location = useLocation() as { state?: { projectName?: string } };
+  const [projectName, setProjectName] = useState<string>(
+    location.state?.projectName ?? "프로젝트"
+  );
+  const [titleLoading, setTitleLoading] = useState(
+    !location.state?.projectName
+  );
+
+  useEffect(() => {
+    const needFetch = !location.state?.projectName;
+    if (!needFetch) return;
+    (async () => {
+      try {
+        setTitleLoading(true);
+        const list = await getProjectList();
+        const found = list.find((p) => p.id === projectId);
+        if (found) setProjectName(found.name);
+      } finally {
+        setTitleLoading(false);
+      }
+    })();
+  }, [location.state?.projectName, projectId]);
+
+  const visibilityOptions: VisibilityOption[] = ["전체", "공개", "비공개"];
 
   const [selectedStatus, setSelectedStatus] = useState<StatusType>("complete");
   const [selectedSort, setSelectedSort] = useState<"latest" | "importance">(
@@ -81,7 +101,7 @@ export default function ProjectDetailPage({
       </div>
 
       {/* 프로젝트 아코디언 영역 */}
-      <ProjectAccordion title={projectName}>
+      <ProjectAccordion title={titleLoading ? "불러오는 중…" : projectName}>
         <div className="flex flex-col sm:flex-row justify-between gap-4 w-full">
           {/* 작성 상태 필터 버튼 */}
           <div className="flex items-center gap-[24px] self-stretch">

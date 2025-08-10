@@ -12,6 +12,7 @@ import type {
   CreateProjectRequest,
 } from "@/types/project.model";
 import useTroubleCards from "@/hooks/useTroubleCards";
+import { PATH } from "@/constants/paths";
 
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
@@ -171,6 +172,8 @@ export default function HomePage() {
                 tags={p.tags}
                 onUpdated={handleCardUpdated}
                 onDeleted={handleCardDeleted}
+                to={PATH.PROJECT_DETAIL(String(p.id))}
+                linkState={{ projectName: p.name }}
               />
             ))}
           </div>
