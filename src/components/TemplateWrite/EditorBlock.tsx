@@ -120,8 +120,8 @@ const EditorBlock = ({
             />
             <span
               style={{
-                ["--icon-unchecked" as any]: `url(${checkBoxIcon})`,
-                ["--icon-checked" as any]: `url(${nonCheckBoxIcon})`,
+                ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
+                ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
               }}
               className="
     inline-block w-5 h-5 bg-no-repeat bg-center bg-contain

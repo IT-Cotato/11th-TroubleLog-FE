@@ -254,8 +254,8 @@ const TempWritePage = () => {
                     <input type="checkbox" className="peer hidden" />
                     <span
                       style={{
-                        ["--icon-unchecked" as any]: `url(${nonCheckBoxIcon})`,
-                        ["--icon-checked" as any]: `url(${checkBoxIcon})`,
+                        ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
+                        ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
                       }}
                       className="
     inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
