@@ -22,9 +22,9 @@ export default function useTroubleCards(source: Source) {
       setError(null);
       try {
         const list =
-          key === "all"
+          source.type === "all"
             ? await getTroubleList()
-            : await getProjectTroubleList(Number(key.split(":")[1]));
+            : await getProjectTroubleList(source.projectId);
         // 최신 요청만 반영
         if (reqIdRef.current === currentReqId) {
           setCards(toTroublogCardVMs(list));
@@ -39,7 +39,11 @@ export default function useTroubleCards(source: Source) {
         }
       }
     };
-  }, [key]);
+  }, [
+    key,
+    source.type,
+    source.type === "project" ? source.projectId : undefined,
+  ]);
 
   useEffect(() => {
     const myReqId = ++reqIdRef.current;
