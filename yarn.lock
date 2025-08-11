@@ -221,7 +221,6 @@
     "@types/tough-cookie" "^4.0.5"
     tough-cookie "^4.1.4"
 
-
 "@esbuild/darwin-arm64@0.25.5":
   version "0.25.5"
   resolved "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.25.5.tgz"

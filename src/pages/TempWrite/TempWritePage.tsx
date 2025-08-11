@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
-
-import DropDownButton from "@/components/Button/DropDownButton";
-import CategoryTag from "@/components/TemplateWrite/CategoryTag";
-import EditorBlock from "@/components/TemplateWrite/EditorBlock";
-import type { BlockData } from "@/components/TemplateWrite/EditorBlock";
-import { questionData } from "@/components/TemplateWrite/questionTemplate";
-import PostSaveModal from "@/pages/TempWrite/PostSaveModal";
-import PostLoadingModal from "@/pages/TempWrite/PostLoadingModal";
-import TemplateSelectModal from "@/pages/TempWrite/TemplateSelectModal";
-import alertIcon from "@/assets/icons/alerticon.svg";
-import checkBoxIcon from "@/assets/icons/checkedbox.svg";
-import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
+import DropDownButton from "../../components/Button/DropDownButton";
+import CategoryTag from "../../components/TemplateWrite/CategoryTag";
+import EditorBlock, {
+  type BlockData,
+} from "../../components/TemplateWrite/EditorBlock";
+import { questionData } from "../../components/TemplateWrite/questionTemplate";
+import PostSaveModal from "./PostSaveModal";
+import PostLoadingModal from "./PostLoadingModal";
+import TemplateSelectModal from "./TemplateSelectModal";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import type { PostSavePayload } from "./PostSaveModal";
@@ -240,40 +237,8 @@ const TempWritePage = () => {
                   onShowSaveAlert={handleShowSaveAlert}
                   onActivate={(i) => setActiveIndex(i)}
                 />
-              </div>
-
-              {/* 체크리스트 */}
-              <div className="flex flex-col gap-2 mt-14">
-                <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
-                  <img src={alertIcon} alt="alert icon" className="w-5 h-5" />
-                  {questionData[0].title}
-                </h3>
-                {defaultCheckListItems.map((item, index) => (
-                  <label
-                    key={index}
-                    className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer"
-                  >
-                    <input type="checkbox" className="peer hidden" />
-                    <span
-                      style={{
-                        ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
-                        ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
-                      }}
-                      className="
-    inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-    [background-image:var(--icon-unchecked)]
-    peer-checked:[background-image:var(--icon-checked)]
-  "
-                    ></span>
-                    <span>{item}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
               );
             })}
-
           </div>
 
           {/* 모달 */}
