@@ -7,7 +7,6 @@ import FolderModal from "../Modal/FolderModal";
 import ConfirmDeleteModal from "../Modal/ConfirmDeleteModal";
 import type { CreateProjectRequest } from "@/types/project.model";
 import { deleteProject, putUpdateProject } from "@/api/project.api";
-import { Link } from "react-router-dom";
 
 export interface ProjectFolderCardProps {
   id: number;
@@ -17,8 +16,6 @@ export interface ProjectFolderCardProps {
   thumbnail?: string;
   onUpdated?: () => void;
   onDeleted?: () => void;
-  to?: string;
-  linkState?: unknown;
 }
 
 export default function ProjectFolderCard({
@@ -29,8 +26,6 @@ export default function ProjectFolderCard({
   thumbnail,
   onUpdated,
   onDeleted,
-  to,
-  linkState,
 }: ProjectFolderCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -87,71 +82,53 @@ export default function ProjectFolderCard({
     }
   }, [id, onDeleted]);
 
-  // 카드 본문
-  const CardBody = (
-    <div className="flex items-start self-stretch">
-      <div className="flex items-center gap-[16px]">
-        {/* 썸네일 */}
-        <div className="flex w-[100px] h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden">
-          {thumbnail && (
-            <img
-              src={thumbnail}
-              alt="thumbnail"
-              className="w-full h-full object-cover"
-            />
-          )}
-        </div>
-        <div className="flex w-[228px] flex-col items-start gap-[18px]">
-          <div className="flex flex-col items-start gap-[4px] self-stretch">
-            <span className="text-head-20-semibold">{name}</span>
-            <span>{description}</span>
-          </div>
-          <TagList tags={tags} />
-        </div>
-      </div>
-      {/* 케밥 메뉴: 링크 내에서도 클릭 시 네비게이션 막기 */}
-      <div
-        ref={menuRef}
-        className="relative"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      >
-        <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
-        {showMenu && (
-          <KebabDropdown
-            options={[
-              { label: "폴더 수정", onClick: handleEdit },
-              { label: "삭제", onClick: handleDelete },
-            ]}
-          />
-        )}
-      </div>
-    </div>
-  );
-
-  const ContainerClasses =
-    "flex w-[384px] p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card hover:shadow-lg transition";
-
   return (
     <>
-      {to ? (
-        // 링크로 감싸서 이동
-        <Link
-          to={to}
-          state={linkState}
-          className={ContainerClasses}
-          aria-label={`${name} 프로젝트로 이동`}
-        >
-          {CardBody}
-        </Link>
-      ) : (
-        // 링크가 없으면 그냥 div
-        <div className={ContainerClasses}>{CardBody}</div>
-      )}
+      <div className="flex w-[384px] p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card">
+        <div className="flex items-start self-stretch">
+          <div className="flex items-center gap-[16px]">
+            {/* 썸네일 자리 */}
+            <div className="flex w-[100px] h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden">
+              {thumbnail && (
+                <img
+                  src={thumbnail}
+                  alt="thumbnail"
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+            <div className="flex w-[228px] flex-col items-start gap-[18px]">
+              {/* 제목 & 설명 영역 */}
+              <div className="flex flex-col items-start gap-[4px] self-stretch">
+                <span className="text-head-20-semibold">{name}</span>
+                <span>{description}</span>
+              </div>
+              {/* 태그 */}
+              <TagList tags={tags} />
+            </div>
+          </div>
+          {/* 우측 상단 케밥 메뉴 */}
+          <div ref={menuRef} className="relative">
+            <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
+            {showMenu && (
+              <KebabDropdown
+                options={[
+                  {
+                    label: "폴더 수정",
+                    onClick: handleEdit,
+                  },
+                  {
+                    label: "삭제",
+                    onClick: handleDelete,
+                  },
+                ]}
+              />
+            )}
+          </div>
+        </div>
+      </div>
 
-      {/* 프로젝트 폴더 수정 모달 */}
+      {/* 폴더 수정 모달 */}
       {showEditModal && (
         <FolderModal
           mode="edit"
@@ -162,7 +139,7 @@ export default function ProjectFolderCard({
         />
       )}
 
-      {/* 프로젝트 폴더 삭제 모달 */}
+      {/* 폴더 삭제 모달 */}
       {showDeleteModal && (
         <ConfirmDeleteModal
           onClose={handleDeleteModalClose}
