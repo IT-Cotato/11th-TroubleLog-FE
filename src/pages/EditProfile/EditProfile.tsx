@@ -9,6 +9,8 @@ import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
 import type { ProfileData } from "@/models/user.model";
 import { deleteUser, getMyProfile, patchProfile } from "@/api/user.api";
+import { PATH } from "@/constants/paths";
+import userIcon from "@/assets/icons/user.svg";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -22,7 +24,7 @@ const EditProfile = () => {
   });
 
   //프로필 사진 변경
-  const [profileImage, setProfileImage] = useState<string>("/icons/user.svg");
+  const [profileImage, setProfileImage] = useState<string>(userIcon);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleImageUpload = () => {
     fileInputRef.current?.click();
@@ -42,7 +44,7 @@ const EditProfile = () => {
   };
 
   const handleImageDelete = () => {
-    setProfileImage("/icons/user.svg");
+    setProfileImage(userIcon);
     if (fileInputRef.current) {
       fileInputRef.current.value = ""; // input 초기화
     }
@@ -109,7 +111,7 @@ const EditProfile = () => {
   const handleSave = async () => {
     try {
       await patchProfile(profile);
-      navigate(`/user/mypage/${id}`);
+      navigate(PATH.MYPAGE(id!));
     } catch (error) {
       console.error("프로필 수정 실패:", error);
     }

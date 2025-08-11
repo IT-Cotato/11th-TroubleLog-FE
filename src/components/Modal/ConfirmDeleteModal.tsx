@@ -7,6 +7,7 @@ interface ConfirmDeleteModalProps {
   title: string;
   description: string;
   label?: string;
+  loading?: boolean;
 }
 
 export default function ConfirmDeleteModal({
@@ -15,7 +16,10 @@ export default function ConfirmDeleteModal({
   title,
   description,
   label,
+  loading = false,
 }: ConfirmDeleteModalProps) {
+  const buttonLabel = label ?? (loading ? "삭제 중..." : "삭제");
+
   return (
     <BaseModal
       onClose={onClose}
@@ -29,8 +33,12 @@ export default function ConfirmDeleteModal({
       </div>
 
       <div className="flex items-center gap-[17px]">
-        <CancelButton onClick={onClose} />
-        <SaveButton onClick={onConfirm} label={label ?? "삭제"} />
+        <CancelButton onClick={onClose} disabled={loading} />
+        <SaveButton
+          onClick={onConfirm}
+          label={buttonLabel}
+          disabled={loading}
+        />
       </div>
     </BaseModal>
   );

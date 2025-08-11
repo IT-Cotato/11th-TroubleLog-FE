@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import userIcon from "@/assets/icons/user.svg";
 
 interface FollowingProps {
   nickname: string;
@@ -19,7 +20,8 @@ const FollowingBtn = ({
   return (
     <div className="flex justify-between w-[948px] items-center self-stretch py-[25px] border-b border-gray1">
       <div className="flex items-center gap-3" onClick={() => nav(profileUrl)}>
-        <img src="/icons/user.svg" alt="user" className="w-[52px] h-[52px]" />
+        <img src={userIcon} alt="user" className="w-[52px] h-[52px]" />
+
         <div className="flex w-[143px] flex-col items-start gap-0.5">
           <p className="font-sans text-2xl font-bold leading-normal">
             {nickname}

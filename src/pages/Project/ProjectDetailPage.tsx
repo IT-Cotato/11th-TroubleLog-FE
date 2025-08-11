@@ -1,13 +1,13 @@
 import PostButton from "@/components/Button/PostButton";
 import TroublogCard from "@/components/Card/TroublogCard";
 import SummaryTypeDropdown from "@/components/Menu/SummaryTypeDropdown";
-import VisibilityFilterDropdown from "@/components/Menu/VisibilityFilterDropdown";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import SortButtonGroup from "@/components/Project/SortButtonGroup";
 import StatusFilterButton from "@/components/Project/StatusFilterButton";
 import { mockCards } from "@/mocks/mockCards";
 import { useState } from "react";
 import type { StatusType } from "@/types/project";
+import GenericDropdown from "@/components/Menu/GenericDropdown";
 
 interface ProjectDetailPageProps {
   projectName: string;
@@ -16,13 +16,15 @@ interface ProjectDetailPageProps {
 export default function ProjectDetailPage({
   projectName,
 }: ProjectDetailPageProps) {
+  const visibilityOptions = ["전체", "공개", "비공개"] as const;
+  type VisibilityOption = (typeof visibilityOptions)[number];
+
   const [selectedStatus, setSelectedStatus] = useState<StatusType>("complete");
   const [selectedSort, setSelectedSort] = useState<"latest" | "importance">(
     "latest"
   );
-  const [selectedVisibility, setSelectedVisibility] = useState<
-    "전체" | "공개" | "비공개"
-  >("전체");
+  const [selectedVisibility, setSelectedVisibility] =
+    useState<VisibilityOption>("전체");
   const [selectedSummaryType, setSelectedSummaryType] = useState("전체"); // 👈 추가
 
   const statusFiltered = mockCards.filter(
@@ -81,7 +83,8 @@ export default function ProjectDetailPage({
               onSelect={setSelectedSort}
             />
             {selectedStatus === "complete" ? (
-              <VisibilityFilterDropdown
+              <GenericDropdown<VisibilityOption>
+                options={visibilityOptions}
                 selected={selectedVisibility}
                 onSelect={setSelectedVisibility}
               />

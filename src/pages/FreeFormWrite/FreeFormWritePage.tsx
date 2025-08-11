@@ -231,6 +231,7 @@ const FreeFormWritePage = () => {
             <TemplateSelectModal
               onConfirm={handleConfirmTemplate}
               onClose={() => setIsTemplateSelectModalOpen(false)}
+              onLater={handleLater}
             />
           )}
 

@@ -5,24 +5,32 @@ import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import FolderModal from "../Modal/FolderModal";
 import ConfirmDeleteModal from "../Modal/ConfirmDeleteModal";
+import type { CreateProjectRequest } from "@/types/project.model";
+import { deleteProject, putUpdateProject } from "@/api/project.api";
 
 export interface ProjectFolderCardProps {
-  id: string;
+  id: number;
   name: string;
   description?: string;
   tags: string[];
-  thumbnailUrl?: string;
+  thumbnail?: string;
+  onUpdated?: () => void;
+  onDeleted?: () => void;
 }
 
 export default function ProjectFolderCard({
+  id,
   name,
   description = "",
   tags,
-  thumbnailUrl,
+  thumbnail,
+  onUpdated,
+  onDeleted,
 }: ProjectFolderCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
   const handleEdit = useCallback(() => {
@@ -40,10 +48,39 @@ export default function ProjectFolderCard({
     () => setShowDeleteModal(false),
     []
   );
-  const handleDeleteConfirm = useCallback(() => {
-    console.log("삭제 확정");
-    setShowDeleteModal(false);
-  }, []);
+
+  // 수정 api 호출
+  const handleEditSubmit = useCallback(
+    async (data: CreateProjectRequest) => {
+      try {
+        setLoading(true);
+        await putUpdateProject(id, data);
+        console.log("프로젝트 수정 완료");
+        setShowEditModal(false);
+        onUpdated?.();
+      } catch (err) {
+        console.error("프로젝트 수정 실패:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [id, onUpdated]
+  );
+
+  // 삭제 api 호출
+  const handleDeleteConfirm = useCallback(async () => {
+    try {
+      setLoading(true);
+      await deleteProject(id);
+      console.log("프로젝트 삭제 완료");
+      setShowDeleteModal(false);
+      onDeleted?.();
+    } catch (err) {
+      console.error("프로젝트 삭제 실패:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [id, onDeleted]);
 
   return (
     <>
@@ -52,9 +89,9 @@ export default function ProjectFolderCard({
           <div className="flex items-center gap-[16px]">
             {/* 썸네일 자리 */}
             <div className="flex w-[100px] h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden">
-              {thumbnailUrl && (
+              {thumbnail && (
                 <img
-                  src={thumbnailUrl}
+                  src={thumbnail}
                   alt="thumbnail"
                   className="w-full h-full object-cover"
                 />
@@ -95,14 +132,10 @@ export default function ProjectFolderCard({
       {showEditModal && (
         <FolderModal
           mode="edit"
+          projectId={id}
           onClose={handleModalClose}
-          initialName={name}
-          initialDescription={description}
-          initialThumbnail={thumbnailUrl ?? null}
-          onSubmit={(data) => {
-            console.log("수정된 폴더 데이터:", data);
-            setShowEditModal(false);
-          }}
+          onSubmit={handleEditSubmit}
+          loading={loading}
         />
       )}
 
@@ -113,6 +146,7 @@ export default function ProjectFolderCard({
           onConfirm={handleDeleteConfirm}
           title="프로젝트 삭제"
           description={`정말 삭제하시겠습니까?\n삭제 후 복구되지 않습니다.`}
+          loading={loading}
         />
       )}
     </>

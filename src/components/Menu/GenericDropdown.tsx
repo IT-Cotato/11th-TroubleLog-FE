@@ -1,19 +1,20 @@
 import { useState } from "react";
-import useClickOutside from "../../hooks/useClickOutside";
+import useClickOutside from "@/hooks/useClickOutside";
+import dropdownIcon from "@/assets/icons/dropdown_icon.svg";
 
-interface VisibilityFilterDropdownProps {
-  selected: "전체" | "공개" | "비공개";
-  onSelect: (value: "전체" | "공개" | "비공개") => void;
+interface GenericDropdownProps<T extends string> {
+  options: readonly T[];
+  selected: T;
+  onSelect: (value: T) => void;
 }
 
-export default function VisibilityFilterDropdown({
+export default function GenericDropdown<T extends string>({
+  options,
   selected,
   onSelect,
-}: VisibilityFilterDropdownProps) {
+}: GenericDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useClickOutside(() => setOpen(false));
-
-  const options: ("전체" | "공개" | "비공개")[] = ["전체", "공개", "비공개"];
 
   return (
     <div className="relative" ref={ref}>
@@ -23,11 +24,12 @@ export default function VisibilityFilterDropdown({
       >
         <span className="text-body-16-regular text-gray3">{selected}</span>
         <img
-          src="/icons/dropdown_icon.svg"
+          src={dropdownIcon}
           className={`w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] transition-transform duration-200 ${
             open ? "rotate-180" : "rotate-0"
           }`}
-          alt="dropdown_icon"
+          alt=""
+          aria-hidden="true"
         />
       </button>
       {open && (
