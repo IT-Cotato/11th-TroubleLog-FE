@@ -22,95 +22,106 @@ import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
 import PreviewPage from "@/pages/TempWrite/PreviewPage";
 
-export const router = createBrowserRouter([
-  {
-    path: PATH.ROOT,
-    element: <LoginPage />,
-  },
-  { path: PATH.OAUTH, element: <Oauth /> },
-  {
-    path: PATH.SIGNUP,
-    element: <SignPageOne />,
-  },
-  {
-    path: PATH.SIGNUP_DETAIL,
-    element: <SignPageTwo />,
-  },
-  {
-    path: PATH.USER,
-    element: (
-      <ProtectedRoute>
-        <MainLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        path: PATH.HOME,
-        element: <HomePage />,
-      },
+export const router = createBrowserRouter(
+  [
+    {
+      path: PATH.ROOT,
+      element: <LoginPage />,
+    },
+    { path: PATH.OAUTH, element: <Oauth /> },
+    {
+      path: PATH.SIGNUP,
+      element: <SignPageOne />,
+    },
+    {
+      path: PATH.SIGNUP_DETAIL,
+      element: <SignPageTwo />,
+    },
+    {
+      path: PATH.USER,
+      element: (
+        <ProtectedRoute>
+          <MainLayout />
+        </ProtectedRoute>
+      ),
+      children: [
+        {
+          path: PATH.HOME,
+          element: <HomePage />,
+        },
 
-      {
-        path: PATH.SEARCH,
-        children: [
-          {
-            index: true,
-            element: <SearchResultPage />,
-          },
-        ],
-      },
-      {
-        path: ROUTE.MYPAGE,
-        element: <MyPageLayout />,
-        children: [
-          {
-            index: true,
-            element: <TroubleShootingList />,
-          },
-          {
-            path: "following",
-            element: <MyFollowing />,
-          },
-          {
-            path: "follower",
-            element: <MyFollowing />,
-          },
-          {
-            path: "statistics",
-            element: <StatisticsPage />,
-          },
-          {
-            path: "likes",
-            element: <LikedPostsPage />,
-          },
-        ],
-      },
-      {
-        path: ROUTE.MYPAGE_EDIT,
-        element: <EditProfile />,
-      },
-      {
-        path: ROUTE.PROJECT_DETAIL,
-        element: <ProjectDetailPage projectName="Cotato" />,
-      },
-      {
-        path: PATH.COMMUNITY,
-        element: <CommunityPage />,
-      },
-      {
-        path: ROUTE.COMMUNITY_POST,
-        element: <CommunityPostDetail />,
-      },
-    ],
-  },
+        {
+          path: PATH.SEARCH,
+          children: [
+            {
+              index: true,
+              element: <SearchResultPage />,
+            },
+          ],
+        },
+        {
+          path: ROUTE.MYPAGE,
+          element: <MyPageLayout />,
+          children: [
+            {
+              index: true,
+              element: <TroubleShootingList />,
+            },
+            {
+              path: "following",
+              element: <MyFollowing />,
+            },
+            {
+              path: "follower",
+              element: <MyFollowing />,
+            },
+            {
+              path: "statistics",
+              element: <StatisticsPage />,
+            },
+            {
+              path: "likes",
+              element: <LikedPostsPage />,
+            },
+          ],
+        },
+        {
+          path: ROUTE.MYPAGE_EDIT,
+          element: <EditProfile />,
+        },
+        {
+          path: ROUTE.PROJECT_DETAIL,
+          element: <ProjectDetailPage projectName="Cotato" />,
+        },
+        {
+          path: PATH.COMMUNITY,
+          element: <CommunityPage />,
+        },
+        {
+          path: ROUTE.COMMUNITY_POST,
+          element: <CommunityPostDetail />,
+        },
+      ],
+    },
+    {
+      path: PATH.TEMP_WRITING,
+      element: (
+        <ProtectedRoute>
+          <TempWritePage />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: PATH.FREEFORM_WRITING,
+      element: (
+        <ProtectedRoute>
+          <FreeFormWritePage />
+        </ProtectedRoute>
+      ),
+    },
+  ],
   {
-    path: PATH.TEMP_WRITING,
-    element: (
-      <ProtectedRoute>
-        <TempWritePage />
-      </ProtectedRoute>
-    ),
-  },
-  {
+
     path: PATH.PREVIEW,
     element: (
       <ProtectedRoute>
@@ -127,5 +138,10 @@ export const router = createBrowserRouter([
     ),
   },
 ]);
+
+    basename: import.meta.env.BASE_URL,
+  }
+);
+
 
 export default router;

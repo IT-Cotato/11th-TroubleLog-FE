@@ -2,31 +2,62 @@ import { useRef, useState, useEffect } from "react";
 import BaseModal from "./BaseModal";
 import CancelButton from "../Button/CancelButton";
 import SaveButton from "../Button/SaveButton";
+import { getProjectDetail } from "@/api/project.api";
+import type { CreateProjectRequest } from "@/types/project.model";
 
 interface FolderModalProps {
   mode: "new" | "edit";
+  projectId?: number;
   onClose: () => void;
-  onSubmit?: (data: {
-    name: string;
-    description: string;
-    thumbnail: string | null;
-  }) => void;
+  onSubmit?: (data: CreateProjectRequest) => void;
   initialName?: string;
   initialDescription?: string;
   initialThumbnail?: string | null;
+  loading?: boolean;
 }
 
 export default function FolderModal({
   mode,
+  projectId,
   onClose,
   onSubmit,
   initialName = "",
   initialDescription = "",
   initialThumbnail = null,
+  loading = false,
 }: FolderModalProps) {
   const [thumbnail, setThumbnail] = useState<string | null>(initialThumbnail);
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
+  const [syncing, setSyncing] = useState(false);
+
+  // edit 모드일 때 프로젝트 상세 조회 api 호출
+  useEffect(() => {
+    if (mode !== "edit" || !projectId) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        setSyncing(true);
+        const detail = await getProjectDetail(projectId);
+        if (!isMounted) return;
+
+        // 상세 응답으로 폼 값 덮어쓰기
+        setName(detail.name ?? "");
+        setDescription(detail.description ?? "");
+        setThumbnail(detail.thumbnailImageUrl ?? null);
+      } catch (e) {
+        console.error("프로젝트 상세 조회 실패:", e);
+      } finally {
+        if (isMounted) setSyncing(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [mode, projectId]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,12 +80,22 @@ export default function FolderModal({
   }, [thumbnail]);
 
   const handleUploadClick = () => {
+    if (loading || syncing) return;
     fileInputRef.current?.click();
   };
 
   const handleSubmit = () => {
-    onSubmit?.({ name, description, thumbnail });
+    if (loading || syncing) return;
+
+    const payload: CreateProjectRequest = {
+      name,
+      description,
+      thumbnailImageUrl: thumbnail ?? "",
+    };
+    onSubmit?.(payload);
   };
+
+  const disabled = loading || syncing;
 
   return (
     <BaseModal
@@ -92,6 +133,7 @@ export default function FolderModal({
               />
               <button
                 onClick={() => setThumbnail(null)}
+                disabled={disabled}
                 className="z-20 absolute bottom-[18px] flex px-[23px] pt-[10px] pb-[11px] rounded-[8px] border-[1.5px] border-gray1 bg-white"
               >
                 <span className="text-body-14-regular">썸네일 삭제</span>
@@ -106,6 +148,7 @@ export default function FolderModal({
               />
               <button
                 onClick={handleUploadClick}
+                disabled={disabled}
                 className="flex px-[17px] pt-[10px] pb-[11px] justify-center items-center rounded-[8px] border-[1.5px] border-gray1 bg-white"
               >
                 <span className="text-body-14-regular">썸네일 업로드</span>
@@ -119,6 +162,7 @@ export default function FolderModal({
             ref={fileInputRef}
             onChange={handleImageSelect}
             className="hidden"
+            disabled={disabled}
           />
         </div>
 
@@ -129,6 +173,7 @@ export default function FolderModal({
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={disabled}
               className="flex pl-[15px] pt-[15px] pr-[230px] pb-[14px] items-center rounded-[8px] border border-gray1 bg-white text-body-14-regular"
               placeholder="폴더 이름을 입력해주세요."
             />
@@ -138,6 +183,7 @@ export default function FolderModal({
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              disabled={disabled}
               className="flex pl-[15px] pt-[15px] pr-[230px] pb-[14px] items-center rounded-[8px] border border-gray1 bg-white text-body-14-regular"
               placeholder="한 줄 소개를 입력해주세요."
             />
@@ -148,7 +194,11 @@ export default function FolderModal({
       {/* 버튼 영역 */}
       <div className="flex justify-end gap-[17px] mb-[24px] px-[36px] w-full">
         <CancelButton onClick={onClose} />
-        <SaveButton onClick={handleSubmit} label="완료" />
+        <SaveButton
+          onClick={handleSubmit}
+          label={syncing ? "불러오는 중..." : loading ? "저장 중..." : "완료"}
+          disabled={disabled}
+        />
       </div>
     </BaseModal>
   );
