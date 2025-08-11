@@ -10,17 +10,29 @@ import starUnfilledIcon from "@/assets/icons/starunfilled.svg";
 import publicIcon from "@/assets/icons/publicicon.svg";
 import privateIcon from "@/assets/icons/privateicon.svg";
 
+type Visibility = "public" | "private";
+
+export type PostSavePayload = {
+  importance: number;
+  thumbnail: string | null;
+  description: string;
+  visibility: Visibility;
+  folder: string;
+};
+
+
 export default function PostSaveModal({
   onClose,
   onNext,
 }: {
   onClose: () => void;
-  onNext: () => void;
+  onNext: (payload: PostSavePayload) => void;
 }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [importance, setImportance] = useState(0);
   const [description, setDescription] = useState("");
-  const [selectedVisibility, setSelectedVisibility] = useState("public");
+  const [selectedVisibility, setSelectedVisibility] =
+    useState<Visibility>("public");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hoverIndex, setHoverIndex] = useState(0);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -47,7 +59,13 @@ export default function PostSaveModal({
 
     if (!selectedFolder || importance === 0) return;
 
-    onNext();
+    onNext({
+      importance,
+      thumbnail,
+      description,
+      visibility: selectedVisibility,
+      folder: selectedFolder!,
+    });
   };
 
   return (
@@ -236,14 +254,15 @@ export default function PostSaveModal({
                   <button
                     type="button"
                     className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition
-      ${
-        selectedVisibility === "private"
-          ? "border-purple-500  text-purple-500 bg-opacity-10"
-          : "border-gray2"
-      }`}
+    ${
+      selectedVisibility === "private"
+        ? "border-purple-500 text-purple-500 bg-opacity-10"
+        : "border-gray2"
+    }`}
                     onClick={() => setSelectedVisibility("private")}
                   >
                     <img
+
                       src={privateIcon}
                       className={`w-5 h-5 transition ${
                         selectedVisibility === "private" ? "" : "grayscale"

@@ -1,14 +1,20 @@
 import { useState } from "react";
 import Input from "./Input";
 import mockimg from "../../assets/images/mockimg.jpg";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { postRegister } from "@/api/auth.api";
+import type { RegisterRequest } from "@/models/auth.model";
+import { PATH } from "@/constants/paths";
 
 const SignPageTwo = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [nickname, setNickname] = useState("");
   const [field, setField] = useState("");
   const [bio, setBio] = useState("");
   const [githubad, setGithubad] = useState("");
+  const { email, password } = location.state || {};
 
   const [nicknameError, setNicknameError] = useState("");
   const [fieldError, setFieldError] = useState("");
@@ -38,9 +44,30 @@ const SignPageTwo = () => {
     return valid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+
+    try {
+      const payload: RegisterRequest = {
+        email,
+        password,
+        nickname,
+        field,
+        bio,
+        githubUrl: githubad || undefined,
+      };
+
+      await postRegister(payload);
+      navigate("/login");
+    } catch (error: any) {
+      console.error("회원가입 실패:", error);
+      if (error.response?.data?.message) {
+        setFormError(error.response.data.message);
+      } else {
+        setFormError("회원가입 중 오류가 발생했습니다.");
+      }
+    }
   };
 
   return (
@@ -58,9 +85,9 @@ const SignPageTwo = () => {
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col items-start gap-12 w-full"
+            className="flex flex-col items-start w-full"
           >
-            <div className="flex flex-col items-start gap-4 w-full">
+            <div className="flex flex-col items-start  w-full">
               <Input
                 label="닉네임"
                 type="text"
@@ -99,21 +126,29 @@ const SignPageTwo = () => {
               />
             </div>
 
-            {formError && (
-              <p className="text-red-500 text-[16px] mt-1">{formError}</p>
-            )}
-
             <div className="flex flex-col items-start gap-4 w-full">
               <button
                 type="submit"
                 className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center"
               >
                 <span className="text-white text-[20px] font-semibold font-pretendard">
-                  다음으로
+                  회원가입
                 </span>
+                onClick={PATH.HOME}
               </button>
             </div>
           </form>
+          {formError && (
+            <p
+              className={`text-[13px] mb min-h-[25px] transition-opacity duration-150
+                ${formError ? "text-red-500 opacity-100" : "opacity-0"}`}
+              aria-live={formError ? "polite" : undefined}
+              role={formError ? "alert" : undefined}
+              aria-hidden={!formError}
+            >
+              {formError}
+            </p>
+          )}
 
           <div className="flex flex-row items-end self-end gap-4">
             <h2 className="text-[18px] text-gray-500 font-pretendard">

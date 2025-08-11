@@ -20,6 +20,7 @@ import SearchResultPage from "@/pages/Search/SearchResultPage";
 import CommunityPage from "@/pages/Community/CommunityPage";
 import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
+import PreviewPage from "@/pages/TempWrite/PreviewPage";
 
 export const router = createBrowserRouter(
   [
@@ -120,8 +121,27 @@ export const router = createBrowserRouter(
     },
   ],
   {
+
+    path: PATH.PREVIEW,
+    element: (
+      <ProtectedRoute>
+        <PreviewPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: PATH.FREEFORM_WRITING,
+    element: (
+      <ProtectedRoute>
+        <FreeFormWritePage />
+      </ProtectedRoute>
+    ),
+  },
+]);
+
     basename: import.meta.env.BASE_URL,
   }
 );
+
 
 export default router;

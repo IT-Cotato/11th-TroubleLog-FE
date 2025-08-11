@@ -21,4 +21,5 @@ export const PATH = {
 
   TEMP_WRITING: "/tempwriting",
   FREEFORM_WRITING: "/freeformwriting",
+  PREVIEW: "/preview",
 };
