@@ -6,7 +6,13 @@ import { getTroubleList, getProjectTroubleList } from "@/api/trouble.api";
 
 type Source = { type: "all" } | { type: "project"; projectId: number };
 
-export default function useTroubleCards(source: Source) {
+interface Options {
+  enabled?: boolean;
+}
+
+export default function useTroubleCards(source: Source, options: Options = {}) {
+  const { enabled = true } = options;
+
   const [cards, setCards] = useState<TroublogCardVM[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +52,14 @@ export default function useTroubleCards(source: Source) {
   ]);
 
   useEffect(() => {
+    if (!enabled) return;
     const myReqId = ++reqIdRef.current;
     fetchByKey(myReqId);
-  }, [fetchByKey]);
+  }, [fetchByKey, enabled]);
 
   // 외부에서 강제 새로고침할 때
   const reload = () => {
+    if (!enabled) return;
     const myReqId = ++reqIdRef.current;
     return fetchByKey(myReqId);
   };
