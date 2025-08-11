@@ -15,7 +15,7 @@ const CategoryTag = ({ value, onChange }: CategoryTagProps) => {
     <div className="w-full flex items-center gap-[15px]">
       {/* 왼쪽: 검색창 */}
       <div
-        className="flex px-[15px] py-[8px] border border-gray-300 rounded-md items-center gap-[8px] w-[208px] cursor-pointer"
+        className="flex px-[15px] py-[7px] border border-gray-300 rounded-2xl items-center gap-[20px] w-[208px] cursor-pointer"
         onClick={() => setIsOpen(true)}
       >
         <span className="text-gray-400 font-normal text-sm whitespace-nowrap">
@@ -23,7 +23,7 @@ const CategoryTag = ({ value, onChange }: CategoryTagProps) => {
         </span>
         <img
           src={searchIcon2}
-          className="w-[20px] h-[20px] aspect-square object-contain"
+          className="w-[18px] h-[18px] aspect-square object-contain"
           alt="검색 아이콘"
         />
       </div>

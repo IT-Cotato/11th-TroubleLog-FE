@@ -7,9 +7,11 @@ const templates = ["자기소개서", "면접 대비", "블로그", "Issue 관�
 export default function TemplateSelectModal({
   onClose,
   onConfirm,
+  onLater,
 }: {
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (selectedIndex: number) => void;
+  onLater: () => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
@@ -19,7 +21,7 @@ export default function TemplateSelectModal({
 
     if (selectedIndex === null) return;
 
-    onConfirm();
+    onConfirm(selectedIndex);
   };
 
   return (
@@ -49,7 +51,7 @@ export default function TemplateSelectModal({
       </div>
       {/*헤더아래*/}
       <div className="flex flex-col pt-[48px] px-[78px] gap-[28px]">
-        {/*템플릿 아이콘*/}
+        {/* 템플릿 아이콘 */}
         <div className="flex gap-[20px]">
           {templates.map((label, index) => (
             <div
@@ -65,25 +67,30 @@ export default function TemplateSelectModal({
               </span>
 
               <button
-                className={`w-[282px] h-[218px] overflow-hidden rounded-[12px] border-2 ${
+                className={`w-[282px] h-[218px] flex items-center justify-center overflow-hidden rounded-[12px] border-[3px] shadow-[1px_1px_6px_0px_rgba(0,0,0,0.2)] ${
                   selectedIndex === index
-                    ? "border-dashed border-purple-400"
-                    : "border-transparent"
+                    ? "border-dashed border-purple-500"
+                    : ""
                 }`}
                 onClick={() => setSelectedIndex(index)}
               >
                 <img
-                  src="/src/assets/images/mockimg.jpg"
-                  className="w-full h-full object-cover"
+                  src={
+                    selectedIndex === index
+                      ? `/icons/tempimg${index + 1}purple.svg`
+                      : `/icons/tempimg${index + 1}gray.svg`
+                  }
+                  className="w-[82px] h-[82px] object-cover"
                   alt={label}
                 />
               </button>
             </div>
           ))}
         </div>
+
         {/* 버튼 */}
         <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
-          <CancelButton onClick={onClose} label="다음에" />
+          <CancelButton onClick={onLater} label="다음에" />
           <SaveButton onClick={handleConfirm} label="요약" />
         </div>
       </div>
