@@ -5,15 +5,13 @@ import TroublogCard from "@/components/Card/TroublogCard";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
 import FolderModal from "@/components/Modal/FolderModal";
+import { mockCards } from "@/mocks/mockCards";
 import useClickOutside from "@/hooks/useClickOutside";
 import { getProjectList, postCreateProject } from "@/api/project.api";
 import type {
   ProjectListItem,
   CreateProjectRequest,
 } from "@/types/project.model";
-import useTroubleCards from "@/hooks/useTroubleCards";
-import { PATH } from "@/constants/paths";
-import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
 
 export default function HomePage() {
@@ -22,30 +20,10 @@ export default function HomePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  const navigate = useNavigate();
-
-  // 글쓰기 드롭다운 버튼 클릭 핸들러
-  const handleGoGuideTemplate = useCallback(() => {
-    setShowDropdown(false);
-    navigate(PATH.TEMP_WRITING);
-  }, [navigate]);
-
-  const handleGoFreeformTemplate = useCallback(() => {
-    setShowDropdown(false);
-    navigate(PATH.FREEFORM_WRITING);
-  }, [navigate]);
-
   // 프로젝트 목록 상태
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<unknown>(null);
-
-  // 트러블슈팅 목록 불러오기
-  const {
-    cards: recentCards,
-    isLoading: isLoadingRecents,
-    error: recentsError,
-  } = useTroubleCards({ type: "all" });
 
   // 최초 로드 시 목록 가져오기
   const fetchProjects = useCallback(async () => {
@@ -60,6 +38,10 @@ export default function HomePage() {
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   // 새 프로젝트 생성 핸들러
   const handleCreateProject = async (data: CreateProjectRequest) => {
@@ -106,11 +88,6 @@ export default function HomePage() {
     fetchProjects();
   }, [fetchProjects]);
 
-  // 최초 로드 시 프로젝트 목록 호출
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
-
   return (
     <div className="flex px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[40px]">
       {/* 상단 영역 */}
@@ -130,18 +107,10 @@ export default function HomePage() {
               ref={dropdownRef}
               className="absolute top-full left-1/2 translate-x-[-50%] mt-[8px] w-[184px] rounded-[8px] shadow-card bg-subColor2"
             >
-              <button
-                type="button"
-                onClick={handleGoGuideTemplate}
-                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
-              >
+              <button className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular">
                 가이드 템플릿
               </button>
-              <button
-                type="button"
-                onClick={handleGoFreeformTemplate}
-                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
-              >
+              <button className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular">
                 자유 템플릿
               </button>
             </div>
@@ -191,8 +160,6 @@ export default function HomePage() {
                 tags={p.tags}
                 onUpdated={handleCardUpdated}
                 onDeleted={handleCardDeleted}
-                to={PATH.PROJECT_DETAIL(String(p.id))}
-                linkState={{ projectName: p.name }}
               />
             ))}
           </div>
@@ -201,17 +168,8 @@ export default function HomePage() {
 
       {/* Recents 영역 */}
       <ProjectAccordion title="Recents">
-        {isLoadingRecents ? (
-          <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
-            <span className="text-body-20-regular">불러오는 중…</span>
-          </div>
-        ) : recentsError ? (
-          <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
-            <span className="text-body-20-regular text-red-500">
-              목록 로드 실패
-            </span>
-          </div>
-        ) : recentCards.length === 0 ? (
+        {/* 트러블슈팅 존재 시 카드 목록, 없으면 텍스트 */}
+        {mockCards.length === 0 ? (
           <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
             <span className="text-body-20-regular">
               아직 확인한 트러블슈팅이 없어요.
@@ -219,7 +177,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-[24px] self-stretch">
-            {recentCards.map((card) => (
+            {mockCards.map((card) => (
               <TroublogCard key={card.id} {...card} />
             ))}
           </div>
