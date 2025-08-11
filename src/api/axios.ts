@@ -8,11 +8,12 @@ const instance: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 instance.interceptors.request.use(
   (config) => {
-    // 요청이 전달되기 전 헤더에 토큰 추가
+    // 요청이 전달되기 전 헤더에 accessToken 추가
     const accessToken = localStorage.getItem("accessToken");
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -29,41 +30,35 @@ instance.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const refreshToken = localStorage.getItem("refreshToken");
-
-    // 코드가 401이면 토큰 재발급 -> 이 부분 백엔드한테 물어봐야함
-    if (error.response.status === 401) {
+    // accessToken 만료로 인한 401 응답 시 처리
+    if (error.response?.status === 401) {
       try {
-        if (refreshToken) {
-          const res = await axios.post(
-            `${baseURL}/auth/refresh`,
-            {},
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${refreshToken}`,
-              },
-            }
-          );
-          if (res.status === 200) {
-            const { accessToken, refreshToken } = res.data.data;
-            localStorage.setItem("accessToken", accessToken);
-            localStorage.setItem("refreshToken", refreshToken);
-            console.log("재발급 완료");
+        const res = await axios.post(
+          `${baseURL}/auth/refresh`,
+          {},
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            withCredentials: true, // refreshToken 쿠키 포함
           }
+        );
 
-          // 새 토큰으로 헤더 업데이트 후 재요청
-          error.config.headers.Authorization = `Bearer ${res.headers.Authorization}`;
+        if (res.status === 200) {
+          const { accessToken } = res.data.data;
+          localStorage.setItem("accessToken", accessToken);
+
+          // 실패했던 요청에 새 accessToken 적용
+          error.config.headers.Authorization = `Bearer ${accessToken}`;
           return axios(error.config);
         }
       } catch (refreshErr) {
-        console.log("Token 갱신 실패: ", refreshErr);
-
+        console.error("Token 갱신 실패:", refreshErr);
         localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
         window.location.href = "/";
       }
     }
+
     return Promise.reject(error);
   }
 );

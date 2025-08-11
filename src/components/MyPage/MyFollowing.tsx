@@ -1,67 +1,60 @@
 import { useEffect, useState } from "react";
 import FollowingBtn from "./FollowingBtn";
 import type { FollowingData } from "@/models/user.model";
-
-const mockData: FollowingData[] = [
-  {
-    id: 0,
-    name: "이름0",
-    email: "rlagyflA@naver.com",
-    follow: true,
-  },
-  {
-    id: 1,
-    name: "이름1",
-    email: "rlagyflA@naver.com",
-    follow: true,
-  },
-  {
-    id: 2,
-    name: "이름2",
-    email: "rlagyflA@naver.com",
-    follow: false,
-  },
-  {
-    id: 3,
-    name: "이름3",
-    email: "rlagyflA@naver.com",
-    follow: false,
-  },
-];
+import {
+  getFollowers,
+  getFollowings,
+  postFollow,
+  postUnfollow,
+} from "@/api/user.api";
+import { useParams } from "react-router-dom";
 
 const MyFollowing = () => {
-  const [followList, setFollowList] = useState<FollowingData[]>(mockData);
+  const [followList, setFollowList] = useState<FollowingData[]>([]);
+  const { id } = useParams();
+  const userId = Number(id);
 
   useEffect(() => {
     const path = location.pathname.split("/").pop();
 
     const fetchData = async () => {
       try {
+        let data: FollowingData[] = [];
+
         if (path === "following") {
-          // 백엔드 팔로잉 목록 API 호출
+          data = await getFollowings(userId);
         } else if (path === "follower") {
-          // 백엔드 팔로워 목록 API 호출
+          data = await getFollowers(userId);
         }
-        setFollowList(mockData);
+
+        setFollowList(data);
       } catch (e) {
-        console.log(e);
+        console.error("목록 가져오기 실패", e);
       }
     };
 
     fetchData();
-  }, []);
+  }, [userId]);
 
-  // 백 팔로잉/팔로우 T/F API 호출
   const handleFollowClick = async (id: number) => {
     try {
-      // axios 사용
+      const target = followList.find((user) => user.userId === id);
+
+      if (!target) return;
+
+      if (target.isFollowed) {
+        await postUnfollow(id);
+      } else {
+        await postFollow(id);
+      }
+
       setFollowList((prev) =>
         prev.map((user) =>
-          user.id === id ? { ...user, follow: !user.follow } : user
+          user.userId === id ? { ...user, isFollowed: !user.isFollowed } : user
         )
       );
     } catch (e) {
-      console.log(e);
+      console.error("팔로우 상태 변경 실패", e);
     }
   };
 
@@ -69,11 +62,12 @@ const MyFollowing = () => {
     <div className="flex flex-col gap-4">
       {followList.map((user) => (
         <FollowingBtn
-          key={user.id}
-          name={user.name}
+          key={user.userId}
+          nickname={user.nickname}
           email={user.email}
-          follow={user.follow}
-          onFollowClick={() => handleFollowClick(user.id)}
+          isFollowed={user.isFollowed}
+          profileUrl={user.profileUrl}
+          onFollowClick={() => handleFollowClick(user.userId)}
         />
       ))}
     </div>

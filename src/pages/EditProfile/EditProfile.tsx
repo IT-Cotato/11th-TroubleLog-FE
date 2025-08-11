@@ -8,6 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
 import type { ProfileData } from "@/models/user.model";
+import { deleteUser, getMyProfile, patchProfile } from "@/api/user.api";
 import { PATH } from "@/constants/paths";
 import userIcon from "@/assets/icons/user.svg";
 
@@ -15,10 +16,11 @@ const EditProfile = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [profile, setProfile] = useState<ProfileData>({
-    name: "",
-    sort: "",
+    userId: 0,
+    nickname: "",
+    field: "",
     bio: "",
-    git: "",
+    githubUrl: "",
   });
 
   //프로필 사진 변경
@@ -57,9 +59,14 @@ const EditProfile = () => {
     setShowWithdrawModal(false);
   }, []);
 
-  const handleWithdrawConfirm = useCallback(() => {
-    setShowWithdrawModal(false);
-    setShowWithdrawCompleteModal(true);
+  const handleWithdrawConfirm = useCallback(async () => {
+    try {
+      await deleteUser();
+      setShowWithdrawModal(false);
+      setShowWithdrawCompleteModal(true);
+    } catch (error) {
+      console.error("회원 탈퇴 실패:", error);
+    }
   }, []);
 
   const handleWithdrawComplete = useCallback(() => {
@@ -67,12 +74,27 @@ const EditProfile = () => {
     navigate("/");
   }, [navigate]);
 
+  /* useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getMyProfile();
+        setProfile(data);
+      } catch (error) {
+        console.error("정보를 불러오는 데 실패했습니다", error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+*/
+
   useEffect(() => {
     const mockData = {
-      name: "안수이",
-      sort: "관심분야 1",
+      userId: 0,
+      nickname: "안수이",
+      field: "관심분야 1",
       bio: "안녕하세요. 프론트엔드 개발자입니다!",
-      git: "ddd@gmail.com",
+      githubUrl: "ddd@gmail.com",
     };
     setProfile(mockData);
   }, []);
@@ -86,9 +108,13 @@ const EditProfile = () => {
       }));
     };
 
-  const handleSave = () => {
-    console.log("저장할 데이터:", profile);
-    navigate(PATH.MYPAGE(id!));
+  const handleSave = async () => {
+    try {
+      await patchProfile(profile);
+      navigate(PATH.MYPAGE(id!));
+    } catch (error) {
+      console.error("프로필 수정 실패:", error);
+    }
   };
 
   const handleCancel = () => {
@@ -135,14 +161,14 @@ const EditProfile = () => {
             <MyInput
               label="닉네임"
               placeholder="닉네임을 입력해주세요"
-              value={profile.name}
-              onChange={handleChange("name")}
+              value={profile.nickname}
+              onChange={handleChange("nickname")}
             />
             <MyInput
               label="분야"
               placeholder="관심분야를 입력해주세요"
-              value={profile.sort}
-              onChange={handleChange("sort")}
+              value={profile.field}
+              onChange={handleChange("field")}
             />
             <MyInput
               label="한 줄 소개"
@@ -153,8 +179,8 @@ const EditProfile = () => {
             <MyInput
               label="깃허브 주소"
               placeholder="깃허브 주소를 입력해주세요"
-              value={profile.git}
-              onChange={handleChange("git")}
+              value={profile.githubUrl}
+              onChange={handleChange("githubUrl")}
             />
           </div>
         </div>
@@ -174,6 +200,7 @@ const EditProfile = () => {
           onConfirm={handleWithdrawConfirm}
           title="회원 탈퇴"
           description={`정말 탈퇴하시겠습니까?\n탈퇴하시면 작성하신 내용들도 사라집니다!`}
+          label="탈퇴"
         />
       )}
 

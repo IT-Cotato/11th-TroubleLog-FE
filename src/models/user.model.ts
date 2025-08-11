@@ -1,13 +1,25 @@
 export interface ProfileData {
-  name: string;
-  sort: string;
+  userId: number;
+  nickname: string;
+  field: string;
   bio: string;
-  git: string;
+  githubUrl: string;
+}
+
+export interface UserInfoData {
+  userId: number;
+  nickname: string;
+  field: string;
+  bio: string;
+  githubUrl: string;
+  followerNum: number;
+  followingNum: number;
 }
 
 export interface FollowingData {
-  id: number;
-  name: string;
+  userId: number;
+  nickname: string;
   email: string;
-  follow: boolean;
+  profileUrl: string;
+  isFollowed: boolean;
 }
