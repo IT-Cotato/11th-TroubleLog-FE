@@ -1,6 +1,6 @@
 import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
 import { mockCards } from "@/mocks/mockCards";
-import { mapToTroubleShootingCard } from "@/utils/mappers/cardMapper";
+import { mapToTroubleShootingCard } from "@/mappers/cardMapper";
 
 const LikedPostsPage = () => {
   // 임시
