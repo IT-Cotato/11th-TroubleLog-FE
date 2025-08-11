@@ -1,4 +1,5 @@
 import authInstance from "@/api/authInstance";
+import { getAuthHeaders } from "@/api/apiHeaders";
 import type {
   RegisterRequest,
   RegisterResponse,
@@ -14,10 +15,7 @@ const ENVTYPE = import.meta.env.VITE_ENV_TYPE;
 // 회원가입
 export const postRegister = (payload: RegisterRequest) =>
   authInstance.post<RegisterResponse>("/auth/register", payload, {
-    headers: {
-      Authorization: `Bearer ${FIXED}`,
-      EnvType: ENVTYPE,
-    },
+    headers: getAuthHeaders(),
   });
 
 // 로그인
@@ -25,12 +23,7 @@ export const postLogin = (email: string, password: string) =>
   authInstance.post<LoginResponse>(
     "/auth/login",
     { email, password },
-    {
-      headers: {
-        Authorization: `Bearer ${FIXED}`,
-        EnvType: ENVTYPE,
-      },
-    }
+    { headers: getAuthHeaders() }
   );
 
 // 이메일 중복 확인
