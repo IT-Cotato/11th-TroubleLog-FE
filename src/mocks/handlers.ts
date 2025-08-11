@@ -158,7 +158,14 @@ export const handlers = [
   // GET /project/:projectId/troubles - 프로젝트 내 트러블슈팅 목록 조회
   http.get("/project/:projectId/troubles", ({ params }) => {
     const id = Number(params.projectId);
-    const list = mockProjectTroubles[id] ?? [];
+    if (Number.isNaN(id)) {
+      return HttpResponse.json<GetProjectTroubleListResponse>(
+        { status: 400, message: "잘못된 프로젝트 ID입니다.", data: [] },
+        { status: 400 }
+      );
+    }
+    const key = String(id);
+    const list = mockProjectTroubles[key] ?? [];
 
     return HttpResponse.json<GetProjectTroubleListResponse>(
       {
