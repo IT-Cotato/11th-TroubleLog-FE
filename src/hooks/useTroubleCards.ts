@@ -1,8 +1,9 @@
-// useTroubleCards.ts
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { TroublogCardVM } from "@/mappers/troubleCard.mapper";
-import { toTroublogCardVMs } from "@/mappers/troubleCard.mapper";
 import { getTroubleList, getProjectTroubleList } from "@/api/trouble.api";
+import {
+  toTroublogCardVMs,
+  type TroublogCardVM,
+} from "@/mappers/troubleCard.mapper";
 
 type Source = { type: "all" } | { type: "project"; projectId: number };
 
