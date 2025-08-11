@@ -2,7 +2,7 @@ import { useState } from "react";
 import SortButtonGroup from "../Project/SortButtonGroup";
 import TroubleShootingCard from "./TroubleShootingCard";
 import { mockCards } from "@/mocks/mockCards";
-import { mapToTroubleShootingCard } from "@/utils/mappers/cardMapper";
+import { mapToTroubleShootingCard } from "@/mappers/cardMapper";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import { useOutletContext } from "react-router-dom";
 
