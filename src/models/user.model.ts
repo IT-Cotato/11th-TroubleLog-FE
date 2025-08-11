@@ -1,6 +1,6 @@
 export interface ProfileData {
   userId: number;
-  nickame: string;
+  nickname: string;
   field: string;
   bio: string;
   githubUrl: string;
@@ -8,7 +8,7 @@ export interface ProfileData {
 
 export interface UserInfoData {
   userId: number;
-  nickame: string;
+  nickname: string;
   field: string;
   bio: string;
   githubUrl: string;

@@ -34,7 +34,7 @@ const MyFollowing = () => {
     };
 
     fetchData();
-  }, []);
+  }, [userId]);
 
   const handleFollowClick = async (id: number) => {
     try {

@@ -15,7 +15,7 @@ const EditProfile = () => {
   const { id } = useParams();
   const [profile, setProfile] = useState<ProfileData>({
     userId: 0,
-    nickame: "",
+    nickname: "",
     field: "",
     bio: "",
     githubUrl: "",
@@ -89,7 +89,7 @@ const EditProfile = () => {
   useEffect(() => {
     const mockData = {
       userId: 0,
-      nickame: "안수이",
+      nickname: "안수이",
       field: "관심분야 1",
       bio: "안녕하세요. 프론트엔드 개발자입니다!",
       githubUrl: "ddd@gmail.com",
@@ -159,8 +159,8 @@ const EditProfile = () => {
             <MyInput
               label="닉네임"
               placeholder="닉네임을 입력해주세요"
-              value={profile.nickame}
-              onChange={handleChange("nickame")}
+              value={profile.nickname}
+              onChange={handleChange("nickname")}
             />
             <MyInput
               label="분야"
