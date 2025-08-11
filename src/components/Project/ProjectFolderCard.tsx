@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import useClickOutside from "../../hooks/useClickOutside";
 import TagList from "../Card/TagList";
 import KebabMenuButton from "../Menu/KebabMenuButton";
@@ -37,6 +37,16 @@ export default function ProjectFolderCard({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
+
+  // ESC로 드롭다운 닫기
+  useEffect(() => {
+    if (!showMenu) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowMenu(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showMenu]);
 
   const handleEdit = useCallback(() => {
     setShowMenu(false);
@@ -87,69 +97,73 @@ export default function ProjectFolderCard({
     }
   }, [id, onDeleted]);
 
-  // 카드 본문
-  const CardBody = (
-    <div className="flex items-start self-stretch">
-      <div className="flex items-center gap-[16px]">
-        {/* 썸네일 */}
-        <div className="flex w-[100px] h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden">
-          {thumbnail && (
-            <img
-              src={thumbnail}
-              alt="thumbnail"
-              className="w-full h-full object-cover"
-            />
-          )}
-        </div>
-        <div className="flex w-[228px] flex-col items-start gap-[18px]">
-          <div className="flex flex-col items-start gap-[4px] self-stretch">
-            <span className="text-head-20-semibold">{name}</span>
-            <span>{description}</span>
-          </div>
-          <TagList tags={tags} />
-        </div>
-      </div>
-      {/* 케밥 메뉴: 링크 내에서도 클릭 시 네비게이션 막기 */}
-      <div
-        ref={menuRef}
-        className="relative"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      >
-        <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
-        {showMenu && (
-          <KebabDropdown
-            options={[
-              { label: "폴더 수정", onClick: handleEdit },
-              { label: "삭제", onClick: handleDelete },
-            ]}
+  // 카드 본문(링크 영역)
+  const CardMain = (
+    <div className="flex items-center gap-[16px]">
+      {/* 썸네일 */}
+      <div className="flex w-[100px] h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden">
+        {thumbnail && (
+          <img
+            src={thumbnail}
+            alt="thumbnail"
+            className="w-full h-full object-cover"
           />
         )}
+      </div>
+      <div className="flex w-[228px] flex-col items-start gap-[18px]">
+        <div className="flex flex-col items-start gap-[4px] self-stretch">
+          <span className="text-head-20-semibold">{name}</span>
+          <span>{description}</span>
+        </div>
+        <TagList tags={tags} />
       </div>
     </div>
   );
 
+  // 케밥 메뉴(링크 바깥)
+  const KebabArea = (
+    <div
+      ref={menuRef}
+      className="relative"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
+      {showMenu && (
+        <KebabDropdown
+          options={[
+            { label: "폴더 수정", onClick: handleEdit },
+            { label: "삭제", onClick: handleDelete },
+          ]}
+        />
+      )}
+    </div>
+  );
+
   const ContainerClasses =
-    "flex w-[384px] p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card hover:shadow-lg transition";
+    "flex w-[384px] p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card";
 
   return (
     <>
-      {to ? (
-        // 링크로 감싸서 이동
-        <Link
-          to={to}
-          state={linkState}
-          className={ContainerClasses}
-          aria-label={`${name} 프로젝트로 이동`}
-        >
-          {CardBody}
-        </Link>
-      ) : (
-        // 링크가 없으면 그냥 div
-        <div className={ContainerClasses}>{CardBody}</div>
-      )}
+      <div className={ContainerClasses}>
+        <div className="flex items-start self-stretch">
+          {to ? (
+            <Link
+              to={to}
+              state={linkState}
+              className="flex-1"
+              aria-label={`${name} 프로젝트로 이동`}
+            >
+              {CardMain}
+            </Link>
+          ) : (
+            <div className="flex-1">{CardMain}</div>
+          )}
+          {KebabArea}
+        </div>
+      </div>
 
       {/* 프로젝트 폴더 수정 모달 */}
       {showEditModal && (
