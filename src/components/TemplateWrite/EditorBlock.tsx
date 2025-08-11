@@ -1,4 +1,7 @@
 import MDEditor from "@uiw/react-md-editor";
+import alertIcon from "@/assets/icons/alerticon.svg";
+import checkBoxIcon from "@/assets/icons/checkedbox.svg";
+import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
 
 export interface BlockData {
   id: number;
@@ -95,11 +98,10 @@ const EditorBlock = ({
       <div className="flex flex-col gap-2 mt-14">
         {block.checklistItems.length > 0 && (
           <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
-            <img
-              src="/icons/alerticon.svg"
-              alt="alert icon"
-              className="w-5 h-5"
-            />
+
+            <img src={alertIcon} alt="alert icon" className="w-5 h-5" />
+
+          
             {block.checklistTitle}
           </h3>
         )}
@@ -116,11 +118,15 @@ const EditorBlock = ({
               onChange={(e) => onToggleChecklist(index, item, e.target.checked)}
             />
             <span
-              className={`
-                inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-                peer-checked:bg-[url('/public/icons/checkedbox.svg')]
-                bg-[url('/public/icons/noncheckedbox.svg')]
-              `}
+              style={{
+                ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
+                ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
+              }}
+              className="
+    inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
+    [background-image:var(--icon-unchecked)]
+    peer-checked:[background-image:var(--icon-checked)]
+  "
             ></span>
             <span>{item}</span>
           </label>
