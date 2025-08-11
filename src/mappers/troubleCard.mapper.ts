@@ -19,6 +19,7 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => ({
   createdAt: formatYYMMDD(t.date),
   createdAtIso: t.date,
   tags: t.techs,
+  importance: t.starRating,
   summaryType: mapSummaryType(t.summaryType),
 });
 
