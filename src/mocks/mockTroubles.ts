@@ -1,0 +1,28 @@
+import type { TroubleListItem } from "@/types/trouble.model";
+
+export const mockTroubleList: TroubleListItem[] = [
+  {
+    id: 100,
+    title: "빌드 시 unknown host 오류 해결",
+    imageUrl: "https://image.url/error.png",
+    isVisible: true,
+    date: "2025-08-04T18:22:00",
+    starRating: 4,
+    error: "UnknownHostException",
+    techs: ["Java", "Gradle", "Network"],
+    status: "작성 완료",
+    summaryType: "에러 중심 요약",
+  },
+  {
+    id: 101,
+    title: "배포 시 nginx 설정 오류 해결",
+    imageUrl: "https://image.url/nginx.png",
+    isVisible: false,
+    date: "2025-08-03T14:10:00",
+    starRating: 5,
+    error: "nginx config error",
+    techs: ["Nginx", "DevOps", "CI/CD"],
+    status: "임시 저장",
+    summaryType: "전체 흐름 요약",
+  },
+];

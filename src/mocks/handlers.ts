@@ -8,7 +8,13 @@ import type {
   ProjectData,
   DeleteProjectResponse,
 } from "@/types/project.model";
-import { mockProject, mockProjectList } from "./mockProject";
+import { mockProject, mockProjectList } from "@/mocks/mockProject";
+import type {
+  GetProjectTroubleListResponse,
+  GetTroubleListResponse,
+} from "@/types/trouble.model";
+import { mockTroubleList } from "@/mocks/mockTroubles";
+import { mockProjectTroubles } from "./mockProjectTroubles";
 
 export const handlers = [
   // POST /project - 프로젝트 생성
@@ -132,6 +138,40 @@ export const handlers = [
         status: 200,
         message: "프로젝트가 삭제되었습니다.",
         data: null,
+      },
+      { status: 200 }
+    );
+  }),
+
+  // GET /troubles/list - 전체 트러블슈팅 목록 조회
+  http.get("/troubles/list", () => {
+    return HttpResponse.json<GetTroubleListResponse>(
+      {
+        status: 200,
+        message: "전체 트러블슈팅 조회 성공",
+        data: mockTroubleList,
+      },
+      { status: 200 }
+    );
+  }),
+
+  // GET /project/:projectId/troubles - 프로젝트 내 트러블슈팅 목록 조회
+  http.get("/project/:projectId/troubles", ({ params }) => {
+    const id = Number(params.projectId);
+    if (Number.isNaN(id)) {
+      return HttpResponse.json<GetProjectTroubleListResponse>(
+        { status: 400, message: "잘못된 프로젝트 ID입니다.", data: [] },
+        { status: 400 }
+      );
+    }
+    const key = String(id);
+    const list = mockProjectTroubles[key] ?? [];
+
+    return HttpResponse.json<GetProjectTroubleListResponse>(
+      {
+        status: 200,
+        message: "프로젝트 내 트러블슈팅 조회 성공",
+        data: list,
       },
       { status: 200 }
     );
