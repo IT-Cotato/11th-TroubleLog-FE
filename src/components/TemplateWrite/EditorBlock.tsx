@@ -1,4 +1,7 @@
 import MDEditor from "@uiw/react-md-editor";
+import alertIcon from "@/assets/icons/alerticon.svg";
+import checkBoxIcon from "@/assets/icons/checkedbox.svg";
+import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
 
 export interface BlockData {
   id: number;
@@ -23,6 +26,7 @@ interface Props {
   isLast: boolean;
   onEnd?: () => void;
   onShowSaveAlert?: () => void;
+  onActivate: (index: number) => void;
 }
 
 const EditorBlock = ({
@@ -31,7 +35,7 @@ const EditorBlock = ({
   onChange,
   onToggleChecklist,
   onAddBlock,
-
+  onActivate,
   isActive,
   isLast,
   onEnd,
@@ -40,28 +44,24 @@ const EditorBlock = ({
   onShowSaveAlert,
 }: Props) => {
   return (
-    <div className="flex flex-row gap-[25px] pb-[25px]">
+    <div
+      className="flex flex-row gap-[25px] pb-[25px]"
+      onClick={() => onActivate(index)}
+    >
       <div className="flex flex-col gap-[16px] w-[1200px]">
-        {/* 상단 제목 + 버튼 영역 */}
         <div className="flex justify-between items-start">
           <span className="font-bold text-black text-[24px]">
             {block.question}
           </span>
-
           {isActive && (
             <div className="flex flex-col items-end gap-2 min-w-[160px]">
               <div className="flex gap-2">
-                {/* Save 버튼 */}
                 <button
-                  onClick={() => {
-                    onShowSaveAlert?.();
-                  }}
+                  onClick={() => onShowSaveAlert?.()}
                   className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100"
                 >
                   Save
                 </button>
-
-                {/* End / Next 버튼 */}
                 <button
                   onClick={() => {
                     if (isLast) onEnd?.();
@@ -82,7 +82,6 @@ const EditorBlock = ({
           )}
         </div>
 
-        {/* 에디터 */}
         <div data-color-mode="light">
           <MDEditor
             value={block.content}
@@ -99,11 +98,10 @@ const EditorBlock = ({
       <div className="flex flex-col gap-2 mt-14">
         {block.checklistItems.length > 0 && (
           <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
-            <img
-              src="/public/icons/alerticon.svg"
-              alt="alert icon"
-              className="w-5 h-5"
-            />
+
+            <img src={alertIcon} alt="alert icon" className="w-5 h-5" />
+
+          
             {block.checklistTitle}
           </h3>
         )}
@@ -120,11 +118,15 @@ const EditorBlock = ({
               onChange={(e) => onToggleChecklist(index, item, e.target.checked)}
             />
             <span
-              className={`
-                inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-                peer-checked:bg-[url('/public/icons/checkedbox.svg')]
-                bg-[url('/public/icons/noncheckedbox.svg')]
-              `}
+              style={{
+                ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
+                ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
+              }}
+              className="
+    inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
+    [background-image:var(--icon-unchecked)]
+    peer-checked:[background-image:var(--icon-checked)]
+  "
             ></span>
             <span>{item}</span>
           </label>

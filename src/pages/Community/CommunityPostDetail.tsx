@@ -10,6 +10,11 @@ import useClickOutside from "@/hooks/useClickOutside";
 import { mockPost } from "@/mocks/mockPost";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import imageIcon from "@/assets/icons/image.svg";
+import starIcon from "@/assets/icons/star.svg";
+import heartIcon from "@/assets/icons/heart.svg";
+import likeEmptyIcon from "@/assets/icons/like_empty.svg";
+import shareIcon from "@/assets/icons/share.svg";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -214,9 +219,9 @@ export default function CommunityPostDetail() {
               <div className="flex items-center gap-[20px]">
                 {/* 프로필 이미지 */}
                 <img
-                  src={post.authorProfile || "/icons/image.svg"}
+                  src={post.authorProfile || imageIcon}
                   onError={(e) => {
-                    e.currentTarget.src = "/icons/image.svg";
+                    e.currentTarget.src = imageIcon;
                   }}
                   alt="profile"
                   className="w-[66px] h-[66px]"
@@ -229,7 +234,7 @@ export default function CommunityPostDetail() {
               {/* 중요도 */}
               <div className="flex items-center gap-[8px]">
                 <img
-                  src="/icons/star.svg"
+                  src={starIcon}
                   alt="importance"
                   className="w-[24px] h-[24px]"
                 />
@@ -273,9 +278,9 @@ export default function CommunityPostDetail() {
                     >
                       {/* 프로필 이미지 */}
                       <img
-                        src={post.authorProfile || "/icons/image.svg"}
+                        src={post.authorProfile || imageIcon}
                         onError={(e) => {
-                          e.currentTarget.src = "/icons/image.svg";
+                          e.currentTarget.src = imageIcon;
                         }}
                         alt="profile"
                         className="w-[131px] h-[131px]"
@@ -316,7 +321,7 @@ export default function CommunityPostDetail() {
                   onClick={handleToggleLike}
                 >
                   <img
-                    src={isLiked ? "/icons/heart.svg" : "/icons/like_empty.svg"}
+                    src={isLiked ? heartIcon : likeEmptyIcon}
                     alt="like"
                     className="w-[40px] h-[40px]"
                   />
@@ -328,7 +333,7 @@ export default function CommunityPostDetail() {
 
                 {/* 공유 버튼 */}
                 <img
-                  src="/icons/share.svg"
+                  src={shareIcon}
                   alt="share"
                   className="w-[40px] h-[40px]"
                 />

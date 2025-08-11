@@ -4,6 +4,8 @@ import CancelButton from "../Button/CancelButton";
 import SaveButton from "../Button/SaveButton";
 import { getProjectDetail } from "@/api/project.api";
 import type { CreateProjectRequest } from "@/types/project.model";
+import exitIcon from "@/assets/icons/exiticon.svg";
+import addImageIcon from "@/assets/icons/add_image.svg";
 
 interface FolderModalProps {
   mode: "new" | "edit";
@@ -110,7 +112,7 @@ export default function FolderModal({
         </span>
         <button onClick={onClose}>
           <img
-            src="/icons/exiticon.svg"
+            src={exitIcon}
             alt="close"
             className="w-[24px] h-[24px] mb-[12px] mt-[3px]"
           />
@@ -142,7 +144,7 @@ export default function FolderModal({
           ) : (
             <>
               <img
-                src="/icons/add_image.svg"
+                src={addImageIcon}
                 alt="add_image"
                 className="w-[52px] h-[52px]"
               />

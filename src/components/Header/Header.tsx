@@ -9,6 +9,7 @@ import useClickOutside from "@/hooks/useClickOutside";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
 import NotificationModal from "../Modal/NotificationModal";
 import { PATH } from "@/constants/paths";
+import logo from "@/assets/icons/logo.svg";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ const Header = () => {
   return (
     <div className="flex w-full py-[25px] px-[88px] gap-[10px] justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
       <img
-        src="/icons/logo.svg"
+        src={logo}
         alt="logo"
         className="w-[70px] h-[51px] cursor-pointer"
         onClick={() => navigate(PATH.HOME)}

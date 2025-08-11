@@ -22,10 +22,11 @@ const Input: React.FC<InputProps> = ({
   name,
 }) => {
   return (
-    <div className="flex flex-col justify-center items-start gap-2 min-h-[84px] w-full">
+    <div className="flex flex-col items-start gap-2 w-full">
       <label className="text-black font-pretendard text-[18px] font-normal leading-normal">
         {label}
       </label>
+
       <input
         name={name}
         type={type}
@@ -35,8 +36,17 @@ const Input: React.FC<InputProps> = ({
         placeholder={placeholder}
         className={`w-[560px] h-12 px-4 py-3 rounded-lg border text-black font-pretendard placeholder:text-gray-500 placeholder:text-sm placeholder:font-normal placeholder:leading-normal
         ${error ? "border-red-500" : "border-gray-300 bg-white"}`}
+        aria-invalid={!!error}
       />
-      {error && <p className="text-red-500 text-[13px] mt-1">{error}</p>}
+      <p
+        className={`text-[13px] mt-1 min-h-[25px] transition-opacity duration-150
+        ${error ? "text-red-500 opacity-100" : "opacity-0"}`}
+        aria-live={error ? "polite" : undefined}
+        role={error ? "alert" : undefined}
+        aria-hidden={!error}
+      >
+        {error || "placeholder"}
+      </p>
     </div>
   );
 };

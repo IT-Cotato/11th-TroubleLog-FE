@@ -1,4 +1,7 @@
 import type { StatusType, VisibilityType } from "@/types/project";
+import star from "@/assets/icons/star.svg";
+import heart from "@/assets/icons/heart.svg";
+import comment from "@/assets/icons/comment.svg";
 
 interface CardFooterInfoProps {
   isMine: boolean;
@@ -31,7 +34,7 @@ export default function CardFooterInfo({
       return (
         <div className="flex items-center gap-1">
           <img
-            src="/icons/star.svg"
+            src={star}
             alt="중요도 아이콘"
             className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
           />
@@ -55,7 +58,7 @@ function LikeCount({ count = 0 }: { count?: number }) {
   return (
     <div className="flex items-center gap-1">
       <img
-        src="/icons/heart.svg"
+        src={heart}
         className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
         alt="좋아요"
       />
@@ -68,7 +71,7 @@ function CommentCount({ count = 0 }: { count?: number }) {
   return (
     <div className="flex items-center gap-1">
       <img
-        src="/icons/comment.svg"
+        src={comment}
         className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
         alt="댓글"
       />

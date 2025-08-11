@@ -1,9 +1,10 @@
 import BaseModal from "../../components/Modal/BaseModal";
-
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import PostSuccessModal from "./PostSuccessModal";
 import { useEffect, useState } from "react";
+import exitIcon from "@/assets/icons/exiticon.svg";
+
 export default function PostLoadingModal({
   onClose,
   progress,
@@ -36,7 +37,7 @@ export default function PostLoadingModal({
       <div className="flex flex-col justify-center mt-[39px] ml-[64px] ">
         <div className="flex w-full pl-[452px] ">
           <button onClick={onClose} className="w-6 h-6 pt">
-            <img src="/icons/exiticon.svg" alt="닫기" className="" />
+            <img src={exitIcon} alt="닫기" className="" />
           </button>
         </div>
         <div className="flex flex-col w-[452px] gap-[40px] items-center">

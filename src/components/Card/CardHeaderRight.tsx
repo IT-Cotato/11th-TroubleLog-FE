@@ -4,6 +4,7 @@ import useClickOutside from "../../hooks/useClickOutside";
 import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import type { StatusType } from "@/types/project";
+import image from "@/assets/icons/image.svg";
 
 interface CardHeaderRightProps {
   isMine: boolean;
@@ -22,7 +23,7 @@ export default function CardHeaderRight({
   if (!isMine) {
     return (
       <img
-        src={authorProfileImageUrl || "/icons/image.svg"}
+        src={authorProfileImageUrl || image}
         alt="작성자 프로필"
         className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] rounded-full"
       />

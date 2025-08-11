@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import typography from "@tailwindcss/typography";
 
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
@@ -30,9 +31,9 @@ export default {
         card: "1px 1px 8px 0px rgba(0, 0, 0, 0.25)",
       },
       zIndex: {
-        max: "9999", // 모달 등 우선순위용
+        max: "9999",
       },
     },
   },
-  plugins: [],
+  plugins: [typography],
 } satisfies Config;

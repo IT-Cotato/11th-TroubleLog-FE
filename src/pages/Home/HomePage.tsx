@@ -14,6 +14,7 @@ import type {
 import useTroubleCards from "@/hooks/useTroubleCards";
 import { PATH } from "@/constants/paths";
 import { useNavigate } from "react-router-dom";
+import plusIcon from "@/assets/icons/plus.svg";
 
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
@@ -157,11 +158,7 @@ export default function HomePage() {
             onClick={handleOpenModal}
             aria-label="새 폴더 추가"
           >
-            <img
-              src="/icons/plus.svg"
-              alt="plus"
-              className="w-[36px] h-[36px]"
-            />
+            <img src={plusIcon} alt="plus" className="w-[36px] h-[36px]" />
           </button>
         }
       >

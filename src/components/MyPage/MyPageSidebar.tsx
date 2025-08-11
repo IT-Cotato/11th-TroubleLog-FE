@@ -1,9 +1,13 @@
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import FollowButton from "../Button/FollowButton";
+import FollowButton from "@/components/Button/FollowButton";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import type { StatusType } from "@/types/project";
 import { PATH } from "@/constants/paths";
 import { MYPAGE_SUBPATH } from "@/constants/routes";
+import userIcon from "@/assets/icons/user.svg";
+import circleYIcon from "@/assets/icons/circle_y.svg";
+import circleGIcon from "@/assets/icons/circle_g.svg";
+import circleBIcon from "@/assets/icons/circle_b.svg";
 
 type MyPageSideBarProps =
   | {
@@ -68,7 +72,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     <div className="flex w-[296px] flex-col items-start gap-[140px]">
       {/* 상단 프로필 영역 */}
       <div className="flex flex-col items-center gap-3 self-stretch">
-        <img src="/icons/user.svg" alt="user" className="w-[288px] h-[288px]" />
+        <img src={userIcon} alt="user" className="w-[288px] h-[288px]" />
         <div className="flex flex-col items-start gap-3">
           <div className="flex flex-col items-start gap-2">
             <p className="text-head-32-semibold">{mockProfile.name}</p>
@@ -131,7 +135,12 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                 }}
                 className={getFilterButtonClass("inProgress")}
               >
-                <img src="/icons/circle_y.svg" className="w-3.5 h-3.5" />
+                <img
+                  src={circleYIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-3.5 h-3.5"
+                />
                 <span>작성 중 ({props.counts.inProgress})</span>
               </button>
               <button
@@ -141,7 +150,12 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                 }}
                 className={getFilterButtonClass("complete")}
               >
-                <img src="/icons/circle_g.svg" className="w-3.5 h-3.5" />
+                <img
+                  src={circleGIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-3.5 h-3.5"
+                />
                 <span>작성 완료 ({props.counts.complete})</span>
               </button>
               <button
@@ -151,7 +165,12 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                 }}
                 className={getFilterButtonClass("created")}
               >
-                <img src="/icons/circle_b.svg" className="w-3.5 h-3.5" />
+                <img
+                  src={circleBIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-3.5 h-3.5"
+                />
                 <span>작성+요약 완료 ({props.counts.created})</span>
               </button>
             </div>
