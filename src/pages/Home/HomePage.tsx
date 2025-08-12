@@ -19,25 +19,26 @@ import plusIcon from "@/assets/icons/plus.svg";
 const PAGE_SIZE = 10;
 
 // StrictMode 중복/동시 호출 방지: 페이지별 in-flight Promise 공유
-const inflight = new Map<
-  number,
-  Promise<{
-    content: ProjectListItem[];
-    hasNext?: boolean;
-    isLast?: boolean;
-    totalPages?: number;
-    totalElements?: number;
-    page?: number;
-    size?: number;
-  }>
->();
+type ProjectPageResp = {
+  content: ProjectListItem[];
+  hasNext?: boolean;
+  isLast?: boolean;
+  totalPages?: number;
+  totalElements?: number;
+  page?: number;
+  size?: number;
+};
+
+const inflight = new Map<string, Promise<ProjectPageResp>>();
 
 function fetchPageOnce(page: number, size: number) {
-  if (!inflight.has(page)) {
-    const p = getProjectList(page, size).finally(() => inflight.delete(page));
-    inflight.set(page, p);
+  const key = `${page}:${size}`;
+  if (!inflight.has(key)) {
+    const p = getProjectList(page, size).finally(() => inflight.delete(key));
+    inflight.set(key, p);
   }
-  return inflight.get(page)!;
+
+  return inflight.get(key)!;
 }
 
 export default function HomePage() {
@@ -62,16 +63,37 @@ export default function HomePage() {
   // 프로젝트 목록 + 페이징 상태
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [page, setPage] = useState(1);
-  const [hasNext, setHasNext] = useState(true);
+  const [hasNext, setHasNext] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<unknown>(null);
+
+  // 최신 상태를 콜백에서 안전히 읽기 위한 ref들
+  const isLoadingRef = useRef(false);
+  const hasNextRef = useRef(false);
+  const pageRef = useRef(1);
+  const fetchingRef = useRef(false); // 중복 실행 락
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
+  useEffect(() => {
+    hasNextRef.current = hasNext;
+  }, [hasNext]);
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
 
   // 트러블슈팅 목록 불러오기
   const {
     cards: recentCards,
     isLoading: isLoadingRecents,
     error: recentsError,
-  } = useTroubleCards({ type: "all" });
+    hasNext: hasNextRecents,
+    sentinelRef: recentsSentinel,
+  } = useTroubleCards(
+    { type: "all" },
+    { infinite: true, pageSize: 10, sortBy: "latest" }
+  );
 
   // 센티널(관찰 대상) 참조
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -92,7 +114,8 @@ export default function HomePage() {
           ? await fetchPageOnce(nextPage, PAGE_SIZE)
           : await getProjectList(nextPage, PAGE_SIZE);
 
-        const pageHasNext = res.hasNext ?? res.isLast ?? false;
+        const pageHasNext =
+          res.hasNext ?? (res.isLast !== undefined ? !res.isLast : false);
         const list = Array.isArray(res.content) ? res.content : [];
 
         setHasNext(pageHasNext);
@@ -135,17 +158,28 @@ export default function HomePage() {
     const io = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry.isIntersecting && !isLoading && hasNext) {
-          // 다음 페이지 불러오기
-          void loadPage(page + 1, { append: true, useOnce: true });
-        }
+        if (!entry.isIntersecting) return;
+        if (fetchingRef.current) return;
+        if (!hasNextRef.current) return;
+
+        fetchingRef.current = true;
+        void loadPage(pageRef.current + 1, {
+          append: true,
+          useOnce: true,
+        }).finally(() => {
+          fetchingRef.current = false;
+        });
       },
-      { root: null, rootMargin: "600px 0px", threshold: 0 } // 미리 당겨서 로드
+      {
+        root: null,
+        rootMargin: "300px 0px", // 너무 일찍 당기면 연속 호출됨 → 300px 정도 권장
+        threshold: 0,
+      }
     );
 
     io.observe(el);
-    return () => io.unobserve(el);
-  }, [page, isLoading, hasNext, loadPage]);
+    return () => io.disconnect();
+  }, []);
 
   // 새 프로젝트 생성 후 목록 리셋(1페이지부터 다시)
   const handleCreateProject = async (data: CreateProjectRequest) => {
@@ -163,7 +197,7 @@ export default function HomePage() {
       setProjects([]);
       idSetRef.current = new Set();
       setPage(1);
-      setHasNext(true);
+      setHasNext(false);
       await loadPage(1, { append: false, useOnce: false });
 
       alert("프로젝트가 생성되었습니다!");
@@ -306,7 +340,7 @@ export default function HomePage() {
 
       {/* Recents 영역 */}
       <ProjectAccordion title="Recents">
-        {isLoadingRecents ? (
+        {isLoadingRecents && recentCards.length === 0 ? (
           <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
             <span className="text-body-20-regular">불러오는 중…</span>
           </div>
@@ -323,11 +357,22 @@ export default function HomePage() {
             </span>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-[24px] self-stretch">
-            {recentCards.map((card) => (
-              <TroublogCard key={card.id} {...card} />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-wrap gap-[24px]">
+              {recentCards.map((card) => (
+                <TroublogCard key={card.id} {...card} />
+              ))}
+            </div>
+            <div ref={recentsSentinel} className="h-6 w-full" />
+            <div className="w-full flex justify-center mt-2">
+              {isLoadingRecents && recentCards.length > 0 && (
+                <span className="text-gray-500">더 불러오는 중…</span>
+              )}
+              {!hasNextRecents && (
+                <span className="text-gray-400">마지막입니다.</span>
+              )}
+            </div>
+          </>
         )}
       </ProjectAccordion>
 
