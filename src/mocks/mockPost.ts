@@ -1,4 +1,5 @@
 import type { CommunityPostDetailProps } from "@/pages/Community/CommunityPostDetail";
+import postMockImage from "@/assets/images/post_mock_img.png";
 
 export const mockPost: CommunityPostDetailProps = {
   errorType: "Network/API Error",
@@ -27,7 +28,7 @@ export const mockPost: CommunityPostDetailProps = {
       "먼저, Spring Boot에 글로벌 CORS 설정을 적용했습니다.WebMvcConfigurer를 상속받아 addCorsMappings() 메서드를 override하고, 프론트엔드에서 접근하는 http://localhost:3000, http://mydomain.com 을 허용하도록 설정했습니다.",
       {
         type: "image",
-        src: "/post_mock_img.png",
+        src: postMockImage,
         alt: "CORS 설정 코드",
       },
       "이후 배포 환경에서도 정상적으로 API 요청이 작동함을 확인했습니다.",

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import useClickOutside from "../../hooks/useClickOutside";
+import dropdownIcon from "@/assets/icons/dropdown_icon.svg";
 
 interface SummaryTypeDropdownProps {
   selected: string;
@@ -23,7 +24,7 @@ export default function SummaryTypeDropdown({
       >
         <span className="text-body-16-regular text-gray3">{selected}</span>
         <img
-          src="/icons/dropdown_icon.svg"
+          src={dropdownIcon}
           className={`w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] transition-transform duration-200 ${
             open ? "rotate-180" : "rotate-0"
           }`}

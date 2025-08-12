@@ -1,3 +1,6 @@
+import publicIcon from "@/assets/icons/public.svg";
+import privateIcon from "@/assets/icons/private.svg";
+
 interface CardTitleSectionProps {
   title: string;
   visibility: "public" | "private" | undefined;
@@ -30,11 +33,7 @@ export default function CardTitleSection({
             </span>
           ) : (
             <img
-              src={
-                visibility === "public"
-                  ? "/icons/public.svg"
-                  : "/icons/private.svg"
-              }
+              src={visibility === "public" ? publicIcon : privateIcon}
               className="w-[24px] h-[24px]"
               alt={visibility === "public" ? "공개" : "비공개"}
             />

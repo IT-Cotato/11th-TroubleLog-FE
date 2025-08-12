@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { mockNotifications } from "@/mocks/mockNotifications";
+import escapeIcon from "@/assets/icons/escape.svg";
 
 const tabs = ["전체", "트러블슈팅", "댓글", "좋아요"] as const;
 type TabType = (typeof tabs)[number];
@@ -67,7 +68,7 @@ export default function NotificationModal() {
                   {item.text}
                 </div>
                 <img
-                  src="/icons/escape.svg"
+                  src={escapeIcon}
                   alt="delete"
                   className="w-[24px] h-[24px] cursor-pointer shrink-0"
                 />

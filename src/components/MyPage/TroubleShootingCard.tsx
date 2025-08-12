@@ -1,9 +1,15 @@
 import { useState, useCallback } from "react";
 import type { StatusType, VisibilityType } from "@/types/project";
-import KebabMenuButton from "../Menu/KebabMenuButton";
-import KebabDropdown from "../Menu/KebabDropdown";
+import KebabMenuButton from "@/components/Menu/KebabMenuButton";
+import KebabDropdown from "@/components/Menu/KebabDropdown";
 import useClickOutside from "@/hooks/useClickOutside";
-import TagList from "../Card/TagList";
+import TagList from "@/components/Card/TagList";
+import imageIcon from "@/assets/icons/image.svg";
+import publicIcon from "@/assets/icons/public.svg";
+import privateIcon from "@/assets/icons/private.svg";
+import starIcon from "@/assets/icons/star.svg";
+import heartIcon from "@/assets/icons/heart.svg";
+import commentIcon from "@/assets/icons/comment.svg";
 
 export interface TroubleShootingCardProps {
   id: string;
@@ -54,11 +60,7 @@ const TroubleShootingCard = ({
         {/* 작성자 */}
         {isSearchResult && (
           <div className="mb-[25px] flex items-center gap-[12px]">
-            <img
-              src="/icons/image.svg"
-              alt="profile"
-              className="w-[52px] h-[52px]"
-            />
+            <img src={imageIcon} alt="profile" className="w-[52px] h-[52px]" />
             <span className="text-head-24-bold">{authorName}</span>
           </div>
         )}
@@ -100,11 +102,7 @@ const TroubleShootingCard = ({
                   )}
                   {shouldShowVisibilityIcon && visibility && (
                     <img
-                      src={
-                        visibility === "public"
-                          ? "/icons/public.svg"
-                          : "/icons/private.svg"
-                      }
+                      src={visibility === "public" ? publicIcon : privateIcon}
                       alt={visibility}
                       className="w-[24px] h-[24px]"
                     />
@@ -124,7 +122,7 @@ const TroubleShootingCard = ({
                   <>
                     <div className="flex items-center gap-[4px]">
                       <img
-                        src="/icons/star.svg"
+                        src={starIcon}
                         alt="star"
                         className="w-[20px] h-[20px]"
                       />
@@ -141,7 +139,7 @@ const TroubleShootingCard = ({
                     {likeCount !== undefined && (
                       <div className="flex items-center gap-[4px]">
                         <img
-                          src="/icons/heart.svg"
+                          src={heartIcon}
                           alt="likes"
                           className="w-[20px] h-[20px]"
                         />
@@ -153,7 +151,7 @@ const TroubleShootingCard = ({
                     {commentCount !== undefined && (
                       <div className="flex items-center gap-[4px]">
                         <img
-                          src="/icons/comment.svg"
+                          src={commentIcon}
                           alt="comments"
                           className="w-[20px] h-[20px]"
                         />

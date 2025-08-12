@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import arrowForwardIcon from "@/assets/icons/arrow-forward.svg";
 
 interface ProjectAccordionProps {
   title: React.ReactNode;
@@ -28,7 +29,7 @@ export default function ProjectAccordion({
           aria-controls={panelId}
         >
           <img
-            src="/icons/arrow-forward.svg"
+            src={arrowForwardIcon}
             alt=""
             aria-hidden
             className={`w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] transition-transform duration-200 ${
