@@ -3,8 +3,10 @@ import type {
   CreateProjectRequest,
   ProjectListItem,
   DeleteProjectResponse,
+  GetProjectListResponse,
 } from "@/types/project.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
+import api from "@/api/axios";
 
 /// 프로젝트 생성
 
@@ -17,11 +19,12 @@ export const postCreateProject = (payload: CreateProjectRequest) =>
 
 /// 전체 프로젝트 목록 조회
 
-export const getProjectList = () =>
-  getAPIResponseData<ProjectListItem[]>({
-    url: "/project/list",
-    method: "GET",
-  });
+export const getProjectList = (page = 1, size = 10) =>
+  getAPIResponseData<GetProjectListResponse>(
+    api.get("/projects", {
+      params: { page, size },
+    })
+  );
 
 /// 프로젝트 상세 조회
 
