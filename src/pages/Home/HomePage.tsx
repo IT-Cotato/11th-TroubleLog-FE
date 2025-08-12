@@ -16,6 +16,18 @@ import { PATH } from "@/constants/paths";
 import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
 
+let projectsInitPromise: Promise<ProjectListItem[]> | null = null;
+
+async function getProjectListOnce() {
+  if (!projectsInitPromise) {
+    projectsInitPromise = getProjectList().finally(() => {
+      // 초기 마운트 중복만 막기: 완료되면 Promise 해제
+      projectsInitPromise = null;
+    });
+  }
+  return projectsInitPromise;
+}
+
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -61,6 +73,24 @@ export default function HomePage() {
     }
   }, []);
 
+  // 처음 마운트 시에만
+  const fetchProjectsOnMount = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const list = await getProjectListOnce();
+      setProjects(Array.isArray(list) ? list : []);
+    } catch (e) {
+      setLoadError(e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProjectsOnMount();
+  }, [fetchProjectsOnMount]);
+
   // 새 프로젝트 생성 핸들러
   const handleCreateProject = async (data: CreateProjectRequest) => {
     try {
@@ -103,11 +133,6 @@ export default function HomePage() {
   }, [fetchProjects]);
 
   const handleCardDeleted = useCallback(() => {
-    fetchProjects();
-  }, [fetchProjects]);
-
-  // 최초 로드 시 프로젝트 목록 호출
-  useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
 

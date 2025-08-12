@@ -60,12 +60,16 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const response = await postLogin(email, password);
-      const data = response.data;
-
-      console.log("로그인 성공!", data);
-
+      const data = await postLogin(email, password);
       localStorage.setItem("accessToken", data.accessToken);
+
+      // 토큰 저장
+      localStorage.setItem("accessToken", data.accessToken);
+
+      // next 또는 홈으로 이동
+      const params = new URLSearchParams(location.search);
+      const next = params.get("next");
+      navigate(next || PATH.HOME, { replace: true });
     } catch (error: any) {
       console.error("로그인 실패:", error);
       if (error.response?.data?.message) {
@@ -127,7 +131,6 @@ const LoginPage = () => {
                 type="submit"
                 className="flex justify-center items-center w-full h-12 bg-[#9737fd] rounded-lg"
                 disabled={loading}
-                onClick={() => navigate(PATH.HOME)}
               >
                 <span className="text-white font-semibold text-[20px] font-pretendard">
                   {loading ? "로그인 중..." : "로그인"}
