@@ -49,6 +49,13 @@ const SignPageTwo = () => {
     if (!validateForm()) return;
 
     try {
+      if (!email || !password) {
+        setFormError(
+          "세션이 만료되었습니다. 처음부터 회원가입을 다시 진행해 주세요."
+        );
+        navigate(PATH.SIGNUP);
+        return;
+      }
       const payload: RegisterRequest = {
         email,
         password,
@@ -134,7 +141,6 @@ const SignPageTwo = () => {
                 <span className="text-white text-[20px] font-semibold font-pretendard">
                   회원가입
                 </span>
-                onClick={PATH.HOME}
               </button>
             </div>
           </form>
