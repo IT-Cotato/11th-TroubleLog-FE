@@ -59,7 +59,7 @@ const SignPageTwo = () => {
       };
 
       await postRegister(payload);
-      navigate("/login");
+      navigate(PATH.LOGIN);
     } catch (error: any) {
       console.error("회원가입 실패:", error);
       if (error.response?.data?.message) {

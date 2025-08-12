@@ -61,7 +61,7 @@ export const router = createBrowserRouter(
         // 프로젝트 상세
         {
           path: ROUTE.PROJECT_DETAIL,
-          element: <ProjectDetailPage projectName="Cotato" />,
+          element: <ProjectDetailPage />,
         },
 
         // 커뮤니티
