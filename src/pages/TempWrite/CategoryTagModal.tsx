@@ -1,14 +1,51 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import exitIcon from "@/assets/icons/exiticon.svg";
+import { getTagsByKeyword, getTagsByCategory } from "@/api/post.api";
 
-export type TagCategory =
+// ===== 타입 정리 =====
+type UiTagCategory =
   | "프론트엔드"
   | "백엔드"
   | "데브옵스"
   | "인프라"
   | "데이터베이스"
-  | "인프라"
   | "기타";
+
+// 태그 타입 - UI용
+export type TagCategory = UiTagCategory;
+
+type ApiTagCategory =
+  | "FRONTEND"
+  | "BACKEND"
+  | "DEVOPS"
+  | "INFRA"
+  | "DATABASE"
+  | "TOOL";
+
+// UI -> API 카테고리
+const UI_TO_API: Record<UiTagCategory, ApiTagCategory> = {
+  프론트엔드: "FRONTEND",
+  백엔드: "BACKEND",
+  데브옵스: "DEVOPS",
+  인프라: "INFRA",
+  데이터베이스: "DATABASE",
+  기타: "TOOL",
+};
+
+// string[]
+function normalizeTagList(data: any): string[] {
+  if (!data) return [];
+  if (Array.isArray(data)) {
+    if (data.length === 0) return [];
+    if (typeof data[0] === "string") return data as string[];
+    return data.map((t: any) => t?.label ?? t?.name ?? String(t));
+  }
+  if (Array.isArray((data as any).tags))
+    return normalizeTagList((data as any).tags);
+  if (Array.isArray((data as any).data))
+    return normalizeTagList((data as any).data);
+  return [];
+}
 
 export interface Tag {
   label: string;
@@ -30,11 +67,65 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
 }) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<TagCategory | null>(
+  const [activeCategory, setActiveCategory] = useState<UiTagCategory | null>(
     null
   );
 
-  if (!isOpen) return null;
+  const [remoteTags, setRemoteTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const debouncedQuery = useMemo(() => query.trim(), [query]);
+
+  // 키워드 검색
+  useEffect(() => {
+    let stop = false;
+
+    const run = async () => {
+      if (!debouncedQuery) {
+        setRemoteTags([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const { data } = await getTagsByKeyword({ tagName: debouncedQuery });
+        if (!stop) setRemoteTags(normalizeTagList(data));
+      } catch {
+        if (!stop) setRemoteTags([]);
+      } finally {
+        if (!stop) setLoading(false);
+      }
+    };
+
+    const t = setTimeout(run, 300);
+    return () => {
+      stop = true;
+      clearTimeout(t);
+    };
+  }, [debouncedQuery]);
+
+  // 카테고리 선택
+  useEffect(() => {
+    let stop = false;
+
+    const run = async () => {
+      if (!activeCategory || debouncedQuery) return;
+      setLoading(true);
+      try {
+        const apiCategory: ApiTagCategory = UI_TO_API[activeCategory];
+        const { data } = await getTagsByCategory({ tagCategory: apiCategory });
+        if (!stop) setRemoteTags(normalizeTagList(data));
+      } catch {
+        if (!stop) setRemoteTags([]);
+      } finally {
+        if (!stop) setLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      stop = true;
+    };
+  }, [activeCategory, debouncedQuery]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -42,20 +133,26 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
     );
   };
 
-  const filteredTags = allTags.filter((tag) => {
-    const matchesQuery = tag.label
-      .toLocaleLowerCase("ko")
-      .includes(query.toLocaleLowerCase("ko"));
-    const matchesCategory = activeCategory
-      ? tag.category === activeCategory
-      : true;
+  const localFiltered = useMemo(() => {
+    const byCat = (t: Tag) =>
+      activeCategory ? t.category === activeCategory : true;
+    const byQuery = (t: Tag) =>
+      debouncedQuery
+        ? t.label
+            .toLocaleLowerCase("ko")
+            .includes(debouncedQuery.toLocaleLowerCase("ko"))
+        : true;
+    return allTags.filter((t) => byCat(t) && byQuery(t)).map((t) => t.label);
+  }, [allTags, activeCategory, debouncedQuery]);
 
-    return matchesQuery && matchesCategory;
-  });
+  const usingServer =
+    debouncedQuery.length > 0 ||
+    (!!activeCategory && debouncedQuery.length === 0);
+  const displayList = usingServer ? remoteTags : localFiltered;
 
-  return (
+  return !isOpen ? null : (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -64,7 +161,7 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
         className="w-[694px] h-[564px] bg-white rounded-[20px] shadow-md flex flex-col relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 상단 */}
+        {/* 헤더 */}
         <div className="flex justify-between items-center p-5 pb-0">
           <h2 className="text-xl font-bold">기술 태그 검색</h2>
           <button onClick={onClose} className="w-6 h-6">
@@ -109,18 +206,21 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
             )}
           </div>
         </div>
-        <div className=" flex px-[27px] pt-[10px] flex-col justify-center items-start gap-[8px] self-stretch">
-          {/* 카테고리 버튼 */}
+
+        {/* 카테고리 */}
+        <div className="flex px-[27px] pt-[10px] flex-col gap-[8px]">
           <div className="flex justify-center items-center self-stretch px-6 mb-2">
-            <div className="flex  gap-[40px] text-sm">
-              {[
-                "프론트엔드",
-                "백엔드",
-                "데브옵스",
-                "인프라",
-                "데이터베이스",
-                "기타",
-              ].map((cat) => (
+            <div className="flex gap-[40px] text-sm">
+              {(
+                [
+                  "프론트엔드",
+                  "백엔드",
+                  "데브옵스",
+                  "인프라",
+                  "데이터베이스",
+                  "기타",
+                ] as UiTagCategory[]
+              ).map((cat) => (
                 <button
                   key={cat}
                   className={`pb-1 border-b-2 ${
@@ -128,7 +228,7 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
                       ? "border-purple-500 font-semibold"
                       : "border-transparent text-gray-400"
                   }`}
-                  onClick={() => setActiveCategory(cat as TagCategory)}
+                  onClick={() => setActiveCategory(cat)}
                 >
                   {cat}
                 </button>
@@ -138,23 +238,34 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
 
           {/* 태그 리스트 */}
           <div className="px-6 overflow-y-auto max-h-[220px]">
+            {loading && (
+              <div className="text-sm text-gray-400 px-2 py-1">
+                불러오는 중…
+              </div>
+            )}
+            {!loading && displayList.length === 0 && (
+              <div className="text-sm text-gray-400 px-2 py-1">
+                결과가 없어요.
+              </div>
+            )}
             <div className="flex justify-center flex-wrap gap-[24px] pb-4">
-              {filteredTags.map((tag) => (
+              {displayList.map((label) => (
                 <button
-                  key={tag.label}
-                  onClick={() => toggleTag(tag.label)}
+                  key={label}
+                  onClick={() => toggleTag(label)}
                   className={`px-3 py-1 rounded-full text-sm border ${
-                    selectedTags.includes(tag.label)
+                    selectedTags.includes(label)
                       ? "bg-purple-100 text-purple-600 border-purple-400"
                       : "bg-gray-100 text-gray-600 border-gray-300"
                   }`}
                 >
-                  # {tag.label}
+                  # {label}
                 </button>
               ))}
             </div>
           </div>
         </div>
+
         {/* 하단 고정 버튼 */}
         <div className="px-6 py-7 border-t flex justify-between gap-4 mt-auto">
           <button
@@ -162,10 +273,11 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
               setSelectedTags([]);
               setActiveCategory(null);
               setQuery("");
+              setRemoteTags([]);
             }}
             className="w-1/2 py-3 border border-gray-300 rounded-[12px] bg-white"
           >
-            <span className="text-gray3">초기화</span>
+            <span className="text-gray-500">초기화</span>
           </button>
           <button
             onClick={() => {

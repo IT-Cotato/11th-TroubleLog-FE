@@ -3,8 +3,15 @@ import BaseModal from "@/components/Modal/BaseModal";
 import CancelButton from "@/components/Button/CancelButton";
 import SaveButton from "@/components/Button/SaveButton";
 import exitIcon from "@/assets/icons/exiticon.svg";
+import type { SummaryTypeParam } from "@/models/post.model";
 
 const templates = ["자기소개서", "면접 대비", "블로그", "Issue 관리"];
+const TEMPLATE_TO_TYPE: Record<number, SummaryTypeParam> = {
+  0: "RESUME",
+  1: "INTERVIEW",
+  2: "BLOG",
+  3: "ISSUE_MANAGEMENT",
+};
 
 export default function TemplateSelectModal({
   onClose,
@@ -12,7 +19,7 @@ export default function TemplateSelectModal({
   onLater,
 }: {
   onClose: () => void;
-  onConfirm: (selectedIndex: number) => void;
+  onConfirm: (type: SummaryTypeParam) => void;
   onLater: () => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -20,10 +27,8 @@ export default function TemplateSelectModal({
 
   const handleConfirm = () => {
     setHasTriedSubmit(true);
-
     if (selectedIndex === null) return;
-
-    onConfirm(selectedIndex);
+    onConfirm(TEMPLATE_TO_TYPE[selectedIndex]);
   };
 
   return (

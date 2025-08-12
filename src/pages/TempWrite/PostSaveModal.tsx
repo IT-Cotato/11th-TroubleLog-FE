@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import BaseModal from "../../components/Modal/BaseModal";
 import SaveButton from "../../components/Button/SaveButton";
 import CancelButton from "../../components/Button/CancelButton";
@@ -9,6 +9,7 @@ import starFilledIcon from "@/assets/icons/starfilled.svg";
 import starUnfilledIcon from "@/assets/icons/starunfilled.svg";
 import publicIcon from "@/assets/icons/publicicon.svg";
 import privateIcon from "@/assets/icons/privateicon.svg";
+import purplePrivateIcon from "@/assets/icons/purpleprivateicon.svg";
 
 type Visibility = "public" | "private";
 
@@ -17,16 +18,24 @@ export type PostSavePayload = {
   thumbnail: string | null;
   description: string;
   visibility: Visibility;
-  folder: string;
+  projectId: number;
+  projectName?: string;
 };
 
+type ProjectOption = { id: number; name: string };
 
 export default function PostSaveModal({
   onClose,
   onNext,
+  projects = [],
+  defaultProjectId,
+  loadingProjects = false,
 }: {
   onClose: () => void;
   onNext: (payload: PostSavePayload) => void;
+  projects?: ProjectOption[];
+  defaultProjectId?: number;
+  loadingProjects?: boolean;
 }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [importance, setImportance] = useState(0);
@@ -35,10 +44,15 @@ export default function PostSaveModal({
     useState<Visibility>("public");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hoverIndex, setHoverIndex] = useState(0);
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
+    defaultProjectId ?? null
+  );
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
+  const projectName =
+    projects.find((p) => p.id === selectedProjectId)?.name ?? "";
 
-  const folderOptions = ["AI카츠", "Spring Boot"];
+  const projectNames = projects.map((p) => p.name);
+  const nameToId = new Map(projects.map((p) => [p.name, p.id]));
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,16 +71,27 @@ export default function PostSaveModal({
   const handleNextClick = () => {
     setHasTriedSubmit(true);
 
-    if (!selectedFolder || importance === 0) return;
+    if (importance === 0) return; //홈화면 프로젝트생성 연동후 !selectedProjectId || 추가
 
     onNext({
       importance,
       thumbnail,
       description,
       visibility: selectedVisibility,
-      folder: selectedFolder!,
+      projectId: selectedProjectId,
+      projectName,
     });
   };
+  useEffect(() => {
+    if (defaultProjectId != null) setSelectedProjectId(defaultProjectId);
+  }, [defaultProjectId]);
+  useEffect(() => {
+    return () => {
+      if (thumbnail && thumbnail.startsWith("blob:")) {
+        URL.revokeObjectURL(thumbnail);
+      }
+    };
+  }, [thumbnail]);
 
   return (
     <BaseModal
@@ -262,11 +287,12 @@ export default function PostSaveModal({
                     onClick={() => setSelectedVisibility("private")}
                   >
                     <img
-
-                      src={privateIcon}
-                      className={`w-5 h-5 transition ${
-                        selectedVisibility === "private" ? "" : "grayscale"
-                      }`}
+                      src={
+                        selectedVisibility === "private"
+                          ? purplePrivateIcon
+                          : privateIcon
+                      }
+                      className="w-5 h-5 transition"
                       alt="비공개 아이콘"
                     />
                     <span
@@ -284,30 +310,31 @@ export default function PostSaveModal({
 
               <div className="flex flex-col w-[351px] gap-[8px]">
                 <span className="text-head-20-semibold text-black">
-                  폴더 경로
+                  프로젝트
                 </span>
-
                 <div
                   className={`transition-all ${
-                    !selectedFolder && hasTriedSubmit
+                    !selectedProjectId && hasTriedSubmit
                       ? "border border-purple-500 rounded-[8px] p-[4px]"
                       : ""
                   }`}
                 >
                   <DropDownButton
-                    options={folderOptions}
-                    placeholder="폴더를 선택해주세요."
+                    options={projectNames}
+                    placeholder={
+                      loadingProjects
+                        ? "프로젝트 불러오는 중..."
+                        : "프로젝트를 선택해주세요."
+                    }
                     width="w-full"
-                    onSelect={(selected) => {
-                      setSelectedFolder(selected);
-                    }}
+                    onSelect={(selectedName) =>
+                      setSelectedProjectId(nameToId.get(selectedName) ?? null)
+                    }
                   />
                 </div>
-
-                {/* 경고 메시지 */}
-                {!selectedFolder && hasTriedSubmit && (
+                {!selectedProjectId && hasTriedSubmit && (
                   <span className="text-sm text-purple-500 pl-[4px] pt-[2px]">
-                    폴더를 선택해주세요.
+                    프로젝트를 선택해주세요.
                   </span>
                 )}
               </div>
@@ -318,7 +345,7 @@ export default function PostSaveModal({
         {/* 버튼 */}
         <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
           <CancelButton onClick={onClose} />
-          <SaveButton onClick={handleNextClick} label="다음" />
+          <SaveButton onClick={handleNextClick} />
         </div>
       </div>
     </BaseModal>

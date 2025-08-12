@@ -7,15 +7,21 @@ export const SUMMARY_TYPES = [
 ] as const;
 export type SummaryTypeParam = (typeof SUMMARY_TYPES)[number];
 
-export const TAG_CATEGORIES = [
-  "FRONTEND",
-  "BACKEND",
-  "DATABASE",
-  "DEVOPS",
-  "INFRA",
-  "TOOL",
-] as const;
-export type TagCategory = (typeof TAG_CATEGORIES)[number];
+export type UiTagCategory =
+  | "프론트엔드"
+  | "백엔드"
+  | "데브옵스"
+  | "인프라"
+  | "데이터베이스"
+  | "기타";
+
+export type ApiTagCategory =
+  | "FRONTEND"
+  | "BACKEND"
+  | "DEVOPS"
+  | "INFRA"
+  | "DATABASE"
+  | "TOOL";
 
 // ===== 공통 블록
 export interface PostBasicFields {
@@ -139,10 +145,10 @@ export interface ViewCombinedResponse extends PostBasicFields, PostServerMeta {
 export type TagsByCategoryResponse = string[];
 export type TagsByKeywordResponse = string[];
 export interface GetTagsByCategoryParams {
-  tagCategory: TagCategory;
+  tagCategory: ApiTagCategory;
 }
 export interface GetTagsByKeywordParams {
-  keyword: string;
+  tagName: string;
 }
 
 // 리스트/검색
@@ -151,7 +157,7 @@ export interface PostListItem {
   title: string;
   introduction: string;
   postTags: string[];
-  starRating: number | string;
+  starRating: string;
   likeCount: number;
   commentCount: number;
   createdAt: string;

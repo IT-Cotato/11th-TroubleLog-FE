@@ -1,9 +1,5 @@
 import instance from "./axios";
 import type {
-  // 공통 타입
-  SummaryTypeParam,
-  TagCategory,
-  // 요청/응답 모델
   ViewPostResponse,
   CreatePostRequest,
   CreatePostResponse,
@@ -30,7 +26,7 @@ import type {
 export const getPostDetail = (postId: number) =>
   instance.get<ViewPostResponse>(`/troubles/${postId}`);
 
-// 원본 문서 생성
+// 원본 문서 생성 --done
 export const createPost = (body: CreatePostRequest) =>
   instance.post<CreatePostResponse>("/troubles", body);
 
@@ -63,16 +59,14 @@ export const cancelSummary = (postId: number, taskId: string) =>
   instance.delete<void>(`/troubles/${postId}/summary/${taskId}`);
 
 // 원본+요약본 상세 조회
-export const getCombinedDetail = (postId: number, type?: SummaryTypeParam) =>
-  instance.get<ViewCombinedResponse>(`/troubles/${postId}/combine`, {
-    params: type ? { type } : undefined,
-  });
+export const getCombinedDetail = (postId: number) =>
+  instance.get<ViewCombinedResponse>(`/troubles/${postId}/combine`, {});
 
-// 기술 태그 조회 - 키워드
+// 기술 태그 조회 - 키워드 --done
 export const getTagsByKeyword = (params: GetTagsByKeywordParams) =>
   instance.get<TagsByKeywordResponse>("/troubles/tags", { params });
 
-// 기술 태그 조회 - 카테고리
+// 기술 태그 조회 - 카테고리 --done
 export const getTagsByCategory = (params: GetTagsByCategoryParams) =>
   instance.get<TagsByCategoryResponse>("/troubles/tags/category", { params });
 

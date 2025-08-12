@@ -12,6 +12,10 @@ import TemplateSelectModal from "./TemplateSelectModal";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import type { PostSavePayload } from "./PostSaveModal";
+import { createPost, startSummary } from "@/api/post.api";
+import { toCreatePostRequest, type PostForm } from "@/mappers/postMapper";
+import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
+import { useProjectList } from "@/hooks/useProjectList";
 
 const TempWritePage = () => {
   const [title, setTitle] = useState("");
@@ -30,6 +34,18 @@ const TempWritePage = () => {
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const navigate = useNavigate();
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
+  const { data: projectList, loading: projectsLoading } = useProjectList();
+
+  const toContentDtoList = (blocks: BlockData[]): PostContentDto[] =>
+    blocks
+      .filter((b) => (b.content ?? "").trim().length > 0)
+      .map((b, i) => ({
+        subTitle: b.question,
+        body: b.content,
+        sequence: i + 1,
+        authorType: "USER_WRITTEN",
+        summaryType: "NONE",
+      }));
 
   // 첫번째 블록 생성
   useEffect(() => {
@@ -122,12 +138,6 @@ const TempWritePage = () => {
     setTimeout(() => setShowSaveAlert(false), 3000);
   };
 
-  const handleConfirmTemplate = () => {
-    setIsTemplateSelectModalOpen(false);
-    setIsLoadingModalOpen(true);
-    setTimeout(() => setIsLoadingModalOpen(false), 60000);
-  };
-
   const errorOptions = [
     "Build / Compile Error",
     "Runtime Error",
@@ -143,15 +153,49 @@ const TempWritePage = () => {
   ];
 
   function toGuideContent(text: string) {
-    // 빈 줄 기준 문단으로 쪼개기
     const paragraphs = (text ?? "").split(/\n{2,}/).map((s) => s.trim());
-
-    return paragraphs; // string[] 그대로 반환
+    return paragraphs;
   }
   const handleNextInPostSaveModal = (payload: PostSavePayload) => {
     setPreviewMeta(payload);
     setIsPostSaveModalOpen(false);
     setIsTemplateSelectModalOpen(true);
+  };
+
+  // 템플릿 선택 후 요약 시작
+  const handleConfirmTemplate = async (type: SummaryTypeParam) => {
+    try {
+      setIsTemplateSelectModalOpen(false);
+      setIsLoadingModalOpen(true);
+
+      // 1) PostForm
+      const form: PostForm = {
+        title,
+        introduction: previewMeta?.description ?? "",
+        postTags: selectedTags,
+        isVisible: (previewMeta?.visibility ?? "public") === "public",
+        isSummaryCreated: false,
+        postStatus: "DRAFT",
+        starRating: String(previewMeta?.importance ?? "0"),
+        thumbnailImageUrl: previewMeta?.thumbnail ?? undefined,
+        projectId: previewMeta?.projectId ?? 0,
+        errorTag: selectedErrorType ?? "",
+        contents: toContentDtoList(blocks),
+      };
+
+      // 2) 문서 생성
+      const req = toCreatePostRequest(form);
+      const { data: created } = await createPost(req);
+      const postId = created.id;
+
+      // 3) 요약 작업 시작
+      await startSummary(postId, { type });
+    } catch (e) {
+      console.error(e);
+      setIsTemplateSelectModalOpen(true);
+    } finally {
+      setIsLoadingModalOpen(false);
+    }
   };
 
   const handleLater = () => {
@@ -246,6 +290,8 @@ const TempWritePage = () => {
             <PostSaveModal
               onClose={() => setIsPostSaveModalOpen(false)}
               onNext={handleNextInPostSaveModal}
+              projects={projectList.map((p) => ({ id: p.id, name: p.name }))}
+              loadingProjects={projectsLoading}
             />
           )}
           {isTemplateSelectModalOpen && (
