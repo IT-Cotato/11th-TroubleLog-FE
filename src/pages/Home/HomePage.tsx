@@ -148,7 +148,8 @@ export default function HomePage() {
   // 최초 1페이지 로딩
   useEffect(() => {
     loadPage(1, { append: false, useOnce: true });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 의도적으로 초기 로드만 수행
 
   // IntersectionObserver로 다음 페이지 자동 로드
   useEffect(() => {
