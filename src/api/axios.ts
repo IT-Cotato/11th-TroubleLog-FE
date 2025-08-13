@@ -60,7 +60,10 @@ const startRefresh = async (): Promise<string | null> => {
   try {
     const r = await api.post("/auth/refresh", {});
     const newToken: string | undefined = r.data?.data?.accessToken;
-    if (!newToken) return null;
+    if (!newToken) {
+      console.error("[Auth] Refresh response missing accessToken:", r.data);
+      return null;
+    }
     localStorage.setItem("accessToken", newToken);
     return newToken;
   } catch {
