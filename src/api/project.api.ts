@@ -10,12 +10,19 @@ import api from "@/api/axios";
 
 /// 프로젝트 생성
 
-export const postCreateProject = (payload: CreateProjectRequest) =>
-  getAPIResponseData<ProjectData, CreateProjectRequest>({
-    url: "/project",
+export const postCreateProject = (payload: CreateProjectRequest) => {
+  // 빈 값이면 제거
+  const body: CreateProjectRequest = { ...payload };
+  if (!body.thumbnailImageUrl || body.thumbnailImageUrl.trim() === "") {
+    delete body.thumbnailImageUrl;
+  }
+
+  return getAPIResponseData<ProjectData, CreateProjectRequest>({
+    url: "/projects",
     method: "POST",
-    data: payload,
+    data: body,
   });
+};
 
 /// 전체 프로젝트 목록 조회
 

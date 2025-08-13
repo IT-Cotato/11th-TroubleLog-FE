@@ -3,14 +3,14 @@ import type { ApiResponse, PaginatedResponse } from "./common.model";
 export interface CreateProjectRequest {
   name: string;
   description: string;
-  thumbnailImageUrl: string;
+  thumbnailImageUrl?: string;
 }
 
 export interface ProjectData {
   id: number;
   name: string;
   description: string;
-  thumbnailImageUrl: string;
+  thumbnailImageUrl: string | null;
 }
 
 export interface ProjectListItem extends ProjectData {

@@ -14,7 +14,7 @@ export interface ProjectFolderCardProps {
   name: string;
   description?: string;
   tags: string[];
-  thumbnail?: string;
+  thumbnail?: string | null;
   onUpdated?: () => void;
   onDeleted?: () => void;
   to?: string;

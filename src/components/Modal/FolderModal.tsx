@@ -33,6 +33,7 @@ export default function FolderModal({
     initialThumbnail
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [removed, setRemoved] = useState(false);
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [syncing, setSyncing] = useState(false);
@@ -54,7 +55,9 @@ export default function FolderModal({
         setName(detail.name ?? "");
         setDescription(detail.description ?? "");
         setThumbnailPreview(detail.thumbnailImageUrl ?? null);
+
         setSelectedFile(null);
+        setRemoved(false);
         resetUpload();
       } catch (e) {
         console.error("프로젝트 상세 조회 실패:", e);
@@ -90,6 +93,7 @@ export default function FolderModal({
 
     setSelectedFile(file);
     setThumbnailPreview(URL.createObjectURL(file));
+    setRemoved(false);
     resetUpload();
   };
 
@@ -105,6 +109,7 @@ export default function FolderModal({
     }
     setThumbnailPreview(null);
     setSelectedFile(null);
+    setRemoved(true);
     resetUpload();
   };
 
@@ -113,17 +118,34 @@ export default function FolderModal({
 
     try {
       // 선택된 새 파일이 있으면 업로드 -> URL 획득
-      let thumbnailUrl = thumbnailPreview ?? "";
+      let uploadedUrl: string | undefined;
       if (selectedFile) {
-        thumbnailUrl = await upload(selectedFile);
+        uploadedUrl = await upload(selectedFile);
       }
 
       // 상위로 전달 (서버 URL 또는 빈 문자열)
       const payload: CreateProjectRequest = {
         name,
         description,
-        thumbnailImageUrl: thumbnailUrl ?? "",
       };
+
+      if (mode === "new") {
+        // 새 프로젝트: URL이 있으면 포함, 없으면 생략
+        if (uploadedUrl && uploadedUrl.trimEnd() !== "") {
+          payload.thumbnailImageUrl = uploadedUrl;
+        }
+      } else {
+        // 수정 모드
+        if (uploadedUrl && uploadedUrl.trim() !== "") {
+          // 새 이미지 업로드 -> 교체
+          payload.thumbnailImageUrl = uploadedUrl;
+        } else if (removed) {
+          // 삭제 버튼 클릭 -> 빈 문자열로 제거 의사 전달
+          payload.thumbnailImageUrl = "";
+        }
+        // 아무 조작 없음 -> 생략
+      }
+
       onSubmit?.(payload);
     } catch (err) {
       console.error("이미지 업로드/전송 실패:", err);

@@ -187,10 +187,13 @@ export default function HomePage() {
   const handleCreateProject = async (data: CreateProjectRequest) => {
     try {
       setCreating(true);
+
       const payload: CreateProjectRequest = {
         name: data.name,
         description: data.description,
-        thumbnailImageUrl: data.thumbnailImageUrl ?? "",
+        ...(data.thumbnailImageUrl && data.thumbnailImageUrl.trim() !== ""
+          ? { thumbnailImageUrl: data.thumbnailImageUrl }
+          : {}),
       };
 
       await postCreateProject(payload);
