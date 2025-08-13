@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import router from "@/routes/Router";
+import { router } from "@/routes/Router";
 import { PATH } from "@/constants/paths";
 
 const baseURL =
