@@ -2,9 +2,11 @@ import { useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
-  KAKAO_CLIENT_ID,
+  KAKAO_REST_KEY,
   KAKAO_REDIRECT_URI,
-  KAKAO_BASE_URL,
+  KAKAO_TOKEN_URL,
+  KAKAO_CLIENT_SECRET,
+  KAKAO_USERINFO_URL,
 } from "../../config";
 
 const Oauth = () => {
@@ -13,22 +15,19 @@ const Oauth = () => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 
-    const GRANT_TYPE = "authorization_code";
-    const client_id = KAKAO_CLIENT_ID;
-    const redirect_uri = KAKAO_REDIRECT_URI;
-    const tokenUrl = KAKAO_BASE_URL;
-    const userInfoUrl = "https://kapi.kakao.com/v2/user/me";
-
     const getTokenAndUserInfo = async () => {
       try {
         // 1. Access Token 요청
         const tokenRes = await axios.post(
-          tokenUrl,
+          KAKAO_TOKEN_URL,
           new URLSearchParams({
-            grant_type: GRANT_TYPE,
-            client_id,
-            redirect_uri,
+            grant_type: "authorization_code",
+            client_id: KAKAO_REST_KEY,
+            redirect_uri: KAKAO_REDIRECT_URI,
             code: code || "",
+            ...(KAKAO_CLIENT_SECRET
+              ? { client_secret: KAKAO_CLIENT_SECRET }
+              : {}),
           }),
           {
             headers: {
@@ -37,11 +36,14 @@ const Oauth = () => {
           }
         );
 
+        // 성공/실패 후 쿼리
+        history.replaceState(null, "", location.pathname);
+
         const accessToken = tokenRes.data.access_token;
-        localStorage.setItem("kakao_access_token", accessToken); //  토큰 저장
+        localStorage.setItem("kakao_access_token", accessToken);
 
         // 2. 사용자 정보 요청
-        const userRes = await axios.get(userInfoUrl, {
+        const userRes = await axios.get(KAKAO_USERINFO_URL, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
