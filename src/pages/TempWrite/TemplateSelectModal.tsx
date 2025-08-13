@@ -19,7 +19,7 @@ export default function TemplateSelectModal({
   onLater,
 }: {
   onClose: () => void;
-  onConfirm: (type: SummaryTypeParam) => void;
+  onConfirm: (type: SummaryTypeParam, label: string) => void;
   onLater: () => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -28,7 +28,7 @@ export default function TemplateSelectModal({
   const handleConfirm = () => {
     setHasTriedSubmit(true);
     if (selectedIndex === null) return;
-    onConfirm(TEMPLATE_TO_TYPE[selectedIndex]);
+    onConfirm(TEMPLATE_TO_TYPE[selectedIndex], templates[selectedIndex]);
   };
 
   return (

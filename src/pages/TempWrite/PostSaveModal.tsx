@@ -10,6 +10,7 @@ import starUnfilledIcon from "@/assets/icons/starunfilled.svg";
 import publicIcon from "@/assets/icons/publicicon.svg";
 import privateIcon from "@/assets/icons/privateicon.svg";
 import purplePrivateIcon from "@/assets/icons/purpleprivateicon.svg";
+import type { SummaryTypeParam } from "@/models/post.model";
 
 type Visibility = "public" | "private";
 
@@ -20,6 +21,7 @@ export type PostSavePayload = {
   visibility: Visibility;
   projectId: number;
   projectName?: string;
+  summaryType: SummaryTypeParam;
 };
 
 type ProjectOption = { id: number; name: string };

@@ -46,15 +46,15 @@ export const restorePost = (postId: number) =>
 export const getPostSummary = (postId: number, params: GetSummaryParams) =>
   instance.get<GetSummaryResponse>(`/troubles/${postId}/summary`, { params });
 
-// 요약 작업 시작
+// 요약 작업 시작 -- done
 export const startSummary = (postId: number, body: WaitLoadingRequest) =>
   instance.post<StartLoadingResponse>(`/troubles/${postId}/summary`, body);
 
-// 요약 작업 상태 조회
+// 요약 작업 상태 조회 -- done
 export const getSummaryStatus = (postId: number, taskId: string) =>
   instance.get<WaitLoadingResponse>(`/troubles/${postId}/summary/${taskId}`);
 
-// 요약 작업 취소
+// 요약 작업 취소 -- done
 export const cancelSummary = (postId: number, taskId: string) =>
   instance.delete<void>(`/troubles/${postId}/summary/${taskId}`);
 
