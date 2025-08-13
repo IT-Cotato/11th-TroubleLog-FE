@@ -38,6 +38,6 @@ export type CreateProjectResponse = ApiResponse<ProjectData>;
 // 서버가 ApiResponse 없이 바로 페이징이면
 export type GetProjectListResponse = PaginatedResponse<ProjectListItem>;
 
-export type GetProjectDetailResponse = ApiResponse<ProjectListItem>;
+export type GetProjectDetailResponse = ApiResponse<ProjectDetail>;
 
 export type DeleteProjectResponse = ApiResponse<null>;
