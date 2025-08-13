@@ -128,7 +128,7 @@ api.interceptors.response.use(
       if (!refreshPromise) {
         refreshPromise = startRefresh().finally(() => {
           // 다음 401 대비 해제
-          setTimeout(() => (refreshPromise = null), 0);
+          setTimeout(() => (refreshPromise = null), 100);
         });
       }
 
