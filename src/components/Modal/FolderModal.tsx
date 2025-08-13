@@ -6,6 +6,7 @@ import { getProjectDetail } from "@/api/project.api";
 import type { CreateProjectRequest } from "@/types/project.model";
 import exitIcon from "@/assets/icons/exiticon.svg";
 import addImageIcon from "@/assets/icons/add_image.svg";
+import useImageUpload from "@/utils/useImageUpload";
 
 interface FolderModalProps {
   mode: "new" | "edit";
@@ -28,10 +29,15 @@ export default function FolderModal({
   initialThumbnail = null,
   loading = false,
 }: FolderModalProps) {
-  const [thumbnail, setThumbnail] = useState<string | null>(initialThumbnail);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
+    initialThumbnail
+  );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [syncing, setSyncing] = useState(false);
+
+  const { uploading, progress, upload, reset: resetUpload } = useImageUpload();
 
   // edit 모드일 때 프로젝트 상세 조회 api 호출
   useEffect(() => {
@@ -47,7 +53,9 @@ export default function FolderModal({
         // 상세 응답으로 폼 값 덮어쓰기
         setName(detail.name ?? "");
         setDescription(detail.description ?? "");
-        setThumbnail(detail.thumbnailImageUrl ?? null);
+        setThumbnailPreview(detail.thumbnailImageUrl ?? null);
+        setSelectedFile(null);
+        resetUpload();
       } catch (e) {
         console.error("프로젝트 상세 조회 실패:", e);
       } finally {
@@ -58,46 +66,72 @@ export default function FolderModal({
     return () => {
       isMounted = false;
     };
-  }, [mode, projectId]);
+  }, [mode, projectId, resetUpload]);
+
+  // blob URL 정리
+  useEffect(() => {
+    return () => {
+      if (thumbnailPreview && thumbnailPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(thumbnailPreview);
+      }
+    };
+  }, [thumbnailPreview]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (thumbnail && thumbnail.startsWith("blob:")) {
-        URL.revokeObjectURL(thumbnail);
-      }
-      const imageUrl = URL.createObjectURL(file);
-      setThumbnail(imageUrl);
+    if (!file) return;
+
+    // 이전 blob URL 정리
+    if (thumbnailPreview && thumbnailPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(thumbnailPreview);
     }
+
+    setSelectedFile(file);
+    setThumbnailPreview(URL.createObjectURL(file));
+    resetUpload();
   };
 
-  useEffect(() => {
-    return () => {
-      if (thumbnail && thumbnail.startsWith("blob:")) {
-        URL.revokeObjectURL(thumbnail);
-      }
-    };
-  }, [thumbnail]);
-
   const handleUploadClick = () => {
-    if (loading || syncing) return;
+    if (disabled) return;
     fileInputRef.current?.click();
   };
 
-  const handleSubmit = () => {
-    if (loading || syncing) return;
-
-    const payload: CreateProjectRequest = {
-      name,
-      description,
-      thumbnailImageUrl: thumbnail ?? "",
-    };
-    onSubmit?.(payload);
+  const handleRemoveThumb = () => {
+    if (disabled) return;
+    if (thumbnailPreview && thumbnailPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(thumbnailPreview);
+    }
+    setThumbnailPreview(null);
+    setSelectedFile(null);
+    resetUpload();
   };
 
-  const disabled = loading || syncing;
+  const handleSubmit = async () => {
+    if (disabled) return;
+
+    try {
+      // 선택된 새 파일이 있으면 업로드 -> URL 획득
+      let thumbnailUrl = thumbnailPreview ?? "";
+      if (selectedFile) {
+        thumbnailUrl = await upload(selectedFile);
+      }
+
+      // 상위로 전달 (서버 URL 또는 빈 문자열)
+      const payload: CreateProjectRequest = {
+        name,
+        description,
+        thumbnailImageUrl: thumbnailUrl ?? "",
+      };
+      onSubmit?.(payload);
+    } catch (err) {
+      console.error("이미지 업로드/전송 실패:", err);
+      alert("이미지 업로드에 실패했습니다. 다시 시도해주세요.");
+    }
+  };
+
+  const disabled = loading || syncing || uploading;
 
   return (
     <BaseModal
@@ -126,15 +160,25 @@ export default function FolderModal({
       <div className="flex justify-between items-center mb-[32px] px-[36px] w-full">
         {/* 썸네일 업로드 */}
         <div className="relative flex w-[186px] h-[186px] overflow-hidden flex-col justify-center items-center gap-[23px] rounded-[16px] border-dashed border-[2px] border-gray1 bg-[#FCFCFC]">
-          {thumbnail ? (
+          {thumbnailPreview ? (
             <>
               <img
-                src={thumbnail}
+                src={thumbnailPreview}
                 alt="thumbnail"
                 className="absolute inset-0 w-full h-full object-cover"
               />
+
+              {/* 업로드 진행 표시(업로드 중에만) */}
+              {uploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <span className="text-white text-body-14-regular">
+                    업로드 중… {progress}%
+                  </span>
+                </div>
+              )}
+
               <button
-                onClick={() => setThumbnail(null)}
+                onClick={handleRemoveThumb}
                 disabled={disabled}
                 className="z-20 absolute bottom-[18px] flex px-[23px] pt-[10px] pb-[11px] rounded-[8px] border-[1.5px] border-gray1 bg-white"
               >
@@ -198,7 +242,15 @@ export default function FolderModal({
         <CancelButton onClick={onClose} />
         <SaveButton
           onClick={handleSubmit}
-          label={syncing ? "불러오는 중..." : loading ? "저장 중..." : "완료"}
+          label={
+            syncing
+              ? "불러오는 중..."
+              : uploading
+              ? `업로드 중... ${progress}%`
+              : loading
+              ? "저장 중..."
+              : "완료"
+          }
           disabled={disabled}
         />
       </div>
