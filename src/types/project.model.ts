@@ -1,10 +1,4 @@
-export interface ApiResponse<T> {
-  status: number;
-  message: string;
-  data: T;
-}
-
-/// 프로젝트 생성
+import type { ApiResponse, PaginatedResponse } from "./common.model";
 
 export interface CreateProjectRequest {
   name: string;
@@ -19,20 +13,20 @@ export interface ProjectData {
   thumbnailImageUrl: string;
 }
 
-export type CreateProjectResponse = ApiResponse<ProjectData>;
-
-/// 전체 프로젝트 목록 조회
-
 export interface ProjectListItem extends ProjectData {
   tags: string[];
 }
 
-export type GetProjectListResponse = ApiResponse<ProjectListItem[]>;
+// 프로젝트 생성
+export type CreateProjectResponse = ApiResponse<ProjectData>;
 
-/// 프로젝트 상세 조회
+// 전체 프로젝트 목록 조회
+// 서버가 ApiResponse 감싸면
+// export type GetProjectListResponse = ApiPageResponse<ProjectListItem>;
+
+// 서버가 ApiResponse 없이 바로 페이징이면
+export type GetProjectListResponse = PaginatedResponse<ProjectListItem>;
 
 export type GetProjectDetailResponse = ApiResponse<ProjectListItem>;
-
-/// 프로젝트 삭제
 
 export type DeleteProjectResponse = ApiResponse<null>;

@@ -1,8 +1,9 @@
-import type { ApiResponse } from "./project.model";
+import type { PaginatedResponse } from "@/types/common.model";
 
 export type TroubleStatus = "작성 완료" | "임시 저장" | "요약 완료";
 export type TroubleSummaryType = "에러 중심 요약" | "전체 흐름 요약" | string;
 
+// 서버 아이템 스키마에 맞춰 유지
 export interface TroubleListItem {
   id: number;
   title: string;
@@ -16,10 +17,9 @@ export interface TroubleListItem {
   summaryType: TroubleSummaryType;
 }
 
-/// 전체 트러블슈팅 목록 조회
+// 정렬 옵션 (서버 확장 가능성 고려해서 유니온 타입)
+export type TroubleSort = "latest" | "oldest" | "popular";
 
-export type GetTroubleListResponse = ApiResponse<TroubleListItem[]>;
-
-/// 프로젝트 내 트러블슈팅 목록 조회
-
-export type GetProjectTroubleListResponse = ApiResponse<TroubleListItem[]>;
+// 페이징 응답(서버가 ApiResponse로 감싸지 않는 케이스)
+export type GetTroubleListResponse = PaginatedResponse<TroubleListItem>;
+export type GetProjectTroubleListResponse = PaginatedResponse<TroubleListItem>;
