@@ -20,7 +20,10 @@ async function getAPIResponseData<T, D = any>(
     const { data, status } = res;
 
     // 204 No Content
-    if (status === 204) return null as T;
+    if (status === 204) {
+      // T가 null을 허용하는지 확인
+      return null as T;
+    }
 
     // ApiResponse<T> 형태면 data.data 반환
     if (data && typeof data === "object" && "data" in data) {
