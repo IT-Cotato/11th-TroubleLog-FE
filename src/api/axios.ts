@@ -98,9 +98,11 @@ api.interceptors.response.use(
     const isRefresh = reqUrl.includes("/auth/refresh");
     const onLogin = location.pathname === PATH.ROOT;
 
-    // API 경로만 처리
-    const isApiPath = reqUrl.startsWith("/") || reqUrl.startsWith("http");
-    if (!isApiPath) return Promise.reject(error);
+    // 외부 절대 URL만 제외 (상대 경로/동일 베이스 URL은 처리)
+    const isAbsolute = /^https?:\/\//i.test(reqUrl);
+    const isExternalAbsolute =
+      isAbsolute && (baseURL ? !reqUrl.startsWith(baseURL) : true);
+    if (isExternalAbsolute) return Promise.reject(error);
 
     // 리프레시 자체 실패 → 즉시 로그인 이동(단 1회)
     if (isRefresh) {
