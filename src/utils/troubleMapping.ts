@@ -24,7 +24,9 @@ export const mapVisibility = (
   raw?: boolean | string | null
 ): TroublogCardProps["visibility"] => {
   if (typeof raw === "boolean") return raw ? "public" : "private";
-  const v = String(raw ?? "").toUpperCase();
+  const v = String(raw ?? "")
+    .trim()
+    .toUpperCase();
   if (v === "PUBLIC") return "public";
   if (v === "PRIVATE") return "private";
   // 모호하면 공개로
