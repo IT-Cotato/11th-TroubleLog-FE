@@ -3,7 +3,10 @@ import BaseModal from "./BaseModal";
 import CancelButton from "../Button/CancelButton";
 import SaveButton from "../Button/SaveButton";
 import { getProjectDetail } from "@/api/project.api";
-import type { CreateProjectRequest } from "@/types/project.model";
+import type {
+  CreateProjectRequest,
+  ProjectDetail,
+} from "@/types/project.model";
 import exitIcon from "@/assets/icons/exiticon.svg";
 import addImageIcon from "@/assets/icons/add_image.svg";
 import useImageUpload from "@/utils/useImageUpload";
@@ -17,6 +20,17 @@ interface FolderModalProps {
   initialDescription?: string;
   initialThumbnail?: string | null;
   loading?: boolean;
+}
+
+const detailInflight = new Map<number, Promise<ProjectDetail>>();
+function fetchProjectDetailOnce(id: number) {
+  if (!detailInflight.has(id)) {
+    detailInflight.set(
+      id,
+      getProjectDetail(id).finally(() => detailInflight.delete(id))
+    );
+  }
+  return detailInflight.get(id)!;
 }
 
 export default function FolderModal({
@@ -44,12 +58,21 @@ export default function FolderModal({
   useEffect(() => {
     if (mode !== "edit" || !projectId) return;
 
-    let isMounted = true;
+    let alive = true;
     (async () => {
       try {
         setSyncing(true);
-        const detail = await getProjectDetail(projectId);
-        if (!isMounted) return;
+
+        // StrictMode/동시 호출 디듀프
+        const detail = await fetchProjectDetailOnce(projectId);
+        if (!alive) return;
+
+        // 삭제된 프로젝트 방어는 상태 갱신 전에
+        if (detail.isDeleted) {
+          alert("삭제된 프로젝트입니다. 목록으로 돌아갑니다.");
+          onClose();
+          return;
+        }
 
         // 상세 응답으로 폼 값 덮어쓰기
         setName(detail.name ?? "");
@@ -58,18 +81,19 @@ export default function FolderModal({
 
         setSelectedFile(null);
         setRemoved(false);
+
         resetUpload();
       } catch (e) {
-        console.error("프로젝트 상세 조회 실패:", e);
+        if (alive) console.error("프로젝트 상세 조회 실패:", e);
       } finally {
-        if (isMounted) setSyncing(false);
+        if (alive) setSyncing(false);
       }
     })();
 
     return () => {
-      isMounted = false;
+      alive = false;
     };
-  }, [mode, projectId, resetUpload]);
+  }, [mode, projectId, onClose]);
 
   // blob URL 정리
   useEffect(() => {
@@ -125,20 +149,20 @@ export default function FolderModal({
 
       // 상위로 전달 (서버 URL 또는 빈 문자열)
       const payload: CreateProjectRequest = {
-        name,
-        description,
+        name: name.trim(),
+        description: description.trim(),
       };
 
       if (mode === "new") {
         // 새 프로젝트: URL이 있으면 포함, 없으면 생략
-        if (uploadedUrl && uploadedUrl.trimEnd() !== "") {
-          payload.thumbnailImageUrl = uploadedUrl;
+        if (uploadedUrl && uploadedUrl.trim() !== "") {
+          payload.thumbnailImageUrl = uploadedUrl.trim();
         }
       } else {
         // 수정 모드
         if (uploadedUrl && uploadedUrl.trim() !== "") {
           // 새 이미지 업로드 -> 교체
-          payload.thumbnailImageUrl = uploadedUrl;
+          payload.thumbnailImageUrl = uploadedUrl.trim();
         } else if (removed) {
           // 삭제 버튼 클릭 -> 빈 문자열로 제거 의사 전달
           payload.thumbnailImageUrl = "";

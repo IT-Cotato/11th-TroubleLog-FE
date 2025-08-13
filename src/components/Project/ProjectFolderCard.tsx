@@ -5,7 +5,10 @@ import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import FolderModal from "../Modal/FolderModal";
 import ConfirmDeleteModal from "../Modal/ConfirmDeleteModal";
-import type { CreateProjectRequest } from "@/types/project.model";
+import type {
+  CreateProjectRequest,
+  UpdateProjectRequest,
+} from "@/types/project.model";
 import { deleteProject, putUpdateProject } from "@/api/project.api";
 import { Link } from "react-router-dom";
 
@@ -69,8 +72,22 @@ export default function ProjectFolderCard({
     async (data: CreateProjectRequest) => {
       try {
         setLoading(true);
+
+        const body: UpdateProjectRequest = {
+          name: data.name.trim(),
+          description: data.description.trim(),
+        };
+
+        // 썸네일이 넘어왔을 때만 판단
+        if (data.thumbnailImageUrl !== undefined) {
+          const v = data.thumbnailImageUrl.trim();
+          if (v !== "") {
+            // 교체: 값 포함
+            body.thumbnailImageUrl = v;
+          }
+        }
+
         await putUpdateProject(id, data);
-        console.log("프로젝트 수정 완료");
         setShowEditModal(false);
         onUpdated?.();
       } catch (err) {

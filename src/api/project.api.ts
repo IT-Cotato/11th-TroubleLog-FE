@@ -1,15 +1,15 @@
 import type {
   ProjectData,
   CreateProjectRequest,
-  ProjectListItem,
   DeleteProjectResponse,
   GetProjectListResponse,
+  UpdateProjectRequest,
+  ProjectDetail,
 } from "@/types/project.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "@/api/axios";
 
 /// 프로젝트 생성
-
 export const postCreateProject = (payload: CreateProjectRequest) => {
   // 빈 값이면 제거
   const body: CreateProjectRequest = { ...payload };
@@ -25,7 +25,6 @@ export const postCreateProject = (payload: CreateProjectRequest) => {
 };
 
 /// 전체 프로젝트 목록 조회
-
 export const getProjectList = (page = 1, size = 10) =>
   getAPIResponseData<GetProjectListResponse>(
     api.get("/projects", {
@@ -34,28 +33,35 @@ export const getProjectList = (page = 1, size = 10) =>
   );
 
 /// 프로젝트 상세 조회
-
 export const getProjectDetail = (projectId: number) =>
-  getAPIResponseData<ProjectListItem>({
-    url: `/project/${projectId}`,
+  getAPIResponseData<ProjectDetail>({
+    url: `/projects/${projectId}`,
     method: "GET",
   });
 
 /// 프로젝트 수정
-
 export const putUpdateProject = (
   projectId: number,
-  payload: CreateProjectRequest
-) =>
-  getAPIResponseData<ProjectData, CreateProjectRequest>({
-    url: `/project/${projectId}`,
+  payload: UpdateProjectRequest
+) => {
+  const body: UpdateProjectRequest = {
+    name: payload.name,
+    description: payload.description,
+    ...(payload.thumbnailImageUrl && payload.thumbnailImageUrl.trim() !== ""
+      ? { thumbnailImageUrl: payload.thumbnailImageUrl.trim() }
+      : {}),
+  };
+
+  return getAPIResponseData<ProjectData, UpdateProjectRequest>({
+    url: `/projects/${projectId}`,
     method: "PUT",
-    data: payload,
+    data: body,
   });
+};
 
 /// 프로젝트 삭제
 export const deleteProject = (projectId: number) =>
   getAPIResponseData<DeleteProjectResponse>({
-    url: `/project/${projectId}`,
+    url: `/projects/${projectId}`,
     method: "DELETE",
   });

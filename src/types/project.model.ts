@@ -6,6 +6,12 @@ export interface CreateProjectRequest {
   thumbnailImageUrl?: string;
 }
 
+export interface UpdateProjectRequest {
+  name: string;
+  description: string;
+  thumbnailImageUrl?: string;
+}
+
 export interface ProjectData {
   id: number;
   name: string;
@@ -15,6 +21,11 @@ export interface ProjectData {
 
 export interface ProjectListItem extends ProjectData {
   tags: string[];
+}
+
+// 상세 전용 타입
+export interface ProjectDetail extends ProjectListItem {
+  isDeleted: boolean;
 }
 
 // 프로젝트 생성
