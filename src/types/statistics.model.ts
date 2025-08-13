@@ -5,4 +5,9 @@ export interface DailyStat {
   count: number;
 }
 
+export interface ErrorTagStat {
+  name: string;
+  count: number;
+}
+
 export type GetDailyStatsResponse = ApiEnvelope<DailyStat[]>;
