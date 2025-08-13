@@ -39,6 +39,14 @@ api.interceptors.request.use((config) => {
   const isRefresh = url.includes("/auth/refresh");
   config.headers = config.headers ?? {};
 
+  // 외부 절대 URL은 내부 인증/EnvType 헤더 미부착
+  const isAbsolute = /^https?:\/\//i.test(url);
+  const isExternalAbsolute =
+    isAbsolute && (baseURL ? !url.startsWith(baseURL) : true);
+  if (isExternalAbsolute) {
+    return config;
+  }
+
   // /auth/refresh 에는 Authorization 미첨부
   if (!isRefresh) {
     const token = localStorage.getItem("accessToken");
