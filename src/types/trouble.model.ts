@@ -15,8 +15,8 @@ export interface TroubleListItem {
   starRating: number;
   error: string;
   techs: string[];
-  status: string;
-  summaryType: string;
+  status: TroubleStatus | string;
+  summaryType: TroubleSummaryType | string;
 }
 
 // 페이징 응답(서버가 ApiResponse로 감싸지 않는 케이스)
