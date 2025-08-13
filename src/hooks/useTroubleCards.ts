@@ -301,6 +301,7 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     }
 
     // project 목록: srcKey 바뀔 때마다 새로 불러옴 (락 적용 X)
+    initKeyRef.current = null; // all로 돌아올 때 초기 로드 재실행 보장
     reset();
     void loadProjectOnce();
   }, [srcKey, enabled, source.type]);
