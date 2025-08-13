@@ -179,7 +179,10 @@ export default function FolderModal({
       onSubmit?.(payload);
     } catch (err) {
       console.error("이미지 업로드/전송 실패:", err);
-      alert("이미지 업로드에 실패했습니다. 다시 시도해주세요.");
+      // 에러 타입에 따른 구체적인 메시지
+      const message =
+        err instanceof Error ? err.message : "이미지 업로드에 실패했습니다.";
+      alert(message);
     }
   };
 
