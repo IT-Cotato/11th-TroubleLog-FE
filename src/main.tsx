@@ -1,57 +1,84 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import "./styles/global.css";
-import App from "./App.tsx";
+import App from "./App";
+
+const ROOT = document.getElementById("root")!;
+
+function shouldUseMocking() {
+  // DEV 모드 + 환경변수 true 일 때만 MSW 시도
+  return (
+    import.meta.env.DEV && String(import.meta.env.VITE_API_MOCKING) === "true"
+  );
+}
 
 async function enableMocking() {
-  // 개발환경 + 환경변수로 제어 (원할 때만 mock)
-  if (!(import.meta.env.DEV && import.meta.env.VITE_API_MOCKING === "true"))
-    return;
+  if (!shouldUseMocking()) return;
 
-  // HMR 중복 방지
-  if (typeof window !== "undefined" && (window as any).__MSW_STARTED) return;
+  // 브라우저 환경/HMR 중복 방지
+  if (typeof window === "undefined" || (window as any).__MSW_STARTED) return;
 
-  const { worker } = await import("./mocks/browser.ts");
-  const start = Date.now();
+  try {
+    // mocks/browser.ts 가 없어도 try-catch로 안전하게 무시
+    const mod = await import("./mocks/browser");
+    if (!mod?.worker) {
+      console.warn('[MSW] "worker" 가 없어 mock을 건너뜁니다.');
+      return;
+    }
 
-  const startPromise = worker.start({
-    onUnhandledRequest: "bypass", // 지정하지 않은 api는 실제 호출
-    serviceWorker: {
-      url: `${import.meta.env.BASE_URL}mockServiceWorker.js`,
-    },
-  });
+    const start = Date.now();
 
-  function withTimeout<T>(p: Promise<T>, ms = 3000) {
-    return Promise.race([
-      p,
-      new Promise<T>((_, rej) =>
-        setTimeout(() => rej(new Error("MSW start timeout")), ms)
+    const startPromise = mod.worker.start({
+      onUnhandledRequest: "bypass",
+      serviceWorker: {
+        url: `${import.meta.env.BASE_URL}mockServiceWorker.js`,
+      },
+    });
+
+    // 안전 타임아웃 (3s)
+    await Promise.race([
+      startPromise,
+      new Promise((_, rej) =>
+        setTimeout(() => rej(new Error("MSW start timeout")), 3000)
       ),
     ]);
-  }
 
-  try {
-    await withTimeout(startPromise, 3000);
-    console.log(`[MSW] started in ${Date.now() - start}ms`);
     (window as any).__MSW_STARTED = true;
+    console.info(`[MSW] started in ${Date.now() - start}ms`);
   } catch (e) {
-    console.warn("[MSW] start 실패/타임아웃. 실제 API로 진행합니다.", e);
+    // 모듈 미존재/등록 실패 등 → 실서버로 진행
+    if (import.meta.env.DEV) {
+      console.warn("[MSW] 시작 실패. 실제 API로 진행합니다.", e);
+    }
   }
 }
 
-async function bootstrap() {
+// mocking이 꺼져있는데도 이전에 등록된 mock SW가 남아있으면 정리
+async function cleanupStaleMockSW() {
+  if (!("serviceWorker" in navigator)) return;
   try {
-    await enableMocking();
-  } catch (err) {
-    if (import.meta.env.DEV) {
-      console.warn("[MSW] start 실패, 실제 API로 진행합니다.", err);
-    }
-  } finally {
-    ReactDOM.createRoot(document.getElementById("root")!).render(
-      <StrictMode>
-        <App />
-      </StrictMode>
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(
+      regs
+        .filter((r) => r.active?.scriptURL?.includes("mockServiceWorker.js"))
+        .map((r) => r.unregister())
     );
+  } catch {
+    // 무시
   }
 }
-bootstrap();
+
+(async function bootstrap() {
+  // OFF 모드에서는 잔류 mock SW 정리
+  if (!shouldUseMocking()) {
+    cleanupStaleMockSW();
+  }
+
+  await enableMocking();
+
+  ReactDOM.createRoot(ROOT).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+})();

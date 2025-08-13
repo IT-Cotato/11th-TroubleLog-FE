@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance } from "axios";
 
-const baseURL = import.meta.env.VITE_BASE_URL;
+const baseURL =
+  import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_BASE_URL;
 
 const instance: AxiosInstance = axios.create({
   baseURL: baseURL,
@@ -14,6 +15,7 @@ const instance: AxiosInstance = axios.create({
 instance.interceptors.request.use(
   (config) => {
     // 요청이 전달되기 전 헤더에 accessToken 추가
+    config.headers = config.headers ?? {};
     const accessToken = localStorage.getItem("accessToken");
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -49,6 +51,7 @@ instance.interceptors.response.use(
           localStorage.setItem("accessToken", accessToken);
 
           // 실패했던 요청에 새 accessToken 적용
+          error.config.headers = error.config.headers ?? {};
           error.config.headers.Authorization = `Bearer ${accessToken}`;
           return axios(error.config);
         }
