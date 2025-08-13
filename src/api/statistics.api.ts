@@ -1,9 +1,14 @@
-import type { DailyStat, ErrorTagStat } from "@/types/statistics.model";
+import type {
+  DailyStat,
+  ErrorTagStat,
+  SummaryTypeStat,
+} from "@/types/statistics.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 
 // 동일 시점 다중 호출을 하나로 묶기 위한 in-flight Promise
 let inflightDaily: Promise<DailyStat[] | null> | null = null;
 let inflightErrorTags: Promise<ErrorTagStat[] | null> | null = null;
+let inflightSummaryTypes: Promise<SummaryTypeStat[] | null> | null = null;
 
 // 일일 트러블로그 활동 통계
 export async function getDailyActivity(): Promise<DailyStat[] | null> {
@@ -31,4 +36,17 @@ export async function getErrorTagTop3(): Promise<ErrorTagStat[] | null> {
     });
   }
   return inflightErrorTags;
+}
+
+// 요약본 종류 통계
+export async function getSummaryTypes(): Promise<SummaryTypeStat[] | null> {
+  if (!inflightSummaryTypes) {
+    inflightSummaryTypes = getAPIResponseData<SummaryTypeStat[] | null>({
+      url: "/statistics/summary",
+      method: "GET",
+    }).finally(() => {
+      setTimeout(() => (inflightSummaryTypes = null), 0);
+    });
+  }
+  return inflightSummaryTypes;
 }

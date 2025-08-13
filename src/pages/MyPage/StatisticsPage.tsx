@@ -4,10 +4,8 @@ import TagBubbleChart from "@/components/MyPage/TagBubbleChart";
 import TroublogActivityChart from "@/components/MyPage/TroublogActivityChart";
 import { useDailyActivityMap } from "@/hooks/useDailyActivityMap";
 import { useErrorTagsTop3 } from "@/hooks/useErrorTagsTop3";
-import {
-  mockSummaryTypeData,
-  mockTagBubbleData,
-} from "@/mocks/mockStatisticsData";
+import { useSummaryTypes } from "@/hooks/useSummaryTypes";
+import { mockTagBubbleData } from "@/mocks/mockStatisticsData";
 
 const StatisticsPage = () => {
   const year = new Date().getFullYear();
@@ -18,6 +16,11 @@ const StatisticsPage = () => {
     labels: errLabels,
     data: errData,
   } = useErrorTagsTop3();
+  const {
+    loading: sumLoading,
+    error: sumError,
+    summaryData,
+  } = useSummaryTypes();
 
   return (
     <div className="flex w-[948px] flex-col items-start gap-[56px] pb-[349px]">
@@ -52,6 +55,21 @@ const StatisticsPage = () => {
             title="errorTags: replace → merge → off"
           >
             [dev] error tags debug
+          </button>
+
+          <button
+            className="text-xs text-gray-500 underline"
+            onClick={() => {
+              const cur = localStorage.getItem("debug.summaryTypes");
+              const next =
+                cur === "replace" ? "merge" : cur === "merge" ? "" : "replace";
+              if (next) localStorage.setItem("debug.summaryTypes", next);
+              else localStorage.removeItem("debug.summaryTypes");
+              location.reload();
+            }}
+            title="summaryTypes: replace → merge → off"
+          >
+            [dev] summary types debug
           </button>
         </div>
       )}
@@ -97,7 +115,29 @@ const StatisticsPage = () => {
         <TagBubbleChart bubbleData={mockTagBubbleData} />
 
         {/* 내 요약본 종류 */}
-        <SummaryTypeBarChart summaryData={mockSummaryTypeData} />
+        {sumLoading ? (
+          <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
+            <div className="h-6 w-48 bg-gray-200 rounded mb-2" />
+            <div className="h-4 w-80 bg-gray-100 rounded mb-6" />
+            <div className="h-[260px] w-full bg-gray-100 rounded" />
+          </div>
+        ) : sumError ? (
+          <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
+            <span className="text-red-600">
+              요약본 통계를 불러오지 못했습니다.
+            </span>
+            <span className="text-gray-500 text-sm mt-1">{sumError}</span>
+          </div>
+        ) : summaryData.length === 0 ? (
+          <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
+            <span className="text-head-24-bold">내 요약본 종류</span>
+            <span className="text-body-18-regular mt-1">
+              아직 생성한 요약본이 없어요.
+            </span>
+          </div>
+        ) : (
+          <SummaryTypeBarChart summaryData={summaryData} />
+        )}
       </div>
     </div>
   );
