@@ -63,9 +63,6 @@ const LoginPage = () => {
       const data = await postLogin(email, password);
       localStorage.setItem("accessToken", data.accessToken);
 
-      // 토큰 저장
-      localStorage.setItem("accessToken", data.accessToken);
-
       // next 또는 홈으로 이동
       const params = new URLSearchParams(location.search);
       const next = params.get("next");
