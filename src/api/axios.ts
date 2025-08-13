@@ -17,26 +17,42 @@ const api = axios.create({
   },
 });
 
-// 요청 인터셉터: 토큰 자동 첨부 (단, /auth/refresh 에는 첨부 X)
+// 공통 유틸: 로그인 페이지로의 네비게이션을 1회만
+let authNavigationPromise: Promise<void> | null = null;
+const navigateToAuthOnce = (next: string) => {
+  if (!authNavigationPromise) {
+    router.navigate(`${PATH.ROOT}?next=${next}`, { replace: true });
+    authNavigationPromise = new Promise<void>((resolve) => {
+      // 짧은 쿨다운 후 게이트 해제 (동시 발화 방지)
+      setTimeout(() => {
+        authNavigationPromise = null;
+        resolve();
+      }, 300);
+    });
+  }
+  return authNavigationPromise;
+};
+
+// 요청 인터셉터: 토큰 자동 첨부
 api.interceptors.request.use((config) => {
   const url = config.url ?? "";
   const isRefresh = url.includes("/auth/refresh");
+  config.headers = config.headers ?? {};
+
+  // /auth/refresh 에는 Authorization 미첨부
   if (!isRefresh) {
     const token = localStorage.getItem("accessToken");
     if (token) {
-      config.headers = config.headers ?? {};
       (config.headers as any).Authorization = `Bearer ${token}`;
     }
+  }
 
-    // EnvType이 없으면 자동 추가 (혹시 덮어쓰는 경우 방지)
-    if (!config.headers["EnvType"]) {
-      (config.headers as any).EnvType = ENVTYPE;
-    }
+  // EnvType은 항상 강제(리프레시 포함)
+  if ((config.headers as any).EnvType == null) {
+    (config.headers as any).EnvType = ENVTYPE;
   }
   return config;
 });
-
-let isAuthNavigating = false;
 
 // 리프레시 공용 Promise (동시 401 한 번만 처리)
 let refreshPromise: Promise<string | null> | null = null;
@@ -52,11 +68,12 @@ const startRefresh = async (): Promise<string | null> => {
   }
 };
 
+// 응답 인터셉터
 api.interceptors.response.use(
   (res) => {
-    // 카카오 302가 HTML 200으로 바뀌어 오는 케이스 방어(토큰 없는 상태에서만)
+    // 토큰 없이 HTML(카카오 302 후 200) 수신 방어
     const ct = res.headers?.["content-type"] as string | undefined;
-    const url: string | undefined = res?.request?.responseURL;
+    const url: string | undefined = (res as any)?.request?.responseURL;
     const redirectedToKakao =
       !!url && url.includes("/oauth2/authorization/kakao");
     const notJson = !!ct && !ct.includes("application/json");
@@ -65,13 +82,10 @@ api.interceptors.response.use(
     if (
       (redirectedToKakao || notJson) &&
       !tokenExists &&
-      !isAuthNavigating &&
       location.pathname !== PATH.ROOT
     ) {
-      isAuthNavigating = true;
       const next = encodeURIComponent(location.pathname + location.search);
-      router.navigate(`${PATH.ROOT}?next=${next}`, { replace: true });
-      setTimeout(() => (isAuthNavigating = false), 300);
+      void navigateToAuthOnce(next);
     }
     return res;
   },
@@ -81,42 +95,36 @@ api.interceptors.response.use(
     const isRefresh = reqUrl.includes("/auth/refresh");
     const onLogin = location.pathname === PATH.ROOT;
 
-    // API 경로 판정(절대/상대 둘 다 커버)
+    // API 경로만 처리
     const isApiPath = reqUrl.startsWith("/") || reqUrl.startsWith("http");
     if (!isApiPath) return Promise.reject(error);
 
-    // 리프레시 요청 자체가 실패(401 등) → 바로 로그아웃 처리
+    // 리프레시 자체 실패 → 즉시 로그인 이동(단 1회)
     if (isRefresh) {
       localStorage.removeItem("accessToken");
-      if (!onLogin && !isAuthNavigating) {
-        isAuthNavigating = true;
+      if (!onLogin) {
         const next = encodeURIComponent(location.pathname + location.search);
-        router.navigate(`${PATH.ROOT}?next=${next}`, { replace: true });
-        setTimeout(() => (isAuthNavigating = false), 300);
+        await navigateToAuthOnce(next);
       }
       return Promise.reject(error);
     }
 
-    // 401만 리프레시 시도 (403은 권한 부족 → 바로 로그인으로)
+    // 401 → 리프레시(동시성 제어)
     if (status === 401) {
-      // 요청의 무한 재시도 방지 플래그
       const cfg: any = error.config || {};
       if (cfg._retry) {
-        // 이미 한 번 재시도했는데도 401이면 토큰 정리 후 로그인 이동
+        // 이미 재시도 한 번 했는데도 401 → 토큰 정리 후 이동
         localStorage.removeItem("accessToken");
-        if (!onLogin && !isAuthNavigating) {
-          isAuthNavigating = true;
+        if (!onLogin) {
           const next = encodeURIComponent(location.pathname + location.search);
-          router.navigate(`${PATH.ROOT}?next=${next}`, { replace: true });
-          setTimeout(() => (isAuthNavigating = false), 300);
+          await navigateToAuthOnce(next);
         }
         return Promise.reject(error);
       }
 
-      // 진행 중 리프레시가 있으면 그걸 기다리고, 없으면 시작
       if (!refreshPromise) {
         refreshPromise = startRefresh().finally(() => {
-          // 완료 시 다음 401을 위해 해제
+          // 다음 401 대비 해제
           setTimeout(() => (refreshPromise = null), 0);
         });
       }
@@ -129,25 +137,19 @@ api.interceptors.response.use(
         return api(cfg); // 동일 인스턴스로 재시도
       }
 
-      // 리프레시 실패 → 토큰 제거 후 로그인 이동
+      // 리프레시 실패
       localStorage.removeItem("accessToken");
-      if (!onLogin && !isAuthNavigating) {
-        isAuthNavigating = true;
+      if (!onLogin) {
         const next = encodeURIComponent(location.pathname + location.search);
-        router.navigate(`${PATH.ROOT}?next=${next}`, { replace: true });
-        setTimeout(() => (isAuthNavigating = false), 300);
+        await navigateToAuthOnce(next);
       }
       return Promise.reject(error);
     }
 
-    if (status === 403) {
-      // 권한 없음 → 로그인으로
-      if (!onLogin && !isAuthNavigating) {
-        isAuthNavigating = true;
-        const next = encodeURIComponent(location.pathname + location.search);
-        router.navigate(`${PATH.ROOT}?next=${next}`, { replace: true });
-        setTimeout(() => (isAuthNavigating = false), 300);
-      }
+    // 403 → 권한 부족: 로그인 이동(단 1회)
+    if (status === 403 && !onLogin) {
+      const next = encodeURIComponent(location.pathname + location.search);
+      await navigateToAuthOnce(next);
     }
 
     return Promise.reject(error);
