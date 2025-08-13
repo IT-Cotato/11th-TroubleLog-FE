@@ -233,7 +233,7 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
             const next =
               typeof nextByServer === "boolean"
                 ? nextByServer
-                : listLen >= pageSize;
+                : add.length >= pageSize;
             setHasNext(next);
           }
         }
