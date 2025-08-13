@@ -87,7 +87,7 @@ export default function ProjectFolderCard({
           }
         }
 
-        await putUpdateProject(id, data);
+        await putUpdateProject(id, body);
         setShowEditModal(false);
         onUpdated?.();
       } catch (err) {
