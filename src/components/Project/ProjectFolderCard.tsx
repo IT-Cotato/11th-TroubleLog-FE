@@ -5,10 +5,7 @@ import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import FolderModal from "../Modal/FolderModal";
 import ConfirmDeleteModal from "../Modal/ConfirmDeleteModal";
-import type {
-  CreateProjectRequest,
-  UpdateProjectRequest,
-} from "@/types/project.model";
+import type { UpdateProjectRequest } from "@/types/project.model";
 import { deleteProject, putUpdateProject } from "@/api/project.api";
 import { Link } from "react-router-dom";
 
@@ -69,7 +66,7 @@ export default function ProjectFolderCard({
 
   // 수정 api 호출
   const handleEditSubmit = useCallback(
-    async (data: CreateProjectRequest) => {
+    async (data: UpdateProjectRequest) => {
       try {
         setLoading(true);
 

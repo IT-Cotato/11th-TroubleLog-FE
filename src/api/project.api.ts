@@ -47,8 +47,10 @@ export const putUpdateProject = (
   const body: UpdateProjectRequest = {
     name: payload.name,
     description: payload.description,
-    ...(payload.thumbnailImageUrl && payload.thumbnailImageUrl.trim() !== ""
-      ? { thumbnailImageUrl: payload.thumbnailImageUrl.trim() }
+    ...(Object.prototype.hasOwnProperty.call(payload, "thumbnailImageUrl")
+      ? {
+          thumbnailImageUrl: (payload.thumbnailImageUrl ?? "").trim(), // undefined 방지 + 공백 제거
+        }
       : {}),
   };
 

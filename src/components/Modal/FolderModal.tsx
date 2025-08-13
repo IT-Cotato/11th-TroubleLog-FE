@@ -140,6 +140,12 @@ export default function FolderModal({
   const handleSubmit = async () => {
     if (disabled) return;
 
+    // 이름 유효성
+    if (!name.trim()) {
+      alert("프로젝트 이름을 입력해주세요.");
+      return;
+    }
+
     try {
       // 선택된 새 파일이 있으면 업로드 -> URL 획득
       let uploadedUrl: string | undefined;
