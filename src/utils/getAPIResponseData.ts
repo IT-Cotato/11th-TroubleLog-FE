@@ -1,27 +1,40 @@
-import instance from "../api/axios";
-import type { AxiosRequestConfig } from "axios";
+import instance from "@/api/axios";
+import type { AxiosRequestConfig, AxiosResponse, AxiosPromise } from "axios";
 
-const getAPIResponseData = async <T, D = T>(
-  option: AxiosRequestConfig<D>
-): Promise<T> => {
+// 오버로딩 시그니처
+async function getAPIResponseData<T, D = any>(
+  config: AxiosRequestConfig<D>
+): Promise<T>;
+async function getAPIResponseData<T>(promise: AxiosPromise<T>): Promise<T>;
+
+async function getAPIResponseData<T, D = any>(
+  arg: AxiosRequestConfig<D> | AxiosPromise<T>
+): Promise<T> {
   try {
-    const { data, status } = await instance(option);
+    let res: AxiosResponse<T>;
+    if (typeof (arg as AxiosPromise<T>).then === "function") {
+      res = await (arg as AxiosPromise<T>);
+    } else {
+      res = await instance(arg as AxiosRequestConfig<D>);
+    }
+    const { data, status } = res;
 
-    // 204 No Content 응답이면 null 반환
+    // 204 No Content
     if (status === 204) {
+      // T가 null을 허용하는지 확인
       return null as T;
     }
 
-    // 만약 data 내부에 data가 있으면 자동으로 한 단계 제거
+    // ApiResponse<T> 형태면 data.data 반환
     if (data && typeof data === "object" && "data" in data) {
-      return data.data as T;
+      return (data as any).data as T;
     }
 
     return data as T;
-  } catch (e) {
-    console.error("API 요청 에러:", e);
-    throw e;
+  } catch (error) {
+    console.error("API 요청 에러:", error);
+    throw error;
   }
-};
+}
 
 export default getAPIResponseData;
