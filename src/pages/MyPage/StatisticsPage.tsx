@@ -5,7 +5,7 @@ import TroublogActivityChart from "@/components/MyPage/TroublogActivityChart";
 import { useDailyActivityMap } from "@/hooks/useDailyActivityMap";
 import { useErrorTagsTop3 } from "@/hooks/useErrorTagsTop3";
 import { useSummaryTypes } from "@/hooks/useSummaryTypes";
-import { mockTagBubbleData } from "@/mocks/mockStatisticsData";
+import { useTechTagsTop5 } from "@/hooks/useTechTagsTop5";
 
 const StatisticsPage = () => {
   const year = new Date().getFullYear();
@@ -21,6 +21,11 @@ const StatisticsPage = () => {
     error: sumError,
     summaryData,
   } = useSummaryTypes();
+  const {
+    loading: tagLoading,
+    error: tagError,
+    bubbleData,
+  } = useTechTagsTop5();
 
   return (
     <div className="flex w-[948px] flex-col items-start gap-[56px] pb-[349px]">
@@ -71,6 +76,21 @@ const StatisticsPage = () => {
           >
             [dev] summary types debug
           </button>
+
+          <button
+            className="text-xs text-gray-500 underline"
+            onClick={() => {
+              const cur = localStorage.getItem("debug.techTags");
+              const next =
+                cur === "replace" ? "merge" : cur === "merge" ? "" : "replace";
+              if (next) localStorage.setItem("debug.techTags", next);
+              else localStorage.removeItem("debug.techTags");
+              location.reload();
+            }}
+            title="techTags: replace → merge → off"
+          >
+            [dev] tech tags debug
+          </button>
         </div>
       )}
 
@@ -112,7 +132,29 @@ const StatisticsPage = () => {
 
       <div className="flex items-center gap-[24px] self-stretch">
         {/* 내 태그 분석 */}
-        <TagBubbleChart bubbleData={mockTagBubbleData} />
+        {tagLoading ? (
+          <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
+            <div className="h-6 w-48 bg-gray-200 rounded mb-2" />
+            <div className="h-4 w-80 bg-gray-100 rounded mb-6" />
+            <div className="h-[260px] w-full bg-gray-100 rounded" />
+          </div>
+        ) : tagError ? (
+          <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
+            <span className="text-red-600">
+              기술 태그 통계를 불러오지 못했습니다.
+            </span>
+            <span className="text-gray-500 text-sm mt-1">{tagError}</span>
+          </div>
+        ) : bubbleData.length === 0 ? (
+          <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
+            <span className="text-head-24-bold">내 태그 분석</span>
+            <span className="text-body-18-regular mt-1">
+              아직 기술 태그가 없어요.
+            </span>
+          </div>
+        ) : (
+          <TagBubbleChart bubbleData={bubbleData} />
+        )}
 
         {/* 내 요약본 종류 */}
         {sumLoading ? (

@@ -15,4 +15,9 @@ export interface SummaryTypeStat {
   count: number;
 }
 
+export interface TechTagStat {
+  name: string;
+  count: number;
+}
+
 export type GetDailyStatsResponse = ApiEnvelope<DailyStat[]>;

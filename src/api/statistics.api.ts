@@ -2,6 +2,7 @@ import type {
   DailyStat,
   ErrorTagStat,
   SummaryTypeStat,
+  TechTagStat,
 } from "@/types/statistics.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 
@@ -9,6 +10,7 @@ import getAPIResponseData from "@/utils/getAPIResponseData";
 let inflightDaily: Promise<DailyStat[] | null> | null = null;
 let inflightErrorTags: Promise<ErrorTagStat[] | null> | null = null;
 let inflightSummaryTypes: Promise<SummaryTypeStat[] | null> | null = null;
+let inflightTechTags: Promise<TechTagStat[] | null> | null = null;
 
 // 일일 트러블로그 활동 통계
 export async function getDailyActivity(): Promise<DailyStat[] | null> {
@@ -49,4 +51,17 @@ export async function getSummaryTypes(): Promise<SummaryTypeStat[] | null> {
     });
   }
   return inflightSummaryTypes;
+}
+
+// 기술 태그별 통계
+export async function getTechTagsTop5(): Promise<TechTagStat[] | null> {
+  if (!inflightTechTags) {
+    inflightTechTags = getAPIResponseData<TechTagStat[] | null>({
+      url: "/statistics/tags",
+      method: "GET",
+    }).finally(() => {
+      setTimeout(() => (inflightTechTags = null), 0);
+    });
+  }
+  return inflightTechTags;
 }
