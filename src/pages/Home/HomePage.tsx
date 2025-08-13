@@ -333,11 +333,6 @@ export default function HomePage() {
                   더 불러오는 중…
                 </span>
               )}
-              {!hasNext && (
-                <span className="text-body-14-regular text-gray-400">
-                  마지막입니다.
-                </span>
-              )}
             </div>
           </>
         )}
