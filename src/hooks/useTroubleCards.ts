@@ -159,11 +159,11 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     async (targetPage: number, { append = true, dedupe = true } = {}) => {
       if (!enabled) return;
 
+      if (targetPage !== 1 && !hasNextRef.current) return;
+
       // 같은 페이지 중복 요청 원천 차단
       if (requestedPagesRef.current.has(targetPage)) return;
       requestedPagesRef.current.add(targetPage);
-
-      if (targetPage !== 1 && !hasNextRef.current) return;
 
       setIsLoading(true);
       setError(null);
