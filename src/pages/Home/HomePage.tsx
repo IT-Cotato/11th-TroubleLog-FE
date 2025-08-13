@@ -104,8 +104,8 @@ export default function HomePage() {
   // 페이지 로딩 함수(append)
   const loadPage = useCallback(
     async (nextPage: number, { append = true, useOnce = true } = {}) => {
-      if (isLoading) return; // 직전 로딩 중이면 무시
-      if (!hasNext && nextPage !== 1) return; // 더 없는데 추가 요청이면 무시
+      if (isLoadingRef.current) return; // 직전 로딩 중이면 무시
+      if (!hasNextRef.current && nextPage !== 1) return; // 더 없는데 추가 요청이면 무시
 
       setIsLoading(true);
       setLoadError(null);
@@ -142,7 +142,7 @@ export default function HomePage() {
         setIsLoading(false);
       }
     },
-    [isLoading, hasNext]
+    []
   );
 
   // 최초 1페이지 로딩
@@ -162,6 +162,7 @@ export default function HomePage() {
         if (!entry.isIntersecting) return;
         if (fetchingRef.current) return;
         if (!hasNextRef.current) return;
+        if (isLoadingRef.current) return;
 
         fetchingRef.current = true;
         void loadPage(pageRef.current + 1, {
@@ -180,7 +181,7 @@ export default function HomePage() {
 
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [loadPage, projects.length, hasNext]);
 
   // 새 프로젝트 생성 후 목록 리셋(1페이지부터 다시)
   const handleCreateProject = async (data: CreateProjectRequest) => {
