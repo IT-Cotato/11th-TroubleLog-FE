@@ -10,6 +10,7 @@ import privateIcon from "@/assets/icons/private.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import commentIcon from "@/assets/icons/comment.svg";
+import { deletePost } from "@/api/post.api";
 
 export interface TroubleShootingCardProps {
   id: string;
@@ -28,9 +29,11 @@ export interface TroubleShootingCardProps {
   commentCount?: number;
   authorName?: string;
   isSearchResult?: boolean;
+  onDeleted?: (postId: number) => void;
 }
 
 const TroubleShootingCard = ({
+  id,
   isMine,
   errorCategory,
   title,
@@ -46,13 +49,43 @@ const TroubleShootingCard = ({
   commentCount,
   authorName,
   isSearchResult,
+  onDeleted,
 }: TroubleShootingCardProps) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const handleCloseMenu = useCallback(() => setShowMenu(false), []);
   const menuRef = useClickOutside(handleCloseMenu);
 
   const shouldShowVisibilityIcon = status === "complete" && visibility;
   const shouldShowSummaryType = status === "created";
+  const handleDelete = async () => {
+    // 확인창
+    if (!window.confirm("이 문서를 휴지통으로 이동할까요?")) return;
+
+    try {
+      setDeleting(true);
+      const postId = Number(id);
+      const res = await deletePost(postId);
+
+      // 204 No Content
+      if (res.status === 204) {
+        onDeleted?.(postId);
+
+        console.log("임시 삭제되었습니다. (관리자 복구 가능)");
+      } else {
+        console.warn("예상과 다른 응답 상태:", res.status);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message ??
+          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+      );
+    } finally {
+      setDeleting(false);
+      setShowMenu(false);
+    }
+  };
 
   return (
     <div className="w-full py-[30px] flex flex-col items-start gap-[10px] border-b border-gray3 bg-white">
@@ -70,16 +103,15 @@ const TroubleShootingCard = ({
           <div className="text-body-16-regular">{errorCategory}</div>
           {!isSearchResult && isMine && (
             <div ref={menuRef} className="relative">
-              <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
+              <KebabMenuButton
+                onClick={() => !deleting && setShowMenu(!showMenu)}
+              />
               {showMenu && (
                 <KebabDropdown
                   options={[
                     {
-                      label: "삭제",
-                      onClick: () => {
-                        setShowMenu(false);
-                        console.log("삭제 동작 실행");
-                      },
+                      label: deleting ? "삭제 중..." : "삭제",
+                      onClick: deleting ? () => {} : handleDelete,
                     },
                   ]}
                 />
