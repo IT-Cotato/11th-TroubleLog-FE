@@ -2,7 +2,6 @@ import type {
   GetProjectTroubleListResponse,
   GetTroubleListResponse,
   ProjectTroubleQuery,
-  TroubleSort,
 } from "@/types/trouble.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "./axios";
@@ -15,7 +14,7 @@ const inflight = new Map<string, Promise<MyTroublesServerPage | null>>();
 export const getTroubleList = (
   page = 1,
   size = 10,
-  sortBy: TroubleSort = "latest"
+  sortBy: "latest" | "likes" = "latest"
 ) =>
   getAPIResponseData<GetTroubleListResponse>(
     api.get<GetTroubleListResponse>("troubles/my/list", {
