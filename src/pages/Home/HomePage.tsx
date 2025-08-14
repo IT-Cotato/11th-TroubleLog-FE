@@ -374,9 +374,6 @@ export default function HomePage() {
               {isLoadingRecents && recentCards.length > 0 && (
                 <span className="text-gray-500">더 불러오는 중…</span>
               )}
-              {!hasNextRecents && (
-                <span className="text-gray-400">마지막입니다.</span>
-              )}
             </div>
           </>
         )}
