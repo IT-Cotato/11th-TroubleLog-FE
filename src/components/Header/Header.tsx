@@ -86,6 +86,8 @@ const Header = () => {
     const searchParams = new URLSearchParams();
     searchParams.set("query", search);
     searchParams.set("scope", scope);
+    searchParams.set("page", "1");
+    searchParams.set("size", "10");
     if (scope === "user") searchParams.set("userId", pageUserId);
 
     navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
