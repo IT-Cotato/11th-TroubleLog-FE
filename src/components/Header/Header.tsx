@@ -39,6 +39,28 @@ const Header = () => {
   useEffect(() => {
     const path = location.pathname;
 
+    // 검색 페이지라면 URL의 scope/userId를 읽어서 placeholder 결정
+    if (path.startsWith(PATH.SEARCH)) {
+      const sp = new URLSearchParams(location.search);
+      const scope = sp.get("scope");
+      const pageUserId = sp.get("userId") ?? "";
+
+      if (scope === "my" || scope === "mypage") {
+        setPlaceholder(
+          "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
+        );
+      } else if (scope === "user" && pageUserId) {
+        setPlaceholder(
+          `키워드나 태그 등의 검색어를 통해 ${pageUserId}님의 트러블슈팅을 검색해보세요!`
+        );
+      } else {
+        setPlaceholder(
+          "키워드나 태그 등의 검색어를 통해 다른 사람들의 트러블슈팅을 검색해보세요!"
+        );
+      }
+      return;
+    }
+
     const mypageMatch = path.match(/^\/user\/mypage\/([^/]+)/);
     const pageUserId = mypageMatch?.[1];
 
@@ -71,24 +93,36 @@ const Header = () => {
     if (!search.trim()) return;
 
     const currentPath = location.pathname;
-    let scope = "community";
-    let pageUserId = "";
 
-    const mypageMatch = currentPath.match(/^\/user\/mypage\/([^/]+)/);
-    pageUserId = mypageMatch?.[1] ?? "";
+    // 검색 페이지에 있다면, 기존 쿼리의 scope/userId를 우선 보존
+    const existing = new URLSearchParams(location.search);
+    let scope = existing.get("scope") as
+      | "my"
+      | "mypage"
+      | "user"
+      | "community"
+      | null;
+    let pageUserId = existing.get("userId") ?? "";
 
-    if (currentPath.startsWith(PATH.MYPAGE(""))) {
-      scope = pageUserId === myUserId ? "mypage" : "user";
-    } else if (currentPath.startsWith(PATH.HOME)) {
-      scope = "my";
+    // 검색 페이지가 아니면, 기존 규칙으로 계산
+    if (!scope) {
+      scope = "community";
+      const mypageMatch = currentPath.match(/^\/user\/mypage\/([^/]+)/);
+      pageUserId = mypageMatch?.[1] ?? "";
+
+      if (currentPath.startsWith(PATH.MYPAGE(""))) {
+        scope = pageUserId === myUserId ? "mypage" : "user";
+      } else if (currentPath.startsWith(PATH.HOME)) {
+        scope = "my";
+      }
     }
 
     const searchParams = new URLSearchParams();
     searchParams.set("query", search);
     searchParams.set("scope", scope);
+    if (scope === "user" && pageUserId) searchParams.set("userId", pageUserId);
     searchParams.set("page", "1");
     searchParams.set("size", "10");
-    if (scope === "user") searchParams.set("userId", pageUserId);
 
     navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
   };
