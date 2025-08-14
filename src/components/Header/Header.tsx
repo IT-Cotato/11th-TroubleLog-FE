@@ -21,6 +21,19 @@ const Header = () => {
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 로그인 후 저장된 userId 사용
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  useEffect(() => {
+    // 초기 로드
+    setMyUserId(localStorage.getItem("userId"));
+    // 다른 탭에서 로그인/로그아웃 시 동기화
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "userId") setMyUserId(e.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -33,8 +46,6 @@ const Header = () => {
       setIsNotificationModalOpen(false);
     }, 200);
   };
-
-  const myUserId = "123"; // 실제 로그인한 사용자 ID로 대체 필요
 
   useEffect(() => {
     const path = location.pathname;
@@ -65,7 +76,7 @@ const Header = () => {
     const pageUserId = mypageMatch?.[1];
 
     if (path.startsWith(PATH.MYPAGE(""))) {
-      if (pageUserId === myUserId) {
+      if (pageUserId && myUserId && pageUserId === myUserId) {
         setPlaceholder(
           "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
         );
@@ -181,7 +192,12 @@ const Header = () => {
                 <UserMenuDropdown
                   onClose={() => setIsUserDropdownOpen(false)}
                   onNavigateToMyPage={() => {
-                    navigate(PATH.MYPAGE(myUserId));
+                    if (myUserId) {
+                      navigate(PATH.MYPAGE(myUserId));
+                    } else {
+                      // 미로그인/정보없음: 루트(또는 로그인)로 유도
+                      navigate(PATH.ROOT);
+                    }
                     setIsUserDropdownOpen(false);
                   }}
                 />

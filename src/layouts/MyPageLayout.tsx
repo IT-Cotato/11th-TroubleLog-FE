@@ -6,8 +6,9 @@ import { useMemo, useState } from "react";
 
 const MyPageLayout = () => {
   const { id } = useParams<{ id: string }>();
-  const myUserId = "123";
-  const isMyPage = id === myUserId;
+  const myUserId =
+    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const isMyPage = !!myUserId && id === myUserId;
 
   // 정렬 상태
   const [sortBy, setSortBy] = useState<"latest" | "likes">("latest");

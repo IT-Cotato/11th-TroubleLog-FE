@@ -62,6 +62,9 @@ const LoginPage = () => {
     try {
       const data = await postLogin(email, password);
       localStorage.setItem("accessToken", data.accessToken);
+      if (data.userId != null) {
+        localStorage.setItem("userId", String(data.userId));
+      }
 
       // next 또는 홈으로 이동
       const params = new URLSearchParams(location.search);

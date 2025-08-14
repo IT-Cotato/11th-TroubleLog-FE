@@ -46,7 +46,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  userId: 0;
+  userId: number;
   accessToken: string;
   refreshToken: string;
   localToken: string;
