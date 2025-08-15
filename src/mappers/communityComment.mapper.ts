@@ -12,7 +12,8 @@ const fmtYYMMDD = (iso: string) => {
 };
 
 const isMineByUserId = (userId?: number | null) => {
-  const me = localStorage.getItem("userId");
+  const me =
+    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
   return me != null && String(me) === String(userId ?? "");
 };
 
