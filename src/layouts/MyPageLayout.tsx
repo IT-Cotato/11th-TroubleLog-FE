@@ -1,33 +1,35 @@
 import MyPageSideBar from "@/components/MyPage/MyPageSidebar";
 import { Outlet } from "react-router-dom";
 import { useParams } from "react-router-dom";
-import { mockCards } from "@/mocks/mockCards";
+import useTroubleCards from "@/hooks/useTroubleCards";
+import { useMemo, useState } from "react";
 
 const MyPageLayout = () => {
   const { id } = useParams<{ id: string }>();
-  const myUserId = "123";
-  const isMyPage = id === myUserId;
+  const myUserId =
+    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const isMyPage = !!myUserId && id === myUserId;
 
-  // 사용자의 카드만 필터링 (임시)
-  const myCards = mockCards.filter((card) => card.isMine);
+  // 정렬 상태
+  const [sortBy, setSortBy] = useState<"latest" | "likes">("latest");
+
+  // 사용자의 트러블슈팅 목록 불러오기
+  const { cards, isLoading, error, hasNext, sentinelRef, reload } =
+    useTroubleCards({ type: "all" }, { infinite: true, pageSize: 10, sortBy });
 
   // 작성 상태별 트러블슈팅 개수 계산
-  const counts = {
-    all: myCards.length,
-    inProgress: myCards.filter((c) => c.status === "inProgress").length,
-    complete: myCards.filter((c) => c.status === "complete").length,
-    created: myCards.filter((c) => c.status === "created").length,
-  };
+  const counts = useMemo(() => {
+    const mine = cards.filter((c) => c.isMine);
+    return {
+      all: mine.length,
+      inProgress: mine.filter((c) => c.status === "inProgress").length,
+      complete: mine.filter((c) => c.status === "complete").length,
+      created: mine.filter((c) => c.status === "created").length,
+    };
+  }, [cards]);
 
-  // 태그 정렬 / 태그별 개수 계산 (다른 사용자의 페이지)
-  const publicCards = mockCards.filter((card) => !card.isMine);
-  const tagCounts: Record<string, number> = {};
-  publicCards
-    .flatMap((card) => card.tags)
-    .forEach((tag) => {
-      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-    });
-  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+  // 다른 사용자의 마이페이지용 태그 분석 (임시)
+  const sortedTags: [string, number][] = [];
 
   return (
     <div className="flex items-start gap-[68px] pt-20 justify-center">
@@ -38,7 +40,19 @@ const MyPageLayout = () => {
       />
 
       <div className="flex flex-col items-start">
-        <Outlet context={{ isMyPage }} />
+        <Outlet
+          context={{
+            isMyPage,
+            cards,
+            isLoading,
+            error,
+            hasNext,
+            sentinelRef,
+            reload,
+            sortBy,
+            setSortBy,
+          }}
+        />
       </div>
     </div>
   );

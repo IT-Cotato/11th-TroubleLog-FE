@@ -21,6 +21,19 @@ const Header = () => {
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 로그인 후 저장된 userId 사용
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  useEffect(() => {
+    // 초기 로드
+    setMyUserId(localStorage.getItem("userId"));
+    // 다른 탭에서 로그인/로그아웃 시 동기화
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "userId") setMyUserId(e.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -34,16 +47,36 @@ const Header = () => {
     }, 200);
   };
 
-  const myUserId = "123"; // 실제 로그인한 사용자 ID로 대체 필요
-
   useEffect(() => {
     const path = location.pathname;
+
+    // 검색 페이지라면 URL의 scope/userId를 읽어서 placeholder 결정
+    if (path.startsWith(PATH.SEARCH)) {
+      const sp = new URLSearchParams(location.search);
+      const scope = sp.get("scope");
+      const pageUserId = sp.get("userId") ?? "";
+
+      if (scope === "my" || scope === "mypage") {
+        setPlaceholder(
+          "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
+        );
+      } else if (scope === "user" && pageUserId) {
+        setPlaceholder(
+          `키워드나 태그 등의 검색어를 통해 ${pageUserId}님의 트러블슈팅을 검색해보세요!`
+        );
+      } else {
+        setPlaceholder(
+          "키워드나 태그 등의 검색어를 통해 다른 사람들의 트러블슈팅을 검색해보세요!"
+        );
+      }
+      return;
+    }
 
     const mypageMatch = path.match(/^\/user\/mypage\/([^/]+)/);
     const pageUserId = mypageMatch?.[1];
 
     if (path.startsWith(PATH.MYPAGE(""))) {
-      if (pageUserId === myUserId) {
+      if (pageUserId && myUserId && pageUserId === myUserId) {
         setPlaceholder(
           "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
         );
@@ -52,7 +85,10 @@ const Header = () => {
           `키워드나 태그 등의 검색어를 통해 ${pageUserId}님의 트러블슈팅을 검색해보세요!`
         );
       }
-    } else if (path.startsWith(PATH.HOME)) {
+    } else if (
+      path.startsWith(PATH.HOME) ||
+      path.startsWith(PATH.PROJECT_DETAIL(""))
+    ) {
       setPlaceholder(
         "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
       );
@@ -71,22 +107,42 @@ const Header = () => {
     if (!search.trim()) return;
 
     const currentPath = location.pathname;
-    let scope = "community";
-    let pageUserId = "";
 
-    const mypageMatch = currentPath.match(/^\/user\/mypage\/([^/]+)/);
-    pageUserId = mypageMatch?.[1] ?? "";
+    // 검색 페이지에 있다면, 기존 쿼리의 scope/userId를 우선 보존
+    const existing = new URLSearchParams(location.search);
+    const rawScope = existing.get("scope");
+    let scope: "my" | "mypage" | "user" | "community" | "project" | null =
+      rawScope === "my" ||
+      rawScope === "mypage" ||
+      rawScope === "user" ||
+      rawScope === "community" ||
+      rawScope === "project"
+        ? rawScope
+        : null;
+    let pageUserId = existing.get("userId") ?? "";
 
-    if (currentPath.startsWith(PATH.MYPAGE(""))) {
-      scope = pageUserId === myUserId ? "mypage" : "user";
-    } else if (currentPath.startsWith(PATH.HOME)) {
-      scope = "my";
+    // 검색 페이지가 아니면, 기존 규칙으로 계산
+    if (!scope) {
+      scope = "community";
+      const mypageMatch = currentPath.match(/^\/user\/mypage\/([^/]+)/);
+      pageUserId = mypageMatch?.[1] ?? "";
+
+      if (currentPath.startsWith(PATH.MYPAGE(""))) {
+        scope = pageUserId === myUserId ? "mypage" : "user";
+      } else if (
+        currentPath.startsWith(PATH.HOME) ||
+        currentPath.startsWith(PATH.PROJECT_DETAIL(""))
+      ) {
+        scope = "my";
+      }
     }
 
     const searchParams = new URLSearchParams();
     searchParams.set("query", search);
     searchParams.set("scope", scope);
-    if (scope === "user") searchParams.set("userId", pageUserId);
+    if (scope === "user" && pageUserId) searchParams.set("userId", pageUserId);
+    searchParams.set("page", "1");
+    searchParams.set("size", "10");
 
     navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
   };
@@ -115,7 +171,12 @@ const Header = () => {
           />
         </div>
         <div className="flex gap-10 items-center relative">
-          <FaUserGroup size={40} color="#525252" />
+          <FaUserGroup
+            size={40}
+            color="#525252"
+            className="cursor-pointer"
+            onClick={() => navigate(PATH.COMMUNITY)}
+          />
           {/* 알림 영역 (hover 시 열림 + 벗어나면 닫힘) */}
           <div
             className="relative"
@@ -145,7 +206,12 @@ const Header = () => {
                 <UserMenuDropdown
                   onClose={() => setIsUserDropdownOpen(false)}
                   onNavigateToMyPage={() => {
-                    navigate(PATH.MYPAGE(myUserId));
+                    if (myUserId) {
+                      navigate(PATH.MYPAGE(myUserId));
+                    } else {
+                      // 미로그인/정보없음: 루트(또는 로그인)로 유도
+                      navigate(PATH.ROOT);
+                    }
                     setIsUserDropdownOpen(false);
                   }}
                 />

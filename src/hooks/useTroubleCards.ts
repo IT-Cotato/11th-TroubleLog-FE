@@ -7,8 +7,10 @@ import {
 import type {
   ProjectTroubleQuery,
   TroubleListItem,
-  TroubleSort,
 } from "@/types/trouble.model";
+
+// 내 전체 목록 정렬용 (서버 스펙)
+type SortParam = "latest" | "likes";
 
 type Source =
   | { type: "all" }
@@ -17,7 +19,7 @@ type Source =
 interface Options {
   enabled?: boolean; // 기본값: true
   pageSize?: number; // 기본값: 10
-  sortBy?: TroubleSort; // 기본값: "latest"
+  sortBy?: SortParam; // 기본값: "latest"
   infinite?: boolean; // 기본값: false
   rootMargin?: string; // 기본값: "300px 0px"
   stopOnError?: boolean; // 에러 시 자동 로딩 중단 (기본 true)
@@ -40,12 +42,7 @@ const inflightPaged = new Map<string, Promise<PageResp>>();
 // (project|query) 단위 in-flight 공유: 프로젝트 목록용
 const inflightProject = new Map<string, Promise<TroubleListItem[]>>();
 
-function makePagedKey(
-  sk: string,
-  page: number,
-  size: number,
-  sort: TroubleSort
-) {
+function makePagedKey(sk: string, page: number, size: number, sort: SortParam) {
   return `${sk}|p=${page}|s=${size}|sort=${sort}`;
 }
 
@@ -60,7 +57,7 @@ async function fetchPagedOnce(
   sk: string,
   page: number,
   size: number,
-  sortBy: TroubleSort
+  sortBy: SortParam
 ) {
   const key = makePagedKey(sk, page, size, sortBy);
   if (!inflightPaged.has(key)) {
@@ -95,7 +92,7 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
   } = options;
 
   const srcKey = useMemo(() => {
-    if (source.type === "all") return "all";
+    if (source.type === "all") return `all|sort=${sortBy}`;
     const q = source.query;
     return `project:${source.projectId}|${q.status}|${q.sort}|${
       q.visibility ?? ""
@@ -108,6 +105,7 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     (source as any).query?.sort,
     (source as any).query?.visibility,
     (source as any).query?.summaryType,
+    sortBy,
   ]);
 
   const [cards, setCards] = useState<TroublogCardVM[]>([]);

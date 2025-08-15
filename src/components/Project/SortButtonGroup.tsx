@@ -1,6 +1,6 @@
 interface SortButtonGroupProps {
-  selected: "latest" | "importance";
-  onSelect: (value: "latest" | "importance") => void;
+  selected: "latest" | "likes";
+  onSelect: (value: "latest" | "likes") => void;
 }
 
 export default function SortButtonGroup({
@@ -20,10 +20,10 @@ export default function SortButtonGroup({
           최신순
         </span>
       </button>
-      <button onClick={() => onSelect("importance")}>
+      <button onClick={() => onSelect("likes")}>
         <span
           className={
-            selected === "importance"
+            selected === "likes"
               ? "text-head-20-semibold underline"
               : "text-body-20-regular text-gray3"
           }
