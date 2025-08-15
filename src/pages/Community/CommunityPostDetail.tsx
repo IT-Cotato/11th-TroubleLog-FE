@@ -512,6 +512,9 @@ export default function CommunityPostDetail() {
                     <div
                       id={`section-${idx}`}
                       key={idx}
+                      ref={(el) => {
+                        sectionRefs.current[idx] = el;
+                      }}
                       className="scroll-mt-[200px]"
                     >
                       <PostGuideMd question={q} content={post.contents[idx]} />
