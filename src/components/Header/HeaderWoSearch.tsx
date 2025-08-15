@@ -4,7 +4,7 @@ import { FaUserCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/icons/logo.svg";
 import { PATH } from "@/constants/paths";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
 import NotificationModal from "../Modal/NotificationModal";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
@@ -31,6 +31,15 @@ const HeaderWoSearch = () => {
       setIsNotificationModalOpen(false);
     }, 200);
   };
+
+  // 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex w-full py-[25px] px-[88px] gap-[10px] justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
