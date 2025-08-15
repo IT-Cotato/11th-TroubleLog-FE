@@ -87,28 +87,6 @@ export default function CommunityPostDetail() {
     new Map<number, ReturnType<typeof getCommunityPostDetail>>()
   );
 
-  // 토스트 상태/함수
-  type ToastKind = "success" | "error";
-  type ToastState = { type: ToastKind; message: string } | null;
-
-  const [toast, setToast] = useState<ToastState>(null);
-  const toastTimerRef = useRef<number | null>(null);
-
-  const showToast = (type: ToastKind, message: string) => {
-    setToast({ type, message });
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(
-      () => setToast(null),
-      2000
-    ) as any;
-  };
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    };
-  }, []);
-
   const fetchPostOnce = (id: number) => {
     const map = inflightPostRef.current;
     if (!map.has(id)) {
@@ -378,7 +356,6 @@ export default function CommunityPostDetail() {
         )
       );
     } catch (e) {
-      showToast("error", "댓글 수정에 실패했습니다.");
       console.error(e);
     }
   };
@@ -396,7 +373,6 @@ export default function CommunityPostDetail() {
           : prev
       );
     } catch (e) {
-      showToast("error", "댓글 삭제에 실패했습니다.");
       console.error(e);
     }
   };
@@ -423,310 +399,290 @@ export default function CommunityPostDetail() {
   }
 
   return (
-    <>
-      <div className="flex justify-center">
-        {/* 포스트 영역 */}
-        <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
-          {/* 상단 영역 */}
-          <div className="flex w-full pt-[180px] pb-[18px] items-center border-b border-gray1">
-            <div className="flex flex-col items-start gap-[44px]">
-              <div className="flex flex-col items-start gap-[53px]">
-                <div className="flex flex-col items-start gap-[10px]">
-                  {/* 에러 종류 & (케밥 버튼) */}
-                  <div className="flex w-[1200px] justify-between items-start">
-                    <span className="text-head-20-semibold">
-                      {post.errorType}
-                    </span>
-                    {post.isMine && (
-                      <div className="relative" ref={menuRef}>
-                        <KebabMenuButton
-                          onClick={() => setShowMenu(!showMenu)}
+    <div className="flex justify-center">
+      {/* 포스트 영역 */}
+      <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
+        {/* 상단 영역 */}
+        <div className="flex w-full pt-[180px] pb-[18px] items-center border-b border-gray1">
+          <div className="flex flex-col items-start gap-[44px]">
+            <div className="flex flex-col items-start gap-[53px]">
+              <div className="flex flex-col items-start gap-[10px]">
+                {/* 에러 종류 & (케밥 버튼) */}
+                <div className="flex w-[1200px] justify-between items-start">
+                  <span className="text-head-20-semibold">
+                    {post.errorType}
+                  </span>
+                  {post.isMine && (
+                    <div className="relative" ref={menuRef}>
+                      <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
+                      {showMenu && (
+                        <KebabDropdown
+                          options={[
+                            {
+                              label: "포스트 수정",
+                              onClick: () => {
+                                setShowMenu(false);
+                              },
+                            },
+                            {
+                              label: "삭제",
+                              onClick: () => {
+                                setShowMenu(false);
+                              },
+                            },
+                          ]}
+                          position={{ top: "0.1rem", left: "1.5rem" }}
                         />
-                        {showMenu && (
-                          <KebabDropdown
-                            options={[
-                              {
-                                label: "포스트 수정",
-                                onClick: () => {
-                                  setShowMenu(false);
-                                },
-                              },
-                              {
-                                label: "삭제",
-                                onClick: () => {
-                                  setShowMenu(false);
-                                },
-                              },
-                            ]}
-                            position={{ top: "0.1rem", left: "1.5rem" }}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 포스트 제목 */}
-                  <div className="text-head-48">{post.title}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* 태그 & 작성일 */}
-                <div className="flex items-center gap-[16px]">
-                  {/* 태그 */}
-                  <TagList tags={post.tags} variant="post" />
-
-                  {/* 구분점 */}
-                  <div className="text-body-16-regular text-gray3">·</div>
-
-                  {/* 작성일 */}
-                  <div className="text-body-20-regular text-gray3">
-                    {post.date}
-                  </div>
-                </div>
+                {/* 포스트 제목 */}
+                <div className="text-head-48">{post.title}</div>
               </div>
 
-              {/* 작성자 정보 & 중요도 */}
-              <div className="flex w-full items-center justify-between">
-                {/* 작성자 정보 */}
-                <div className="flex items-center gap-[20px]">
-                  {/* 프로필 이미지 */}
-                  <img
-                    src={post.authorProfile || imageIcon}
-                    onError={(e) => {
-                      e.currentTarget.src = imageIcon;
-                    }}
-                    alt="profile"
-                    className="w-[66px] h-[66px]"
-                  />
+              {/* 태그 & 작성일 */}
+              <div className="flex items-center gap-[16px]">
+                {/* 태그 */}
+                <TagList tags={post.tags} variant="post" />
 
-                  {/* 작성자명 */}
-                  <div className="text-head-24-bold">{post.authorName}</div>
-                </div>
+                {/* 구분점 */}
+                <div className="text-body-16-regular text-gray3">·</div>
 
-                {/* 중요도 */}
-                <div className="flex items-center gap-[8px]">
-                  <img
-                    src={starIcon}
-                    alt="importance"
-                    className="w-[24px] h-[24px]"
-                  />
-                  <div className="text-body-20-regular text-gray3">
-                    {post.importance}
-                  </div>
+                {/* 작성일 */}
+                <div className="text-body-20-regular text-gray3">
+                  {post.date}
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* 하단 영역 */}
-          <div className="flex w-full flex-col items-start gap-[8px]">
-            {/* 메인 */}
-            <div className="flex flex-col items-start gap-[36px] self-stretch">
-              {/* 포스트 내용 & 작성자 정보 */}
-              <div className="flex flex-col items-start self-stretch">
-                <div className="flex flex-col items-start gap-[48px] self-stretch">
-                  {/* 포스트 내용 */}
-                  <div className="flex flex-col items-start gap-[48px] self-stretch">
-                    {post.questions.map((q, idx) => (
-                      <div
-                        id={`section-${idx}`}
-                        key={idx}
-                        className="scroll-mt-[200px]"
-                      >
-                        <PostGuideMd
-                          question={q}
-                          content={post.contents[idx]}
-                        />
-                      </div>
-                    ))}
-                  </div>
+            {/* 작성자 정보 & 중요도 */}
+            <div className="flex w-full items-center justify-between">
+              {/* 작성자 정보 */}
+              <div className="flex items-center gap-[20px]">
+                {/* 프로필 이미지 */}
+                <img
+                  src={post.authorProfile || imageIcon}
+                  onError={(e) => {
+                    e.currentTarget.src = imageIcon;
+                  }}
+                  alt="profile"
+                  className="w-[66px] h-[66px]"
+                />
 
-                  {/* 작성자 정보 */}
-                  <div className="flex py-[32px] px-[40px] flex-col items-start gap-[10px] self-stretch rounded-[36px] bg-[#F2F2F2]">
-                    <div className="flex justify-between items-center self-stretch">
-                      <div
-                        className="flex items-center gap-[28px] cursor-pointer"
-                        onClick={handleProfileClick}
-                      >
-                        {/* 프로필 이미지 */}
-                        <img
-                          src={post.authorProfile || imageIcon}
-                          onError={(e) => {
-                            e.currentTarget.src = imageIcon;
-                          }}
-                          alt="profile"
-                          className="w-[131px] h-[131px]"
-                        />
-                        <div className="flex flex-col items-start gap-[13px]">
-                          {/* 작성자명 & 팔로워 수 */}
-                          <div className="flex flex-col items-start gap-[2px]">
-                            <div className="text-head-24-bold">
-                              {post.authorName}
-                            </div>
-                            <div className="text-body-16-regular">
-                              {post.authorFollowers} 팔로워
-                            </div>
-                          </div>
-
-                          {/* 한줄 소개 */}
-                          <div className="text-body-18-regular">
-                            {post.authorBio}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 팔로우 버튼 */}
-                      <button className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer">
-                        팔로우
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                {/* 작성자명 */}
+                <div className="text-head-24-bold">{post.authorName}</div>
               </div>
 
-              {/* 좋아요, 공유 */}
-              <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
-                <div className="flex items-center gap-[20px]">
-                  {/* 좋아요 */}
-                  <button
-                    type="button"
-                    aria-pressed={isLiked}
-                    aria-busy={isLiking}
-                    disabled={isLiking}
-                    onClick={handleToggleLike}
-                    className={`flex items-center gap-[8px] ${
-                      isLiking
-                        ? "opacity-60 cursor-not-allowed"
-                        : "cursor-pointer"
-                    }`}
-                  >
-                    <img
-                      src={isLiked ? heartIcon : likeEmptyIcon}
-                      alt="like"
-                      className="w-[40px] h-[40px]"
-                    />
-                    <div className="text-body-20-regular text-gray3">
-                      {likeCounts}
-                    </div>
-                  </button>
-
-                  {/* 공유 버튼 */}
-                  <img
-                    src={shareIcon}
-                    alt="share"
-                    className="w-[40px] h-[40px]"
-                  />
+              {/* 중요도 */}
+              <div className="flex items-center gap-[8px]">
+                <img
+                  src={starIcon}
+                  alt="importance"
+                  className="w-[24px] h-[24px]"
+                />
+                <div className="text-body-20-regular text-gray3">
+                  {post.importance}
                 </div>
               </div>
-
-              {/* 댓글 작성 창 */}
-              <div className="flex flex-col items-end gap-[12px] self-stretch">
-                <div className="flex flex-col items-start gap-[36px] self-stretch">
-                  <div className="text-head-32-semibold">
-                    {post.commentCounts}개의 댓글
-                  </div>
-                  <textarea
-                    value={commentInput}
-                    onChange={(e) => setCommentInput(e.target.value)}
-                    placeholder="댓글을 작성해주세요."
-                    className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
-                  ></textarea>
-                </div>
-
-                {/* 작성하기 버튼 */}
-                <button
-                  disabled={!commentInput.trim() || isCommentPosting}
-                  onClick={handleSubmitComment}
-                  className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
-                    commentInput.trim() && !isCommentPosting
-                      ? "bg-primary"
-                      : "bg-subColor1"
-                  }`}
-                >
-                  {isCommentPosting ? "작성 중…" : "작성하기"}
-                </button>
-              </div>
-            </div>
-
-            {/* 댓글 목록 */}
-            <div className="flex flex-col items-end self-stretch">
-              {comments
-                .filter((c) => !c.isReply) // 부모 댓글만
-                .map((parent) => (
-                  <div key={parent.id} className="w-full">
-                    <PostComment
-                      {...parent}
-                      onEdit={(newContent) => handleEdit(parent.id, newContent)}
-                      onDelete={() => handleDelete(parent.id)}
-                      onReply={(replyContent) =>
-                        handleReply(parent.id, replyContent)
-                      }
-                    />
-                    {/* 답글 목록 */}
-                    {comments
-                      .filter((c) => c.parentId === parent.id)
-                      .map((reply) => (
-                        <PostComment
-                          key={reply.id}
-                          {...reply}
-                          onEdit={(newContent) =>
-                            handleEdit(reply.id, newContent)
-                          }
-                          onDelete={() => handleDelete(reply.id)}
-                          onReply={(replyContent) =>
-                            handleReply(reply.id, replyContent)
-                          }
-                        />
-                      ))}
-                  </div>
-                ))}
-
-              {/* 댓글 더 보기 */}
-              {cHasNext && postId && (
-                <button
-                  disabled={cLoading}
-                  onClick={() => loadComments(Number(postId), cPage + 1)}
-                  className={`mt-4 px-6 py-2 rounded-full text-white ${
-                    cLoading ? "bg-gray-300" : "bg-primary"
-                  }`}
-                >
-                  {cLoading ? "불러오는 중…" : "댓글 더 보기"}
-                </button>
-              )}
             </div>
           </div>
         </div>
 
-        {/* 목차 */}
-        <div className="inline-flex items-start mt-[588px] mr-[89px] sticky top-[588px] h-fit">
-          {/* 목차 리스트 */}
-          <div className="flex flex-col items-start gap-[16px] border-l border-gray3 p-[12px] text-body-20-regular text-gray3">
-            {post.questions.map((q, idx) => (
+        {/* 하단 영역 */}
+        <div className="flex w-full flex-col items-start gap-[8px]">
+          {/* 메인 */}
+          <div className="flex flex-col items-start gap-[36px] self-stretch">
+            {/* 포스트 내용 & 작성자 정보 */}
+            <div className="flex flex-col items-start self-stretch">
+              <div className="flex flex-col items-start gap-[48px] self-stretch">
+                {/* 포스트 내용 */}
+                <div className="flex flex-col items-start gap-[48px] self-stretch">
+                  {post.questions.map((q, idx) => (
+                    <div
+                      id={`section-${idx}`}
+                      key={idx}
+                      className="scroll-mt-[200px]"
+                    >
+                      <PostGuideMd question={q} content={post.contents[idx]} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* 작성자 정보 */}
+                <div className="flex py-[32px] px-[40px] flex-col items-start gap-[10px] self-stretch rounded-[36px] bg-[#F2F2F2]">
+                  <div className="flex justify-between items-center self-stretch">
+                    <div
+                      className="flex items-center gap-[28px] cursor-pointer"
+                      onClick={handleProfileClick}
+                    >
+                      {/* 프로필 이미지 */}
+                      <img
+                        src={post.authorProfile || imageIcon}
+                        onError={(e) => {
+                          e.currentTarget.src = imageIcon;
+                        }}
+                        alt="profile"
+                        className="w-[131px] h-[131px]"
+                      />
+                      <div className="flex flex-col items-start gap-[13px]">
+                        {/* 작성자명 & 팔로워 수 */}
+                        <div className="flex flex-col items-start gap-[2px]">
+                          <div className="text-head-24-bold">
+                            {post.authorName}
+                          </div>
+                          <div className="text-body-16-regular">
+                            {post.authorFollowers} 팔로워
+                          </div>
+                        </div>
+
+                        {/* 한줄 소개 */}
+                        <div className="text-body-18-regular">
+                          {post.authorBio}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 팔로우 버튼 */}
+                    <button className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer">
+                      팔로우
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 좋아요, 공유 */}
+            <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
+              <div className="flex items-center gap-[20px]">
+                {/* 좋아요 */}
+                <button
+                  type="button"
+                  aria-pressed={isLiked}
+                  aria-busy={isLiking}
+                  disabled={isLiking}
+                  onClick={handleToggleLike}
+                  className={`flex items-center gap-[8px] ${
+                    isLiking
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
+                >
+                  <img
+                    src={isLiked ? heartIcon : likeEmptyIcon}
+                    alt="like"
+                    className="w-[40px] h-[40px]"
+                  />
+                  <div className="text-body-20-regular text-gray3">
+                    {likeCounts}
+                  </div>
+                </button>
+
+                {/* 공유 버튼 */}
+                <img
+                  src={shareIcon}
+                  alt="share"
+                  className="w-[40px] h-[40px]"
+                />
+              </div>
+            </div>
+
+            {/* 댓글 작성 창 */}
+            <div className="flex flex-col items-end gap-[12px] self-stretch">
+              <div className="flex flex-col items-start gap-[36px] self-stretch">
+                <div className="text-head-32-semibold">
+                  {post.commentCounts}개의 댓글
+                </div>
+                <textarea
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  placeholder="댓글을 작성해주세요."
+                  className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
+                ></textarea>
+              </div>
+
+              {/* 작성하기 버튼 */}
               <button
-                key={idx}
-                onClick={() => scrollToSection(idx)}
-                className={`text-left ${
-                  currentSection === idx ? "text-black" : ""
+                disabled={!commentInput.trim() || isCommentPosting}
+                onClick={handleSubmitComment}
+                className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
+                  commentInput.trim() && !isCommentPosting
+                    ? "bg-primary"
+                    : "bg-subColor1"
                 }`}
               >
-                {idx + 1}. {q}
+                {isCommentPosting ? "작성 중…" : "작성하기"}
               </button>
-            ))}
+            </div>
+          </div>
+
+          {/* 댓글 목록 */}
+          <div className="flex flex-col items-end self-stretch">
+            {comments
+              .filter((c) => !c.isReply) // 부모 댓글만
+              .map((parent) => (
+                <div key={parent.id} className="w-full">
+                  <PostComment
+                    {...parent}
+                    onEdit={(newContent) => handleEdit(parent.id, newContent)}
+                    onDelete={() => handleDelete(parent.id)}
+                    onReply={(replyContent) =>
+                      handleReply(parent.id, replyContent)
+                    }
+                  />
+                  {/* 답글 목록 */}
+                  {comments
+                    .filter((c) => c.parentId === parent.id)
+                    .map((reply) => (
+                      <PostComment
+                        key={reply.id}
+                        {...reply}
+                        onEdit={(newContent) =>
+                          handleEdit(reply.id, newContent)
+                        }
+                        onDelete={() => handleDelete(reply.id)}
+                        onReply={(replyContent) =>
+                          handleReply(reply.id, replyContent)
+                        }
+                      />
+                    ))}
+                </div>
+              ))}
+
+            {/* 댓글 더 보기 */}
+            {cHasNext && postId && (
+              <button
+                disabled={cLoading}
+                onClick={() => loadComments(Number(postId), cPage + 1)}
+                className={`mt-4 px-6 py-2 rounded-full text-white ${
+                  cLoading ? "bg-gray-300" : "bg-primary"
+                }`}
+              >
+                {cLoading ? "불러오는 중…" : "댓글 더 보기"}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 토스트 배너 */}
-      {toast && (
-        <div
-          className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-white z-[1000] ${
-            toast.type === "success" ? "bg-green-600" : "bg-red-600"
-          }`}
-          role="status"
-          aria-live="polite"
-        >
-          {toast.message}
+      {/* 목차 */}
+      <div className="inline-flex items-start mt-[588px] mr-[89px] sticky top-[588px] h-fit">
+        {/* 목차 리스트 */}
+        <div className="flex flex-col items-start gap-[16px] border-l border-gray3 p-[12px] text-body-20-regular text-gray3">
+          {post.questions.map((q, idx) => (
+            <button
+              key={idx}
+              onClick={() => scrollToSection(idx)}
+              className={`text-left ${
+                currentSection === idx ? "text-black" : ""
+              }`}
+            >
+              {idx + 1}. {q}
+            </button>
+          ))}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
