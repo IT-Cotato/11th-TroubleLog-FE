@@ -9,7 +9,7 @@ import { questionData } from "../../components/TemplateWrite/questionTemplate";
 import PostSaveModal from "./PostSaveModal";
 import PostLoadingModal from "./PostLoadingModal";
 import TemplateSelectModal from "./TemplateSelectModal";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import type { PostSavePayload } from "./PostSaveModal";
 import { toCreatePostRequest, type PostForm } from "@/mappers/postMapper";
@@ -46,6 +46,8 @@ const TempWritePage = () => {
   const [templateLabel, setTemplateLabel] = useState<string>("");
   const closingRef = useRef(false);
   const [showCancelAlert, setShowCancelAlert] = useState(false);
+  const location = useLocation() as { state?: { projectId?: number } };
+  const initialProjectId = location.state?.projectId;
 
   type SummaryStatus =
     | "PENDING"
@@ -195,6 +197,8 @@ const TempWritePage = () => {
       setIsTemplateSelectModalOpen(false);
       setIsLoadingModalOpen(true);
       setSummaryProgress(0);
+      setSummaryStatus(null);
+      setStatusMessage("");
       setTemplateLabel(label);
 
       // 1) 본문을 요청 DTO로 변환
@@ -214,18 +218,26 @@ const TempWritePage = () => {
 
       // 2) 문서 생성
       const req = toCreatePostRequest(form);
-      const { data: created } = await createPost(req);
+      const created = await createPost(req);
       const postId = created.id;
       setCreatedPostId(postId);
 
       // 3) 요약 작업 시작
-      const { data: start } = await startSummary(postId, { type });
+      const start = await startSummary(postId, { type });
       setSummaryTaskId(start.taskId);
     } catch (e) {
       console.error(e);
       // 이후 모달 반영후 지우기
       // setIsTemplateSelectModalOpen(true);
       // setIsLoadingModalOpen(false);
+      // 실패 시 상태 복구
+      setIsLoadingModalOpen(false);
+      setIsTemplateSelectModalOpen(true);
+      setSummaryTaskId(null);
+      setCreatedPostId(null);
+      setSummaryProgress(0);
+      setSummaryStatus(null);
+      setStatusMessage("요약 시작에 실패했어요. 잠시 후 다시 시도해주세요.");
     }
   };
   useEffect(() => {
@@ -236,7 +248,7 @@ const TempWritePage = () => {
 
     const tick = async () => {
       try {
-        const { data } = await getSummaryStatus(createdPostId, summaryTaskId);
+        const data = await getSummaryStatus(createdPostId, summaryTaskId);
         const p = Math.max(0, Math.min(100, data.progress ?? 0));
         if (stopped) return;
 
@@ -393,6 +405,7 @@ const TempWritePage = () => {
               onNext={handleNextInPostSaveModal}
               projects={projectList.map((p) => ({ id: p.id, name: p.name }))}
               loadingProjects={projectsLoading}
+              defaultProjectId={initialProjectId}
             />
           )}
           {isTemplateSelectModalOpen && (

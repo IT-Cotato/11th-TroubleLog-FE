@@ -12,7 +12,7 @@ export function useProjectList() {
     (async () => {
       try {
         const res = await getProjectList();
-        if (mounted) setData(res);
+        if (mounted) setData(res.content ?? []);
       } catch (e) {
         if (mounted) setError(e);
       } finally {

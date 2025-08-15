@@ -7,10 +7,10 @@ import type { SummaryTypeParam } from "@/models/post.model";
 
 const templates = ["자기소개서", "면접 대비", "블로그", "Issue 관리"];
 const TEMPLATE_TO_TYPE: Record<number, SummaryTypeParam> = {
-  0: "RESUME",
-  1: "INTERVIEW",
-  2: "BLOG",
-  3: "ISSUE_MANAGEMENT",
+  1: "RESUME",
+  2: "INTERVIEW",
+  3: "BLOG",
+  4: "ISSUE_MANAGEMENT",
 };
 
 export default function TemplateSelectModal({

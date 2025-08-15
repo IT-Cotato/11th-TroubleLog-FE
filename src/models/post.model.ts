@@ -1,5 +1,6 @@
 // ===== 리터럴 타입들
 export const SUMMARY_TYPES = [
+  "NONE",
   "RESUME",
   "BLOG",
   "INTERVIEW",
@@ -53,7 +54,7 @@ export interface PostContent {
   body: string;
   sequence: number;
   authorType: string;
-  summaryType: string;
+  summaryType: SummaryTypeParam;
 }
 
 // Dto without id
@@ -62,7 +63,7 @@ export interface PostContentDto {
   body: string;
   sequence: number;
   authorType: string;
-  summaryType: string;
+  summaryType: SummaryTypeParam;
 }
 
 // ===== 응답/요청

@@ -15,7 +15,7 @@ const SearchResultPage = () => {
 
   // 삭제 시 목록에서 제거
   const handleDeleted = (postId: number) => {
-    setResults((prev) => prev.filter((c) => Number(c.id) !== postId));
+    setResults((prev) => prev.filter((c) => c.id !== String(postId)));
   };
 
   useEffect(() => {
