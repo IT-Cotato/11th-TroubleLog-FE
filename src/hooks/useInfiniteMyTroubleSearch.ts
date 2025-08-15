@@ -124,8 +124,9 @@ export function useInfiniteMyTroubleSearch(
         setHasNext(safe.hasNext);
         setTotalElements(safe.totalElements);
         setTotalPages(safe.totalPages);
-      } catch (e: any) {
-        setError(e?.message ?? "검색 실패");
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : "검색 실패";
+        setError(errorMessage);
       } finally {
         if (isFirst) setLoadingInitial(false);
         else setLoadingMore(false);
