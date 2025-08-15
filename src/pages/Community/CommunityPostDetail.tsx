@@ -7,7 +7,6 @@ import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
-import { mockPost } from "@/mocks/mockPost";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
@@ -15,6 +14,8 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
+import { getCommunityPostDetail } from "@/api/community.api";
+import { toCommunityPostVM } from "@/mappers/communityPostDetail.mapper";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -37,120 +38,148 @@ export interface CommunityPostDetailProps {
 
 export default function CommunityPostDetail() {
   const { postId } = useParams<{ postId: string }>(); // postId 불러오기
-
-  useEffect(() => {
-    console.log("현재 postId:", postId);
-  }, [postId]);
-
-  const post = mockPost;
   const navigate = useNavigate();
 
-  // 작성자 프로필 클릭 핸들러
-  const handleProfileClick = () => {
-    navigate(PATH.MYPAGE("1")); // 임시
-  };
+  const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // 좋아요/댓글 로컬 상태
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCounts, setLikeCounts] = useState(0);
+  const [commentInput, setCommentInput] = useState("");
+  const [comments, setComments] = useState<PostCommentProps[]>([]);
 
   // 케밥 메뉴
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
-  // 목차 위치 관련
+  // 섹션 추적
   const [currentSection, setCurrentSection] = useState<number>(0);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
 
-  // 목차 위치 이동
+  // 데이터 로드
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
+    let dead = false;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const numId = Number(postId);
+        if (!Number.isFinite(numId)) throw new Error("잘못된 포스트 ID");
 
-      let current = 0;
+        // getAPIResponseData가 이미 inner data를 반환합니다.
+        const data = await getCommunityPostDetail(numId);
+
+        if (dead) return;
+        if (!data) {
+          setLoadError("빈 응답입니다.");
+          return;
+        }
+
+        const vm = toCommunityPostVM(data);
+        setPost(vm);
+        setIsLiked(vm.isLiked);
+        setLikeCounts(vm.likeCounts);
+        setComments(vm.comments);
+      } catch (e: any) {
+        if (!dead) setLoadError(e?.message ?? "포스트 불러오기 실패");
+      } finally {
+        if (!dead) setLoading(false);
+      }
+    };
+    run();
+    return () => {
+      dead = true;
+    };
+  }, [postId]);
+
+  // 스크롤 감시
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      let cur = 0;
       sectionRefs.current.forEach((ref, idx) => {
         if (ref) {
           const top = ref.getBoundingClientRect().top + window.scrollY;
-          if (scrollY >= top - 250) {
-            current = idx;
-          }
+          if (y >= top - 250) cur = idx;
         }
       });
-
-      setCurrentSection(current);
+      setCurrentSection(cur);
     };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    // refs 초기화
-    sectionRefs.current = post.questions.map((_, idx) =>
-      document.getElementById(`section-${idx}`)
-    );
-  }, [post.questions]);
 
   const scrollToSection = (idx: number) => {
     const target = sectionRefs.current[idx];
     if (target) {
-      window.scrollTo({
-        top: target.offsetTop - 180,
-        behavior: "smooth",
-      });
+      window.scrollTo({ top: target.offsetTop - 180, behavior: "smooth" });
     }
   };
 
-  // 좋아요 상태
-  const [isLiked, setIsLiked] = useState(post.isLiked);
-  const [likeCounts, setLikeCounts] = useState(post.likeCounts);
+  // 작성자 프로필 클릭 핸들러
+  const handleProfileClick = () => {
+    // 작성자 마이페이지로
+    if (!post) return;
+    navigate(PATH.MYPAGE(localStorage.getItem("userId") || ""));
+  };
 
-  // 좋아요 토글 핸들러
   const handleToggleLike = () => {
-    if (isLiked) {
-      setIsLiked(false);
-      setLikeCounts((prev) => prev - 1);
-    } else {
-      setIsLiked(true);
-      setLikeCounts((prev) => prev + 1);
-    }
+    // 토글 UI (서버 연동은 추후)
+    setIsLiked((prev) => {
+      const next = !prev;
+      setLikeCounts((c) => (next ? c + 1 : Math.max(0, c - 1)));
+      return next;
+    });
   };
 
-  // 댓글 입력 상태
-  const [commentInput, setCommentInput] = useState("");
-
-  // 댓글 상태
-  const [comments, setComments] = useState(post.comments);
-
-  // 댓글 수정 핸들러
   const handleEdit = (id: string, newContent: string) => {
     setComments((prev) =>
       prev.map((c) => (c.id === id ? { ...c, content: newContent } : c))
     );
   };
-
-  // 댓글 삭제 핸들러
   const handleDelete = (id: string) => {
     setComments((prev) => prev.filter((c) => c.id !== id));
   };
-
-  // date 포맷 함수
-  const formatDate = (date: Date) => {
-    const yy = String(date.getFullYear()).slice(2);
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    return `${yy}.${mm}.${dd}`;
-  };
-
-  // 답글 작성 핸들러
   const handleReply = (parentId: string, replyContent: string) => {
-    const newReply = {
-      id: Date.now().toString(),
-      name: "현재 유저",
-      date: formatDate(new Date()),
-      content: replyContent,
-      isMine: true,
-      isReply: true,
-      parentId,
-    };
-    setComments((prev) => [...prev, newReply]);
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    setComments((prev) => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        name: "현재 유저",
+        date: `${yy}.${mm}.${dd}`,
+        content: replyContent,
+        isMine: true,
+        isReply: true,
+        parentId,
+      },
+    ]);
   };
+
+  // 로딩/에러 처리
+  if (loading) {
+    return (
+      <div className="flex justify-center">
+        <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[24px] w-full pt-[180px]">
+          <div className="w-full h-[120px] bg-gray-100 rounded" />
+          <div className="w-full h-[400px] bg-gray-100 rounded" />
+        </div>
+      </div>
+    );
+  }
+  if (loadError || !post) {
+    return (
+      <div className="flex justify-center">
+        <div className="max-w-[1200px] w-full pt-[180px] text-red-600">
+          {loadError ?? "포스트를 찾을 수 없습니다."}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center">
@@ -176,14 +205,12 @@ export default function CommunityPostDetail() {
                               label: "포스트 수정",
                               onClick: () => {
                                 setShowMenu(false);
-                                console.log("포스트 수정 동작 실행");
                               },
                             },
                             {
                               label: "삭제",
                               onClick: () => {
                                 setShowMenu(false);
-                                console.log("삭제 동작 실행");
                               },
                             },
                           ]}
@@ -255,16 +282,13 @@ export default function CommunityPostDetail() {
               <div className="flex flex-col items-start gap-[48px] self-stretch">
                 {/* 포스트 내용 */}
                 <div className="flex flex-col items-start gap-[48px] self-stretch">
-                  {post.questions.map((question, idx) => (
+                  {post.questions.map((q, idx) => (
                     <div
                       id={`section-${idx}`}
                       key={idx}
                       className="scroll-mt-[200px]"
                     >
-                      <PostGuide
-                        question={question}
-                        content={post.contents[idx]}
-                      />
+                      <PostGuide question={q} content={post.contents[idx]} />
                     </div>
                   ))}
                 </div>
@@ -292,7 +316,7 @@ export default function CommunityPostDetail() {
                             {post.authorName}
                           </div>
                           <div className="text-body-16-regular">
-                            {post.authorFollowers}팔로워
+                            {post.authorFollowers} 팔로워
                           </div>
                         </div>
 
