@@ -13,10 +13,23 @@ export interface UseInfiniteMyTroubleSearchOptions {
   isSearchResult?: boolean;
 }
 
+type Fetcher = (args: {
+  keyword: string;
+  page: number;
+  size: number;
+}) => Promise<MyTroublesServerPage | null>;
+
+interface Ext {
+  fetcher?: Fetcher;
+  filterItem?: (x: MyTroubleServerItem) => boolean;
+  enabled?: boolean;
+}
+
 export function useInfiniteMyTroubleSearch(
   keyword: string,
   size = 10,
-  options?: UseInfiniteMyTroubleSearchOptions
+  options?: UseInfiniteMyTroubleSearchOptions,
+  ext?: Ext
 ) {
   const opt = useMemo(
     () => ({
@@ -26,6 +39,18 @@ export function useInfiniteMyTroubleSearch(
     }),
     [options?.isMine, options?.authorName, options?.isSearchResult]
   );
+
+  const fetcher: Fetcher = useMemo(
+    () => ext?.fetcher ?? ((args) => searchMyTroubles(args)),
+    [ext?.fetcher]
+  );
+  const enabled = ext?.enabled ?? true;
+
+  // filterItem은 ref에 담아 콜백 의존성 불변화
+  const filterRef = useRef<Ext["filterItem"]>(ext?.filterItem);
+  useEffect(() => {
+    filterRef.current = ext?.filterItem;
+  }, [ext?.filterItem]);
 
   const [items, setItems] = useState<TroubleShootingCardProps[]>([]);
   const [loadingInitial, setLoadingInitial] = useState(false);
@@ -53,6 +78,8 @@ export function useInfiniteMyTroubleSearch(
 
   const fetchPage = useCallback(
     async (p: number, isFirst = false) => {
+      if (!enabled) return;
+      if (!keyword.trim()) return;
       if (inflightRef.current) return;
 
       const key = `${keyword}::${p}::${size}`;
@@ -64,11 +91,7 @@ export function useInfiniteMyTroubleSearch(
         if (isFirst) setLoadingInitial(true);
         else setLoadingMore(true);
 
-        const res = await searchMyTroubles({
-          keyword,
-          page: Math.max(1, p),
-          size,
-        });
+        const res = await fetcher({ keyword, page: Math.max(1, p), size });
 
         const safe: MyTroublesServerPage = res ?? {
           content: [],
@@ -81,9 +104,13 @@ export function useInfiniteMyTroubleSearch(
           isLast: true,
         };
 
-        const mapped = (safe.content as MyTroubleServerItem[]).map((it) =>
-          toTroubleShootingCard(it, opt)
-        );
+        // 필터링 (다른 사용자 검색에서 공개글만)
+        const raw = (safe.content as MyTroubleServerItem[]) ?? [];
+        const filtered = filterRef.current
+          ? raw.filter(filterRef.current)
+          : raw;
+
+        const mapped = filtered.map((it) => toTroubleShootingCard(it, opt));
 
         // 중복 제거 병합 (id 기준)
         setItems((prev) => {
@@ -98,41 +125,33 @@ export function useInfiniteMyTroubleSearch(
         setTotalElements(safe.totalElements);
         setTotalPages(safe.totalPages);
       } catch (e: any) {
-        setError(e?.message ?? "내 트러블슈팅 검색 실패");
+        setError(e?.message ?? "검색 실패");
       } finally {
         if (isFirst) setLoadingInitial(false);
         else setLoadingMore(false);
         inflightRef.current = false;
       }
     },
-    [keyword, size, opt.isMine, opt.authorName, opt.isSearchResult]
+    [opt, enabled, keyword, size, fetcher]
   );
 
   // 키워드/사이즈/옵션 변경 시 초기 1페이지 로드
   useEffect(() => {
-    if (!keyword.trim()) {
+    if (!enabled || !keyword.trim()) {
       reset();
       return;
     }
     reset();
     void fetchPage(1, true);
-  }, [
-    keyword,
-    size,
-    opt.isMine,
-    opt.authorName,
-    opt.isSearchResult,
-    reset,
-    fetchPage,
-  ]);
+  }, [enabled, keyword, size, opt, reset, fetchPage]);
 
   const loadMore = useCallback(() => {
-    if (!keyword.trim()) return;
+    if (!enabled || !keyword.trim()) return;
     if (loadingMore || loadingInitial) return;
     if (!hasNext) return;
     if (inflightRef.current) return;
     void fetchPage(page + 1, false);
-  }, [keyword, hasNext, page, loadingMore, loadingInitial, fetchPage]);
+  }, [enabled, keyword, hasNext, page, loadingMore, loadingInitial, fetchPage]);
 
   return {
     items,

@@ -1,28 +1,51 @@
 import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
 import { useInfiniteMyTroubleSearch } from "@/hooks/useInfiniteMyTroubleSearch";
-import { useEffect, useMemo, useRef } from "react";
+import { useInfiniteUserTroubleSearch } from "@/hooks/useInfiniteUserTroubleSearch";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
 const SearchResultPage = () => {
   const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  const query = params.get("query") || "";
-  const scope = params.get("scope") || "community";
-  const size = Number(params.get("size") ?? 10) || 10;
+  const sp = new URLSearchParams(location.search);
+  const query = sp.get("query") ?? "";
+  const scope = (sp.get("scope") ?? "community") as
+    | "my"
+    | "mypage"
+    | "user"
+    | "community";
+  const size = Number(sp.get("size") ?? 10) || 10;
+  const userIdParam = sp.get("userId");
+  const userId = userIdParam ? Number(userIdParam) : null;
 
   const isMyScope = scope === "my" || scope === "mypage";
+  const isUserScope = scope === "user" && !!userId;
 
-  const searchOpts = useMemo(
-    () => ({ isMine: true, authorName: "나", isSearchResult: true }),
-    []
+  // 현재 로그인한 사용자 트러블슈팅 문서 내 검색
+  const my = useInfiniteMyTroubleSearch(
+    isMyScope ? query : "",
+    size,
+    { isMine: true, authorName: "나", isSearchResult: true },
+    { enabled: isMyScope }
   );
 
-  // 훅 호출
-  const { items, loadingInitial, loadingMore, error, totalElements, loadMore } =
-    useInfiniteMyTroubleSearch(isMyScope ? query : "", size, searchOpts);
+  // 특정 사용자 트러블슈팅 문서 내 검색
+  const other = useInfiniteUserTroubleSearch(
+    isUserScope ? query : "",
+    userId,
+    size
+  );
+
+  // 활성 훅 선택
+  const active = isUserScope ? other : my;
 
   // 하단 센티널 관찰자
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const loadMoreRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    loadMoreRef.current = active.loadMore;
+  }, [active.loadMore]);
+
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -31,7 +54,7 @@ const SearchResultPage = () => {
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
-          loadMore(); // 내부에서 loading/hasNext/inflight 체크
+          loadMoreRef.current?.();
         }
       },
       {
@@ -43,12 +66,11 @@ const SearchResultPage = () => {
 
     io.observe(el);
     return () => {
-      io.unobserve(el);
       io.disconnect();
     };
-  }, [loadMore]);
+  }, []);
 
-  if (!isMyScope) {
+  if (!isMyScope && !isUserScope) {
     return (
       <div className="mt-[179px] mb-[68px] flex w-[1200px] flex-col items-start gap-[24px] mx-auto">
         <span className="text-head-32-regular self-stretch">
@@ -57,6 +79,13 @@ const SearchResultPage = () => {
       </div>
     );
   }
+
+  const loadingInitial = active.loadingInitial;
+  const loadingMore = active.loadingMore;
+  const error = active.error;
+  const items = active.items;
+  const totalElements = active.totalElements;
+  const hasNext = active.hasNext;
 
   return (
     <div className="mt-[179px] mb-[68px] flex w-[1200px] flex-col items-start gap-[56px] mx-auto">
@@ -92,7 +121,7 @@ const SearchResultPage = () => {
             <div className="w-full h-[120px] bg-gray-100 rounded mb-3" />
           )}
           {/* 이 div가 뷰포트에 들어오면 다음 페이지 로드 시도 */}
-          <div ref={sentinelRef} style={{ height: 1 }} />
+          {hasNext && <div ref={sentinelRef} style={{ height: 1 }} />}
         </div>
       </div>
     </div>

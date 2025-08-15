@@ -9,6 +9,7 @@ import type { MyTroublesServerPage } from "@/types/troubles.server";
 
 // 키별 디듀프(StrictMode 이펙트 2회 방지)
 const inflight = new Map<string, Promise<MyTroublesServerPage | null>>();
+const inflightUser = new Map<string, Promise<MyTroublesServerPage | null>>();
 
 /// 전체 트러블슈팅 목록 조회
 export const getTroubleList = (
@@ -45,11 +46,33 @@ export async function searchMyTroubles(params: {
   const key = `my::${keyword}::${p}::${size}`;
   if (!inflight.has(key)) {
     const promise = getAPIResponseData<MyTroublesServerPage | null>({
-      url: "/troubles/my",
+      url: "/troubles/my/search",
       method: "GET",
       params: { keyword, page: p, size },
     }).finally(() => setTimeout(() => inflight.delete(key), 0));
     inflight.set(key, promise);
   }
   return inflight.get(key)!;
+}
+
+// 특정 사용자의 트러블슈팅 문서 기반 검색
+export async function searchUserTroubles(params: {
+  userId: number;
+  keyword: string;
+  page?: number;
+  size?: number;
+}): Promise<MyTroublesServerPage | null> {
+  const { userId, keyword, page = 1, size = 10 } = params;
+  const p = Math.max(1, page);
+
+  const key = `user:${userId}::${keyword}::${p}::${size}`;
+  if (!inflightUser.has(key)) {
+    const promise = getAPIResponseData<MyTroublesServerPage | null>({
+      url: `/troubles/users/${userId}/search`,
+      method: "GET",
+      params: { keyword, page: p, size },
+    }).finally(() => setTimeout(() => inflightUser.delete(key), 0));
+    inflightUser.set(key, promise);
+  }
+  return inflightUser.get(key)!;
 }
