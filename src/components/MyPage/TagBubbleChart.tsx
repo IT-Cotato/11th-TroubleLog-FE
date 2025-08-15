@@ -80,7 +80,7 @@ const TagBubbleChart = ({ bubbleData }: TagBubbleChartProps) => {
           return (
             <div
               key={item.label}
-              className={`absolute flex justify-center items-center rounded-full text-white ${textClass}`}
+              className={`absolute grid place-items-center rounded-full text-white ${textClass} text-center leading-tight px-2`}
               style={{
                 width: size,
                 height: size,
@@ -91,7 +91,7 @@ const TagBubbleChart = ({ bubbleData }: TagBubbleChartProps) => {
               }}
               title={`${item.label}: ${item.count}`}
             >
-              {item.label}
+              <span className="break-words">{item.label}</span>
             </div>
           );
         })}
