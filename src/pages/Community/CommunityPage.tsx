@@ -1,7 +1,8 @@
 import TroublogCard from "@/components/Card/TroublogCard";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
 import { PATH } from "@/constants/paths";
-import { mockCards } from "@/mocks/mockCards";
+import useCommunityCards from "@/hooks/useCommunityCards";
+import type { CommunitySort } from "@/types/community.model";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -16,27 +17,20 @@ export default function CommunityPage() {
     "trouble"
   );
 
-  const publicCards = useMemo(
-    () => mockCards.filter((card) => !card.isMine),
-    []
-  );
+  // UI 라벨 -> API sort 파라미터 매핑
+  const sortBy: CommunitySort = useMemo(() => {
+    if (selectedSort === "최신순" || selectedSort === "전체") return "latest";
+    // "추천순" / "좋아요순" 모두 likes에 매핑
+    return "likes";
+  }, [selectedSort]);
 
-  const sortedCards = useMemo(() => {
-    const copied = [...publicCards];
-    switch (selectedSort) {
-      case "최신순":
-        return copied.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      case "추천순":
-        return copied.sort((a, b) => (b.importance || 0) - (a.importance || 0));
-      case "좋아요순":
-        return copied.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-      default:
-        return copied;
-    }
-  }, [publicCards, selectedSort]);
+  // 커뮤니티 목록 불러오기 (무한스크롤)
+  const { cards, isLoading, error, hasNext, sentinelRef } = useCommunityCards({
+    sortBy,
+    pageSize: 12,
+    infinite: true,
+    rootMargin: "400px 0px",
+  });
 
   return (
     <div className="flex flex-col mt-[79px] mb-[104px] max-w-[1600px] w-full mx-auto px-4 gap-[50px]">
@@ -90,10 +84,15 @@ export default function CommunityPage() {
         )}
       </div>
 
+      {/* 에러 */}
+      {error && (
+        <div className="text-red-600 text-body-16-regular">{error}</div>
+      )}
+
       {/* 트러블로그 카드 */}
       <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-[24px] gap-y-[60px]">
         {selectedTab === "trouble"
-          ? sortedCards.map((card) => (
+          ? cards.map((card) => (
               <div
                 key={card.id}
                 className="cursor-pointer"
@@ -103,6 +102,20 @@ export default function CommunityPage() {
               </div>
             ))
           : null}
+
+        {/* 로딩 스켈레톤 */}
+        {isLoading && (
+          <>
+            <div className="w-full h-[300px] bg-gray-100 rounded-2xl" />
+            <div className="w-full h-[300px] bg-gray-100 rounded-2xl" />
+            <div className="w-full h-[300px] bg-gray-100 rounded-2xl" />
+          </>
+        )}
+
+        {/* 무한스크롤 센티널 */}
+        {selectedTab === "trouble" && hasNext && (
+          <div ref={sentinelRef} style={{ height: 1 }} />
+        )}
       </div>
     </div>
   );

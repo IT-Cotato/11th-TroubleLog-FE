@@ -7,7 +7,6 @@ import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
-import { mockPost } from "@/mocks/mockPost";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
@@ -15,6 +14,22 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
+import {
+  createCommunityComment,
+  getCommunityComments,
+  getCommunityPostDetail,
+  likeCommunityPost,
+  replyCommunityComment,
+  softDeleteCommunityComment,
+  unlikeCommunityPost,
+  updateCommunityComment,
+} from "@/api/community.api";
+import { toCommunityPostVM } from "@/mappers/communityPostDetail.mapper";
+import {
+  makeOptimisticComment,
+  toPostComment,
+  toPostComments,
+} from "@/mappers/communityComment.mapper";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -37,120 +52,351 @@ export interface CommunityPostDetailProps {
 
 export default function CommunityPostDetail() {
   const { postId } = useParams<{ postId: string }>(); // postId 불러오기
-
-  useEffect(() => {
-    console.log("현재 postId:", postId);
-  }, [postId]);
-
-  const post = mockPost;
   const navigate = useNavigate();
 
-  // 작성자 프로필 클릭 핸들러
-  const handleProfileClick = () => {
-    navigate(PATH.MYPAGE("1")); // 임시
-  };
+  const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // 좋아요/댓글 로컬 상태
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCounts, setLikeCounts] = useState(0);
+  const [isLiking, setIsLiking] = useState(false);
+  const likeLockRef = useRef(false);
+  const [commentInput, setCommentInput] = useState("");
+  const [comments, setComments] = useState<PostCommentProps[]>([]);
+
+  // 댓글 작성 상태
+  const [isCommentPosting, setIsCommentPosting] = useState(false);
+
+  // 댓글 페이징 상태
+  const [cPage, setCPage] = useState(1);
+  const [cHasNext, setCHasNext] = useState(false);
+  const [cLoading, setCLoading] = useState(false);
 
   // 케밥 메뉴
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
-  // 목차 위치 관련
+  // 섹션 추적
   const [currentSection, setCurrentSection] = useState<number>(0);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
 
-  // 목차 위치 이동
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
+  // 진행 중 요청 캐시(StrictMode 중복호출 디듀프)
+  const inflightPostRef = useRef(
+    new Map<number, ReturnType<typeof getCommunityPostDetail>>()
+  );
 
-      let current = 0;
+  const fetchPostOnce = (id: number) => {
+    const map = inflightPostRef.current;
+    if (!map.has(id)) {
+      const p = getCommunityPostDetail(id).finally(() => {
+        // 같은 tick 끝나고 캐시 비우기 (메모리 누수 방지 & 후속 요청 허용)
+        setTimeout(() => map.delete(id), 0);
+      });
+      map.set(id, p);
+    }
+    return map.get(id)!;
+  };
+
+  // 댓글 로더
+  const loadComments = async (id: number, page1: number) => {
+    setCLoading(true);
+    try {
+      const resp = await getCommunityComments(id, page1, 10);
+      const mapped = toPostComments(resp.content);
+
+      setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
+
+      const nextPage1 = typeof resp.page === "number" ? resp.page + 1 : page1;
+      setCPage(nextPage1);
+      setCHasNext(!!resp.hasNext);
+
+      setPost((prev) =>
+        prev
+          ? { ...prev, commentCounts: resp.totalElements ?? prev.commentCounts }
+          : prev
+      );
+    } finally {
+      setCLoading(false);
+    }
+  };
+
+  // 포스트 + 댓글 1페이지 로드 (StrictMode 안전)
+  useEffect(() => {
+    let cancelled = false;
+
+    // 새 포스트 들어올 때 댓글 상태 초기화
+    setComments([]);
+    setCPage(1);
+    setCHasNext(false);
+
+    (async () => {
+      const idStr = postId ?? "";
+      const numId = Number(idStr);
+      if (!Number.isFinite(numId)) {
+        setLoadError("잘못된 포스트 ID");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const data = await fetchPostOnce(numId);
+        if (cancelled) return;
+
+        if (!data) {
+          setLoadError("빈 응답입니다.");
+          return;
+        }
+
+        const vm = toCommunityPostVM(data);
+        setPost(vm);
+        setIsLiked(vm.isLiked);
+        setLikeCounts(vm.likeCounts);
+        setComments(vm.comments);
+
+        // 댓글은 비동기로 시작(상세 렌더는 먼저)
+        void loadComments(numId, 1);
+      } catch (err: any) {
+        if (!cancelled) setLoadError(err?.message ?? "포스트 불러오기 실패");
+      } finally {
+        if (!cancelled) setLoading(false); // 반드시 한 번은 내려가도록
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [postId]);
+
+  // 스크롤 감시
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      let cur = 0;
       sectionRefs.current.forEach((ref, idx) => {
         if (ref) {
           const top = ref.getBoundingClientRect().top + window.scrollY;
-          if (scrollY >= top - 250) {
-            current = idx;
-          }
+          if (y >= top - 250) cur = idx;
         }
       });
-
-      setCurrentSection(current);
+      setCurrentSection(cur);
     };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    // refs 초기화
-    sectionRefs.current = post.questions.map((_, idx) =>
-      document.getElementById(`section-${idx}`)
-    );
-  }, [post.questions]);
 
   const scrollToSection = (idx: number) => {
     const target = sectionRefs.current[idx];
     if (target) {
-      window.scrollTo({
-        top: target.offsetTop - 180,
-        behavior: "smooth",
-      });
+      window.scrollTo({ top: target.offsetTop - 180, behavior: "smooth" });
     }
   };
 
-  // 좋아요 상태
-  const [isLiked, setIsLiked] = useState(post.isLiked);
-  const [likeCounts, setLikeCounts] = useState(post.likeCounts);
+  // 작성자 프로필 클릭 핸들러
+  const handleProfileClick = () => {
+    // 작성자 마이페이지로
+    if (!post) return;
+    navigate(PATH.MYPAGE(localStorage.getItem("userId") || ""));
+  };
 
-  // 좋아요 토글 핸들러
-  const handleToggleLike = () => {
-    if (isLiked) {
+  // 포스트 좋아요 토글
+  const handleToggleLike = async () => {
+    if (!postId) return;
+    if (likeLockRef.current) return;
+    likeLockRef.current = true;
+    setIsLiking(true);
+
+    const pid = Number(postId);
+    const wasLiked = isLiked;
+    const prevCount = likeCounts;
+
+    if (wasLiked) {
+      // 낙관적 감소
       setIsLiked(false);
-      setLikeCounts((prev) => prev - 1);
+      setLikeCounts(Math.max(0, prevCount - 1));
+
+      try {
+        await unlikeCommunityPost(pid);
+        // 성공 시 그대로 둔다
+      } catch {
+        // 실패 시 롤백
+        setIsLiked(true);
+        setLikeCounts(prevCount);
+      } finally {
+        likeLockRef.current = false;
+        setIsLiking(false);
+      }
     } else {
+      // 낙관적 증가
       setIsLiked(true);
-      setLikeCounts((prev) => prev + 1);
+      setLikeCounts(prevCount + 1);
+
+      try {
+        const res = await likeCommunityPost(pid);
+        // 서버 카운트로 보정(응답에 likeCount 포함)
+        setLikeCounts(res?.likeCount ?? prevCount + 1);
+      } catch (err: any) {
+        const status = err?.response?.status ?? err?.status;
+        if (status === 409) {
+          // 이미 좋아요 상태인 경우 -> isLiked는 true 유지, 카운트는 원래 값으로 되돌림
+          setIsLiked(true);
+          setLikeCounts(prevCount);
+        } else {
+          // 기타 에러 → 완전 롤백
+          setIsLiked(false);
+          setLikeCounts(prevCount);
+        }
+      } finally {
+        likeLockRef.current = false;
+        setIsLiking(false);
+      }
     }
   };
 
-  // 댓글 입력 상태
-  const [commentInput, setCommentInput] = useState("");
+  // 댓글 제출
+  const handleSubmitComment = async () => {
+    if (!postId) return;
+    const contents = commentInput.trim();
+    if (!contents || isCommentPosting) return;
 
-  // 댓글 상태
-  const [comments, setComments] = useState(post.comments);
+    setIsCommentPosting(true);
 
-  // 댓글 수정 핸들러
-  const handleEdit = (id: string, newContent: string) => {
-    setComments((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, content: newContent } : c))
+    // 낙관적 추가
+    const optimistic = makeOptimisticComment({ contents });
+    setComments((prev) => [optimistic, ...prev]);
+    setPost((p) =>
+      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p
     );
+    setCommentInput("");
+
+    try {
+      const created = await createCommunityComment(Number(postId), {
+        contents,
+      });
+      const mapped = toPostComment(created, { isReply: false });
+      setComments((prev) => {
+        const i = prev.findIndex((c) => c.id === optimistic.id);
+        if (i === -1) return [mapped, ...prev];
+        const next = [...prev];
+        next[i] = mapped;
+        return next;
+      });
+    } catch {
+      // 실패 → 롤백
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+      setPost((p) =>
+        p ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) } : p
+      );
+      setCommentInput(contents);
+    } finally {
+      setIsCommentPosting(false);
+    }
   };
 
-  // 댓글 삭제 핸들러
-  const handleDelete = (id: string) => {
-    setComments((prev) => prev.filter((c) => c.id !== id));
+  // 대댓글 제출 (부모 id, 내용)
+  const handleReply = async (parentId: string, replyContent: string) => {
+    if (!postId) return;
+    const contents = replyContent.trim();
+    if (!contents) return;
+
+    // 낙관적 추가
+    const optimistic = makeOptimisticComment({ contents, parentId });
+    setComments((prev) => [...prev, optimistic]);
+
+    try {
+      const created = await replyCommunityComment(
+        Number(postId),
+        Number(parentId),
+        { contents }
+      );
+
+      // 백엔드에서 parentCommentId가 null로 올 수 있으므로 강제 보정
+      const mapped = toPostComment(created, { isReply: true, parentId });
+      setComments((prev) => {
+        const i = prev.findIndex((c) => c.id === optimistic.id);
+        if (i === -1) return [...prev, mapped];
+        const next = [...prev];
+        next[i] = mapped;
+        return next;
+      });
+    } catch {
+      // 실패 → 롤백
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+      throw new Error("reply-failed");
+    }
   };
 
-  // date 포맷 함수
-  const formatDate = (date: Date) => {
-    const yy = String(date.getFullYear()).slice(2);
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    return `${yy}.${mm}.${dd}`;
+  // 댓글 내용 수정
+  const handleEdit = async (id: string, newContent: string) => {
+    if (!postId) return;
+    const pid = Number(postId);
+    const cid = Number(id);
+    try {
+      // 서버 수정
+      const updated = await updateCommunityComment({
+        postId: pid,
+        commentId: cid,
+        contents: newContent,
+      });
+
+      const vm = toPostComment(updated);
+
+      // 목록 반영 (id 일치하는 아이템 교체)
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                content: vm.content,
+                date: vm.date,
+              }
+            : c
+        )
+      );
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  // 답글 작성 핸들러
-  const handleReply = (parentId: string, replyContent: string) => {
-    const newReply = {
-      id: Date.now().toString(),
-      name: "현재 유저",
-      date: formatDate(new Date()),
-      content: replyContent,
-      isMine: true,
-      isReply: true,
-      parentId,
-    };
-    setComments((prev) => [...prev, newReply]);
+  // 댓글 삭제 (soft)
+  const handleDelete = async (id: string) => {
+    try {
+      await softDeleteCommunityComment(Number(id));
+      // 목록에서 제거 (부모/대댓글 동일)
+      setComments((prev) => prev.filter((c) => c.id !== id));
+      // 카운트 갱신
+      setPost((prev) =>
+        prev
+          ? { ...prev, commentCounts: Math.max(0, prev.commentCounts - 1) }
+          : prev
+      );
+    } catch (e) {
+      console.error(e);
+    }
   };
+
+  // 로딩/에러 처리
+  if (loading) {
+    return (
+      <div className="flex justify-center">
+        <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[24px] w-full pt-[180px]">
+          <div className="w-full h-[120px] bg-gray-100 rounded" />
+          <div className="w-full h-[400px] bg-gray-100 rounded" />
+        </div>
+      </div>
+    );
+  }
+  if (loadError || !post) {
+    return (
+      <div className="flex justify-center">
+        <div className="max-w-[1200px] w-full pt-[180px] text-red-600">
+          {loadError ?? "포스트를 찾을 수 없습니다."}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center">
@@ -176,14 +422,12 @@ export default function CommunityPostDetail() {
                               label: "포스트 수정",
                               onClick: () => {
                                 setShowMenu(false);
-                                console.log("포스트 수정 동작 실행");
                               },
                             },
                             {
                               label: "삭제",
                               onClick: () => {
                                 setShowMenu(false);
-                                console.log("삭제 동작 실행");
                               },
                             },
                           ]}
@@ -255,16 +499,13 @@ export default function CommunityPostDetail() {
               <div className="flex flex-col items-start gap-[48px] self-stretch">
                 {/* 포스트 내용 */}
                 <div className="flex flex-col items-start gap-[48px] self-stretch">
-                  {post.questions.map((question, idx) => (
+                  {post.questions.map((q, idx) => (
                     <div
                       id={`section-${idx}`}
                       key={idx}
                       className="scroll-mt-[200px]"
                     >
-                      <PostGuideMd
-                        question={question}
-                        content={post.contents[idx]}
-                      />
+                      <PostGuideMd question={q} content={post.contents[idx]} />
                     </div>
                   ))}
                 </div>
@@ -292,7 +533,7 @@ export default function CommunityPostDetail() {
                             {post.authorName}
                           </div>
                           <div className="text-body-16-regular">
-                            {post.authorFollowers}팔로워
+                            {post.authorFollowers} 팔로워
                           </div>
                         </div>
 
@@ -316,20 +557,27 @@ export default function CommunityPostDetail() {
             <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
               <div className="flex items-center gap-[20px]">
                 {/* 좋아요 */}
-                <div
-                  className="flex items-center gap-[8px] cursor-pointer"
+                <button
+                  type="button"
+                  aria-pressed={isLiked}
+                  aria-busy={isLiking}
+                  disabled={isLiking}
                   onClick={handleToggleLike}
+                  className={`flex items-center gap-[8px] ${
+                    isLiking
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
                 >
                   <img
                     src={isLiked ? heartIcon : likeEmptyIcon}
                     alt="like"
                     className="w-[40px] h-[40px]"
                   />
-
                   <div className="text-body-20-regular text-gray3">
                     {likeCounts}
                   </div>
-                </div>
+                </button>
 
                 {/* 공유 버튼 */}
                 <img
@@ -356,12 +604,15 @@ export default function CommunityPostDetail() {
 
               {/* 작성하기 버튼 */}
               <button
-                disabled={!commentInput.trim()}
+                disabled={!commentInput.trim() || isCommentPosting}
+                onClick={handleSubmitComment}
                 className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
-                  commentInput.trim() ? "bg-primary" : "bg-subColor1"
+                  commentInput.trim() && !isCommentPosting
+                    ? "bg-primary"
+                    : "bg-subColor1"
                 }`}
               >
-                작성하기
+                {isCommentPosting ? "작성 중…" : "작성하기"}
               </button>
             </div>
           </div>
@@ -398,6 +649,19 @@ export default function CommunityPostDetail() {
                     ))}
                 </div>
               ))}
+
+            {/* 댓글 더 보기 */}
+            {cHasNext && postId && (
+              <button
+                disabled={cLoading}
+                onClick={() => loadComments(Number(postId), cPage + 1)}
+                className={`mt-4 px-6 py-2 rounded-full text-white ${
+                  cLoading ? "bg-gray-300" : "bg-primary"
+                }`}
+              >
+                {cLoading ? "불러오는 중…" : "댓글 더 보기"}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -14,7 +14,7 @@ export interface PostCommentProps {
   parentId?: string; // 대댓글일 경우
   onEdit?: (newContent: string) => void;
   onDelete?: () => void;
-  onReply?: (replyContent: string) => void;
+  onReply?: (replyContent: string) => Promise<void> | void;
 }
 
 export default function PostComment({
@@ -31,13 +31,16 @@ export default function PostComment({
   // 댓글 수정 상태 관리
   const [editMode, setEditMode] = useState(false);
   const [editContent, setEditContent] = useState(content);
+  const [editPosting, setEditPosting] = useState(false);
 
   // 답글 달기 상태 관리
-  const [replyMode, setReplyMode] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyPosting, setReplyPosting] = useState(false);
   const [replyContent, setReplyContent] = useState("");
 
   // 삭제 확인 모달
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [deletePosting, setDeletePosting] = useState(false);
 
   return (
     <div className="flex w-[1200px]">
@@ -119,15 +122,25 @@ export default function PostComment({
                     취소
                   </button>
                   <button
-                    className="px-4 py-2 bg-primary text-white rounded-full"
-                    onClick={() => {
-                      // 수정 처리 로직 추가 필요
-                      console.log("수정된 댓글:", editContent);
-                      onEdit?.(editContent);
-                      setEditMode(false);
+                    className={`px-4 py-2 rounded-full text-white ${
+                      editContent.trim() && !editPosting
+                        ? "bg-primary"
+                        : "bg-gray-300"
+                    }`}
+                    disabled={!editContent.trim() || editPosting}
+                    onClick={async () => {
+                      try {
+                        setEditPosting(true);
+                        await onEdit?.(editContent);
+                        setEditMode(false);
+                      } catch {
+                        // 실패 시 유지
+                      } finally {
+                        setEditPosting(false);
+                      }
                     }}
                   >
-                    저장
+                    {editPosting ? "저장 중…" : "저장"}
                   </button>
                 </div>
               </div>
@@ -139,13 +152,13 @@ export default function PostComment({
           {/* 답글 달기 버튼 */}
           <div
             className="text-body-16-regular text-gray3 cursor-pointer"
-            onClick={() => setReplyMode(!replyMode)}
+            onClick={() => setReplyOpen(!replyOpen)}
           >
-            {replyMode ? "답글 취소" : "답글 달기"}
+            {replyOpen ? "답글 취소" : "답글 달기"}
           </div>
 
           {/* 답글 입력창 (임시 디자인) */}
-          {replyMode && (
+          {replyOpen && (
             <div className="w-full mt-2">
               <textarea
                 value={replyContent}
@@ -155,18 +168,25 @@ export default function PostComment({
               />
               <button
                 className={`mt-2 px-4 py-2 rounded-full text-white ${
-                  replyContent.trim() ? "bg-primary" : "bg-gray-300"
+                  replyContent.trim() && !replyPosting
+                    ? "bg-primary"
+                    : "bg-gray-300"
                 }`}
-                disabled={!replyContent.trim()}
-                onClick={() => {
-                  // 답글 등록 로직 추가 필요
-                  console.log("답글:", replyContent);
-                  onReply?.(replyContent);
-                  setReplyContent("");
-                  setReplyMode(false);
+                disabled={!replyContent.trim() || replyPosting}
+                onClick={async () => {
+                  try {
+                    setReplyPosting(true);
+                    await onReply?.(replyContent);
+                    setReplyContent("");
+                    setReplyOpen(false);
+                  } catch {
+                    // 실패 시 유지하거나 토스트 노출 등
+                  } finally {
+                    setReplyPosting(false);
+                  }
                 }}
               >
-                답글 작성
+                {replyPosting ? "작성 중…" : "답글 작성"}
               </button>
             </div>
           )}
@@ -175,12 +195,15 @@ export default function PostComment({
 
       {showDeleteModal && (
         <ConfirmDeleteModal
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={() => {
-            // 삭제 저치 로직 추가 필요
-            console.log("삭제됨");
-            onDelete?.();
-            setShowDeleteModal(false);
+          onClose={() => !deletePosting && setShowDeleteModal(false)}
+          onConfirm={async () => {
+            try {
+              setDeletePosting(true);
+              await onDelete?.();
+              setShowDeleteModal(false);
+            } finally {
+              setDeletePosting(false);
+            }
           }}
           title="댓글 삭제"
           description="정말 삭제하시겠습니까?"

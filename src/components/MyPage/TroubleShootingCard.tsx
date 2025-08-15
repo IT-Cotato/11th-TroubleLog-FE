@@ -30,6 +30,7 @@ export interface TroubleShootingCardProps {
   authorName?: string;
   isSearchResult?: boolean;
   onDeleted?: (postId: number) => void;
+  onClick?: (postId: number) => void;
 }
 
 const TroubleShootingCard = ({
@@ -50,6 +51,7 @@ const TroubleShootingCard = ({
   authorName,
   isSearchResult,
   onDeleted,
+  onClick,
 }: TroubleShootingCardProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -58,6 +60,19 @@ const TroubleShootingCard = ({
 
   const shouldShowVisibilityIcon = status === "complete" && visibility;
   const shouldShowSummaryType = status === "created";
+
+  const isClickable = typeof onClick === "function";
+  const handleRootClick = () => {
+    if (isClickable) onClick(Number(id));
+  };
+
+  const handleRootKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (!isClickable) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick(Number(id));
+    }
+  };
 
   // 문서 삭제
   const handleDelete = async () => {
@@ -84,7 +99,15 @@ const TroubleShootingCard = ({
   };
 
   return (
-    <div className="w-full py-[30px] flex flex-col items-start gap-[10px] border-b border-gray3 bg-white">
+    <div
+      className={`w-full py-[30px] flex flex-col items-start gap-[10px] border-b border-gray3 bg-white ${
+        isClickable ? "cursor-pointer" : ""
+      }`}
+      onClick={handleRootClick}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onKeyDown={handleRootKeyDown}
+    >
       <div className="w-full flex flex-col">
         {/* 작성자 */}
         {isSearchResult && (
@@ -98,7 +121,12 @@ const TroubleShootingCard = ({
         <div className="flex justify-between items-start mb-[24px]">
           <div className="text-body-16-regular">{errorCategory}</div>
           {!isSearchResult && isMine && (
-            <div ref={menuRef} className="relative">
+            <div
+              ref={menuRef}
+              className="relative"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
               <KebabMenuButton
                 onClick={() => !deleting && setShowMenu(!showMenu)}
               />

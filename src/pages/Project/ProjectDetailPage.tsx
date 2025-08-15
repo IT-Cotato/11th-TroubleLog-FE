@@ -16,7 +16,7 @@ import type {
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "complete" | "created";
-type SortUI = "latest" | "importance";
+type SortUI = "latest" | "likes";
 
 export default function ProjectDetailPage() {
   const { id: routeProjectId } = useParams<{ id: string }>();
@@ -39,9 +39,9 @@ export default function ProjectDetailPage() {
         setTitleLoading(true);
         const detail = await getProjectDetail(projectId);
         if (detail?.name) setProjectName(detail.name);
-<!--         const { content } = await getProjectList();
-        const found = content.find((p) => p.id === projectId);
-        if (found) setProjectName(found.name); -->
+        //  const { content } = await getProjectList();
+        // const found = content.find((p) => p.id === projectId);
+        // if (found) setProjectName(found.name);
       } finally {
         setTitleLoading(false);
       }

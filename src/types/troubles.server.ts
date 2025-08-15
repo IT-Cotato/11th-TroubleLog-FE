@@ -1,4 +1,4 @@
-import type { PaginatedResponse } from "./common.model";
+import type { PaginatedResponse } from "@/types/common.model";
 
 export interface TroubleContentBlock {
   id: number;
@@ -33,4 +33,5 @@ export interface MyTroubleServerItem {
   thumbnailUrl: string | null;
 }
 
+// 서버 페이징 응답 (ApiResponse로 감싸지지 않는 케이스)
 export type MyTroublesServerPage = PaginatedResponse<MyTroubleServerItem>;
