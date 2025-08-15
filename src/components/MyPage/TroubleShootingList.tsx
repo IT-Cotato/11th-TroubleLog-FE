@@ -1,50 +1,63 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import SortButtonGroup from "../Project/SortButtonGroup";
 import TroubleShootingCard from "./TroubleShootingCard";
-import { mockCards } from "@/mocks/mockCards";
 import { mapToTroubleShootingCard } from "@/mappers/cardMapper";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import { useOutletContext } from "react-router-dom";
 
 interface OutletContextType {
   isMyPage: boolean;
+  cards: any[];
+  isLoading: boolean;
+  error: string | null;
+  hasNext: boolean;
+  sentinelRef: React.RefObject<HTMLDivElement | null>;
+  reload: () => void | Promise<void>;
+  sortBy: "latest" | "likes";
+  setSortBy: (v: "latest" | "likes") => void;
 }
 
 const TroubleShootingList = () => {
-  const { isMyPage } = useOutletContext<OutletContextType>();
-  const [selectedSort, setSelectedSort] = useState<"latest" | "importance">(
-    "latest"
-  );
-
-  const [allCards, setAllCards] = useState(() => mockCards);
+  const {
+    isMyPage,
+    cards,
+    isLoading,
+    error,
+    hasNext,
+    sentinelRef,
+    sortBy,
+    setSortBy,
+  } = useOutletContext<OutletContextType>();
 
   const selectedStatus = useMyPageStore((state) => state.selectedStatus);
   const selectedTag = useMyPageStore((state) => state.selectedTag);
 
-  const cards = isMyPage
-    ? allCards.filter((c) => c.isMine)
-    : allCards.filter((c) => !c.isMine);
+  // 내 마이페이지면 내 카드만, 아니면 다른 사람 카드만
+  const base = useMemo(
+    () =>
+      isMyPage ? cards.filter((c) => c.isMine) : cards.filter((c) => !c.isMine),
+    [cards, isMyPage]
+  );
 
   // 태그 필터 (다른 사용자 마이페이지만 해당)
-  const tagFiltered =
-    !isMyPage && selectedTag
-      ? cards.filter((c) => c.tags.includes(selectedTag))
-      : cards;
+  const tagFiltered = useMemo(
+    () =>
+      !isMyPage && selectedTag
+        ? base.filter((c) => c.tags?.includes(selectedTag))
+        : base,
+    [base, isMyPage, selectedTag]
+  );
 
   // 상태 필터 (내 마이페이지만 해당)
-  const statusFiltered =
-    isMyPage && selectedStatus !== "all"
-      ? tagFiltered.filter((c) => c.status === selectedStatus)
-      : tagFiltered;
+  const statusFiltered = useMemo(
+    () =>
+      isMyPage && selectedStatus !== "all"
+        ? tagFiltered.filter((c) => c.status === selectedStatus)
+        : tagFiltered,
+    [tagFiltered, isMyPage, selectedStatus]
+  );
 
-  // 최신순/중요도순 정렬 (마이페이지)
-  const sortedCards = isMyPage
-    ? [...statusFiltered].sort((a, b) =>
-        selectedSort === "importance"
-          ? (b.importance ?? 0) - (a.importance ?? 0)
-          : b.createdAt.localeCompare(a.createdAt)
-      )
-    : statusFiltered;
+  const sortedCards = statusFiltered;
 
   const handleDeleted = (postId: number) => {
     setAllCards((prev) => prev.filter((c) => c.id !== postId));
@@ -53,9 +66,10 @@ const TroubleShootingList = () => {
   return (
     <div className="flex flex-col items-end gap-[40px] w-[948px] pb-[78px]">
       {/* 정렬 기준 선택 */}
-      {isMyPage && (
-        <SortButtonGroup selected={selectedSort} onSelect={setSelectedSort} />
-      )}
+      {isMyPage && <SortButtonGroup selected={sortBy} onSelect={setSortBy} />}
+
+      {/* 에러/로딩 */}
+      {error && <div className="text-red-600 self-start">{error}</div>}
 
       {/* 트러블로그 목록 */}
       <div className="flex flex-col items-start self-stretch">
@@ -66,12 +80,17 @@ const TroubleShootingList = () => {
             onDeleted={handleDeleted}
           />
         ))}
-
-        {sortedCards.length === 0 && (
-          <div className="text-gray3 text-body-16-regular py-10">
-            표시할 문서가 없습니다.
-          </div>
+        
+        {/* 로딩 스켈레톤 */}
+        {isLoading && (
+          <>
+            <div className="w-full h-[120px] bg-gray-100 rounded mb-3" />
+            <div className="w-full h-[120px] bg-gray-100 rounded mb-3" />
+          </>
         )}
+
+        {/* 무한스크롤 센티널 */}
+        {hasNext && <div ref={sentinelRef} style={{ height: 1 }} />}
       </div>
     </div>
   );

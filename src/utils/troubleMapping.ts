@@ -9,11 +9,12 @@ export const mapStatus = (raw?: string): TroublogCardProps["status"] => {
   if (upper === "COMPLETED") return "complete";
   if (upper === "SUMMARIZED") return "created";
   if (upper === "IN_PROGRESS" || upper === "DRAFT") return "inProgress";
+  if (upper === "WRITING") return "inProgress";
 
   // 레거시 한글도 지원
   if (v === "작성 완료") return "complete";
   if (v === "요약 완료") return "created";
-  if (v === "임시 저장") return "inProgress";
+  if (v === "임시 저장" || v === "작성 중") return "inProgress";
 
   // 안전한 기본값
   return "complete";

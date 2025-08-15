@@ -17,7 +17,12 @@ const HeaderWoSearch = () => {
         onClick={() => navigate(PATH.HOME)}
       />
       <div className="flex gap-10 items-center">
-        <FaUserGroup size={40} color="#525252" />
+        <FaUserGroup
+          size={40}
+          color="#525252"
+          className="cursor-pointer"
+          onClick={() => navigate(PATH.COMMUNITY)}
+        />
         <BsFillBellFill size={40} color="#525252" />
         <FaUserCircle size={40} color="#525252" />
       </div>
