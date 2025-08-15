@@ -74,7 +74,14 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
   const [remoteTags, setRemoteTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const debouncedQuery = useMemo(() => query.trim(), [query]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   useEffect(() => {
     let stop = false;
@@ -84,7 +91,7 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
       return;
     }
 
-    const t = setTimeout(async () => {
+    (async () => {
       setLoading(true);
       try {
         const data = await getTagsByKeyword({ tagName: debouncedQuery });
@@ -94,11 +101,10 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
       } finally {
         if (!stop) setLoading(false);
       }
-    }, 300);
+    })();
 
     return () => {
       stop = true;
-      clearTimeout(t);
     };
   }, [debouncedQuery]);
 
