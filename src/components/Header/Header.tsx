@@ -110,13 +110,15 @@ const Header = () => {
 
     // 검색 페이지에 있다면, 기존 쿼리의 scope/userId를 우선 보존
     const existing = new URLSearchParams(location.search);
-    let scope = existing.get("scope") as
-      | "my"
-      | "mypage"
-      | "user"
-      | "community"
-      | "project"
-      | null;
+    const rawScope = existing.get("scope");
+    let scope: "my" | "mypage" | "user" | "community" | "project" | null =
+      rawScope === "my" ||
+      rawScope === "mypage" ||
+      rawScope === "user" ||
+      rawScope === "community" ||
+      rawScope === "project"
+        ? rawScope
+        : null;
     let pageUserId = existing.get("userId") ?? "";
 
     // 검색 페이지가 아니면, 기존 규칙으로 계산
