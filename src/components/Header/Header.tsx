@@ -85,7 +85,10 @@ const Header = () => {
           `키워드나 태그 등의 검색어를 통해 ${pageUserId}님의 트러블슈팅을 검색해보세요!`
         );
       }
-    } else if (path.startsWith(PATH.HOME)) {
+    } else if (
+      path.startsWith(PATH.HOME) ||
+      path.startsWith(PATH.PROJECT_DETAIL(""))
+    ) {
       setPlaceholder(
         "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
       );
