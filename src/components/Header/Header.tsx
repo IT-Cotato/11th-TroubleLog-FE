@@ -162,7 +162,11 @@ const Header = () => {
           />
         </div>
         <div className="flex gap-10 items-center relative">
-          <FaUserGroup size={40} color="#525252" />
+          <FaUserGroup
+            size={40}
+            color="#525252 cursor-pointer"
+            onClick={() => navigate(PATH.COMMUNITY)}
+          />
           {/* 알림 영역 (hover 시 열림 + 벗어나면 닫힘) */}
           <div
             className="relative"
