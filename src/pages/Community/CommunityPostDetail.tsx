@@ -15,13 +15,19 @@ import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
 import {
+  createCommunityComment,
   getCommunityComments,
   getCommunityPostDetail,
   likeCommunityPost,
+  replyCommunityComment,
   unlikeCommunityPost,
 } from "@/api/community.api";
 import { toCommunityPostVM } from "@/mappers/communityPostDetail.mapper";
-import { toPostComments } from "@/mappers/communityComment.mapper";
+import {
+  makeOptimisticComment,
+  toPostComment,
+  toPostComments,
+} from "@/mappers/communityComment.mapper";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -57,6 +63,9 @@ export default function CommunityPostDetail() {
   const likeLockRef = useRef(false);
   const [commentInput, setCommentInput] = useState("");
   const [comments, setComments] = useState<PostCommentProps[]>([]);
+
+  // 댓글 작성 상태
+  const [isCommentPosting, setIsCommentPosting] = useState(false);
 
   // 댓글 페이징 상태
   const [cPage, setCPage] = useState(1);
@@ -244,6 +253,79 @@ export default function CommunityPostDetail() {
     }
   };
 
+  // 댓글 제출
+  const handleSubmitComment = async () => {
+    if (!postId) return;
+    const contents = commentInput.trim();
+    if (!contents || isCommentPosting) return;
+
+    setIsCommentPosting(true);
+
+    // 낙관적 추가
+    const optimistic = makeOptimisticComment({ contents });
+    setComments((prev) => [optimistic, ...prev]);
+    setPost((p) =>
+      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p
+    );
+    setCommentInput("");
+
+    try {
+      const created = await createCommunityComment(Number(postId), {
+        contents,
+      });
+      const mapped = toPostComment(created, { isReply: false });
+      setComments((prev) => {
+        const i = prev.findIndex((c) => c.id === optimistic.id);
+        if (i === -1) return [mapped, ...prev];
+        const next = [...prev];
+        next[i] = mapped;
+        return next;
+      });
+    } catch {
+      // 실패 → 롤백
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+      setPost((p) =>
+        p ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) } : p
+      );
+      setCommentInput(contents);
+    } finally {
+      setIsCommentPosting(false);
+    }
+  };
+
+  // 대댓글 제출 (부모 id, 내용)
+  const handleReply = async (parentId: string, replyContent: string) => {
+    if (!postId) return;
+    const contents = replyContent.trim();
+    if (!contents) return;
+
+    // 낙관적 추가
+    const optimistic = makeOptimisticComment({ contents, parentId });
+    setComments((prev) => [...prev, optimistic]);
+
+    try {
+      const created = await replyCommunityComment(
+        Number(postId),
+        Number(parentId),
+        { contents }
+      );
+
+      // 백엔드에서 parentCommentId가 null로 올 수 있으므로 강제 보정
+      const mapped = toPostComment(created, { isReply: true, parentId });
+      setComments((prev) => {
+        const i = prev.findIndex((c) => c.id === optimistic.id);
+        if (i === -1) return [...prev, mapped];
+        const next = [...prev];
+        next[i] = mapped;
+        return next;
+      });
+    } catch {
+      // 실패 → 롤백
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+      throw new Error("reply-failed");
+    }
+  };
+
   const handleEdit = (id: string, newContent: string) => {
     setComments((prev) =>
       prev.map((c) => (c.id === id ? { ...c, content: newContent } : c))
@@ -251,24 +333,6 @@ export default function CommunityPostDetail() {
   };
   const handleDelete = (id: string) => {
     setComments((prev) => prev.filter((c) => c.id !== id));
-  };
-  const handleReply = (parentId: string, replyContent: string) => {
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(2);
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    setComments((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        name: "현재 유저",
-        date: `${yy}.${mm}.${dd}`,
-        content: replyContent,
-        isMine: true,
-        isReply: true,
-        parentId,
-      },
-    ]);
   };
 
   // 로딩/에러 처리
@@ -498,12 +562,15 @@ export default function CommunityPostDetail() {
 
               {/* 작성하기 버튼 */}
               <button
-                disabled={!commentInput.trim()}
+                disabled={!commentInput.trim() || isCommentPosting}
+                onClick={handleSubmitComment}
                 className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
-                  commentInput.trim() ? "bg-primary" : "bg-subColor1"
+                  commentInput.trim() && !isCommentPosting
+                    ? "bg-primary"
+                    : "bg-subColor1"
                 }`}
               >
-                작성하기
+                {isCommentPosting ? "작성 중…" : "작성하기"}
               </button>
             </div>
           </div>

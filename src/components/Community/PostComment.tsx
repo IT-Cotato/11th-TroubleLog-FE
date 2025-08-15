@@ -14,7 +14,7 @@ export interface PostCommentProps {
   parentId?: string; // 대댓글일 경우
   onEdit?: (newContent: string) => void;
   onDelete?: () => void;
-  onReply?: (replyContent: string) => void;
+  onReply?: (replyContent: string) => Promise<void> | void;
 }
 
 export default function PostComment({
@@ -33,7 +33,8 @@ export default function PostComment({
   const [editContent, setEditContent] = useState(content);
 
   // 답글 달기 상태 관리
-  const [replyMode, setReplyMode] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyPosting, setReplyPosting] = useState(false);
   const [replyContent, setReplyContent] = useState("");
 
   // 삭제 확인 모달
@@ -139,13 +140,13 @@ export default function PostComment({
           {/* 답글 달기 버튼 */}
           <div
             className="text-body-16-regular text-gray3 cursor-pointer"
-            onClick={() => setReplyMode(!replyMode)}
+            onClick={() => setReplyOpen(!replyOpen)}
           >
-            {replyMode ? "답글 취소" : "답글 달기"}
+            {replyOpen ? "답글 취소" : "답글 달기"}
           </div>
 
           {/* 답글 입력창 (임시 디자인) */}
-          {replyMode && (
+          {replyOpen && (
             <div className="w-full mt-2">
               <textarea
                 value={replyContent}
@@ -155,18 +156,25 @@ export default function PostComment({
               />
               <button
                 className={`mt-2 px-4 py-2 rounded-full text-white ${
-                  replyContent.trim() ? "bg-primary" : "bg-gray-300"
+                  replyContent.trim() && !replyPosting
+                    ? "bg-primary"
+                    : "bg-gray-300"
                 }`}
-                disabled={!replyContent.trim()}
-                onClick={() => {
-                  // 답글 등록 로직 추가 필요
-                  console.log("답글:", replyContent);
-                  onReply?.(replyContent);
-                  setReplyContent("");
-                  setReplyMode(false);
+                disabled={!replyContent.trim() || replyPosting}
+                onClick={async () => {
+                  try {
+                    setReplyPosting(true);
+                    await onReply?.(replyContent);
+                    setReplyContent("");
+                    setReplyOpen(false);
+                  } catch {
+                    // 실패 시 유지하거나 토스트 노출 등
+                  } finally {
+                    setReplyPosting(false);
+                  }
                 }}
               >
-                답글 작성
+                {replyPosting ? "작성 중…" : "답글 작성"}
               </button>
             </div>
           )}

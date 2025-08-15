@@ -65,3 +65,8 @@ export interface CommunityLikeResult {
   userId: number;
   likeCount: number;
 }
+
+// 댓글 생성 request body
+export interface CreateCommentBody {
+  contents: string;
+}

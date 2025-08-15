@@ -1,9 +1,11 @@
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "./axios";
 import type {
+  CommunityCommentServerItem,
   CommunityLikeResult,
   CommunityPostDetailServer,
   CommunitySort,
+  CreateCommentBody,
   GetCommunityCommentsResponse,
   GetCommunityListResponse,
 } from "@/types/community.model";
@@ -78,3 +80,26 @@ export const likeCommunityPost = (postId: number) => {
 export async function unlikeCommunityPost(postId: number): Promise<void> {
   await api.delete(`/community/${postId}/like`);
 }
+
+// 댓글 생성
+export const createCommunityComment = (
+  postId: number,
+  body: CreateCommentBody
+) =>
+  getAPIResponseData<CommunityCommentServerItem>({
+    url: `/community/${postId}/comment`,
+    method: "POST",
+    data: body,
+  });
+
+// 대댓글 생성
+export const replyCommunityComment = (
+  postId: number,
+  commentId: number,
+  body: CreateCommentBody
+) =>
+  getAPIResponseData<CommunityCommentServerItem>({
+    url: `/community/${postId}/${commentId}`,
+    method: "POST",
+    data: body,
+  });
