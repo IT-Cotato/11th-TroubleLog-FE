@@ -32,8 +32,10 @@ export default function ProjectDetailPage() {
     !location.state?.projectName && !isInvalid
   );
 
+  const hasProjectName = Boolean(location.state?.projectName);
+
   useEffect(() => {
-    if (isInvalid || location.state?.projectName) return;
+    if (isInvalid || hasProjectName) return;
     (async () => {
       try {
         setTitleLoading(true);
@@ -46,7 +48,7 @@ export default function ProjectDetailPage() {
         setTitleLoading(false);
       }
     })();
-  }, [projectId, isInvalid, location.state?.projectName]);
+  }, [projectId, isInvalid, hasProjectName]);
 
   // UI 필터 상태
   const visibilityOptions: VisibilityOption[] = ["전체", "공개", "비공개"];
@@ -85,14 +87,17 @@ export default function ProjectDetailPage() {
     return base;
   }, [selectedStatus, selectedSort, selectedVisibility, selectedSummaryType]);
 
+  const troubleParams = useMemo(
+    () => ({ type: "project" as const, projectId, query }),
+    [projectId, query]
+  );
+
+  const troubleOpts = useMemo(() => ({ enabled: !isInvalid }), [isInvalid]);
+
   // 프로젝트별 트러블슈팅 목록 로드
   const { cards, isLoading, error } = useTroubleCards(
-    {
-      type: "project",
-      projectId,
-      query,
-    },
-    { enabled: !isInvalid }
+    troubleParams,
+    troubleOpts
   );
 
   return (
