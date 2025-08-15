@@ -27,6 +27,7 @@ const TroubleShootingList = () => {
     sentinelRef,
     sortBy,
     setSortBy,
+    reload,
   } = useOutletContext<OutletContextType>();
 
   const selectedStatus = useMyPageStore((state) => state.selectedStatus);
@@ -59,8 +60,8 @@ const TroubleShootingList = () => {
 
   const sortedCards = statusFiltered;
 
-  const handleDeleted = (postId: number) => {
-    setAllCards((prev) => prev.filter((c) => c.id !== postId));
+  const handleDeleted = () => {
+    void reload();
   };
 
   return (
@@ -80,7 +81,7 @@ const TroubleShootingList = () => {
             onDeleted={handleDeleted}
           />
         ))}
-        
+
         {/* 로딩 스켈레톤 */}
         {isLoading && (
           <>
