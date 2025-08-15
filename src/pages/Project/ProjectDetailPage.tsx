@@ -5,13 +5,18 @@ import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import SortButtonGroup from "@/components/Project/SortButtonGroup";
 import StatusFilterButton from "@/components/Project/StatusFilterButton";
 import { useEffect, useMemo, useState } from "react";
-import type { StatusType } from "@/types/project";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
 import { useLocation, useParams } from "react-router-dom";
 import useTroubleCards from "@/hooks/useTroubleCards";
-import { getProjectList } from "@/api/project.api";
+import { getProjectDetail } from "@/api/project.api";
+import type {
+  ProjectTroubleQuery,
+  ProjectTroubleSummaryType,
+} from "@/types/trouble.model";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
+type StatusType = "complete" | "created";
+type SortUI = "latest" | "importance";
 
 export default function ProjectDetailPage() {
   const { id: routeProjectId } = useParams<{ id: string }>();
@@ -28,80 +33,66 @@ export default function ProjectDetailPage() {
   );
 
   useEffect(() => {
-    if (isInvalid) return; // 잘못된 ID면 호출 안 함
-    const needFetch = !location.state?.projectName;
-    if (!needFetch) return;
+    if (isInvalid || location.state?.projectName) return;
     (async () => {
       try {
         setTitleLoading(true);
-        const { content } = await getProjectList();
+        const detail = await getProjectDetail(projectId);
+        if (detail?.name) setProjectName(detail.name);
+<!--         const { content } = await getProjectList();
         const found = content.find((p) => p.id === projectId);
-        if (found) setProjectName(found.name);
+        if (found) setProjectName(found.name); -->
       } finally {
         setTitleLoading(false);
       }
     })();
-  }, [location.state?.projectName, projectId, isInvalid]);
+  }, [projectId, isInvalid, location.state?.projectName]);
 
+  // UI 필터 상태
   const visibilityOptions: VisibilityOption[] = ["전체", "공개", "비공개"];
-
   const [selectedStatus, setSelectedStatus] = useState<StatusType>("complete");
-  const [selectedSort, setSelectedSort] = useState<"latest" | "importance">(
-    "latest"
-  );
+  const [selectedSort, setSelectedSort] = useState<SortUI>("latest");
   const [selectedVisibility, setSelectedVisibility] =
     useState<VisibilityOption>("전체");
-  const [selectedSummaryType, setSelectedSummaryType] = useState("전체");
+  const [selectedSummaryType, setSelectedSummaryType] =
+    useState<ProjectTroubleSummaryType | null>(null);
+
+  // UI-서버 파라미터 매핑
+  const toApiStatus = (s: StatusType) =>
+    s === "complete" ? "COMPLETED" : ("SUMMARIZED" as const);
+  const toApiSort = (s: SortUI) =>
+    s === "latest" ? "LATEST" : ("IMPORTANT" as const);
+  const toApiVisibility = (v: VisibilityOption) =>
+    v === "공개" ? "PUBLIC" : v === "비공개" ? "PRIVATE" : "ALL";
+
+  // 서버 쿼리 결정 (상태/정렬은 항상 포함)
+  const query: ProjectTroubleQuery = useMemo(() => {
+    const base: ProjectTroubleQuery = {
+      status: toApiStatus(selectedStatus),
+      sort: toApiSort(selectedSort),
+    };
+    if (selectedStatus === "complete") {
+      // 작성 완료 → 공개 범위 사용 (전체/공개/비공개)
+      if (selectedVisibility !== "전체") {
+        base.visibility = toApiVisibility(selectedVisibility);
+      }
+    } else {
+      // 요약 유형만
+      if (selectedSummaryType) {
+        base.summaryType = selectedSummaryType; // 바로 enum 값
+      }
+    }
+    return base;
+  }, [selectedStatus, selectedSort, selectedVisibility, selectedSummaryType]);
 
   // 프로젝트별 트러블슈팅 목록 로드
-  const { cards, isLoading, error } = useTroubleCards({
-    type: "project",
-    projectId,
-    enabled: !isInvalid,
-  });
-
-  // 상태 필터
-  const statusFiltered = useMemo(
-    () => (isInvalid ? [] : cards.filter((c) => c.status === selectedStatus)),
-    [cards, selectedStatus, isInvalid]
-  );
-
-  // 공개/요약유형 필터
-  const filteredByVisibilityOrSummary = useMemo(() => {
-    if (isInvalid) return [];
-    if (selectedStatus === "complete") {
-      if (selectedVisibility === "전체") return statusFiltered;
-      return statusFiltered.filter((c) =>
-        selectedVisibility === "공개"
-          ? c.visibility === "public"
-          : c.visibility === "private"
-      );
-    } else {
-      if (selectedSummaryType === "전체") return statusFiltered;
-      return statusFiltered.filter(
-        (c) => c.summaryType === selectedSummaryType
-      );
-    }
-  }, [
-    statusFiltered,
-    selectedStatus,
-    selectedVisibility,
-    selectedSummaryType,
-    isInvalid,
-  ]);
-
-  // 정렬
-  const filteredCards = useMemo(
-    () =>
-      isInvalid
-        ? []
-        : [...filteredByVisibilityOrSummary].sort((a, b) =>
-            selectedSort === "latest"
-              ? new Date(b.createdAtIso).getTime() -
-                new Date(a.createdAtIso).getTime()
-              : (b.importance ?? 0) - (a.importance ?? 0)
-          ),
-    [filteredByVisibilityOrSummary, selectedSort, isInvalid]
+  const { cards, isLoading, error } = useTroubleCards(
+    {
+      type: "project",
+      projectId,
+      query,
+    },
+    { enabled: !isInvalid }
   );
 
   return (
@@ -171,7 +162,7 @@ export default function ProjectDetailPage() {
                 목록 로드 실패
               </span>
             </div>
-          ) : filteredCards.length === 0 ? (
+          ) : cards.length === 0 ? (
             <div className="w-full flex h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
               <span className="text-body-20-regular">
                 아직 작성된 트러블슈팅이 없어요.
@@ -179,7 +170,7 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             <div className="flex flex-wrap justify-center sm:justify-start gap-[24px] w-full">
-              {filteredCards.map((card) => (
+              {cards.map((card) => (
                 <TroublogCard key={card.id} {...card} />
               ))}
             </div>

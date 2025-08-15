@@ -3,18 +3,29 @@ import type { ApiResponse, PaginatedResponse } from "./common.model";
 export interface CreateProjectRequest {
   name: string;
   description: string;
-  thumbnailImageUrl: string;
+  thumbnailImageUrl?: string;
+}
+
+export interface UpdateProjectRequest {
+  name: string;
+  description: string;
+  thumbnailImageUrl?: string;
 }
 
 export interface ProjectData {
   id: number;
   name: string;
   description: string;
-  thumbnailImageUrl: string;
+  thumbnailImageUrl: string | null;
 }
 
 export interface ProjectListItem extends ProjectData {
   tags: string[];
+}
+
+// 상세 전용 타입
+export interface ProjectDetail extends ProjectListItem {
+  isDeleted: boolean;
 }
 
 // 프로젝트 생성
@@ -27,6 +38,6 @@ export type CreateProjectResponse = ApiResponse<ProjectData>;
 // 서버가 ApiResponse 없이 바로 페이징이면
 export type GetProjectListResponse = PaginatedResponse<ProjectListItem>;
 
-export type GetProjectDetailResponse = ApiResponse<ProjectListItem>;
+export type GetProjectDetailResponse = ApiResponse<ProjectDetail>;
 
 export type DeleteProjectResponse = ApiResponse<null>;

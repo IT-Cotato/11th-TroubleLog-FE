@@ -4,9 +4,15 @@ import {
   toTroublogCardVMs,
   type TroublogCardVM,
 } from "@/mappers/troubleCard.mapper";
-import type { TroubleListItem, TroubleSort } from "@/types/trouble.model";
+import type {
+  ProjectTroubleQuery,
+  TroubleListItem,
+  TroubleSort,
+} from "@/types/trouble.model";
 
-type Source = { type: "all" } | { type: "project"; projectId: number };
+type Source =
+  | { type: "all" }
+  | { type: "project"; projectId: number; query: ProjectTroubleQuery };
 
 interface Options {
   enabled?: boolean; // 기본값: true
@@ -29,32 +35,52 @@ type PageResp = {
   isLast?: boolean;
 };
 
-// (key|page|size|sort) 단위 in-flight Promise 공유로 StrictMode 중복 방지
-const inflight = new Map<string, Promise<PageResp>>();
+// (key|page|size|sort) 단위 in-flight 공유: 전체 목록용
+const inflightPaged = new Map<string, Promise<PageResp>>();
+// (project|query) 단위 in-flight 공유: 프로젝트 목록용
+const inflightProject = new Map<string, Promise<TroubleListItem[]>>();
 
-function makeKey(sk: string, page: number, size: number, sort: TroubleSort) {
+function makePagedKey(
+  sk: string,
+  page: number,
+  size: number,
+  sort: TroubleSort
+) {
   return `${sk}|p=${page}|s=${size}|sort=${sort}`;
 }
 
-async function fetchOnceByKey(
+function makeProjectKey(pid: number, q: ProjectTroubleQuery) {
+  const { status, sort, visibility, summaryType } = q;
+  return `project:${pid}|status=${status}|sort=${sort ?? ""}|vis=${
+    visibility ?? ""
+  }|sum=${summaryType ?? ""}`;
+}
+
+async function fetchPagedOnce(
   sk: string,
-  pid: number | null,
   page: number,
   size: number,
   sortBy: TroubleSort
 ) {
-  const key = makeKey(sk, page, size, sortBy);
-  if (!inflight.has(key)) {
-    const p =
-      sk === "all"
-        ? getTroubleList(page, size, sortBy)
-        : getProjectTroubleList(pid!, page, size, sortBy);
-    inflight.set(
-      key,
-      p.finally(() => inflight.delete(key))
+  const key = makePagedKey(sk, page, size, sortBy);
+  if (!inflightPaged.has(key)) {
+    const p = getTroubleList(page, size, sortBy).finally(() =>
+      inflightPaged.delete(key)
     );
+    inflightPaged.set(key, p);
   }
-  return inflight.get(key)!;
+  return inflightPaged.get(key)!;
+}
+
+async function fetchProjectOnce(pid: number, q: ProjectTroubleQuery) {
+  const key = makeProjectKey(pid, q);
+  if (!inflightProject.has(key)) {
+    const p = getProjectTroubleList(pid, q).finally(() =>
+      inflightProject.delete(key)
+    );
+    inflightProject.set(key, p);
+  }
+  return inflightProject.get(key)!;
 }
 
 export default function useTroubleCards(source: Source, options: Options = {}) {
@@ -68,20 +94,31 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     cooldownMs = 0,
   } = options;
 
-  // source를 원시값으로 분해 (의존성 안정화)
-  const srcKey = useMemo(
-    () => (source.type === "all" ? "all" : `project:${source.projectId}`),
-    [source.type, (source as any).projectId]
-  );
-  const projectId = source.type === "project" ? source.projectId : null;
+  const srcKey = useMemo(() => {
+    if (source.type === "all") return "all";
+    const q = source.query;
+    return `project:${source.projectId}|${q.status}|${q.sort}|${
+      q.visibility ?? ""
+    }|${q.summaryType ?? ""}`;
+  }, [
+    source.type,
+    // 원시값 의존으로 안전하게
+    (source as any).projectId,
+    (source as any).query?.status,
+    (source as any).query?.sort,
+    (source as any).query?.visibility,
+    (source as any).query?.summaryType,
+  ]);
 
   const [cards, setCards] = useState<TroublogCardVM[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // 전체 목록 전용 상태
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 콜백에서 최신값을 읽기 위한 refs
+  // 콜백에서 최신값을 읽기 위한 refs (전체 목록 전용)
   const isLoadingRef = useRef(false);
   const hasNextRef = useRef(false);
   const pageRef = useRef(1);
@@ -102,8 +139,10 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
   const seqRef = useRef(0);
   // 중복 카드 방지용
   const idSetRef = useRef<Set<number>>(new Set());
-  // 무한스크롤 센티널
+  // 무한스크롤 센티널 (전체 목록 전용)
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const requestedPagesRef = useRef<Set<number>>(new Set());
 
   const reset = useCallback(() => {
     setCards([]);
@@ -112,20 +151,19 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     setHasNext(false);
     setError(null);
     lastErrorAtRef.current = 0;
+    requestedPagesRef.current = new Set();
   }, []);
 
-  // 특정 페이지 로드
+  // 전체 목록: 특정 페이지 로드  ← ★ 변경
   const loadPage = useCallback(
-    async (
-      targetPage: number,
-      {
-        append = true,
-        dedupe = true,
-      }: { append?: boolean; dedupe?: boolean } = {}
-    ) => {
+    async (targetPage: number, { append = true, dedupe = true } = {}) => {
       if (!enabled) return;
-      // 1페이지가 아닌데 더 불러올 게 없으면 차단 (ref 기준)
+
       if (targetPage !== 1 && !hasNextRef.current) return;
+
+      // 같은 페이지 중복 요청 원천 차단
+      if (requestedPagesRef.current.has(targetPage)) return;
+      requestedPagesRef.current.add(targetPage);
 
       setIsLoading(true);
       setError(null);
@@ -133,34 +171,49 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
 
       try {
         const resp = dedupe
-          ? await fetchOnceByKey(
-              srcKey,
-              projectId,
-              targetPage,
-              pageSize,
-              sortBy
-            )
-          : projectId == null
-          ? await getTroubleList(targetPage, pageSize, sortBy)
-          : await getProjectTroubleList(
-              projectId,
-              targetPage,
-              pageSize,
-              sortBy
-            );
+          ? await fetchPagedOnce("all", targetPage, pageSize, sortBy)
+          : await getTroubleList(targetPage, pageSize, sortBy);
 
         if (seqRef.current !== mySeq) return;
 
         const list = Array.isArray(resp.content) ? resp.content : [];
-        // 서버가 hasNext 또는 isLast 둘 중 하나만 줄 수 있으므로 보수적으로 계산
-        const next =
-          resp.hasNext ?? (resp.isLast !== undefined ? !resp.isLast : false);
-        setHasNext(next);
+        const listLen = list.length;
+
+        // 서버 메타를 최대한 사용하되,
+        // 실제 "추가된 개수(addedCount)"로 최종 보정한다.
+        const anyResp = resp as any;
+        const isLast =
+          typeof anyResp?.isLast === "boolean"
+            ? anyResp.isLast
+            : typeof anyResp?.last === "boolean"
+            ? anyResp.last
+            : undefined;
+
+        const hasNextFromServer =
+          typeof anyResp?.hasNext === "boolean"
+            ? anyResp.hasNext
+            : typeof anyResp?.hasNextPage === "boolean"
+            ? anyResp.hasNextPage
+            : undefined;
+
+        let nextByServer: boolean | undefined;
+        if (typeof hasNextFromServer === "boolean")
+          nextByServer = hasNextFromServer;
+        else if (typeof isLast === "boolean") nextByServer = !isLast;
 
         if (!append || targetPage === 1) {
+          // reset
           idSetRef.current = new Set(list.map((x) => x.id));
           setCards(toTroublogCardVMs(list));
+
+          // 초기 페이지의 다음 여부: 서버 메타가 없으면 길이 기준
+          const next =
+            typeof nextByServer === "boolean"
+              ? nextByServer
+              : listLen >= pageSize;
+          setHasNext(next);
         } else {
+          // append: 중복 제거하며 이어붙이기
           const add: TroubleListItem[] = [];
           for (const item of list) {
             if (!idSetRef.current.has(item.id)) {
@@ -168,38 +221,103 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
               add.push(item);
             }
           }
-          setCards((prev) => prev.concat(toTroublogCardVMs(add)));
+
+          // 실제로 추가된 게 없다면(서버가 같은 페이지 재전달 등) 더 이상 진행하지 않음
+          if (add.length === 0) {
+            setHasNext(false);
+            return;
+          } else {
+            setCards((prev) => prev.concat(toTroublogCardVMs(add)));
+
+            // 서버 메타가 있으면 우선 사용, 없으면 길이 기준
+            const next =
+              typeof nextByServer === "boolean"
+                ? nextByServer
+                : add.length >= pageSize;
+            setHasNext(next);
+          }
         }
 
         setPage(targetPage);
       } catch (e: any) {
+        // 에러 시에는 다시 재시도할 수 있도록 플래그 되돌림
+        requestedPagesRef.current.delete(targetPage);
         if (seqRef.current === mySeq) {
           setError(e?.message ?? "불러오기 실패");
           lastErrorAtRef.current = Date.now();
-          if (stopOnError) setHasNext(false); // 자동 로딩 중단
+          if (stopOnError) setHasNext(false);
         }
       } finally {
         if (seqRef.current === mySeq) setIsLoading(false);
       }
     },
-    // 상태(hasNext 등)에 직접 의존하지 않고, 안정된 원시값만 의존
-    [enabled, pageSize, sortBy, srcKey, projectId, stopOnError]
+    [enabled, pageSize, sortBy, stopOnError]
   );
 
-  // 최초/의존성 변경 시 1페이지부터 로드
-  useEffect(() => {
-    reset();
-    void loadPage(1, { append: false, dedupe: true });
-  }, [srcKey, pageSize, sortBy, reset, loadPage]);
+  // 프로젝트 전용: 한 번 호출해서 끝 (페이징 없음)  ← (변경 없음)
+  const loadProjectOnce = useCallback(async () => {
+    if (!enabled) return;
 
-  // 외부에서 강제 새로고침
+    setIsLoading(true);
+    setError(null);
+    const mySeq = ++seqRef.current;
+
+    try {
+      const list =
+        source.type === "project"
+          ? await fetchProjectOnce(source.projectId, source.query)
+          : [];
+
+      if (seqRef.current !== mySeq) return;
+
+      idSetRef.current = new Set(list.map((x) => x.id));
+      setCards(toTroublogCardVMs(list));
+      setHasNext(false); // 페이징 없음
+      setPage(1);
+    } catch (e: any) {
+      if (seqRef.current === mySeq) {
+        setError(e?.message ?? "불러오기 실패");
+      }
+    } finally {
+      if (seqRef.current === mySeq) setIsLoading(false);
+    }
+  }, [enabled, source]);
+
+  // 같은 srcKey에 대해 초기 로드가 이미 실행됐는지 체크
+  const initKeyRef = useRef<string | null>(null);
+
+  // 최초/의존성 변경 시 1페이지부터 로드  ← (변경 없음)
+  useEffect(() => {
+    if (!enabled) return;
+
+    if (source.type === "all") {
+      // all 목록: 같은 키로는 1번만
+      if (initKeyRef.current === srcKey) return;
+      initKeyRef.current = srcKey;
+
+      reset();
+      void loadPage(1, { append: false, dedupe: true });
+      return;
+    }
+
+    // project 목록: srcKey 바뀔 때마다 새로 불러옴 (락 적용 X)
+    initKeyRef.current = null; // all로 돌아올 때 초기 로드 재실행 보장
+    reset();
+    void loadProjectOnce();
+  }, [srcKey, enabled, source.type]);
+
+  // 외부에서 강제 새로고침  ← (변경 없음)
   const reload = useCallback(() => {
     reset();
-    return loadPage(1, { append: false, dedupe: false });
-  }, [reset, loadPage]);
+    if (source.type === "all") {
+      return loadPage(1, { append: false, dedupe: false });
+    }
+    return loadProjectOnce();
+  }, [reset, loadPage, loadProjectOnce, source.type]);
 
-  // 무한스크롤 옵저버 (옵션 켜진 경우에만)
+  // 무한스크롤 옵저버 (전체 목록 전용)  ← (변경 없음)
   useEffect(() => {
+    if (source.type !== "all") return;
     if (!infinite || !enabled) return;
     if (!sentinelRef.current) return;
 
@@ -230,13 +348,14 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
 
     io.observe(el);
     return () => io.disconnect();
-  }, [infinite, enabled, rootMargin, cooldownMs, loadPage]);
+  }, [source.type, infinite, enabled, rootMargin, cooldownMs, loadPage]);
 
-  // 수동 "더 보기"용
+  // 수동 "더 보기"용 (전체 목록 전용)  ← (변경 없음)
   const loadMore = useCallback(() => {
+    if (source.type !== "all") return;
     if (!enabled || !hasNextRef.current || isLoadingRef.current) return;
     return loadPage(pageRef.current + 1, { append: true, dedupe: true });
-  }, [enabled, loadPage]);
+  }, [enabled, loadPage, source.type]);
 
   return {
     // 데이터
@@ -248,7 +367,7 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     reload,
     loadMore,
     reset,
-    // 무한스크롤 센티널 ref
+    // 무한스크롤용 센티널 ref
     sentinelRef,
   };
 }

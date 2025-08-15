@@ -190,16 +190,21 @@ export default function HomePage() {
 
     io.observe(el);
     return () => io.disconnect();
-  }, [loadPage, projects.length, hasNext]);
+    // 의존성 없음: 최초 한 번만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 새 프로젝트 생성 후 목록 리셋(1페이지부터 다시)
   const handleCreateProject = async (data: CreateProjectRequest) => {
     try {
       setCreating(true);
+
       const payload: CreateProjectRequest = {
         name: data.name,
         description: data.description,
-        thumbnailImageUrl: data.thumbnailImageUrl ?? "",
+        ...(data.thumbnailImageUrl && data.thumbnailImageUrl.trim() !== ""
+          ? { thumbnailImageUrl: data.thumbnailImageUrl }
+          : {}),
       };
 
       await postCreateProject(payload);
@@ -330,18 +335,15 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* 무한스크롤 센티널 + 하단 로딩/끝 표시 */}
-            <div ref={sentinelRef} className="h-6 w-full" />
+            {/* 무한스크롤 센티널 + 하단 로딩 표시 */}
+            {hasNext && !isLoading && (
+              <div ref={sentinelRef} className="h-6 w-full" />
+            )}
 
             <div className="w-full flex justify-center items-center mt-3">
               {isLoading && projects.length > 0 && (
                 <span className="text-body-14-regular text-gray-500">
                   더 불러오는 중…
-                </span>
-              )}
-              {!hasNext && (
-                <span className="text-body-14-regular text-gray-400">
-                  마지막입니다.
                 </span>
               )}
             </div>
@@ -374,7 +376,9 @@ export default function HomePage() {
                 <TroublogCard key={card.id} {...card} />
               ))}
             </div>
-            <div ref={recentsSentinel} className="h-6 w-full" />
+            {hasNextRecents && !isLoadingRecents && (
+              <div ref={recentsSentinel} className="h-6 w-full" />
+            )}
             <div className="w-full flex justify-center mt-2">
               {isLoadingRecents && recentCards.length > 0 && (
                 <span className="text-gray-500">더 불러오는 중…</span>
