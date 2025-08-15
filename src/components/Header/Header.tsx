@@ -115,6 +115,7 @@ const Header = () => {
       | "mypage"
       | "user"
       | "community"
+      | "project"
       | null;
     let pageUserId = existing.get("userId") ?? "";
 
@@ -126,7 +127,10 @@ const Header = () => {
 
       if (currentPath.startsWith(PATH.MYPAGE(""))) {
         scope = pageUserId === myUserId ? "mypage" : "user";
-      } else if (currentPath.startsWith(PATH.HOME)) {
+      } else if (
+        currentPath.startsWith(PATH.HOME) ||
+        currentPath.startsWith(PATH.PROJECT_DETAIL(""))
+      ) {
         scope = "my";
       }
     }
