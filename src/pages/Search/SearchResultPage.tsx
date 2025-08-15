@@ -3,23 +3,31 @@ import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
+type CardData = Omit<TroubleShootingCardProps, "onDeleted">;
+
 const SearchResultPage = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const query = params.get("query") || "";
   const scope = params.get("scope") || "community";
 
-  const [results, setResults] = useState<TroubleShootingCardProps[]>([]);
+  const [results, setResults] = useState<CardData[]>([]);
+
+  // 삭제 시 목록에서 제거
+  const handleDeleted = (postId: number) => {
+    setResults((prev) => prev.filter((c) => c.id !== String(postId)));
+  };
 
   useEffect(() => {
-    const dummyResults: TroubleShootingCardProps[] = [
+    const dummyResults: CardData[] = [
       {
         id: "1",
+        isMine: false,
         errorCategory: "빌드 오류",
         title: "React Vite 빌드 오류 해결",
         content: "빌드 시 발생한 'cannot find module' 오류 해결 과정...",
         tags: ["React", "Vite", "build"],
-        createdAt: "2025.07.24",
+        createdAt: "2025-07-24",
         status: "complete",
         likeCount: 12,
         commentCount: 3,
@@ -29,11 +37,12 @@ const SearchResultPage = () => {
       },
       {
         id: "2",
+        isMine: false,
         errorCategory: "빌드 오류",
         title: "React Vite 빌드 오류 해결",
         content: "빌드 시 발생한 'cannot find module' 오류 해결 과정...",
         tags: ["React", "Vite", "build"],
-        createdAt: "2025.07.24",
+        createdAt: "2025-07-24",
         status: "complete",
         likeCount: 12,
         commentCount: 3,
@@ -54,7 +63,11 @@ const SearchResultPage = () => {
 
       <div className="flex flex-col items-start self-stretch">
         {results.map((item) => (
-          <TroubleShootingCard key={item.id} {...item} />
+          <TroubleShootingCard
+            key={item.id}
+            {...item}
+            onDeleted={handleDeleted}
+          />
         ))}
       </div>
     </div>

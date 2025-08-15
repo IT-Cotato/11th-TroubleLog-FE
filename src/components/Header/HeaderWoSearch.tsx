@@ -3,6 +3,7 @@ import { BsFillBellFill } from "react-icons/bs";
 import { FaUserCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/icons/logo.svg";
+import { PATH } from "@/constants/paths";
 
 const HeaderWoSearch = () => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const HeaderWoSearch = () => {
         src={logo}
         alt="logo"
         className="w-[70px] h-[51px]"
-        onClick={() => navigate("home")}
+        onClick={() => navigate(PATH.HOME)}
       />
       <div className="flex gap-10 items-center">
         <FaUserGroup size={40} color="#525252" />

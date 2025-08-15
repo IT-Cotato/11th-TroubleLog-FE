@@ -12,16 +12,18 @@ interface OutletContextType {
 
 const TroubleShootingList = () => {
   const { isMyPage } = useOutletContext<OutletContextType>();
-
   const [selectedSort, setSelectedSort] = useState<"latest" | "importance">(
     "latest"
   );
+
+  const [allCards, setAllCards] = useState(() => mockCards);
+
   const selectedStatus = useMyPageStore((state) => state.selectedStatus);
   const selectedTag = useMyPageStore((state) => state.selectedTag);
 
   const cards = isMyPage
-    ? mockCards.filter((c) => c.isMine)
-    : mockCards.filter((c) => !c.isMine);
+    ? allCards.filter((c) => c.isMine)
+    : allCards.filter((c) => !c.isMine);
 
   // 태그 필터 (다른 사용자 마이페이지만 해당)
   const tagFiltered =
@@ -44,6 +46,10 @@ const TroubleShootingList = () => {
       )
     : statusFiltered;
 
+  const handleDeleted = (postId: number) => {
+    setAllCards((prev) => prev.filter((c) => c.id !== postId));
+  };
+
   return (
     <div className="flex flex-col items-end gap-[40px] w-[948px] pb-[78px]">
       {/* 정렬 기준 선택 */}
@@ -57,8 +63,15 @@ const TroubleShootingList = () => {
           <TroubleShootingCard
             key={card.id}
             {...mapToTroubleShootingCard(card)}
+            onDeleted={handleDeleted}
           />
         ))}
+
+        {sortedCards.length === 0 && (
+          <div className="text-gray3 text-body-16-regular py-10">
+            표시할 문서가 없습니다.
+          </div>
+        )}
       </div>
     </div>
   );
