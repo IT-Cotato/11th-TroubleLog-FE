@@ -70,3 +70,19 @@ export interface CommunityLikeResult {
 export interface CreateCommentBody {
   contents: string;
 }
+
+// 좋아요한 포스트(커뮤니티) 서버 아이템
+export interface LikedPostServerItem {
+  postId: number;
+  title: string;
+  errorTags: string | null;
+  techTags: string[];
+  contents: string[];
+  likeCount: number;
+  commentCount: number;
+  createdAt: string;
+  images: string[] | null;
+}
+
+// 좋아요한 포스트 페이징 응답
+export type GetLikedPostsResponse = PaginatedResponse<LikedPostServerItem>;

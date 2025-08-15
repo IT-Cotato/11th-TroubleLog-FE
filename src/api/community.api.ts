@@ -8,6 +8,7 @@ import type {
   CreateCommentBody,
   GetCommunityCommentsResponse,
   GetCommunityListResponse,
+  GetLikedPostsResponse,
 } from "@/types/community.model";
 
 // 중복 호출 방지용 (dev StrictMode 대비)
@@ -127,3 +128,11 @@ export async function softDeleteCommunityComment(
     throw new Error("댓글 삭제 실패");
   }
 }
+
+// 좋아요한 포스트
+export const getLikedCommunityPosts = async (page1 = 1, size = 10) => {
+  const { data } = await api.get<GetLikedPostsResponse>("/community/likes", {
+    params: { page: Math.max(1, page1), size },
+  });
+  return data;
+};
