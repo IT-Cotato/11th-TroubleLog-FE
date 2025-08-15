@@ -103,3 +103,27 @@ export const replyCommunityComment = (
     method: "POST",
     data: body,
   });
+
+// 댓글 수정
+export async function updateCommunityComment(params: {
+  postId: number;
+  commentId: number;
+  contents: string;
+}): Promise<CommunityCommentServerItem> {
+  const { postId, commentId, contents } = params;
+  return getAPIResponseData<CommunityCommentServerItem>({
+    url: `/community/${postId}/${commentId}`,
+    method: "PUT",
+    data: { contents },
+  });
+}
+
+// 댓글 임시 삭제
+export async function softDeleteCommunityComment(
+  commentId: number
+): Promise<void> {
+  const res = await api.delete(`/community/${commentId}/soft`);
+  if (res.status !== 204) {
+    throw new Error("댓글 삭제 실패");
+  }
+}

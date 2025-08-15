@@ -31,6 +31,7 @@ export default function PostComment({
   // 댓글 수정 상태 관리
   const [editMode, setEditMode] = useState(false);
   const [editContent, setEditContent] = useState(content);
+  const [editPosting, setEditPosting] = useState(false);
 
   // 답글 달기 상태 관리
   const [replyOpen, setReplyOpen] = useState(false);
@@ -39,6 +40,7 @@ export default function PostComment({
 
   // 삭제 확인 모달
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [deletePosting, setDeletePosting] = useState(false);
 
   return (
     <div className="flex w-[1200px]">
@@ -120,15 +122,25 @@ export default function PostComment({
                     취소
                   </button>
                   <button
-                    className="px-4 py-2 bg-primary text-white rounded-full"
-                    onClick={() => {
-                      // 수정 처리 로직 추가 필요
-                      console.log("수정된 댓글:", editContent);
-                      onEdit?.(editContent);
-                      setEditMode(false);
+                    className={`px-4 py-2 rounded-full text-white ${
+                      editContent.trim() && !editPosting
+                        ? "bg-primary"
+                        : "bg-gray-300"
+                    }`}
+                    disabled={!editContent.trim() || editPosting}
+                    onClick={async () => {
+                      try {
+                        setEditPosting(true);
+                        await onEdit?.(editContent);
+                        setEditMode(false);
+                      } catch {
+                        // 실패 시 유지
+                      } finally {
+                        setEditPosting(false);
+                      }
                     }}
                   >
-                    저장
+                    {editPosting ? "저장 중…" : "저장"}
                   </button>
                 </div>
               </div>
@@ -183,12 +195,15 @@ export default function PostComment({
 
       {showDeleteModal && (
         <ConfirmDeleteModal
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={() => {
-            // 삭제 저치 로직 추가 필요
-            console.log("삭제됨");
-            onDelete?.();
-            setShowDeleteModal(false);
+          onClose={() => !deletePosting && setShowDeleteModal(false)}
+          onConfirm={async () => {
+            try {
+              setDeletePosting(true);
+              await onDelete?.();
+              setShowDeleteModal(false);
+            } finally {
+              setDeletePosting(false);
+            }
           }}
           title="댓글 삭제"
           description="정말 삭제하시겠습니까?"
