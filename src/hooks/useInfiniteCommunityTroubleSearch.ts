@@ -4,13 +4,15 @@ import { searchCommunityTroubles } from "@/api/trouble.api";
 import type { MyTroubleServerItem } from "@/types/troubles.server";
 
 export function useInfiniteCommunityTroubleSearch(keyword: string, size = 10) {
-  // 공개글만 노출
-  const filterVisible = useCallback(
-    (x: MyTroubleServerItem) =>
-      x.isVisible === true ||
-      String(x.isVisible ?? "").toUpperCase() === "PUBLIC",
-    []
-  );
+  // 공개 + 완료만 (작성 중 제외)
+  const filterVisible = useCallback((x: MyTroubleServerItem) => {
+    const visible = x.isVisible === true; // 서버가 boolean로 내려줌
+    const statusRaw = String((x as any).postStatus ?? "");
+    const inProgress =
+      /작성\s*중/i.test(statusRaw) || /in[\s-_]*progress/i.test(statusRaw);
+    const completed = /완료/i.test(statusRaw) && !inProgress; // "요약 완료"/"작성 완료" 등
+    return visible && completed;
+  }, []);
 
   // fetcher 주입 (키워드 없으면 호출 안 함)
   const fetcher = useMemo(() => {

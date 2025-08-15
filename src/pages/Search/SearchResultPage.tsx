@@ -1,12 +1,15 @@
 import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
+import { PATH } from "@/constants/paths";
 import { useInfiniteCommunityTroubleSearch } from "@/hooks/useInfiniteCommunityTroubleSearch";
 import { useInfiniteMyTroubleSearch } from "@/hooks/useInfiniteMyTroubleSearch";
 import { useInfiniteUserTroubleSearch } from "@/hooks/useInfiniteUserTroubleSearch";
 import { useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SearchResultPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const sp = new URLSearchParams(location.search);
   const query = sp.get("query") ?? "";
   // scope: 화이트리스트로 안전하게 정규화
@@ -33,6 +36,12 @@ const SearchResultPage = () => {
   const isMyScope = scope === "my" || scope === "mypage";
   const isUserScope = scope === "user" && !!userId;
   const isCommunityScope = scope === "community";
+
+  const isBlocked = (card: any) => {
+    const vis = String(card.visibility ?? "").toUpperCase(); // "PUBLIC" | "PRIVATE"
+    const st = String(card.status ?? "").toUpperCase(); // "COMPLETED" | "IN_PROGRESS" 등
+    return vis === "PRIVATE" || st === "IN_PROGRESS";
+  };
 
   // 현재 로그인한 사용자 트러블슈팅 문서 내 검색
   const my = useInfiniteMyTroubleSearch(
@@ -69,6 +78,7 @@ const SearchResultPage = () => {
   const error = active.error;
   const items = active.items;
   const totalElements = active.totalElements;
+  const displayTotal = (active as any).displayTotal ?? totalElements;
   const hasNext = active.hasNext;
 
   // 하단 센티널 관찰자
@@ -116,7 +126,7 @@ const SearchResultPage = () => {
       <span className="text-head-32-regular self-stretch">
         {loadingInitial
           ? "검색 중…"
-          : `총 ${totalElements}개의 포스트를 찾았어요.`}
+          : `총 ${displayTotal}개의 포스트를 찾았어요.`}
       </span>
 
       {/* 에러 */}
@@ -136,7 +146,26 @@ const SearchResultPage = () => {
             검색 결과가 없습니다.
           </div>
         ) : (
-          items.map((card) => <TroubleShootingCard key={card.id} {...card} />)
+          items.map((card) => {
+            const blocked = isBlocked(card);
+            return (
+              <TroubleShootingCard
+                key={card.id}
+                {...card}
+                // 클릭 막기: blocked면 onClick 전달 안 함
+                onClick={
+                  blocked
+                    ? undefined
+                    : () =>
+                        navigate(PATH.COMMUNITY_POST(Number(card.id)), {
+                          state: { from: "search", query, scope, userId },
+                        })
+                }
+                // 접근성 힌트(읽기 전용)
+                aria-disabled={blocked || undefined}
+              />
+            );
+          })
         )}
 
         {/* 로딩 인디케이터 / 센티널 */}
