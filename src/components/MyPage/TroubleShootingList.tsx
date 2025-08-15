@@ -60,8 +60,12 @@ const TroubleShootingList = () => {
 
   const sortedCards = statusFiltered;
 
-  const handleDeleted = () => {
-    void reload();
+  const handleDeleted = async () => {
+    try {
+      await reload();
+    } catch (error) {
+      console.error("Failed to reload after deletion:", error);
+    }
   };
 
   return (

@@ -12,6 +12,7 @@ import type {
   ProjectTroubleQuery,
   TroubleListItem,
 } from "@/types/trouble.model";
+import { useViewerId } from "@/store/auth";
 
 // 내 전체 목록 정렬용 (서버 스펙)
 type SortParam = "latest" | "likes";
@@ -176,6 +177,9 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     requestedPagesRef.current = new Set();
   }, []);
 
+  const viewerId = useViewerId();
+  const myUserIdStr = viewerId != null ? String(viewerId) : null;
+
   // 소유자 플래그 오버라이드 헬퍼
   const applyOwnerFlag = useCallback(
     (vms: TroublogCardVM[]) => {
@@ -183,15 +187,14 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
         return vms.map((x) => ({ ...x, isMine: true }));
       }
       if (source.type === "user") {
-        const myId =
-          typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+        const myId = typeof window !== "undefined" ? myUserIdStr : null;
         const ownerIsMe =
           myId != null && String(source.userId) === String(myId);
         return vms.map((x) => ({ ...x, isMine: ownerIsMe }));
       }
       return vms;
     },
-    [source]
+    [source, myUserIdStr]
   );
 
   // 전체 목록: 특정 페이지 로드

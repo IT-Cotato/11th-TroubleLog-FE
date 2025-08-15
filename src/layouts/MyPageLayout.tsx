@@ -3,11 +3,15 @@ import { Outlet } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import useTroubleCards from "@/hooks/useTroubleCards";
 import { useMemo, useState } from "react";
+import { useViewerId } from "@/store/auth";
 
 const MyPageLayout = () => {
   const { id } = useParams<{ id: string }>();
-  const myUserId =
-    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+
+  const viewerId = useViewerId();
+  const myUserIdStr = viewerId != null ? String(viewerId) : null;
+
+  const myUserId = typeof window !== "undefined" ? myUserIdStr : null;
   const isMyPage = !!myUserId && id === myUserId;
 
   // 정렬 상태
