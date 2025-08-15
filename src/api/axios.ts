@@ -7,7 +7,7 @@ const baseURL =
 const ENVTYPE = import.meta.env.VITE_ENV_TYPE;
 
 const api = axios.create({
-  baseURL,
+  baseURL: "/api",
   timeout: 10000,
   withCredentials: true,
   headers: {
@@ -19,9 +19,19 @@ const api = axios.create({
 
 // 공통 유틸: 로그인 페이지로의 네비게이션을 1회만
 let authNavigationPromise: Promise<void> | null = null;
-const navigateToAuthOnce = (next: string) => {
+const getCurrentSpaPath = () => {
+  // 라우터가 있으면 라우터 위치를 우선 사용
+  const loc: Location | (typeof router)["state"]["location"] =
+    (router as any)?.state?.location ?? window.location;
+  return `${loc.pathname}${loc.search}${loc.hash}`;
+};
+
+const navigateToAuthOnce = (rawNext?: string) => {
   if (!authNavigationPromise) {
-    router.navigate(`${PATH.ROOT}?next=${next}`, { replace: true });
+    const nextPath = rawNext ?? getCurrentSpaPath(); // 미인코딩 경로
+    const params = new URLSearchParams();
+    params.set("next", nextPath); // 인코딩은 URLSearchParams가 처리
+    router.navigate(`${PATH.ROOT}?${params.toString()}`, { replace: true });
     authNavigationPromise = new Promise<void>((resolve) => {
       // 짧은 쿨다운 후 게이트 해제 (동시 발화 방지)
       setTimeout(() => {
@@ -95,8 +105,7 @@ api.interceptors.response.use(
       !tokenExists &&
       location.pathname !== PATH.ROOT
     ) {
-      const next = encodeURIComponent(location.pathname + location.search);
-      void navigateToAuthOnce(next);
+      void navigateToAuthOnce(); // 내부에서 안전하게 계산/인코딩
     }
     return res;
   },
@@ -118,8 +127,7 @@ api.interceptors.response.use(
     if (isRefresh) {
       localStorage.removeItem("accessToken");
       if (!onLogin) {
-        const next = encodeURIComponent(location.pathname + location.search);
-        await navigateToAuthOnce(next);
+        await navigateToAuthOnce();
       }
       return Promise.reject(error);
     }
@@ -131,8 +139,7 @@ api.interceptors.response.use(
         // 이미 재시도 한 번 했는데도 401 → 토큰 정리 후 이동
         localStorage.removeItem("accessToken");
         if (!onLogin) {
-          const next = encodeURIComponent(location.pathname + location.search);
-          await navigateToAuthOnce(next);
+          await navigateToAuthOnce();
         }
         return Promise.reject(error);
       }
@@ -155,16 +162,14 @@ api.interceptors.response.use(
       // 리프레시 실패
       localStorage.removeItem("accessToken");
       if (!onLogin) {
-        const next = encodeURIComponent(location.pathname + location.search);
-        await navigateToAuthOnce(next);
+        await navigateToAuthOnce();
       }
       return Promise.reject(error);
     }
 
     // 403 → 권한 부족: 로그인 이동(단 1회)
     if (status === 403 && !onLogin) {
-      const next = encodeURIComponent(location.pathname + location.search);
-      await navigateToAuthOnce(next);
+      await navigateToAuthOnce();
     }
 
     return Promise.reject(error);
@@ -172,3 +177,5 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+if (import.meta.env.DEV) (window as any).__api = api;
