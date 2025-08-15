@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import BaseModal from "../../components/Modal/BaseModal";
 import SaveButton from "../../components/Button/SaveButton";
 import CancelButton from "../../components/Button/CancelButton";
@@ -32,12 +32,14 @@ export default function PostSaveModal({
   projects = [],
   defaultProjectId,
   loadingProjects = false,
+  selectedTags = [],
 }: {
   onClose: () => void;
   onNext: (payload: PostSavePayload) => void;
   projects?: ProjectOption[];
   defaultProjectId?: number;
   loadingProjects?: boolean;
+  selectedTags?: string[];
 }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [importance, setImportance] = useState(0);
@@ -94,6 +96,11 @@ export default function PostSaveModal({
       }
     };
   }, [thumbnail]);
+  const previewTags: string[] = useMemo(
+    () => (selectedTags ?? []).slice(0, 3),
+    [selectedTags]
+  );
+  const extraCount = Math.max(0, (selectedTags?.length ?? 0) - 3);
 
   return (
     <BaseModal
@@ -206,17 +213,36 @@ export default function PostSaveModal({
                   <span className="text-head-20-semibold text-black">
                     카테고리 태그
                   </span>
+
                   <div className="grid gap-[8px] h-[46px] shrink-0">
                     <div className="flex items-center gap-[12px] self-stretch shrink-0">
-                      {["#Spring Boot", "#Spring Boot", "#Spring Boot"].map(
-                        (tag, i) => (
-                          <div
-                            key={i}
-                            className=" flex w-[102px] h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-purple-100 text-purple-700 rounded-full text-sm"
-                          >
-                            {tag}
-                          </div>
-                        )
+                      {previewTags.length > 0 ? (
+                        <>
+                          {previewTags.map((tag, i) => (
+                            <div
+                              key={`${tag}-${i}`}
+                              className="flex h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-purple-100 text-purple-700 rounded-full text-sm"
+                            >
+                              #{tag}
+                            </div>
+                          ))}
+
+                          {extraCount > 0 && (
+                            <div
+                              className="flex h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-gray-100 text-gray-600 rounded-full text-sm"
+                              title={selectedTags
+                                .slice(3)
+                                .map((t) => `#${t}`)
+                                .join(", ")}
+                            >
+                              +{extraCount}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-sm text-gray-400">
+                          선택된 태그가 없어요.
+                        </span>
                       )}
                     </div>
                   </div>
