@@ -58,23 +58,19 @@ const TroubleShootingCard = ({
 
   const shouldShowVisibilityIcon = status === "complete" && visibility;
   const shouldShowSummaryType = status === "created";
+
+  // 문서 삭제
   const handleDelete = async () => {
-    // 확인창
     if (!window.confirm("이 문서를 휴지통으로 이동할까요?")) return;
 
     try {
       setDeleting(true);
       const postId = Number(id);
-      const res = await deletePost(postId);
 
-      // 204 No Content
-      if (res.status === 204) {
-        onDeleted?.(postId);
+      await deletePost(postId);
 
-        console.log("임시 삭제되었습니다. (관리자 복구 가능)");
-      } else {
-        console.warn("예상과 다른 응답 상태:", res.status);
-      }
+      onDeleted?.(postId);
+      console.log("임시 삭제되었습니다. (관리자 복구 가능)");
     } catch (err: any) {
       console.error(err);
       alert(
