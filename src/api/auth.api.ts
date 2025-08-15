@@ -43,9 +43,17 @@ export const postRefreshToken = () =>
     method: "POST",
   });
 
-// 로그아웃 (서버가 204면 getAPIResponseData가 null 반환)
-export const postLogout = () =>
-  getAPIResponseData<LogoutResponse | null>({
+export const postLogout = () => {
+  const access = localStorage.getItem("accessToken") ?? "";
+  const refresh = localStorage.getItem("refreshToken") ?? "";
+
+  return getAPIResponseData<LogoutResponse | null, { refreshToken?: string }>({
     url: "/auth/logout",
     method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+      ...(access ? { Authorization: `Bearer ${access}` } : {}),
+    },
+    data: refresh ? { refreshToken: refresh } : undefined,
   });
+};

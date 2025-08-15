@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { postLogout } from "@/api/auth.api";
-
+import { PATH } from "@/constants/paths";
 interface UserMenuDropdownProps {
   onNavigateToMyPage: () => void;
   onClose: () => void;
@@ -14,16 +14,15 @@ export default function UserMenuDropdown({
 
   const handleLogout = async () => {
     try {
-      const response = await postLogout();
-      console.log("로그아웃 성공:", response.data);
-
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken"); // 저장되어있으면
-
-      onClose();
-      navigate("/login");
-    } catch (error: any) {
+      const result = await postLogout();
+      console.log("로그아웃 응답:", result);
+    } catch (error) {
       console.error("로그아웃 실패:", error);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      onClose();
+      navigate(PATH.LOGIN);
     }
   };
 
