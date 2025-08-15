@@ -22,7 +22,7 @@ export const getTroubleList = (
   sortBy: "latest" | "likes" = "latest"
 ) =>
   getAPIResponseData<GetTroubleListResponse>(
-    api.get<GetTroubleListResponse>("troubles/my/list", {
+    api.get<GetTroubleListResponse>("/troubles/my/list", {
       params: { page, size, sortBy },
     })
   );

@@ -1,19 +1,25 @@
+import { useState } from "react";
 import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
 import { mockCards } from "@/mocks/mockCards";
 import { mapToTroubleShootingCard } from "@/mappers/cardMapper";
 
 const LikedPostsPage = () => {
-  // 임시
-  const likedCards = mockCards.filter((c) => !c.isMine);
+  const [likedCards, setLikedCards] = useState(() =>
+    mockCards.filter((c) => !c.isMine)
+  );
+
+  const handleDeleted = (postId: number) => {
+    setLikedCards((prev) => prev.filter((c) => c.id !== postId));
+  };
 
   return (
     <div className="flex flex-col items-end gap-[40px] w-[948px] pb-[78px]">
-      {/* 좋아요한 포스트 목록 */}
       <div className="flex flex-col items-start self-stretch">
         {likedCards.map((card) => (
           <TroubleShootingCard
             key={card.id}
             {...mapToTroubleShootingCard(card)}
+            onDeleted={handleDeleted}
           />
         ))}
       </div>

@@ -14,7 +14,7 @@ const HeaderWoSearch = () => {
         src={logo}
         alt="logo"
         className="w-[70px] h-[51px]"
-        onClick={() => navigate("home")}
+        onClick={() => navigate(PATH.HOME)}
       />
       <div className="flex gap-10 items-center">
         <FaUserGroup

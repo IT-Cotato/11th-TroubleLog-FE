@@ -59,6 +59,10 @@ const TroubleShootingList = () => {
 
   const sortedCards = statusFiltered;
 
+  const handleDeleted = (postId: number) => {
+    setAllCards((prev) => prev.filter((c) => c.id !== postId));
+  };
+
   return (
     <div className="flex flex-col items-end gap-[40px] w-[948px] pb-[78px]">
       {/* 정렬 기준 선택 */}
@@ -73,9 +77,10 @@ const TroubleShootingList = () => {
           <TroubleShootingCard
             key={card.id}
             {...mapToTroubleShootingCard(card)}
+            onDeleted={handleDeleted}
           />
         ))}
-
+        
         {/* 로딩 스켈레톤 */}
         {isLoading && (
           <>

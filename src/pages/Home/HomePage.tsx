@@ -49,16 +49,25 @@ export default function HomePage() {
 
   const navigate = useNavigate();
 
-  // 글쓰기 드롭다운 버튼 클릭 핸들러
-  const handleGoGuideTemplate = useCallback(() => {
-    setShowDropdown(false);
-    navigate(PATH.TEMP_WRITING);
-  }, [navigate]);
+  const goGuide = useCallback(
+    (projectId?: number) => {
+      setShowDropdown(false);
+      navigate(PATH.TEMP_WRITING, { state: { projectId } });
+    },
+    [navigate]
+  );
 
-  const handleGoFreeformTemplate = useCallback(() => {
-    setShowDropdown(false);
-    navigate(PATH.FREEFORM_WRITING);
-  }, [navigate]);
+  const goFreeform = useCallback(
+    (projectId?: number) => {
+      setShowDropdown(false);
+      navigate(PATH.FREEFORM_WRITING, { state: { projectId } });
+    },
+    [navigate]
+  );
+
+  // 글쓰기 드롭다운 버튼 클릭 핸들러
+  const handleGoGuideTemplate = () => goGuide();
+  const handleGoFreeformTemplate = () => goFreeform();
 
   // 프로젝트 목록 + 페이징 상태
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
