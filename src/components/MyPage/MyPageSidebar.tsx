@@ -9,7 +9,7 @@ import userIcon from "@/assets/icons/user.svg";
 import circleYIcon from "@/assets/icons/circle_y.svg";
 import circleGIcon from "@/assets/icons/circle_g.svg";
 import circleBIcon from "@/assets/icons/circle_b.svg";
-import { getUserInfo } from "@/api/user.api"; // 사용자 정보 조회 API import
+import { getUserInfo, postFollow } from "@/api/user.api";
 import type { UserInfoData } from "@/models/user.model";
 
 type MyPageSideBarProps =
@@ -46,6 +46,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       try {
         const data = await getUserInfo(Number(id));
         setUserInfo(data);
+        console.log(userInfo);
       } catch (error) {
         console.error("사용자 정보 불러오기 실패:", error);
       }
@@ -76,6 +77,14 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       setSelectedTag(null);
     } else {
       setSelectedTag(tag);
+    }
+  };
+
+  const handleFollowClick = async (id: number) => {
+    try {
+      await postFollow(id);
+    } catch (e) {
+      console.error("팔로우 실패", e);
     }
   };
 
@@ -111,7 +120,11 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                 onClick={handleNavigate(MYPAGE_SUBPATH.EDIT_PROFILE)}
               />
             ) : (
-              <FollowButton label="팔로우" colorClass="bg-primary" />
+              <FollowButton
+                label="팔로우"
+                colorClass="bg-primary"
+                onClick={() => handleFollowClick(Number(id))}
+              />
             )}
           </div>
         </div>
