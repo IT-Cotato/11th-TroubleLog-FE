@@ -398,7 +398,7 @@ const TempWritePage = () => {
             })}
           </div>
 
-          {/* 모달 */}
+          {/* 모달들 */}
           {isPostSaveModalOpen && (
             <PostSaveModal
               onClose={() => setIsPostSaveModalOpen(false)}
@@ -406,6 +406,7 @@ const TempWritePage = () => {
               projects={projectList.map((p) => ({ id: p.id, name: p.name }))}
               loadingProjects={projectsLoading}
               defaultProjectId={initialProjectId}
+              selectedTags={selectedTags}
             />
           )}
           {isTemplateSelectModalOpen && (

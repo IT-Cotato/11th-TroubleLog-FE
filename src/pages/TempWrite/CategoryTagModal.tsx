@@ -74,63 +74,73 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
   const [remoteTags, setRemoteTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const debouncedQuery = useMemo(() => query.trim(), [query]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // 키워드 검색
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   useEffect(() => {
     let stop = false;
 
-    const run = async () => {
-      if (!debouncedQuery) {
-        setRemoteTags([]);
-        return;
-      }
+    if (!debouncedQuery) {
+      setRemoteTags([]);
+      return;
+    }
+
+    (async () => {
       setLoading(true);
       try {
-        const { data } = await getTagsByKeyword({ tagName: debouncedQuery });
-        if (!stop) setRemoteTags(normalizeTagList(data));
+        const data = await getTagsByKeyword({ tagName: debouncedQuery });
+        if (!stop) setRemoteTags(Array.from(new Set(normalizeTagList(data))));
       } catch {
         if (!stop) setRemoteTags([]);
       } finally {
         if (!stop) setLoading(false);
       }
-    };
+    })();
 
-    const t = setTimeout(run, 300);
     return () => {
       stop = true;
-      clearTimeout(t);
     };
   }, [debouncedQuery]);
 
-  // 카테고리 선택
   useEffect(() => {
     let stop = false;
 
-    const run = async () => {
-      if (!activeCategory || debouncedQuery) return;
+    if (!activeCategory || debouncedQuery) {
+      return;
+    }
+
+    (async () => {
       setLoading(true);
       try {
-        const apiCategory: ApiTagCategory = UI_TO_API[activeCategory];
-        const { data } = await getTagsByCategory({ tagCategory: apiCategory });
-        if (!stop) setRemoteTags(normalizeTagList(data));
+        const apiCategory: ApiTagCategory =
+          UI_TO_API[activeCategory as UiTagCategory];
+        const data = await getTagsByCategory({ tagCategory: apiCategory });
+        if (!stop) setRemoteTags(Array.from(new Set(normalizeTagList(data))));
       } catch {
         if (!stop) setRemoteTags([]);
       } finally {
         if (!stop) setLoading(false);
       }
-    };
+    })();
 
-    run();
     return () => {
       stop = true;
     };
   }, [activeCategory, debouncedQuery]);
 
   const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    setSelectedTags((prev) => {
+      const next = prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag];
+      return Array.from(new Set(next));
+    });
   };
 
   const localFiltered = useMemo(() => {
@@ -142,7 +152,11 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
             .toLocaleLowerCase("ko")
             .includes(debouncedQuery.toLocaleLowerCase("ko"))
         : true;
-    return allTags.filter((t) => byCat(t) && byQuery(t)).map((t) => t.label);
+
+    const labels = allTags
+      .filter((t) => byCat(t) && byQuery(t))
+      .map((t) => t.label);
+    return Array.from(new Set(labels));
   }, [allTags, activeCategory, debouncedQuery]);
 
   const usingServer =
@@ -249,9 +263,9 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
               </div>
             )}
             <div className="flex justify-center flex-wrap gap-[24px] pb-4">
-              {displayList.map((label) => (
+              {displayList.map((label, idx) => (
                 <button
-                  key={label}
+                  key={`${label}#${idx}`}
                   onClick={() => toggleTag(label)}
                   className={`px-3 py-1 rounded-full text-sm border ${
                     selectedTags.includes(label)
