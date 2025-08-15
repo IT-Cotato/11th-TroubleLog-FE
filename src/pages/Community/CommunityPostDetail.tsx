@@ -332,7 +332,8 @@ export default function CommunityPostDetail() {
     } catch {
       // 실패 → 롤백
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
-      throw new Error("reply-failed");
+      // 에러 메시지를 표시하거나 로깅
+      console.error("대댓글 작성 실패");
     }
   };
 
