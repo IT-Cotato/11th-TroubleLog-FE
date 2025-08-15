@@ -59,6 +59,19 @@ export async function searchMyTroubles(params: {
   return inflight.get(key)!;
 }
 
+// 특정 사용자의 트러블슈팅 목록 조회
+export const getUserTroubleList = (
+  userId: number,
+  page = 1,
+  size = 10,
+  sortBy: "latest" | "likes" = "latest"
+) =>
+  getAPIResponseData<GetTroubleListResponse>(
+    api.get<GetTroubleListResponse>(`/troubles/users/${userId}/list`, {
+      params: { page, size, sortBy },
+    })
+  );
+
 // 특정 사용자의 트러블슈팅 문서 기반 검색
 export async function searchUserTroubles(params: {
   userId: number;

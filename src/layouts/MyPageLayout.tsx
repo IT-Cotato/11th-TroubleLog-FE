@@ -13,9 +13,31 @@ const MyPageLayout = () => {
   // 정렬 상태
   const [sortBy, setSortBy] = useState<"latest" | "likes">("latest");
 
-  // 사용자의 트러블슈팅 목록 불러오기
+  // userId 숫자 파싱 (없거나 잘못된 경우 NaN)
+  const userIdNum = useMemo(() => {
+    const n = Number(id);
+    return Number.isFinite(n) ? n : NaN;
+  }, [id]);
+
+  // 훅에 넘길 source를 미리 계산
+  const source = useMemo(
+    () =>
+      isMyPage
+        ? ({ type: "all" } as const)
+        : ({ type: "user", userId: userIdNum } as const),
+    [isMyPage, userIdNum]
+  );
+
+  // user 페이지인데 id가 유효하지 않으면 로딩을 막아두기
+  const enabled = isMyPage || Number.isFinite(userIdNum);
+
   const { cards, isLoading, error, hasNext, sentinelRef, reload } =
-    useTroubleCards({ type: "all" }, { infinite: true, pageSize: 10, sortBy });
+    useTroubleCards(source, {
+      infinite: true,
+      pageSize: 10,
+      sortBy,
+      enabled,
+    });
 
   // 작성 상태별 트러블슈팅 개수 계산
   const counts = useMemo(() => {
@@ -28,8 +50,25 @@ const MyPageLayout = () => {
     };
   }, [cards]);
 
-  // 다른 사용자의 마이페이지용 태그 분석 (임시)
-  const sortedTags: [string, number][] = [];
+  // 다른 사용자의 마이페이지용 태그 분석
+  const sortedTags = useMemo<[string, number][]>(() => {
+    if (cards.length === 0) return [];
+
+    const counter = new Map<string, number>();
+    for (const c of cards) {
+      if (!Array.isArray(c.tags)) continue;
+      for (const raw of c.tags) {
+        const tag = String(raw ?? "").trim();
+        if (!tag) continue;
+        counter.set(tag, (counter.get(tag) ?? 0) + 1);
+      }
+    }
+
+    // count 내림차순, count 같으면 이름 오름차순
+    return Array.from(counter.entries()).sort(
+      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0])
+    );
+  }, [cards]);
 
   return (
     <div className="flex items-start gap-[68px] pt-20 justify-center">

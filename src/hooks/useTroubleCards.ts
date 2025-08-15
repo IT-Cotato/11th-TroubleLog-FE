@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { getTroubleList, getProjectTroubleList } from "@/api/trouble.api";
+import {
+  getTroubleList,
+  getProjectTroubleList,
+  getUserTroubleList,
+} from "@/api/trouble.api";
 import {
   toTroublogCardVMs,
   type TroublogCardVM,
@@ -14,6 +18,7 @@ type SortParam = "latest" | "likes";
 
 type Source =
   | { type: "all" }
+  | { type: "user"; userId: number }
   | { type: "project"; projectId: number; query: ProjectTroubleQuery };
 
 interface Options {
@@ -39,6 +44,7 @@ type PageResp = {
 
 // (key|page|size|sort) 단위 in-flight 공유: 전체 목록용
 const inflightPaged = new Map<string, Promise<PageResp>>();
+const inflightUserPaged = new Map<string, Promise<PageResp>>();
 // (project|query) 단위 in-flight 공유: 프로젝트 목록용
 const inflightProject = new Map<string, Promise<TroubleListItem[]>>();
 
@@ -69,6 +75,23 @@ async function fetchPagedOnce(
   return inflightPaged.get(key)!;
 }
 
+async function fetchUserPagedOnce(
+  userId: number,
+  page: number,
+  size: number,
+  sortBy: SortParam
+) {
+  const sk = `user:${userId}`;
+  const key = makePagedKey(sk, page, size, sortBy);
+  if (!inflightUserPaged.has(key)) {
+    const p = getUserTroubleList(userId, page, size, sortBy).finally(() =>
+      inflightUserPaged.delete(key)
+    );
+    inflightUserPaged.set(key, p);
+  }
+  return inflightUserPaged.get(key)!;
+}
+
 async function fetchProjectOnce(pid: number, q: ProjectTroubleQuery) {
   const key = makeProjectKey(pid, q);
   if (!inflightProject.has(key)) {
@@ -93,13 +116,14 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
 
   const srcKey = useMemo(() => {
     if (source.type === "all") return `all|sort=${sortBy}`;
+    if (source.type === "user") return `user:${source.userId}|sort=${sortBy}`;
     const q = source.query;
     return `project:${source.projectId}|${q.status}|${q.sort}|${
       q.visibility ?? ""
     }|${q.summaryType ?? ""}`;
   }, [
     source.type,
-    // 원시값 의존으로 안전하게
+    (source as any).userId,
     (source as any).projectId,
     (source as any).query?.status,
     (source as any).query?.sort,
@@ -152,14 +176,29 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     requestedPagesRef.current = new Set();
   }, []);
 
-  // 전체 목록: 특정 페이지 로드  ← ★ 변경
+  // 소유자 플래그 오버라이드 헬퍼
+  const applyOwnerFlag = useCallback(
+    (vms: TroublogCardVM[]) => {
+      if (source.type === "all" || source.type === "project") {
+        return vms.map((x) => ({ ...x, isMine: true }));
+      }
+      if (source.type === "user") {
+        const myId =
+          typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+        const ownerIsMe =
+          myId != null && String(source.userId) === String(myId);
+        return vms.map((x) => ({ ...x, isMine: ownerIsMe }));
+      }
+      return vms;
+    },
+    [source]
+  );
+
+  // 전체 목록: 특정 페이지 로드
   const loadPage = useCallback(
     async (targetPage: number, { append = true, dedupe = true } = {}) => {
       if (!enabled) return;
-
       if (targetPage !== 1 && !hasNextRef.current) return;
-
-      // 같은 페이지 중복 요청 원천 차단
       if (requestedPagesRef.current.has(targetPage)) return;
       requestedPagesRef.current.add(targetPage);
 
@@ -168,17 +207,33 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
       const mySeq = ++seqRef.current;
 
       try {
-        const resp = dedupe
-          ? await fetchPagedOnce("all", targetPage, pageSize, sortBy)
-          : await getTroubleList(targetPage, pageSize, sortBy);
+        let resp: PageResp;
+        if (source.type === "user") {
+          resp = dedupe
+            ? await fetchUserPagedOnce(
+                source.userId,
+                targetPage,
+                pageSize,
+                sortBy
+              )
+            : await getUserTroubleList(
+                source.userId,
+                targetPage,
+                pageSize,
+                sortBy
+              );
+        } else {
+          // all
+          resp = dedupe
+            ? await fetchPagedOnce("all", targetPage, pageSize, sortBy)
+            : await getTroubleList(targetPage, pageSize, sortBy);
+        }
 
         if (seqRef.current !== mySeq) return;
 
         const list = Array.isArray(resp.content) ? resp.content : [];
         const listLen = list.length;
 
-        // 서버 메타를 최대한 사용하되,
-        // 실제 "추가된 개수(addedCount)"로 최종 보정한다.
         const anyResp = resp as any;
         const isLast =
           typeof anyResp?.isLast === "boolean"
@@ -200,18 +255,14 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
         else if (typeof isLast === "boolean") nextByServer = !isLast;
 
         if (!append || targetPage === 1) {
-          // reset
           idSetRef.current = new Set(list.map((x) => x.id));
-          setCards(toTroublogCardVMs(list));
-
-          // 초기 페이지의 다음 여부: 서버 메타가 없으면 길이 기준
+          setCards(applyOwnerFlag(toTroublogCardVMs(list))); // ← 오너 플래그 반영
           const next =
             typeof nextByServer === "boolean"
               ? nextByServer
               : listLen >= pageSize;
           setHasNext(next);
         } else {
-          // append: 중복 제거하며 이어붙이기
           const add: TroubleListItem[] = [];
           for (const item of list) {
             if (!idSetRef.current.has(item.id)) {
@@ -219,15 +270,13 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
               add.push(item);
             }
           }
-
-          // 실제로 추가된 게 없다면(서버가 같은 페이지 재전달 등) 더 이상 진행하지 않음
           if (add.length === 0) {
             setHasNext(false);
             return;
           } else {
-            setCards((prev) => prev.concat(toTroublogCardVMs(add)));
-
-            // 서버 메타가 있으면 우선 사용, 없으면 길이 기준
+            setCards((prev) =>
+              prev.concat(applyOwnerFlag(toTroublogCardVMs(add)))
+            );
             const next =
               typeof nextByServer === "boolean"
                 ? nextByServer
@@ -238,7 +287,6 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
 
         setPage(targetPage);
       } catch (e: any) {
-        // 에러 시에는 다시 재시도할 수 있도록 플래그 되돌림
         requestedPagesRef.current.delete(targetPage);
         if (seqRef.current === mySeq) {
           setError(e?.message ?? "불러오기 실패");
@@ -249,7 +297,7 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
         if (seqRef.current === mySeq) setIsLoading(false);
       }
     },
-    [enabled, pageSize, sortBy, stopOnError]
+    [enabled, pageSize, sortBy, stopOnError, source, applyOwnerFlag]
   );
 
   // 프로젝트 전용: 한 번 호출해서 끝 (페이징 없음)  ← (변경 없음)
@@ -288,8 +336,8 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
   useEffect(() => {
     if (!enabled) return;
 
-    if (source.type === "all") {
-      // all 목록: 같은 키로는 1번만
+    if (source.type === "all" || source.type === "user") {
+      // 같은 키(srcKey)로는 1번만
       if (initKeyRef.current === srcKey) return;
       initKeyRef.current = srcKey;
 
@@ -302,12 +350,12 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     initKeyRef.current = null; // all로 돌아올 때 초기 로드 재실행 보장
     reset();
     void loadProjectOnce();
-  }, [srcKey, enabled, source.type]);
+  }, [srcKey, enabled, source.type, loadPage, loadProjectOnce, reset]);
 
   // 외부에서 강제 새로고침  ← (변경 없음)
   const reload = useCallback(() => {
     reset();
-    if (source.type === "all") {
+    if (source.type === "all" || source.type === "user") {
       return loadPage(1, { append: false, dedupe: false });
     }
     return loadProjectOnce();
@@ -315,7 +363,7 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
 
   // 무한스크롤 옵저버 (전체 목록 전용)  ← (변경 없음)
   useEffect(() => {
-    if (source.type !== "all") return;
+    if (source.type === "project") return;
     if (!infinite || !enabled) return;
     if (!sentinelRef.current) return;
 
@@ -348,9 +396,9 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     return () => io.disconnect();
   }, [source.type, infinite, enabled, rootMargin, cooldownMs, loadPage]);
 
-  // 수동 "더 보기"용 (전체 목록 전용)  ← (변경 없음)
+  // 수동 "더 보기"
   const loadMore = useCallback(() => {
-    if (source.type !== "all") return;
+    if (source.type === "project") return;
     if (!enabled || !hasNextRef.current || isLoadingRef.current) return;
     return loadPage(pageRef.current + 1, { append: true, dedupe: true });
   }, [enabled, loadPage, source.type]);
