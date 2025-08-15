@@ -14,7 +14,7 @@ export const getTroubleList = (
   sortBy: TroubleSort = "latest"
 ) =>
   getAPIResponseData<GetTroubleListResponse>(
-    api.get<GetTroubleListResponse>("/troubles/list", {
+    api.get<GetTroubleListResponse>("/troubles/my/list", {
       params: { page, size, sortBy },
     })
   );
