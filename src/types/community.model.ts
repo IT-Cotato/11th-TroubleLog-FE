@@ -58,3 +58,10 @@ export interface CommunityCommentServerItem {
 // 댓글 목록 페이징 응답
 export type GetCommunityCommentsResponse =
   PaginatedResponse<CommunityCommentServerItem>;
+
+// 포스트 좋아요 응답 데이터
+export interface CommunityLikeResult {
+  postId: number;
+  userId: number;
+  likeCount: number;
+}

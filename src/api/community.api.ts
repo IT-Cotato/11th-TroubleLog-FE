@@ -1,6 +1,7 @@
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "./axios";
 import type {
+  CommunityLikeResult,
   CommunityPostDetailServer,
   CommunitySort,
   GetCommunityCommentsResponse,
@@ -16,6 +17,7 @@ const inflightComments = new Map<
   string,
   Promise<GetCommunityCommentsResponse>
 >();
+const inflightLike = new Map<number, Promise<CommunityLikeResult>>();
 
 // 커뮤니티 포스트 목록
 export const getCommunityList = (
@@ -59,4 +61,20 @@ export function getCommunityComments(postId: number, page1 = 1, size = 10) {
     inflightComments.set(key, p);
   }
   return inflightComments.get(key)!;
+}
+
+// 포스트 좋아요
+export const likeCommunityPost = (postId: number) => {
+  if (!inflightLike.has(postId)) {
+    const p = getAPIResponseData<CommunityLikeResult>(
+      api.post(`/community/${postId}/like`)
+    ).finally(() => setTimeout(() => inflightLike.delete(postId), 0));
+    inflightLike.set(postId, p);
+  }
+  return inflightLike.get(postId)!;
+};
+
+// 포스트 좋아요 취소
+export async function unlikeCommunityPost(postId: number): Promise<void> {
+  await api.delete(`/community/${postId}/like`);
 }

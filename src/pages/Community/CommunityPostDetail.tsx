@@ -17,6 +17,8 @@ import shareIcon from "@/assets/icons/share.svg";
 import {
   getCommunityComments,
   getCommunityPostDetail,
+  likeCommunityPost,
+  unlikeCommunityPost,
 } from "@/api/community.api";
 import { toCommunityPostVM } from "@/mappers/communityPostDetail.mapper";
 import { toPostComments } from "@/mappers/communityComment.mapper";
@@ -51,6 +53,8 @@ export default function CommunityPostDetail() {
   // 좋아요/댓글 로컬 상태
   const [isLiked, setIsLiked] = useState(false);
   const [likeCounts, setLikeCounts] = useState(0);
+  const [isLiking, setIsLiking] = useState(false);
+  const likeLockRef = useRef(false);
   const [commentInput, setCommentInput] = useState("");
   const [comments, setComments] = useState<PostCommentProps[]>([]);
 
@@ -67,76 +71,22 @@ export default function CommunityPostDetail() {
   const [currentSection, setCurrentSection] = useState<number>(0);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
 
-  // 데이터 로드
-  useEffect(() => {
-    let dead = false;
-    const run = async () => {
-      setLoading(true);
-      try {
-        const numId = Number(postId);
-        if (!Number.isFinite(numId)) throw new Error("잘못된 포스트 ID");
+  // 진행 중 요청 캐시(StrictMode 중복호출 디듀프)
+  const inflightPostRef = useRef(
+    new Map<number, ReturnType<typeof getCommunityPostDetail>>()
+  );
 
-        // getAPIResponseData가 이미 inner data를 반환합니다.
-        const data = await getCommunityPostDetail(numId);
-
-        if (dead) return;
-        if (!data) {
-          setLoadError("빈 응답입니다.");
-          return;
-        }
-
-        const vm = toCommunityPostVM(data);
-        setPost(vm);
-        setIsLiked(vm.isLiked);
-        setLikeCounts(vm.likeCounts);
-        setComments(vm.comments);
-      } catch (e: any) {
-        if (!dead) setLoadError(e?.message ?? "포스트 불러오기 실패");
-      } finally {
-        if (!dead) setLoading(false);
-      }
-    };
-    run();
-    return () => {
-      dead = true;
-    };
-  }, [postId]);
-
-  // 댓글 데이터 로드
-  useEffect(() => {
-    let dead = false;
-    const run = async () => {
-      setLoading(true);
-      try {
-        const numId = Number(postId);
-        if (!Number.isFinite(numId)) throw new Error("잘못된 포스트 ID");
-
-        const data = await getCommunityPostDetail(numId);
-        if (dead) return;
-        if (!data) {
-          setLoadError("빈 응답입니다.");
-          return;
-        }
-
-        const vm = toCommunityPostVM(data);
-        setPost(vm);
-        setIsLiked(vm.isLiked);
-        setLikeCounts(vm.likeCounts);
-        setComments(vm.comments);
-
-        // 댓글 1페이지 로드
-        await loadComments(numId, 1);
-      } catch (e: any) {
-        if (!dead) setLoadError(e?.message ?? "포스트 불러오기 실패");
-      } finally {
-        if (!dead) setLoading(false);
-      }
-    };
-    run();
-    return () => {
-      dead = true;
-    };
-  }, [postId]);
+  const fetchPostOnce = (id: number) => {
+    const map = inflightPostRef.current;
+    if (!map.has(id)) {
+      const p = getCommunityPostDetail(id).finally(() => {
+        // 같은 tick 끝나고 캐시 비우기 (메모리 누수 방지 & 후속 요청 허용)
+        setTimeout(() => map.delete(id), 0);
+      });
+      map.set(id, p);
+    }
+    return map.get(id)!;
+  };
 
   // 댓글 로더
   const loadComments = async (id: number, page1: number) => {
@@ -160,6 +110,54 @@ export default function CommunityPostDetail() {
       setCLoading(false);
     }
   };
+
+  // 포스트 + 댓글 1페이지 로드 (StrictMode 안전)
+  useEffect(() => {
+    let cancelled = false;
+
+    // 새 포스트 들어올 때 댓글 상태 초기화
+    setComments([]);
+    setCPage(1);
+    setCHasNext(false);
+
+    (async () => {
+      const idStr = postId ?? "";
+      const numId = Number(idStr);
+      if (!Number.isFinite(numId)) {
+        setLoadError("잘못된 포스트 ID");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const data = await fetchPostOnce(numId);
+        if (cancelled) return;
+
+        if (!data) {
+          setLoadError("빈 응답입니다.");
+          return;
+        }
+
+        const vm = toCommunityPostVM(data);
+        setPost(vm);
+        setIsLiked(vm.isLiked);
+        setLikeCounts(vm.likeCounts);
+        setComments(vm.comments);
+
+        // 댓글은 비동기로 시작(상세 렌더는 먼저)
+        void loadComments(numId, 1);
+      } catch (err: any) {
+        if (!cancelled) setLoadError(err?.message ?? "포스트 불러오기 실패");
+      } finally {
+        if (!cancelled) setLoading(false); // 반드시 한 번은 내려가도록
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [postId]);
 
   // 스크롤 감시
   useEffect(() => {
@@ -192,13 +190,58 @@ export default function CommunityPostDetail() {
     navigate(PATH.MYPAGE(localStorage.getItem("userId") || ""));
   };
 
-  const handleToggleLike = () => {
-    // 토글 UI (서버 연동은 추후)
-    setIsLiked((prev) => {
-      const next = !prev;
-      setLikeCounts((c) => (next ? c + 1 : Math.max(0, c - 1)));
-      return next;
-    });
+  // 포스트 좋아요 토글
+  const handleToggleLike = async () => {
+    if (!postId) return;
+    if (likeLockRef.current) return;
+    likeLockRef.current = true;
+    setIsLiking(true);
+
+    const pid = Number(postId);
+    const wasLiked = isLiked;
+    const prevCount = likeCounts;
+
+    if (wasLiked) {
+      // 낙관적 감소
+      setIsLiked(false);
+      setLikeCounts(Math.max(0, prevCount - 1));
+
+      try {
+        await unlikeCommunityPost(pid);
+        // 성공 시 그대로 둔다
+      } catch {
+        // 실패 시 롤백
+        setIsLiked(true);
+        setLikeCounts(prevCount);
+      } finally {
+        likeLockRef.current = false;
+        setIsLiking(false);
+      }
+    } else {
+      // 낙관적 증가
+      setIsLiked(true);
+      setLikeCounts(prevCount + 1);
+
+      try {
+        const res = await likeCommunityPost(pid);
+        // 서버 카운트로 보정(응답에 likeCount 포함)
+        setLikeCounts(res?.likeCount ?? prevCount + 1);
+      } catch (err: any) {
+        const status = err?.response?.status ?? err?.status;
+        if (status === 409) {
+          // 이미 좋아요 상태인 경우 -> isLiked는 true 유지, 카운트는 원래 값으로 되돌림
+          setIsLiked(true);
+          setLikeCounts(prevCount);
+        } else {
+          // 기타 에러 → 완전 롤백
+          setIsLiked(false);
+          setLikeCounts(prevCount);
+        }
+      } finally {
+        likeLockRef.current = false;
+        setIsLiking(false);
+      }
+    }
   };
 
   const handleEdit = (id: string, newContent: string) => {
@@ -408,20 +451,27 @@ export default function CommunityPostDetail() {
             <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
               <div className="flex items-center gap-[20px]">
                 {/* 좋아요 */}
-                <div
-                  className="flex items-center gap-[8px] cursor-pointer"
+                <button
+                  type="button"
+                  aria-pressed={isLiked}
+                  aria-busy={isLiking}
+                  disabled={isLiking}
                   onClick={handleToggleLike}
+                  className={`flex items-center gap-[8px] ${
+                    isLiking
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
                 >
                   <img
                     src={isLiked ? heartIcon : likeEmptyIcon}
                     alt="like"
                     className="w-[40px] h-[40px]"
                   />
-
                   <div className="text-body-20-regular text-gray3">
                     {likeCounts}
                   </div>
-                </div>
+                </button>
 
                 {/* 공유 버튼 */}
                 <img
