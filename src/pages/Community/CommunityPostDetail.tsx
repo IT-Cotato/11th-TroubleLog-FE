@@ -666,7 +666,7 @@ export default function CommunityPostDetail() {
             {cHasNext && postId && (
               <button
                 disabled={cLoading}
-                onClick={() => loadComments(Number(postId), cPage + 1)}
+                onClick={() => loadComments(Number(postId), cPage)}
                 className={`mt-4 px-6 py-2 rounded-full text-white ${
                   cLoading ? "bg-gray-300" : "bg-primary"
                 }`}
