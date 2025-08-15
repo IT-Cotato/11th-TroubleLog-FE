@@ -17,7 +17,7 @@ const HeaderWoSearch = () => {
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const myUserId = "123"; // 실제 로그인한 사용자 ID로 대체 필요
+  const myUserId = localStorage.getItem("userId") || "";
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
