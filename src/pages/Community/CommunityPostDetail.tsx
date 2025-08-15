@@ -30,6 +30,7 @@ import {
   toPostComment,
   toPostComments,
 } from "@/mappers/communityComment.mapper";
+import { useViewerId } from "@/store/auth";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -53,6 +54,9 @@ export interface CommunityPostDetailProps {
 export default function CommunityPostDetail() {
   const { postId } = useParams<{ postId: string }>(); // postId 불러오기
   const navigate = useNavigate();
+  // 중앙 상태의 로그인 사용자 ID
+  const viewerId = useViewerId();
+  const myUserIdStr = viewerId != null ? String(viewerId) : null;
 
   const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,7 +108,7 @@ export default function CommunityPostDetail() {
     setCLoading(true);
     try {
       const resp = await getCommunityComments(id, page1, 10);
-      const mapped = toPostComments(resp.content);
+      const mapped = toPostComments(resp.content, viewerId);
 
       setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
 
@@ -150,7 +154,7 @@ export default function CommunityPostDetail() {
           return;
         }
 
-        const vm = toCommunityPostVM(data);
+        const vm = toCommunityPostVM(data, viewerId);
         setPost(vm);
         setIsLiked(vm.isLiked);
         setLikeCounts(vm.likeCounts);
@@ -168,7 +172,7 @@ export default function CommunityPostDetail() {
     return () => {
       cancelled = true;
     };
-  }, [postId]);
+  }, [postId, viewerId]);
 
   // 스크롤 감시
   useEffect(() => {
@@ -198,7 +202,7 @@ export default function CommunityPostDetail() {
   const handleProfileClick = () => {
     // 작성자 마이페이지로
     if (!post) return;
-    navigate(PATH.MYPAGE(localStorage.getItem("userId") || ""));
+    navigate(PATH.MYPAGE(myUserIdStr || ""));
   };
 
   // 포스트 좋아요 토글
@@ -275,7 +279,7 @@ export default function CommunityPostDetail() {
       const created = await createCommunityComment(Number(postId), {
         contents,
       });
-      const mapped = toPostComment(created, { isReply: false });
+      const mapped = toPostComment(created, viewerId, { isReply: false });
       setComments((prev) => {
         const i = prev.findIndex((c) => c.id === optimistic.id);
         if (i === -1) return [mapped, ...prev];
@@ -313,7 +317,10 @@ export default function CommunityPostDetail() {
       );
 
       // 백엔드에서 parentCommentId가 null로 올 수 있으므로 강제 보정
-      const mapped = toPostComment(created, { isReply: true, parentId });
+      const mapped = toPostComment(created, viewerId, {
+        isReply: true,
+        parentId,
+      });
       setComments((prev) => {
         const i = prev.findIndex((c) => c.id === optimistic.id);
         if (i === -1) return [...prev, mapped];
@@ -341,7 +348,7 @@ export default function CommunityPostDetail() {
         contents: newContent,
       });
 
-      const vm = toPostComment(updated);
+      const vm = toPostComment(updated, viewerId);
 
       // 목록 반영 (id 일치하는 아이템 교체)
       setComments((prev) =>

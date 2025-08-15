@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
 import NotificationModal from "../Modal/NotificationModal";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
+import { useViewerId } from "@/store/auth";
 
 const HeaderWoSearch = () => {
   const navigate = useNavigate();
@@ -17,7 +18,9 @@ const HeaderWoSearch = () => {
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const myUserId = localStorage.getItem("userId") || "";
+  // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
+  const viewerId = useViewerId();
+  const myUserId = viewerId != null ? String(viewerId) : null;
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
@@ -85,7 +88,7 @@ const HeaderWoSearch = () => {
               <UserMenuDropdown
                 onClose={() => setIsUserDropdownOpen(false)}
                 onNavigateToMyPage={() => {
-                  navigate(PATH.MYPAGE(myUserId));
+                  navigate(PATH.MYPAGE(String(myUserId)));
                   setIsUserDropdownOpen(false);
                 }}
               />

@@ -10,6 +10,7 @@ import UserMenuDropdown from "../Menu/UserMenuDropdown";
 import NotificationModal from "../Modal/NotificationModal";
 import { PATH } from "@/constants/paths";
 import logo from "@/assets/icons/logo.svg";
+import { useViewerId } from "@/store/auth";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -21,18 +22,9 @@ const Header = () => {
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 로그인 후 저장된 userId 사용
-  const [myUserId, setMyUserId] = useState<string | null>(null);
-  useEffect(() => {
-    // 초기 로드
-    setMyUserId(localStorage.getItem("userId"));
-    // 다른 탭에서 로그인/로그아웃 시 동기화
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "userId") setMyUserId(e.newValue);
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
+  const viewerId = useViewerId();
+  const myUserIdStr = viewerId != null ? String(viewerId) : null;
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
@@ -76,7 +68,7 @@ const Header = () => {
     const pageUserId = mypageMatch?.[1];
 
     if (path.startsWith(PATH.MYPAGE(""))) {
-      if (pageUserId && myUserId && pageUserId === myUserId) {
+      if (pageUserId && myUserIdStr && pageUserId === myUserIdStr) {
         setPlaceholder(
           "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
         );
@@ -97,7 +89,7 @@ const Header = () => {
         "키워드나 태그 등의 검색어를 통해 다른 사람들의 트러블슈팅을 검색해보세요!"
       );
     }
-  }, [location.pathname, setPlaceholder, myUserId]);
+  }, [location.pathname, setPlaceholder, myUserIdStr]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -128,7 +120,7 @@ const Header = () => {
       pageUserId = mypageMatch?.[1] ?? "";
 
       if (currentPath.startsWith(PATH.MYPAGE(""))) {
-        scope = pageUserId === myUserId ? "mypage" : "user";
+        scope = pageUserId === myUserIdStr ? "mypage" : "user";
       } else if (
         currentPath.startsWith(PATH.HOME) ||
         currentPath.startsWith(PATH.PROJECT_DETAIL(""))
@@ -206,8 +198,8 @@ const Header = () => {
                 <UserMenuDropdown
                   onClose={() => setIsUserDropdownOpen(false)}
                   onNavigateToMyPage={() => {
-                    if (myUserId) {
-                      navigate(PATH.MYPAGE(myUserId));
+                    if (myUserIdStr) {
+                      navigate(PATH.MYPAGE(myUserIdStr));
                     } else {
                       // 미로그인/정보없음: 루트(또는 로그인)로 유도
                       navigate(PATH.ROOT);

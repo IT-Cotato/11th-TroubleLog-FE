@@ -11,15 +11,15 @@ const fmtYYMMDD = (iso: string) => {
   return `${yy}.${mm}.${dd}`;
 };
 
-const isMineByUserId = (userId?: number | null) => {
-  const me =
-    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-  return me != null && String(me) === String(userId ?? "");
-};
+const isMine = (
+  userId: number | null | undefined,
+  viewerId: number | string | null
+) => viewerId != null && String(viewerId) === String(userId ?? "");
 
 // 서버 댓글 -> 화면 댓글
 export const toPostComment = (
   c: CommunityCommentServerItem,
+  viewerId: number | string | null,
   override?: Partial<
     Pick<PostCommentProps, "isReply" | "parentId" | "name" | "profile">
   >
@@ -31,7 +31,7 @@ export const toPostComment = (
     profile: undefined,
     date: fmtYYMMDD(c.createdAt),
     content: c.content ?? "",
-    isMine: isMineByUserId(c.userId),
+    isMine: isMine(c.userId, viewerId),
     isReply: c.parentCommentId != null,
     parentId: c.parentCommentId != null ? String(c.parentCommentId) : undefined,
   };
@@ -41,11 +41,13 @@ export const toPostComment = (
 // 목록 매핑
 export const toPostComments = (
   list: CommunityCommentServerItem[],
+  viewerId: number | string | null,
   overrides?: Record<
     number,
     Partial<Pick<PostCommentProps, "isReply" | "parentId" | "name" | "profile">>
   >
-) => (list ?? []).map((c) => toPostComment(c, overrides?.[c.commentId]));
+) =>
+  (list ?? []).map((c) => toPostComment(c, viewerId, overrides?.[c.commentId]));
 
 // 낙관적(optimistic) 댓글/대댓글 생성용 헬퍼
 export const makeOptimisticComment = (args: {

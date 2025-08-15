@@ -5,6 +5,7 @@ import mockimg from "../../assets/images/mockimg.jpg";
 import KakaoLoginButton from "./KakaoLoginButton";
 import { postLogin } from "@/api/auth.api";
 import { PATH } from "@/constants/paths";
+import { useAuthStore } from "@/store/auth";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -62,9 +63,13 @@ const LoginPage = () => {
     try {
       const data = await postLogin(email, password);
       localStorage.setItem("accessToken", data.accessToken);
-      if (data.userId != null) {
-        localStorage.setItem("userId", String(data.userId));
-      }
+
+      // 중앙 상태에 사용자 정보 저장
+      const { setUser } = useAuthStore.getState();
+      if (data.userId == null) throw new Error("userId가 없습니다.");
+      setUser({
+        userId: data.userId,
+      });
 
       // next 또는 홈으로 이동
       const params = new URLSearchParams(location.search);
