@@ -46,7 +46,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       try {
         const data = await getUserInfo(Number(id));
         setUserInfo(data);
-        console.log(data);
+        console.log(userInfo);
       } catch (error) {
         console.error("사용자 정보 불러오기 실패:", error);
       }
@@ -82,8 +82,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
 
   const handleFollowClick = async (id: number) => {
     try {
-      const res = await postFollow(id);
-      console.log("팔로우 응답:", res);
+      await postFollow(id);
     } catch (e) {
       console.error("팔로우 실패", e);
     }

@@ -23,10 +23,8 @@ const MyFollowing = () => {
 
         if (path === "following") {
           data = await getFollowings(userId);
-          console.log(data);
         } else if (path === "follower") {
           data = await getFollowers(userId);
-          console.log(data);
         }
 
         setFollowList(data);
