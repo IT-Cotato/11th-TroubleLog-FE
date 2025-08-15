@@ -9,14 +9,26 @@ const SearchResultPage = () => {
   const location = useLocation();
   const sp = new URLSearchParams(location.search);
   const query = sp.get("query") ?? "";
-  const scope = (sp.get("scope") ?? "community") as
-    | "my"
-    | "mypage"
-    | "user"
-    | "community";
-  const size = Number(sp.get("size") ?? 10) || 10;
-  const userIdParam = sp.get("userId");
-  const userId = userIdParam ? Number(userIdParam) : null;
+  // scope: 화이트리스트로 안전하게 정규화
+  type SearchScope = "my" | "mypage" | "user" | "community";
+  const scopeRaw = sp.get("scope");
+  const scope: SearchScope =
+    scopeRaw === "my" ||
+    scopeRaw === "mypage" ||
+    scopeRaw === "user" ||
+    scopeRaw === "community"
+      ? scopeRaw
+      : "community";
+  // size: 1~50 범위로 클램프
+  const sizeParam = Number(sp.get("size"));
+  const size =
+    Number.isFinite(sizeParam) && sizeParam >= 1 && sizeParam <= 50
+      ? sizeParam
+      : 10;
+  // userId: 정수 문자열만 허용
+  const userIdStr = sp.get("userId");
+  const userId =
+    userIdStr && /^\d+$/.test(userIdStr) ? Number(userIdStr) : null;
 
   const isMyScope = scope === "my" || scope === "mypage";
   const isUserScope = scope === "user" && !!userId;
