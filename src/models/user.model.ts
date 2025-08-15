@@ -6,12 +6,20 @@ export interface ProfileData {
   githubUrl: string;
 }
 
-export interface UserInfoData {
+export interface UpdatedProfileData {
   userId: number;
   nickname: string;
   field: string;
   bio: string;
   githubUrl: string;
+  profileUrl: string;
+}
+
+export interface UserInfoData {
+  userId: number;
+  nickname: string;
+  profileUrl: string;
+  bio: string;
   followerNum: number;
   followingNum: number;
 }
