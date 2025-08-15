@@ -7,32 +7,43 @@ import FollowButton from "@/components/Button/FollowButton";
 import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
-import type { ProfileData } from "@/models/user.model";
+import type { ProfileData, UpdatedProfileData } from "@/models/user.model";
 import { deleteUser, getMyProfile, patchProfile } from "@/api/user.api";
 import { PATH } from "@/constants/paths";
 import userIcon from "@/assets/icons/user.svg";
+import useImageUpload from "@/utils/useImageUpload";
 
 const EditProfile = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [profile, setProfile] = useState<ProfileData>({
+  const { upload } = useImageUpload();
+
+  const [profile, setProfile] = useState<UpdatedProfileData>({
     userId: 0,
     nickname: "",
     field: "",
     bio: "",
     githubUrl: "",
+    profileUrl: "",
   });
 
-  //프로필 사진 변경
+  // 프로필 이미지 미리보기
   const [profileImage, setProfileImage] = useState<string>(userIcon);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleImageUpload = () => {
     fileInputRef.current?.click();
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    try {
+      // 서버 업로드
+      const uploadedUrl = await upload(file);
+
+      // UI 미리보기
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === "string") {
@@ -40,13 +51,25 @@ const EditProfile = () => {
         }
       };
       reader.readAsDataURL(file);
+
+      // 프로필 state에 서버 URL 저장
+      setProfile((prev) => ({
+        ...prev,
+        profileUrl: uploadedUrl,
+      }));
+    } catch (err) {
+      console.error("이미지 업로드 실패", err);
     }
   };
 
   const handleImageDelete = () => {
     setProfileImage(userIcon);
+    setProfile((prev) => ({
+      ...prev,
+      profileUrl: "",
+    }));
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // input 초기화
+      fileInputRef.current.value = "";
     }
   };
 
@@ -74,11 +97,19 @@ const EditProfile = () => {
     navigate("/");
   }, [navigate]);
 
-  /* useEffect(() => {
+  // 프로필 불러오기
+  useEffect(() => {
     const fetchProfile = async () => {
       try {
         const data = await getMyProfile();
-        setProfile(data);
+        setProfile({
+          userId: data.userId,
+          nickname: data.nickname,
+          field: data.field,
+          bio: data.bio,
+          githubUrl: data.githubUrl,
+          profileUrl: "",
+        });
       } catch (error) {
         console.error("정보를 불러오는 데 실패했습니다", error);
       }
@@ -86,20 +117,7 @@ const EditProfile = () => {
 
     fetchProfile();
   }, []);
-*/
 
-  useEffect(() => {
-    const mockData = {
-      userId: 0,
-      nickname: "안수이",
-      field: "관심분야 1",
-      bio: "안녕하세요. 프론트엔드 개발자입니다!",
-      githubUrl: "ddd@gmail.com",
-    };
-    setProfile(mockData);
-  }, []);
-
-  // 프로필 수정 완료
   const handleChange =
     (field: keyof ProfileData) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setProfile((prev) => ({
@@ -108,7 +126,17 @@ const EditProfile = () => {
       }));
     };
 
+  // 저장
   const handleSave = async () => {
+    const nickname = profile.nickname?.trim() || "";
+    const field = profile.field?.trim() || "";
+    const bio = profile.bio?.trim() || "";
+
+    if (!nickname || !field || !bio) {
+      alert("닉네임, 분야, 한 줄 소개는 필수 입력 항목입니다.");
+      return;
+    }
+
     try {
       await patchProfile(profile);
       navigate(PATH.MYPAGE(id!));
@@ -117,6 +145,7 @@ const EditProfile = () => {
     }
   };
 
+  // 취소
   const handleCancel = () => {
     navigate(-1);
   };
@@ -185,7 +214,7 @@ const EditProfile = () => {
           </div>
         </div>
 
-        {/* 버튼 영역 */}
+        {/* 버튼 */}
         <div className="flex gap-4">
           <CancelButton onClick={handleCancel} />
           <SaveButton onClick={handleSave} label="저장" />

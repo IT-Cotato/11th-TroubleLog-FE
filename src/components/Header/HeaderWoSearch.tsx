@@ -4,10 +4,11 @@ import { FaUserCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/icons/logo.svg";
 import { PATH } from "@/constants/paths";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
 import NotificationModal from "../Modal/NotificationModal";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
+import { useViewerId } from "@/store/auth";
 
 const HeaderWoSearch = () => {
   const navigate = useNavigate();
@@ -17,7 +18,9 @@ const HeaderWoSearch = () => {
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const myUserId = "123"; // 실제 로그인한 사용자 ID로 대체 필요
+  // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
+  const viewerId = useViewerId();
+  const myUserId = viewerId != null ? String(viewerId) : null;
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
@@ -31,6 +34,15 @@ const HeaderWoSearch = () => {
       setIsNotificationModalOpen(false);
     }, 200);
   };
+
+  // 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex w-full py-[25px] px-[88px] gap-[10px] justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
@@ -76,7 +88,7 @@ const HeaderWoSearch = () => {
               <UserMenuDropdown
                 onClose={() => setIsUserDropdownOpen(false)}
                 onNavigateToMyPage={() => {
-                  navigate(PATH.MYPAGE(myUserId));
+                  navigate(PATH.MYPAGE(String(myUserId)));
                   setIsUserDropdownOpen(false);
                 }}
               />

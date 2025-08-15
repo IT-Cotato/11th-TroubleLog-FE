@@ -1,6 +1,7 @@
 import type {
   FollowingData,
   ProfileData,
+  UpdatedProfileData,
   UserInfoData,
 } from "@/models/user.model";
 import getAPIResponseData from "../utils/getAPIResponseData";
@@ -20,7 +21,7 @@ export const getUserInfo = (userId: number) =>
   });
 
 // 프로필 수정
-export const patchProfile = (updatedProfile: ProfileData) =>
+export const patchProfile = (updatedProfile: UpdatedProfileData) =>
   getAPIResponseData({
     url: "/user",
     method: "PATCH",

@@ -10,15 +10,16 @@ const toYY = (d: string) => {
   return yyyy && mm && dd ? `${yyyy.slice(2)}.${mm}.${dd}` : d;
 };
 
-const isMineByUser = (author: CommunityUserInfoDetail) => {
-  const me = localStorage.getItem("userId");
-  return !!(me && String(author.userId) === String(me));
-};
+const isMineByUser = (
+  author: CommunityUserInfoDetail,
+  viewerId: number | string | null | undefined
+) => !!(viewerId != null && String(author.userId) === String(viewerId));
 
 export function toCommunityPostVM(
-  src: CommunityPostDetailServer
+  src: CommunityPostDetailServer,
+  viewerId: number | string | null
 ): CommunityPostDetailProps {
-  const isMine = isMineByUser(src.userInfoResDto);
+  const isMine = isMineByUser(src.userInfoResDto, viewerId);
   const sorted = [...(src.contents ?? [])].sort(
     (a, b) => a.sequence - b.sequence
   );
@@ -29,6 +30,7 @@ export function toCommunityPostVM(
     tags: src.postTags ?? [],
     date: toYY(src.completedAt ?? ""),
     isMine,
+    authorId: src.userInfoResDto.userId ?? undefined,
     authorProfile: src.userInfoResDto.profileUrl ?? undefined,
     authorName: src.userInfoResDto.nickname ?? "",
     authorFollowers: src.userInfoResDto.followerNum ?? 0,

@@ -1,4 +1,5 @@
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import FollowButton from "@/components/Button/FollowButton";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import type { StatusType } from "@/types/project";
@@ -8,6 +9,8 @@ import userIcon from "@/assets/icons/user.svg";
 import circleYIcon from "@/assets/icons/circle_y.svg";
 import circleGIcon from "@/assets/icons/circle_g.svg";
 import circleBIcon from "@/assets/icons/circle_b.svg";
+import { getUserInfo } from "@/api/user.api"; // 사용자 정보 조회 API import
+import type { UserInfoData } from "@/models/user.model";
 
 type MyPageSideBarProps =
   | {
@@ -24,13 +27,6 @@ type MyPageSideBarProps =
       sortedTags: [string, number][];
     };
 
-const mockProfile = {
-  name: "안수이",
-  followingCount: 8,
-  followerCount: 6,
-  bio: "안녕하세요. 프론트엔드 개발자입니다!",
-};
-
 const MyPageSideBar = (props: MyPageSideBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,8 +35,23 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     useMyPageStore();
   const { selectedTag, setSelectedTag, resetSelectedTag } = useMyPageStore();
 
+  const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
+
   const basePath = PATH.MYPAGE(id!);
   const isOnMainPage = location.pathname === basePath;
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchUserInfo = async () => {
+      try {
+        const data = await getUserInfo(Number(id));
+        setUserInfo(data);
+      } catch (error) {
+        console.error("사용자 정보 불러오기 실패:", error);
+      }
+    };
+    fetchUserInfo();
+  }, [id]);
 
   const handleNavigate =
     (subPath: string = "", clearStatus = false) =>
@@ -72,22 +83,26 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     <div className="flex w-[296px] flex-col items-start gap-[140px]">
       {/* 상단 프로필 영역 */}
       <div className="flex flex-col items-center gap-3 self-stretch">
-        <img src={userIcon} alt="user" className="w-[288px] h-[288px]" />
+        <img
+          src={userInfo?.profileUrl || userIcon}
+          alt="user"
+          className="w-[288px] h-[288px]"
+        />
         <div className="flex flex-col items-start gap-3">
           <div className="flex flex-col items-start gap-2">
-            <p className="text-head-32-semibold">{mockProfile.name}</p>
+            <p className="text-head-32-semibold">{userInfo?.nickname}</p>
 
             <div className="flex gap-1 text-body-20-regular text-gray4">
               <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWING)}>
-                팔로잉 {mockProfile.followingCount}
+                팔로잉 {userInfo?.followingNum}
               </button>
               <span>·</span>
               <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWER)}>
-                팔로워 {mockProfile.followerCount}
+                팔로워 {userInfo?.followerNum}
               </button>
             </div>
 
-            <p className="text-body-20-regular pt-4 pb-1">{mockProfile.bio}</p>
+            <p className="text-body-20-regular pt-4 pb-1">{userInfo?.bio}</p>
 
             {props.isMyPage ? (
               <FollowButton
@@ -198,6 +213,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
         <div className="flex flex-col items-start gap-[12px] self-stretch">
           <div className="w-full">
             {/* 헤더 텍스트 */}
+
             <div className="flex flex-col items-start gap-[12px]">
               <span className="text-head-20-semibold">태그 분석</span>
               <div className="w-full h-[1px] bg-[#939393]" />
