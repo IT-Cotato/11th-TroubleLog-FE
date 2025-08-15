@@ -23,8 +23,10 @@ const MyFollowing = () => {
 
         if (path === "following") {
           data = await getFollowings(userId);
+          console.log(data);
         } else if (path === "follower") {
           data = await getFollowers(userId);
+          console.log(data);
         }
 
         setFollowList(data);
@@ -34,7 +36,7 @@ const MyFollowing = () => {
     };
 
     fetchData();
-  }, [userId]);
+  }, [userId, location.pathname]);
 
   const handleFollowClick = async (id: number) => {
     try {
@@ -59,10 +61,11 @@ const MyFollowing = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-[948px]">
       {followList.map((user) => (
         <FollowingBtn
           key={user.userId}
+          userId={user.userId}
           nickname={user.nickname}
           email={user.email}
           isFollowed={user.isFollowed}
