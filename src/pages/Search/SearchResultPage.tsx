@@ -5,8 +5,6 @@ import { useInfiniteUserTroubleSearch } from "@/hooks/useInfiniteUserTroubleSear
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
-type CardData = Omit<TroubleShootingCardProps, "onDeleted">;
-
 const SearchResultPage = () => {
   const location = useLocation();
   const sp = new URLSearchParams(location.search);
