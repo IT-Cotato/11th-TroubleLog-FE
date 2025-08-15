@@ -1,4 +1,5 @@
 import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
+import { useInfiniteCommunityTroubleSearch } from "@/hooks/useInfiniteCommunityTroubleSearch";
 import { useInfiniteMyTroubleSearch } from "@/hooks/useInfiniteMyTroubleSearch";
 import { useInfiniteUserTroubleSearch } from "@/hooks/useInfiniteUserTroubleSearch";
 import { useEffect, useRef } from "react";
@@ -19,6 +20,7 @@ const SearchResultPage = () => {
 
   const isMyScope = scope === "my" || scope === "mypage";
   const isUserScope = scope === "user" && !!userId;
+  const isCommunityScope = scope === "community";
 
   // 현재 로그인한 사용자 트러블슈팅 문서 내 검색
   const my = useInfiniteMyTroubleSearch(
@@ -35,8 +37,14 @@ const SearchResultPage = () => {
     size
   );
 
+  // 커뮤니티 게시글 검색
+  const community = useInfiniteCommunityTroubleSearch(
+    isCommunityScope ? query : "",
+    size
+  );
+
   // 활성 훅 선택
-  const active = isUserScope ? other : my;
+  const active = isUserScope ? other : isMyScope ? my : community;
 
   // 하단 센티널 관찰자
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -69,16 +77,6 @@ const SearchResultPage = () => {
       io.disconnect();
     };
   }, []);
-
-  if (!isMyScope && !isUserScope) {
-    return (
-      <div className="mt-[179px] mb-[68px] flex w-[1200px] flex-col items-start gap-[24px] mx-auto">
-        <span className="text-head-32-regular self-stretch">
-          아직 지원하지 않는 검색 범위입니다.
-        </span>
-      </div>
-    );
-  }
 
   const loadingInitial = active.loadingInitial;
   const loadingMore = active.loadingMore;

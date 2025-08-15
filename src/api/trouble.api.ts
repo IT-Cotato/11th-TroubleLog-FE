@@ -10,6 +10,10 @@ import type { MyTroublesServerPage } from "@/types/troubles.server";
 // 키별 디듀프(StrictMode 이펙트 2회 방지)
 const inflight = new Map<string, Promise<MyTroublesServerPage | null>>();
 const inflightUser = new Map<string, Promise<MyTroublesServerPage | null>>();
+const inflightCommunity = new Map<
+  string,
+  Promise<MyTroublesServerPage | null>
+>();
 
 /// 전체 트러블슈팅 목록 조회
 export const getTroubleList = (
@@ -75,4 +79,25 @@ export async function searchUserTroubles(params: {
     inflightUser.set(key, promise);
   }
   return inflightUser.get(key)!;
+}
+
+// 공개 커뮤니티 검색 (제목/본문/태그)
+export async function searchCommunityTroubles(params: {
+  keyword: string;
+  page?: number;
+  size?: number;
+}): Promise<MyTroublesServerPage | null> {
+  const { keyword, page = 1, size = 10 } = params;
+  const p = Math.max(1, page); // ← 서버는 1부터
+
+  const key = `community::${keyword}::${p}::${size}`;
+  if (!inflightCommunity.has(key)) {
+    const promise = getAPIResponseData<MyTroublesServerPage | null>({
+      url: "/community/search",
+      method: "GET",
+      params: { keyword, page: p, size },
+    }).finally(() => setTimeout(() => inflightCommunity.delete(key), 0));
+    inflightCommunity.set(key, promise);
+  }
+  return inflightCommunity.get(key)!;
 }
