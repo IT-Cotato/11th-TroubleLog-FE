@@ -3,6 +3,7 @@ import api from "./axios";
 import type {
   CommunityPostDetailServer,
   CommunitySort,
+  GetCommunityCommentsResponse,
   GetCommunityListResponse,
 } from "@/types/community.model";
 
@@ -10,6 +11,10 @@ import type {
 const inflightDetail = new Map<
   number,
   Promise<CommunityPostDetailServer | null>
+>();
+const inflightComments = new Map<
+  string,
+  Promise<GetCommunityCommentsResponse>
 >();
 
 // 커뮤니티 포스트 목록
@@ -38,4 +43,20 @@ export function getCommunityPostDetail(postId: number) {
     inflightDetail.set(postId, p);
   }
   return inflightDetail.get(postId)!;
+}
+
+// 댓글 목록 조회
+export function getCommunityComments(postId: number, page1 = 1, size = 10) {
+  const key = `c:${postId}:${page1}:${size}`;
+  if (!inflightComments.has(key)) {
+    const p = getAPIResponseData<GetCommunityCommentsResponse>(
+      api.get<GetCommunityCommentsResponse>(`/community/${postId}/comments`, {
+        params: { page: Math.max(1, page1), size },
+      })
+    ).finally(() => {
+      setTimeout(() => inflightComments.delete(key), 0);
+    });
+    inflightComments.set(key, p);
+  }
+  return inflightComments.get(key)!;
 }

@@ -14,8 +14,12 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
-import { getCommunityPostDetail } from "@/api/community.api";
+import {
+  getCommunityComments,
+  getCommunityPostDetail,
+} from "@/api/community.api";
 import { toCommunityPostVM } from "@/mappers/communityPostDetail.mapper";
+import { toPostComments } from "@/mappers/communityComment.mapper";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -49,6 +53,11 @@ export default function CommunityPostDetail() {
   const [likeCounts, setLikeCounts] = useState(0);
   const [commentInput, setCommentInput] = useState("");
   const [comments, setComments] = useState<PostCommentProps[]>([]);
+
+  // 댓글 페이징 상태
+  const [cPage, setCPage] = useState(1);
+  const [cHasNext, setCHasNext] = useState(false);
+  const [cLoading, setCLoading] = useState(false);
 
   // 케밥 메뉴
   const [showMenu, setShowMenu] = useState(false);
@@ -92,6 +101,65 @@ export default function CommunityPostDetail() {
       dead = true;
     };
   }, [postId]);
+
+  // 댓글 데이터 로드
+  useEffect(() => {
+    let dead = false;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const numId = Number(postId);
+        if (!Number.isFinite(numId)) throw new Error("잘못된 포스트 ID");
+
+        const data = await getCommunityPostDetail(numId);
+        if (dead) return;
+        if (!data) {
+          setLoadError("빈 응답입니다.");
+          return;
+        }
+
+        const vm = toCommunityPostVM(data);
+        setPost(vm);
+        setIsLiked(vm.isLiked);
+        setLikeCounts(vm.likeCounts);
+        setComments(vm.comments);
+
+        // 댓글 1페이지 로드
+        await loadComments(numId, 1);
+      } catch (e: any) {
+        if (!dead) setLoadError(e?.message ?? "포스트 불러오기 실패");
+      } finally {
+        if (!dead) setLoading(false);
+      }
+    };
+    run();
+    return () => {
+      dead = true;
+    };
+  }, [postId]);
+
+  // 댓글 로더
+  const loadComments = async (id: number, page1: number) => {
+    setCLoading(true);
+    try {
+      const resp = await getCommunityComments(id, page1, 10);
+      const mapped = toPostComments(resp.content);
+
+      setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
+
+      const nextPage1 = typeof resp.page === "number" ? resp.page + 1 : page1;
+      setCPage(nextPage1);
+      setCHasNext(!!resp.hasNext);
+
+      setPost((prev) =>
+        prev
+          ? { ...prev, commentCounts: resp.totalElements ?? prev.commentCounts }
+          : prev
+      );
+    } finally {
+      setCLoading(false);
+    }
+  };
 
   // 스크롤 감시
   useEffect(() => {
@@ -422,6 +490,19 @@ export default function CommunityPostDetail() {
                     ))}
                 </div>
               ))}
+
+            {/* 댓글 더 보기 */}
+            {cHasNext && postId && (
+              <button
+                disabled={cLoading}
+                onClick={() => loadComments(Number(postId), cPage + 1)}
+                className={`mt-4 px-6 py-2 rounded-full text-white ${
+                  cLoading ? "bg-gray-300" : "bg-primary"
+                }`}
+              >
+                {cLoading ? "불러오는 중…" : "댓글 더 보기"}
+              </button>
+            )}
           </div>
         </div>
       </div>

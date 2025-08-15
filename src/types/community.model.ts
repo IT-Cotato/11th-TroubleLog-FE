@@ -44,3 +44,17 @@ export interface CommunityPostDetailServer {
   contents: TroubleContentBlock[];
   thumbnailUrl?: string | null;
 }
+
+// 댓글
+export interface CommunityCommentServerItem {
+  commentId: number;
+  postId: number;
+  userId: number;
+  content: string;
+  createdAt: string;
+  parentCommentId: number | null;
+}
+
+// 댓글 목록 페이징 응답
+export type GetCommunityCommentsResponse =
+  PaginatedResponse<CommunityCommentServerItem>;
