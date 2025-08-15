@@ -2,7 +2,7 @@ import TagList from "@/components/Card/TagList";
 import PostComment, {
   type PostCommentProps,
 } from "@/components/Community/PostComment";
-import PostGuide from "@/components/Community/PostGuide";
+import PostGuideMd from "@/components/Community/PostGuideMd";
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import { PATH } from "@/constants/paths";
@@ -288,7 +288,7 @@ export default function CommunityPostDetail() {
                       key={idx}
                       className="scroll-mt-[200px]"
                     >
-                      <PostGuide question={q} content={post.contents[idx]} />
+                      <PostGuideMd question={q} content={post.contents[idx]} />
                     </div>
                   ))}
                 </div>

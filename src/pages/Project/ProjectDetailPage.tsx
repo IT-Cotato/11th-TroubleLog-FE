@@ -39,6 +39,9 @@ export default function ProjectDetailPage() {
         setTitleLoading(true);
         const detail = await getProjectDetail(projectId);
         if (detail?.name) setProjectName(detail.name);
+        //  const { content } = await getProjectList();
+        // const found = content.find((p) => p.id === projectId);
+        // if (found) setProjectName(found.name);
       } finally {
         setTitleLoading(false);
       }
