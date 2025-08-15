@@ -28,10 +28,20 @@ export function useTechTagsTop5() {
         const debug = (
           localStorage.getItem("debug.techTags") || ""
         ).toLowerCase();
-        const cfg = JSON.parse(
-          localStorage.getItem("debug.techTags.cfg") || "{}"
-        );
-        const dummy = makeDebugTechTags(cfg.len);
+        let cfg: any = {};
+        try {
+          cfg = JSON.parse(localStorage.getItem("debug.techTags.cfg") || "{}");
+        } catch {
+          cfg = {};
+        }
+        const rawLen = (cfg ?? {}).len;
+        const len =
+          typeof rawLen === "number"
+            ? rawLen
+            : Number.isFinite(Number.parseInt(rawLen, 10))
+            ? Number.parseInt(rawLen, 10)
+            : undefined;
+        const dummy = makeDebugTechTags(len);
 
         const effective: TechTagStat[] =
           debug === "replace"
