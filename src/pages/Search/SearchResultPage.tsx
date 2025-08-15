@@ -45,9 +45,23 @@ const SearchResultPage = () => {
 
   // 활성 훅 선택
   const active = isUserScope ? other : isMyScope ? my : community;
+  // 활성 훅이 바뀔 때 비교용 키(불필요한 재부착 방지)
+  const activeKey = isUserScope
+    ? `user:${userId}`
+    : isMyScope
+    ? "my"
+    : "community";
+
+  const loadingInitial = active.loadingInitial;
+  const loadingMore = active.loadingMore;
+  const error = active.error;
+  const items = active.items;
+  const totalElements = active.totalElements;
+  const hasNext = active.hasNext;
 
   // 하단 센티널 관찰자
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const loadMoreRef = useRef<() => void>(() => {});
   useEffect(() => {
@@ -56,34 +70,34 @@ const SearchResultPage = () => {
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el) return;
 
-    const io = new IntersectionObserver(
+    // 센티널이 없거나 더 로드할 게 없으면 관찰 안 함
+    if (!el || !hasNext) return;
+
+    // 기존 옵저버 있으면 정리 (StrictMode/리렌더 대응)
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+
+    observerRef.current = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
+          // 최신 loadMore 실행
           loadMoreRef.current?.();
         }
       },
-      {
-        root: null, // viewport
-        rootMargin: "400px 0px", // 미리 당겨서 로드
-        threshold: 0,
-      }
+      { root: null, rootMargin: "400px 0px", threshold: 0 }
     );
 
-    io.observe(el);
-    return () => {
-      io.disconnect();
-    };
-  }, []);
+    observerRef.current.observe(el);
 
-  const loadingInitial = active.loadingInitial;
-  const loadingMore = active.loadingMore;
-  const error = active.error;
-  const items = active.items;
-  const totalElements = active.totalElements;
-  const hasNext = active.hasNext;
+    return () => {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+    };
+  }, [hasNext, activeKey, query, size]);
 
   return (
     <div className="mt-[179px] mb-[68px] flex w-[1200px] flex-col items-start gap-[56px] mx-auto">
