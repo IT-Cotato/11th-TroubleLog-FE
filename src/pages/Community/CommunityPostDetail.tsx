@@ -38,6 +38,7 @@ export interface CommunityPostDetailProps {
   tags: string[];
   date: string;
   isMine: boolean;
+  authorId: number;
   authorProfile?: string;
   authorName: string;
   authorFollowers: number;
@@ -56,7 +57,6 @@ export default function CommunityPostDetail() {
   const navigate = useNavigate();
   // 중앙 상태의 로그인 사용자 ID
   const viewerId = useViewerId();
-  const myUserIdStr = viewerId != null ? String(viewerId) : null;
 
   const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
   const [loading, setLoading] = useState(true);
@@ -202,7 +202,8 @@ export default function CommunityPostDetail() {
   const handleProfileClick = () => {
     // 작성자 마이페이지로
     if (!post) return;
-    navigate(PATH.MYPAGE(myUserIdStr || ""));
+    // post 객체에 작성자 userId가 있다면 사용, 없으면 API 응답 구조 확인 필요
+    navigate(PATH.MYPAGE(String(post.authorId) || ""));
   };
 
   // 포스트 좋아요 토글

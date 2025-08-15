@@ -30,6 +30,7 @@ export function toCommunityPostVM(
     tags: src.postTags ?? [],
     date: toYY(src.completedAt ?? ""),
     isMine,
+    authorId: src.userInfoResDto.userId ?? undefined,
     authorProfile: src.userInfoResDto.profileUrl ?? undefined,
     authorName: src.userInfoResDto.nickname ?? "",
     authorFollowers: src.userInfoResDto.followerNum ?? 0,
