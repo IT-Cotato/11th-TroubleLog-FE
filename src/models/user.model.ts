@@ -22,6 +22,7 @@ export interface UserInfoData {
   bio: string;
   followerNum: number;
   followingNum: number;
+  isFollowed: boolean;
 }
 
 export interface FollowingData {

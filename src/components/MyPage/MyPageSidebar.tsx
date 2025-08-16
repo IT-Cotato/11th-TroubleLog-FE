@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import FollowButton from "@/components/Button/FollowButton";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import type { StatusType } from "@/types/project";
@@ -9,7 +9,7 @@ import userIcon from "@/assets/icons/user.svg";
 import circleYIcon from "@/assets/icons/circle_y.svg";
 import circleGIcon from "@/assets/icons/circle_g.svg";
 import circleBIcon from "@/assets/icons/circle_b.svg";
-import { getUserInfo, postFollow } from "@/api/user.api";
+import { getUserInfo, postFollow, postUnfollow } from "@/api/user.api";
 import type { UserInfoData } from "@/models/user.model";
 
 type MyPageSideBarProps =
@@ -22,10 +22,7 @@ type MyPageSideBarProps =
         created: number;
       };
     }
-  | {
-      isMyPage: false;
-      sortedTags: [string, number][];
-    };
+  | { isMyPage: false; sortedTags: [string, number][] };
 
 const MyPageSideBar = (props: MyPageSideBarProps) => {
   const navigate = useNavigate();
@@ -36,23 +33,24 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   const { selectedTag, setSelectedTag, resetSelectedTag } = useMyPageStore();
 
   const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const basePath = PATH.MYPAGE(id!);
   const isOnMainPage = location.pathname === basePath;
 
-  useEffect(() => {
+  const refetch = useCallback(async () => {
     if (!id) return;
-    const fetchUserInfo = async () => {
-      try {
-        const data = await getUserInfo(Number(id));
-        setUserInfo(data);
-        console.log(userInfo);
-      } catch (error) {
-        console.error("사용자 정보 불러오기 실패:", error);
-      }
-    };
-    fetchUserInfo();
+    try {
+      const data = await getUserInfo(Number(id));
+      setUserInfo(data);
+    } catch (error) {
+      console.error("사용자 정보 불러오기 실패:", error);
+    }
   }, [id]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const handleNavigate =
     (subPath: string = "", clearStatus = false) =>
@@ -72,19 +70,71 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   const getMenuButtonClass = (match: boolean) =>
     `${match ? "text-black" : "text-gray3"} text-head-20-semibold`;
 
-  const handleTagClick = (tag: string) => {
-    if (selectedTag === tag) {
-      setSelectedTag(null);
-    } else {
-      setSelectedTag(tag);
+  // 팔로우
+  const handleFollow = async (targetId: number) => {
+    if (!userInfo || followLoading) return;
+    setFollowLoading(true);
+
+    setUserInfo((prev) =>
+      prev
+        ? {
+            ...prev,
+            isFollowed: true,
+            followerNum: (prev.followerNum ?? 0) + 1, // 상대방의 팔로워 수 증가
+          }
+        : prev
+    );
+
+    try {
+      await postFollow(targetId);
+      await refetch();
+    } catch (e) {
+      console.error("팔로우 실패", e);
+      setUserInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              isFollowed: false,
+              followerNum: Math.max(0, (prev.followerNum ?? 1) - 1),
+            }
+          : prev
+      );
+    } finally {
+      setFollowLoading(false);
     }
   };
 
-  const handleFollowClick = async (id: number) => {
+  // 언팔로우
+  const handleUnfollow = async (targetId: number) => {
+    if (!userInfo || followLoading) return;
+    setFollowLoading(true);
+    setUserInfo((prev) =>
+      prev
+        ? {
+            ...prev,
+            isFollowed: false,
+            followerNum: Math.max(0, (prev.followerNum ?? 1) - 1),
+          }
+        : prev
+    );
+
     try {
-      await postFollow(id);
+      await postUnfollow(targetId);
+      await refetch();
     } catch (e) {
-      console.error("팔로우 실패", e);
+      console.error("언팔로우 실패", e);
+      // 롤백
+      setUserInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              isFollowed: true,
+              followerNum: (prev.followerNum ?? 0) + 1,
+            }
+          : prev
+      );
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -119,22 +169,27 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                 colorClass="bg-primary"
                 onClick={handleNavigate(MYPAGE_SUBPATH.EDIT_PROFILE)}
               />
+            ) : userInfo?.isFollowed ? (
+              <FollowButton
+                label="팔로잉"
+                colorClass="bg-subColor1"
+                onClick={() => handleUnfollow(Number(id))}
+              />
             ) : (
               <FollowButton
                 label="팔로우"
                 colorClass="bg-primary"
-                onClick={() => handleFollowClick(Number(id))}
+                onClick={() => handleFollow(Number(id))}
               />
             )}
           </div>
         </div>
       </div>
 
-      {/* 하단 메뉴 */}
+      {/* 하단 메뉴*/}
       {props.isMyPage ? (
         <div className="flex flex-col items-start gap-9 self-stretch text-gray3 text-head-20-semibold">
           <div className="w-full">
-            {/* 헤더 텍스트 */}
             <div
               className={`pb-2 border-b ${
                 isOnMainPage && selectedStatus
@@ -144,8 +199,6 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
             >
               내 트러블 슈팅
             </div>
-
-            {/* 트러블슈팅 필터 버튼들 */}
             <div className="flex flex-col items-start gap-[13px] pt-2 text-body-16-regular text-gray3">
               <button
                 onClick={() => {
@@ -204,7 +257,6 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
             </div>
           </div>
 
-          {/* 일반 메뉴 버튼들 */}
           <button
             onClick={handleNavigate(MYPAGE_SUBPATH.STATISTICS, true)}
             className={getMenuButtonClass(
@@ -225,21 +277,17 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       ) : (
         <div className="flex flex-col items-start gap-[12px] self-stretch">
           <div className="w-full">
-            {/* 헤더 텍스트 */}
-
             <div className="flex flex-col items-start gap-[12px]">
               <span className="text-head-20-semibold">태그 분석</span>
               <div className="w-full h-[1px] bg-[#939393]" />
             </div>
-
-            {/* 태그 목록 */}
             <div className="flex flex-col items-start gap-[10px] pt-[12px]">
               {props.sortedTags.map(([tag, count]) => {
                 const isSelected = tag === selectedTag;
                 return (
                   <button
                     key={tag}
-                    onClick={() => handleTagClick(tag)}
+                    onClick={() => setSelectedTag(isSelected ? null : tag)}
                     className={`transition-colors ${
                       isSelected
                         ? "text-body-16-semibold"
