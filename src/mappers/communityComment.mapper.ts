@@ -27,8 +27,8 @@ export const toPostComment = (
   const base: PostCommentProps = {
     id: String(c.commentId),
     // 프로필/닉네임 정보가 응답에 없으므로 임시 대체
-    name: `사용자 ${c.userId}`,
-    profile: undefined,
+    name: c.name ?? "(알 수 없음)",
+    profile: c.profileImg ?? undefined,
     date: fmtYYMMDD(c.createdAt),
     content: c.content ?? "",
     isMine: isMine(c.userId, viewerId),

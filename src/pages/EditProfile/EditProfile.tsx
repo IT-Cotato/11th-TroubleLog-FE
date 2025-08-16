@@ -151,15 +151,15 @@ const EditProfile = () => {
   };
 
   return (
-    <div className="flex justify-center min-h-screen">
-      <div className="flex flex-col items-end gap-14">
-        <div className="flex items-start gap-[68px] pt-20">
+    <div className="flex justify-center min-h-screen pb-6">
+      <div className="flex flex-col items-end gap-14 w-3/4">
+        <div className="flex items-start gap-16 pt-20 w-full">
           {/* 왼쪽 */}
           <div className="flex flex-col items-center gap-12 self-stretch">
             <img
               src={profileImage}
               alt="user"
-              className="w-[288px] h-[288px] object-cover rounded-full"
+              className="w-72 h-72 object-cover rounded-full"
             />
 
             <input
@@ -185,7 +185,7 @@ const EditProfile = () => {
           </div>
 
           {/* 오른쪽 */}
-          <div className="flex flex-col items-start gap-12 w-[948px]">
+          <div className="flex flex-col items-start gap-12 w-3/4">
             <p className="text-head-48 pb-2">프로필 수정</p>
             <MyInput
               label="닉네임"
