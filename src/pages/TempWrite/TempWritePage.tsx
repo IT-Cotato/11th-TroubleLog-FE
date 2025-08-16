@@ -180,10 +180,6 @@ const TempWritePage = () => {
     setTimeout(() => setShowSaveAlert(false), 3000);
   };
 
-  function toGuideContent(text: string) {
-    return (text ?? "").split(/\n{2,}/).map((s) => s.trim());
-  }
-
   const handleNextInPostSaveModal = (payload: PostSavePayload) => {
     setPreviewMeta(payload);
     setIsPostSaveModalOpen(false);
@@ -202,21 +198,8 @@ const TempWritePage = () => {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const form: PostForm = {
-        title,
-        introduction: previewMeta?.description ?? "",
-        postTags: selectedTags,
-        isVisible: (previewMeta?.visibility ?? "public") === "public",
-        isSummaryCreated: false,
-        postStatus: "DRAFT",
-        starRating: String(previewMeta?.importance ?? "0"),
-        thumbnailImageUrl: previewMeta?.thumbnail ?? undefined,
-        projectId: previewMeta?.projectId ?? 0,
-        errorTag: selectedErrorType ?? "",
-        contents: toContentDtoList(blocks),
-      };
-
-      const req = toCreatePostRequest(form);
+      // 요약을 돌릴 거라 임시로 DRAFT로 생성
+      const req = toCreatePostRequest(buildCreateForm("DRAFT"));
       const created = await createPost(req);
       const postId = created.id;
       setCreatedPostId(postId);
@@ -273,37 +256,28 @@ const TempWritePage = () => {
     };
   }, [isLoadingModalOpen, createdPostId, summaryTaskId]);
 
-  const handleLater = () => {
-    const filledBlocks = blocks.filter((b) => b.content?.trim().length > 0);
-    const questions = filledBlocks.map((b) => b.question);
-    const contents = filledBlocks.map((b) => toGuideContent(b.content));
+  const handleLater = async () => {
+    if (
+      !title.trim() ||
+      !selectedErrorType ||
+      !blocks[0]?.content.trim() ||
+      !previewMeta?.projectId
+    ) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      return;
+    }
 
-    navigate(PATH.PREVIEW, {
-      state: {
-        editorType: "TEMPLATE",
-        title,
-        tags: selectedTags,
-        errorType: selectedErrorType,
-        importance: previewMeta?.importance,
-        // save modal 프리필
-        savePrefill: previewMeta
-          ? {
-              importance: previewMeta.importance ?? 0,
-              description: previewMeta.description ?? "",
-              visibility: previewMeta.visibility ?? "public",
-              projectId: previewMeta.projectId ?? null,
-              projectName: previewMeta.projectName,
-              thumbnail: previewMeta.thumbnail ?? null,
-            }
-          : undefined,
-        authorName: "나",
-        authorProfile: null,
-        authorBio: "",
-        date: new Date().toISOString().slice(2, 10).replace(/-/g, "."),
-        questions,
-        contents,
-      },
-    });
+    try {
+      const req = toCreatePostRequest(buildCreateForm("COMPLETED"));
+      await createPost(req);
+      navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
+        state: { projectName: previewMeta.projectName },
+      });
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   };
 
   const handleCloseLoading = async () => {
@@ -325,6 +299,23 @@ const TempWritePage = () => {
     } finally {
       closingRef.current = false;
     }
+  };
+
+  const buildCreateForm = (postStatus: "COMPLETED" | "DRAFT") => {
+    const form: PostForm = {
+      title,
+      introduction: previewMeta?.description ?? "",
+      postTags: selectedTags,
+      isVisible: (previewMeta?.visibility ?? "public") === "public",
+      isSummaryCreated: false,
+      postStatus,
+      starRating: String(previewMeta?.importance ?? 0),
+      thumbnailImageUrl: previewMeta?.thumbnail ?? undefined,
+      projectId: previewMeta?.projectId ?? 0,
+      errorTag: selectedErrorType ?? "",
+      contents: toContentDtoList(blocks),
+    };
+    return form;
   };
 
   return (

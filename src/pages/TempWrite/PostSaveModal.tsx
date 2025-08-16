@@ -115,7 +115,6 @@ export default function PostSaveModal({
       visibility: selectedVisibility,
       projectId: selectedProjectId ?? null,
       projectName,
-      summaryType,
     });
   };
 
