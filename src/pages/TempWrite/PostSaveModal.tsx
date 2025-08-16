@@ -224,11 +224,11 @@ export default function PostSaveModal({
           </div>
 
           {/* 아래 영역 */}
-          <div className="flex-col items-center gap-[16px] w-[728px] pt-[40px] ">
+          <div className="flex flex-col items-center gap-[16px] w-[728px] pt-[40px] ">
             {/* (에러타입+tag) + 소개 */}
             <div className="flex flex-row gap-[26px]">
               {/* 에러 + 태그 (프리뷰용) */}
-              <div className="flex-col items-start gap-[16px]">
+              <div className="flex flex-col items-start gap-[16px]">
                 <div className="flex flex-col w-[351px] justify-center items-start h-[78px] gap-[8px] pr-[26px] shrink-0">
                   <span className="text-head-20-semibold text-black ">
                     에러타입
@@ -240,7 +240,7 @@ export default function PostSaveModal({
                   </div>
                 </div>
                 {/* 태그 */}
-                <div className="flex w=[351px] flex-col pt-[26px] ">
+                <div className="flex w-[351px] flex-col pt-[26px] ">
                   <span className="text-head-20-semibold text-black">
                     카테고리 태그
                   </span>
