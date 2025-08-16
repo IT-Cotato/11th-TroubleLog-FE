@@ -18,6 +18,12 @@ type PageResp = {
   isLast?: boolean;
 };
 
+export type CommunityCardsFetcher = (
+  page: number,
+  size: number,
+  sortBy: CommunitySort
+) => Promise<PageResp>;
+
 interface Options {
   enabled?: boolean; // 기본 true
   pageSize?: number; // 기본 12
@@ -26,17 +32,29 @@ interface Options {
   rootMargin?: string; // 기본 "400px 0px"
   stopOnError?: boolean; // 기본 true
   cooldownMs?: number; // 기본 0
+  fetcher?: CommunityCardsFetcher; // 기본 getCommunityList
+  sourceKey?: string; // 캐시/리셋 구분용 키. 기본 "community"
 }
 
 // in-flight dedupe: (sort|page|size)
 const inflightPaged = new Map<string, Promise<PageResp>>();
-
-function keyFor(sort: CommunitySort, page: number, size: number) {
-  return `community|sort=${sort}|p=${page}|s=${size}`;
+function keyFor(
+  source: string,
+  sort: CommunitySort,
+  page: number,
+  size: number
+) {
+  return `${source}|sort=${sort}|p=${page}|s=${size}`;
 }
 
-async function fetchOnce(sort: CommunitySort, page: number, size: number) {
-  const key = keyFor(sort, page, size);
+async function fetchOnce(
+  source: string,
+  fetcher: CommunityCardsFetcher,
+  sort: CommunitySort,
+  page: number,
+  size: number
+) {
+  const key = keyFor(source, sort, page, size);
   if (!inflightPaged.has(key)) {
     const p = getCommunityList(page, size, sort).finally(() =>
       inflightPaged.delete(key)
@@ -55,9 +73,14 @@ export default function useCommunityCards(opts: Options = {}) {
     rootMargin = "400px 0px",
     stopOnError = true,
     cooldownMs = 0,
+    fetcher = (p, s, sort) => getCommunityList(p, s, sort),
+    sourceKey = "community",
   } = opts;
 
-  const srcKey = useMemo(() => `community|sort=${sortBy}`, [sortBy]);
+  const srcKey = useMemo(
+    () => `${sourceKey}|sort=${sortBy}`,
+    [sourceKey, sortBy]
+  );
 
   const [cards, setCards] = useState<TroublogCardProps[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,8 +130,8 @@ export default function useCommunityCards(opts: Options = {}) {
       const mySeq = ++seqRef.current;
       try {
         const resp = dedupe
-          ? await fetchOnce(sortBy, targetPage, pageSize)
-          : await getCommunityList(targetPage, pageSize, sortBy);
+          ? await fetchOnce(sourceKey, fetcher, sortBy, targetPage, pageSize)
+          : await fetcher(targetPage, pageSize, sortBy);
 
         if (seqRef.current !== mySeq) return;
 
@@ -155,7 +178,7 @@ export default function useCommunityCards(opts: Options = {}) {
         if (seqRef.current === mySeq) setIsLoading(false);
       }
     },
-    [enabled, pageSize, sortBy, stopOnError]
+    [enabled, pageSize, sortBy, stopOnError, fetcher, sourceKey]
   );
 
   // 초기 로드 (sort 변경 시 리셋 후 p=0)

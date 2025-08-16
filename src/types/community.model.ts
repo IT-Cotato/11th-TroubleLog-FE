@@ -38,6 +38,7 @@ export interface CommunityPostDetailServer {
   introduction: string | null;
   likeCount: number;
   commentCount: number;
+  liked?: boolean | null;
   completedAt: string;
   errorTag: string;
   postTags: string[];
@@ -50,6 +51,8 @@ export interface CommunityCommentServerItem {
   commentId: number;
   postId: number;
   userId: number;
+  name: string | null;
+  profileImg: string | null;
   content: string;
   createdAt: string;
   parentCommentId: number | null;

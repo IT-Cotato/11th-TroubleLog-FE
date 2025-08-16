@@ -38,6 +38,17 @@ export const getCommunityList = (
     })
   );
 
+// 커뮤니티 최근 열람 게시글 목록
+export const getCommunityRecentList = (page0 = 0, size = 12) =>
+  getAPIResponseData<GetCommunityListResponse>(
+    api.get<GetCommunityListResponse>("/community/recent", {
+      params: {
+        page: Math.max(1, page0 + 1),
+        size,
+      },
+    })
+  );
+
 // 커뮤니티 포스트 상세 조회
 export function getCommunityPostDetail(postId: number) {
   if (!inflightDetail.has(postId)) {
