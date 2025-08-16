@@ -1,17 +1,16 @@
 import { useEffect, useState, useRef } from "react";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
-import DropDownButton from "../../components/Button/DropDownButton";
-import CategoryTag from "../../components/TemplateWrite/CategoryTag";
+import DropDownButton from "@/components/Button/DropDownButton";
+import CategoryTag from "@/components/TemplateWrite/CategoryTag";
 import EditorBlock, {
   type BlockData,
-} from "../../components/TemplateWrite/EditorBlock";
-import { questionData } from "../../components/TemplateWrite/questionTemplate";
-import PostSaveModal from "./PostSaveModal";
+} from "@/components/TemplateWrite/EditorBlock";
+import { questionData } from "@/components/TemplateWrite/questionTemplate";
+import PostSaveModal, { type PostSavePayload } from "./PostSaveModal";
 import PostLoadingModal from "./PostLoadingModal";
 import TemplateSelectModal from "./TemplateSelectModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PATH } from "@/constants/paths";
-import type { PostSavePayload } from "./PostSaveModal";
 import { toCreatePostRequest, type PostForm } from "@/mappers/postMapper";
 import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
 import { useProjectList } from "@/hooks/useProjectList";
@@ -21,6 +20,23 @@ import {
   getSummaryStatus,
   cancelSummary,
 } from "@/api/post.api";
+
+type IncomingTemplateState = {
+  editorType?: "TEMPLATE";
+  title?: string;
+  tags?: string[];
+  errorType?: string | null;
+  blocks?: BlockData[];
+  savePrefill?: {
+    importance?: number;
+    description?: string;
+    visibility?: "public" | "private";
+    projectId?: number | null;
+    projectName?: string;
+    thumbnail?: string | null;
+  };
+  projectId?: number;
+};
 
 const TempWritePage = () => {
   const [title, setTitle] = useState("");
@@ -37,6 +53,8 @@ const TempWritePage = () => {
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [showSaveAlert, setShowSaveAlert] = useState(false);
+  const [showCancelAlert, setShowCancelAlert] = useState(false);
+
   const navigate = useNavigate();
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
   const { data: projectList, loading: projectsLoading } = useProjectList();
@@ -45,8 +63,8 @@ const TempWritePage = () => {
   const [summaryProgress, setSummaryProgress] = useState(0);
   const [templateLabel, setTemplateLabel] = useState<string>("");
   const closingRef = useRef(false);
-  const [showCancelAlert, setShowCancelAlert] = useState(false);
-  const location = useLocation() as { state?: { projectId?: number } };
+
+  const location = useLocation() as { state?: IncomingTemplateState };
   const initialProjectId = location.state?.projectId;
 
   type SummaryStatus =
@@ -56,14 +74,13 @@ const TempWritePage = () => {
     | "ANALYZING"
     | "POSTPROCESSING"
     | "COMPLETED";
-
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus | null>(
     null
   );
   const [statusMessage, setStatusMessage] = useState<string>("");
 
-  const toContentDtoList = (blocks: BlockData[]): PostContentDto[] =>
-    blocks
+  const toContentDtoList = (bs: BlockData[]): PostContentDto[] =>
+    bs
       .filter((b) => (b.content ?? "").trim().length > 0)
       .map((b, i) => ({
         subTitle: b.question,
@@ -73,9 +90,23 @@ const TempWritePage = () => {
         summaryType: "NONE",
       }));
 
-  // 첫번째 블록 생성
+  // 프리필 반영
   useEffect(() => {
-    if (blocks.length === 0 && questionData.length > 0) {
+    if (location.state?.editorType === "TEMPLATE") {
+      if (location.state.title) setTitle(location.state.title);
+      if (location.state.tags) setSelectedTags(location.state.tags);
+      if (location.state.errorType !== undefined)
+        setSelectedErrorType(location.state.errorType ?? null);
+      if (location.state.blocks?.length) setBlocks(location.state.blocks);
+    }
+  }, [location.state]);
+
+  // 첫 블록 생성 (프리필 없을 때만)
+  useEffect(() => {
+    const hasPrefill = !!(
+      location.state?.editorType === "TEMPLATE" && location.state.blocks?.length
+    );
+    if (!hasPrefill && blocks.length === 0 && questionData.length > 0) {
       const firstBlock: BlockData = {
         id: Date.now(),
         content: "",
@@ -87,9 +118,8 @@ const TempWritePage = () => {
       };
       setBlocks([firstBlock]);
     }
-  }, [blocks]);
+  }, [blocks.length, location.state]);
 
-  // 블록 내용 변경
   const handleChangeBlockContent = (
     index: number,
     updated: Partial<BlockData>
@@ -101,7 +131,6 @@ const TempWritePage = () => {
     });
   };
 
-  // 체크리스트 토글
   const handleToggleChecklist = (
     index: number,
     item: string,
@@ -110,23 +139,17 @@ const TempWritePage = () => {
     setBlocks((prev) => {
       const newBlocks = [...prev];
       const checklist = new Set(newBlocks[index].checklist);
-      if (checked) {
-        checklist.add(item);
-      } else {
-        checklist.delete(item);
-      }
-
+      if (checked) checklist.add(item);
+      else checklist.delete(item);
       newBlocks[index].checklist = Array.from(checklist);
       return newBlocks;
     });
   };
 
-  // 블록 추가
   const handleAddBlock = () => {
     setBlocks((prev) => {
       const nextStep = prev.length;
       if (nextStep >= questionData.length) return prev;
-
       const stepData = questionData[nextStep];
       const newBlock: BlockData = {
         id: Date.now(),
@@ -137,21 +160,14 @@ const TempWritePage = () => {
         question: stepData.question,
         isSaved: false,
       };
-
       const newBlocks = [...prev, newBlock];
       setActiveIndex(newBlocks.length - 1);
       return newBlocks;
     });
   };
 
-  //  End 버튼
   const handleEnd = () => {
-    if (!title.trim() || !selectedErrorType) {
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
-      return;
-    }
-    if (!blocks[0]?.content.trim()) {
+    if (!title.trim() || !selectedErrorType || !blocks[0]?.content.trim()) {
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       return;
@@ -164,31 +180,16 @@ const TempWritePage = () => {
     setTimeout(() => setShowSaveAlert(false), 3000);
   };
 
-  const errorOptions = [
-    "Build / Compile Error",
-    "Runtime Error",
-    "Dependency / Version Error",
-    "Network / API Error",
-    "Authentication / Authorization Error",
-    "Database Error",
-    "UI / Rendering Error",
-    "Configuration Error",
-    "Timeout / Error Handling",
-    "Third-Party Library Error",
-    "Others",
-  ];
-
   function toGuideContent(text: string) {
-    const paragraphs = (text ?? "").split(/\n{2,}/).map((s) => s.trim());
-    return paragraphs;
+    return (text ?? "").split(/\n{2,}/).map((s) => s.trim());
   }
+
   const handleNextInPostSaveModal = (payload: PostSavePayload) => {
     setPreviewMeta(payload);
     setIsPostSaveModalOpen(false);
     setIsTemplateSelectModalOpen(true);
   };
 
-  // 템플릿 선택 후 요약 시작
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
@@ -201,7 +202,6 @@ const TempWritePage = () => {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      // 1) 본문을 요청 DTO로 변환
       const form: PostForm = {
         title,
         introduction: previewMeta?.description ?? "",
@@ -216,21 +216,15 @@ const TempWritePage = () => {
         contents: toContentDtoList(blocks),
       };
 
-      // 2) 문서 생성
       const req = toCreatePostRequest(form);
       const created = await createPost(req);
       const postId = created.id;
       setCreatedPostId(postId);
 
-      // 3) 요약 작업 시작
       const start = await startSummary(postId, { type });
       setSummaryTaskId(start.taskId);
     } catch (e) {
       console.error(e);
-      // 이후 모달 반영후 지우기
-      // setIsTemplateSelectModalOpen(true);
-      // setIsLoadingModalOpen(false);
-      // 실패 시 상태 복구
       setIsLoadingModalOpen(false);
       setIsTemplateSelectModalOpen(true);
       setSummaryTaskId(null);
@@ -240,6 +234,7 @@ const TempWritePage = () => {
       setStatusMessage("요약 시작에 실패했어요. 잠시 후 다시 시도해주세요.");
     }
   };
+
   useEffect(() => {
     if (!isLoadingModalOpen || !createdPostId || !summaryTaskId) return;
 
@@ -251,11 +246,9 @@ const TempWritePage = () => {
         const data = await getSummaryStatus(createdPostId, summaryTaskId);
         const p = Math.max(0, Math.min(100, data.progress ?? 0));
         if (stopped) return;
-
         setSummaryProgress(p);
-        if (data.status) setSummaryStatus(data.status as SummaryStatus);
+        if (data.status) setSummaryStatus(data.status as any);
         if (data.message) setStatusMessage(data.message);
-
         if (data.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
           if (timer !== null) {
@@ -282,35 +275,41 @@ const TempWritePage = () => {
 
   const handleLater = () => {
     const filledBlocks = blocks.filter((b) => b.content?.trim().length > 0);
-
     const questions = filledBlocks.map((b) => b.question);
     const contents = filledBlocks.map((b) => toGuideContent(b.content));
 
     navigate(PATH.PREVIEW, {
       state: {
+        editorType: "TEMPLATE",
         title,
         tags: selectedTags,
         errorType: selectedErrorType,
-
         importance: previewMeta?.importance,
+        // save modal 프리필
+        savePrefill: previewMeta
+          ? {
+              importance: previewMeta.importance ?? 0,
+              description: previewMeta.description ?? "",
+              visibility: previewMeta.visibility ?? "public",
+              projectId: previewMeta.projectId ?? null,
+              projectName: previewMeta.projectName,
+              thumbnail: previewMeta.thumbnail ?? null,
+            }
+          : undefined,
         authorName: "나",
         authorProfile: null,
         authorBio: "",
         date: new Date().toISOString().slice(2, 10).replace(/-/g, "."),
-
         questions,
         contents,
       },
     });
   };
 
-  // 로딩 모달 요약 중단
   const handleCloseLoading = async () => {
     if (closingRef.current) return;
     closingRef.current = true;
-
     try {
-      // 진행 중이면 서버 취소 요청
       if (summaryProgress < 100 && createdPostId && summaryTaskId) {
         try {
           await cancelSummary(createdPostId, summaryTaskId);
@@ -318,11 +317,9 @@ const TempWritePage = () => {
           console.error("요약 작업 취소 실패:", e);
         }
       }
-
       setIsLoadingModalOpen(false);
       setSummaryTaskId(null);
       setSummaryProgress(0);
-
       setShowCancelAlert(true);
       setTimeout(() => setShowCancelAlert(false), 3000);
     } finally {
@@ -335,7 +332,6 @@ const TempWritePage = () => {
       <HeaderWoSearch />
       <div className="flex justify-center px-[225px] pt-[68px] items-start">
         <div className="flex-1 flex w-[1500px] flex-col gap-[36px]">
-          {/* Alert */}
           {showAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               제목, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요.
@@ -352,7 +348,6 @@ const TempWritePage = () => {
             </div>
           )}
 
-          {/*  제목 + 태그 */}
           <div className="flex flex-col items-start gap-[40px]">
             <input
               type="text"
@@ -363,7 +358,19 @@ const TempWritePage = () => {
             />
             <div className="flex gap-[36px] items-center">
               <DropDownButton
-                options={errorOptions}
+                options={[
+                  "Build / Compile Error",
+                  "Runtime Error",
+                  "Dependency / Version Error",
+                  "Network / API Error",
+                  "Authentication / Authorization Error",
+                  "Database Error",
+                  "UI / Rendering Error",
+                  "Configuration Error",
+                  "Timeout / Error Handling",
+                  "Third-Party Library Error",
+                  "Others",
+                ]}
                 placeholder="에러 종류를 선택하세요"
                 width="w-[340px] h-[36px]"
                 onSelect={(selectedError) =>
@@ -374,10 +381,9 @@ const TempWritePage = () => {
             </div>
           </div>
 
-          {/* 블록 렌더링 (역순 표시) */}
           <div>
             {[...blocks].reverse().map((block, index) => {
-              const originalIndex = blocks.length - 1 - index; // 실제 index
+              const originalIndex = blocks.length - 1 - index;
               return (
                 <EditorBlock
                   key={block.id}
@@ -398,7 +404,6 @@ const TempWritePage = () => {
             })}
           </div>
 
-          {/* 모달들 */}
           {isPostSaveModalOpen && (
             <PostSaveModal
               onClose={() => setIsPostSaveModalOpen(false)}
@@ -407,8 +412,19 @@ const TempWritePage = () => {
               loadingProjects={projectsLoading}
               defaultProjectId={initialProjectId}
               selectedTags={selectedTags}
+              // 수정 프리필 반영
+              initialImportance={location.state?.savePrefill?.importance}
+              initialDescription={location.state?.savePrefill?.description}
+              initialVisibility={location.state?.savePrefill?.visibility}
+              initialProjectId={
+                location.state?.savePrefill?.projectId ??
+                initialProjectId ??
+                null
+              }
+              initialThumbnail={location.state?.savePrefill?.thumbnail ?? null}
             />
           )}
+
           {isTemplateSelectModalOpen && (
             <TemplateSelectModal
               onConfirm={(type, label) => handleConfirmTemplate(type, label)}

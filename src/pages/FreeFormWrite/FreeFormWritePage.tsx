@@ -27,6 +27,23 @@ export type BlockData = {
   isSaved: boolean;
 };
 
+type IncomingFreeformState = {
+  editorType?: "FREEFORM";
+  title?: string;
+  tags?: string[];
+  errorType?: string | null;
+  blocks?: BlockData[];
+  savePrefill?: {
+    importance?: number;
+    description?: string;
+    visibility?: "public" | "private";
+    projectId?: number | null;
+    projectName?: string;
+    thumbnail?: string | null;
+  };
+  projectId?: number;
+};
+
 const errorOptions = [
   "Build / Compile Error",
   "Runtime Error",
@@ -52,7 +69,6 @@ export default function FreeFormWritePage() {
     { id: Date.now(), title: "", content: "", isSaved: false },
   ]);
 
-  // 모달 & 알림 상태
   const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
   const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
     useState(false);
@@ -62,7 +78,6 @@ export default function FreeFormWritePage() {
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const [showCancelAlert, setShowCancelAlert] = useState(false);
 
-  // 생성/요약 진행 상태
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
   const [createdPostId, setCreatedPostId] = useState<number | null>(null);
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
@@ -83,11 +98,23 @@ export default function FreeFormWritePage() {
 
   const closingRef = useRef(false);
   const navigate = useNavigate();
-  const location = useLocation() as { state?: { projectId?: number } };
+  const location = useLocation() as { state?: IncomingFreeformState };
   const initialProjectId = location.state?.projectId;
   const { data: projectList, loading: projectsLoading } = useProjectList();
 
-  // 자유양식 -> 서버 DTO
+  // 프리필 반영
+  useEffect(() => {
+    if (
+      location.state?.editorType === "FREEFORM" &&
+      location.state.blocks?.length
+    ) {
+      setTitle(location.state.title ?? "");
+      setSelectedTags(location.state.tags ?? []);
+      setSelectedErrorType(location.state.errorType ?? null);
+      setBlocks(location.state.blocks);
+    }
+  }, [location.state]);
+
   const toContentDtoList = (items: BlockData[]): PostContentDto[] =>
     items
       .filter((b) => (b.content ?? "").trim().length > 0)
@@ -140,7 +167,6 @@ export default function FreeFormWritePage() {
     setIsTemplateSelectModalOpen(true);
   };
 
-  // 템플릿 선택 -> 문서 생성 + 요약 시작
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
@@ -186,7 +212,6 @@ export default function FreeFormWritePage() {
     }
   };
 
-  // 요약 상태
   useEffect(() => {
     if (!isLoadingModalOpen || !createdPostId || !summaryTaskId) return;
 
@@ -199,7 +224,7 @@ export default function FreeFormWritePage() {
         if (stopped) return;
         const p = Math.max(0, Math.min(100, data.progress ?? 0));
         setSummaryProgress(p);
-        if (data.status) setSummaryStatus(data.status as SummaryStatus);
+        if (data.status) setSummaryStatus(data.status as any);
         if (data.message) setStatusMessage(data.message);
         if (data.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
@@ -225,7 +250,6 @@ export default function FreeFormWritePage() {
     };
   }, [isLoadingModalOpen, createdPostId, summaryTaskId]);
 
-  // 미리보기
   const handleLater = () => {
     const filled = blocks.filter((b) => b.content?.trim().length > 0);
     const questions = filled.map((b) =>
@@ -235,10 +259,22 @@ export default function FreeFormWritePage() {
 
     navigate(PATH.PREVIEW, {
       state: {
+        editorType: "FREEFORM",
         title,
         tags: selectedTags,
         errorType: selectedErrorType,
         importance: previewMeta?.importance,
+        // save modal
+        savePrefill: previewMeta
+          ? {
+              importance: previewMeta.importance ?? 0,
+              description: previewMeta.description ?? "",
+              visibility: previewMeta.visibility ?? "public",
+              projectId: previewMeta.projectId ?? null,
+              projectName: previewMeta.projectName,
+              thumbnail: previewMeta.thumbnail ?? null,
+            }
+          : undefined,
         authorName: "나",
         authorProfile: null,
         authorBio: "",
@@ -249,7 +285,6 @@ export default function FreeFormWritePage() {
     });
   };
 
-  // 로딩 모달 닫기(요약 취소)
   const handleCloseLoading = async () => {
     if (closingRef.current) return;
     closingRef.current = true;
@@ -276,7 +311,6 @@ export default function FreeFormWritePage() {
       <HeaderWoSearch />
       <div className="flex justify-center px-[360px] pt-[68px] items-start">
         <div className="flex-1 flex w-[1200px] flex-col gap-3">
-          {/* Alerts */}
           {showAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               제목과 에러 종류를 모두 입력해주세요.
@@ -298,7 +332,6 @@ export default function FreeFormWritePage() {
             </div>
           )}
 
-          {/* 제목 + 태그 */}
           <div className="flex flex-col items-start gap-[40px]">
             <input
               type="text"
@@ -320,7 +353,6 @@ export default function FreeFormWritePage() {
             </div>
           </div>
 
-          {/* 블록들 */}
           {blocks.map((block, idx) => (
             <div key={block.id} className="max-w-[1200px]">
               <div className="w-full flex flex-row justify-center items-end h-[60px] mb-3">
@@ -333,7 +365,6 @@ export default function FreeFormWritePage() {
                   placeholder="소제목을 입력하세요"
                   className="w-[1070px] p-2 border-none rounded font-bold text-black text-[24px]"
                 />
-                {/* Save / End (첫 블록에만 End 노출) */}
                 <div className="flex items-end justify-center gap-2">
                   <button
                     onClick={() => {
@@ -365,7 +396,6 @@ export default function FreeFormWritePage() {
             </div>
           ))}
 
-          {/* 블록 추가 */}
           <button
             onClick={handleAddBlock}
             disabled={blocks.length >= 10}
@@ -374,7 +404,6 @@ export default function FreeFormWritePage() {
             + 블록 추가하기 ({blocks.length}/10)
           </button>
 
-          {/* 모달들 */}
           {isPostSaveModalOpen && (
             <PostSaveModal
               onClose={() => setIsPostSaveModalOpen(false)}
@@ -383,6 +412,16 @@ export default function FreeFormWritePage() {
               loadingProjects={projectsLoading}
               defaultProjectId={initialProjectId}
               selectedTags={selectedTags}
+              // 수정 반영
+              initialImportance={location.state?.savePrefill?.importance}
+              initialDescription={location.state?.savePrefill?.description}
+              initialVisibility={location.state?.savePrefill?.visibility}
+              initialProjectId={
+                location.state?.savePrefill?.projectId ??
+                initialProjectId ??
+                null
+              }
+              initialThumbnail={location.state?.savePrefill?.thumbnail ?? null}
             />
           )}
 

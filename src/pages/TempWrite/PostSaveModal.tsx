@@ -19,9 +19,9 @@ export type PostSavePayload = {
   thumbnail: string | null;
   description: string;
   visibility: Visibility;
-  projectId: number;
+  projectId: number | null;
   projectName?: string;
-  summaryType: SummaryTypeParam;
+  summaryType?: SummaryTypeParam;
 };
 
 type ProjectOption = { id: number; name: string };
@@ -33,6 +33,12 @@ export default function PostSaveModal({
   defaultProjectId,
   loadingProjects = false,
   selectedTags = [],
+
+  initialImportance,
+  initialDescription,
+  initialVisibility,
+  initialProjectId,
+  initialThumbnail,
 }: {
   onClose: () => void;
   onNext: (payload: PostSavePayload) => void;
@@ -40,23 +46,50 @@ export default function PostSaveModal({
   defaultProjectId?: number;
   loadingProjects?: boolean;
   selectedTags?: string[];
+  initialImportance?: number;
+  initialDescription?: string;
+  initialVisibility?: Visibility;
+  initialProjectId?: number | null;
+  initialThumbnail?: string | null;
 }) {
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
-  const [importance, setImportance] = useState(0);
-  const [description, setDescription] = useState("");
-  const [selectedVisibility, setSelectedVisibility] =
-    useState<Visibility>("public");
+  const [thumbnail, setThumbnail] = useState<string | null>(
+    initialThumbnail ?? null
+  );
+  const [importance, setImportance] = useState<number>(initialImportance ?? 0);
+  const [description, setDescription] = useState<string>(
+    initialDescription ?? ""
+  );
+  const [selectedVisibility, setSelectedVisibility] = useState<Visibility>(
+    initialVisibility ?? "public"
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hoverIndex, setHoverIndex] = useState(0);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
-    defaultProjectId ?? null
+    initialProjectId ?? defaultProjectId ?? null
   );
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
+
   const projectName =
     projects.find((p) => p.id === selectedProjectId)?.name ?? "";
-
   const projectNames = projects.map((p) => p.name);
   const nameToId = new Map(projects.map((p) => [p.name, p.id]));
+
+  useEffect(() => {
+    if (initialImportance != null) setImportance(initialImportance);
+  }, [initialImportance]);
+  useEffect(() => {
+    if (initialDescription != null) setDescription(initialDescription);
+  }, [initialDescription]);
+  useEffect(() => {
+    if (initialVisibility) setSelectedVisibility(initialVisibility);
+  }, [initialVisibility]);
+  useEffect(() => {
+    const pid = initialProjectId ?? defaultProjectId ?? null;
+    setSelectedProjectId(pid);
+  }, [initialProjectId, defaultProjectId]);
+  useEffect(() => {
+    if (initialThumbnail !== undefined) setThumbnail(initialThumbnail);
+  }, [initialThumbnail]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,27 +101,21 @@ export default function PostSaveModal({
     }
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleUploadClick = () => fileInputRef.current?.click();
 
   const handleNextClick = () => {
     setHasTriedSubmit(true);
-
-    if (importance === 0) return; //홈화면 프로젝트생성 연동후 !selectedProjectId || 추가
-
+    if (importance === 0) return;
     onNext({
       importance,
       thumbnail,
       description,
       visibility: selectedVisibility,
-      projectId: selectedProjectId,
+      projectId: selectedProjectId ?? null,
       projectName,
     });
   };
-  useEffect(() => {
-    if (defaultProjectId != null) setSelectedProjectId(defaultProjectId);
-  }, [defaultProjectId]);
+
   useEffect(() => {
     return () => {
       if (thumbnail && thumbnail.startsWith("blob:")) {
@@ -96,6 +123,7 @@ export default function PostSaveModal({
       }
     };
   }, [thumbnail]);
+
   const previewTags: string[] = useMemo(
     () => (selectedTags ?? []).slice(0, 3),
     [selectedTags]
@@ -115,6 +143,7 @@ export default function PostSaveModal({
           <img src={exitIcon} alt="닫기" className="w-full h-full" />
         </button>
       </div>
+
       <div className="flex flex-col gap-[10px]">
         <div className="items-center gap-[40px]">
           {/* 썸네일 + 별점 */}
@@ -192,11 +221,11 @@ export default function PostSaveModal({
             </div>
           </div>
 
-          {/*썸네일 아래 모든 컴포넌트(버튼 제외)*/}
+          {/* 아래 영역 */}
           <div className="flex-col items-center gap-[16px] w-[728px] pt-[40px] ">
             {/* (에러타입+tag) + 소개 */}
             <div className="flex flex-row gap-[26px]">
-              {/*에러 +태그 */}
+              {/* 에러 + 태그 (프리뷰용) */}
               <div className="flex-col items-start gap-[16px]">
                 <div className="flex flex-col w-[351px] justify-center items-start h-[78px] gap-[8px] pr-[26px] shrink-0">
                   <span className="text-head-20-semibold text-black ">
@@ -209,11 +238,10 @@ export default function PostSaveModal({
                   </div>
                 </div>
                 {/* 태그 */}
-                <div className="flex w-[351px] flex-col pt-[26px] ">
+                <div className="flex w=[351px] flex-col pt-[26px] ">
                   <span className="text-head-20-semibold text-black">
                     카테고리 태그
                   </span>
-
                   <div className="grid gap-[8px] h-[46px] shrink-0">
                     <div className="flex items-center gap-[12px] self-stretch shrink-0">
                       {previewTags.length > 0 ? (
@@ -226,15 +254,8 @@ export default function PostSaveModal({
                               #{tag}
                             </div>
                           ))}
-
                           {extraCount > 0 && (
-                            <div
-                              className="flex h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-gray-100 text-gray-600 rounded-full text-sm"
-                              title={selectedTags
-                                .slice(3)
-                                .map((t) => `#${t}`)
-                                .join(", ")}
-                            >
+                            <div className="flex h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-gray-100 text-gray-600 rounded-full text-sm">
                               +{extraCount}
                             </div>
                           )}
@@ -248,6 +269,7 @@ export default function PostSaveModal({
                   </div>
                 </div>
               </div>
+              {/* 소개 */}
               <div className="flex flex-col w-[351px] gap-[8px]">
                 <span className="text-head-20-semibold text-black">
                   포스트 소개
@@ -267,22 +289,20 @@ export default function PostSaveModal({
               </div>
             </div>
 
-            {/* 공개 설정 + 폴더 경로 */}
+            {/* 공개 설정 + 프로젝트 */}
             <div className="flex w-[728px] flex-row gap-[26px] ">
               <div className="flex flex-col w-[351px] gap-[8px]">
                 <span className="text-head-20-semibold text-gray7">
                   공개 설정
                 </span>
                 <div className="flex gap-3">
-                  {/* 전체 공개 */}
                   <button
                     type="button"
-                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition
-      ${
-        selectedVisibility === "public"
-          ? "border-purple-500  text-purple-500 bg-opacity-10"
-          : "border-gray2"
-      }`}
+                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                      selectedVisibility === "public"
+                        ? "border-purple-500  text-purple-500 bg-opacity-10"
+                        : "border-gray2"
+                    }`}
                     onClick={() => setSelectedVisibility("public")}
                   >
                     <img
@@ -303,15 +323,13 @@ export default function PostSaveModal({
                     </span>
                   </button>
 
-                  {/* 비공개 */}
                   <button
                     type="button"
-                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition
-    ${
-      selectedVisibility === "private"
-        ? "border-purple-500 text-purple-500 bg-opacity-10"
-        : "border-gray2"
-    }`}
+                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                      selectedVisibility === "private"
+                        ? "border-purple-500 text-purple-500 bg-opacity-10"
+                        : "border-gray2"
+                    }`}
                     onClick={() => setSelectedVisibility("private")}
                   >
                     <img
