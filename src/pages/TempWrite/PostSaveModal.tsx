@@ -33,6 +33,7 @@ export default function PostSaveModal({
   defaultProjectId,
   loadingProjects = false,
   selectedTags = [],
+  summaryType,
 }: {
   onClose: () => void;
   onNext: (payload: PostSavePayload) => void;
@@ -40,6 +41,7 @@ export default function PostSaveModal({
   defaultProjectId?: number;
   loadingProjects?: boolean;
   selectedTags?: string[];
+  summaryType: SummaryTypeParam;
 }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [importance, setImportance] = useState(0);
@@ -77,6 +79,8 @@ export default function PostSaveModal({
 
     if (importance === 0) return; //홈화면 프로젝트생성 연동후 !selectedProjectId || 추가
 
+    if (selectedProjectId == null) return;
+
     onNext({
       importance,
       thumbnail,
@@ -84,6 +88,7 @@ export default function PostSaveModal({
       visibility: selectedVisibility,
       projectId: selectedProjectId,
       projectName,
+      summaryType,
     });
   };
   useEffect(() => {

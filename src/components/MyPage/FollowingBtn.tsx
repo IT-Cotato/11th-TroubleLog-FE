@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import userIcon from "@/assets/icons/user.svg";
 
 interface FollowingProps {
   userId: number;

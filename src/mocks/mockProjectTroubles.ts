@@ -3,6 +3,7 @@ import type { TroubleListItem } from "@/types/trouble.model";
 export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
   1: [
     {
+      projectId: 1,
       id: 201,
       title: "API 401 토큰 만료 대응",
       imageUrl: "https://image.url/401.png",
@@ -15,6 +16,7 @@ export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
       summaryType: "에러 중심 요약",
     },
     {
+      projectId: 1,
       id: 202,
       title: "대시보드 렌더링 지연 최적화",
       imageUrl: "https://image.url/perf.png",
@@ -29,6 +31,7 @@ export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
   ],
   2: [
     {
+      projectId: 1,
       id: 301,
       title: "이미지 업로드 CORS 문제 해결",
       imageUrl: "https://image.url/cors.png",
