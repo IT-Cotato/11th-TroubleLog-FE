@@ -6,7 +6,7 @@ import useCommunityCards, {
   type CommunityCardsFetcher,
 } from "@/hooks/useCommunityCards";
 import type { CommunitySort } from "@/types/community.model";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function CommunityPage() {
@@ -38,8 +38,10 @@ export default function CommunityPage() {
   });
 
   // 최근 읽은 포스트 목록
-  const recentFetcher: CommunityCardsFetcher = (page, size) =>
-    getCommunityRecentList(page, size) as any; // sort 미사용
+  const recentFetcher = useCallback<CommunityCardsFetcher>(
+    (page, size) => getCommunityRecentList(page, size), // sort 미사용
+    []
+  );
 
   const recent = useCommunityCards({
     enabled: selectedTab === "recent",
