@@ -11,9 +11,9 @@ export function useInfiniteUserTroubleSearch(
   // 공개 + 완료만 (작성 중 제외)
   const filterVisible = useCallback((x: MyTroubleServerItem) => {
     const visible = x.isVisible === true; // 서버가 boolean로 내려줌
-    const statusRaw = String((x as any).postStatus ?? "");
+    const statusRaw = String(x.postStatus ?? "");
     const inProgress =
-      /작성\s*중/i.test(statusRaw) || /in[\s-_]*progress/i.test(statusRaw);
+      /작성\s*중/i.test(statusRaw) || /in[\s_-]*progress/i.test(statusRaw);
     const completed = /완료/i.test(statusRaw) && !inProgress; // "요약 완료"/"작성 완료" 등
     return visible && completed;
   }, []);
