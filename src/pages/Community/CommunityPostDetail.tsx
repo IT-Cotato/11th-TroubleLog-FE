@@ -21,7 +21,6 @@ import {
   likeCommunityPost,
   replyCommunityComment,
   softDeleteCommunityComment,
-  unlikeCommunityPost,
   updateCommunityComment,
 } from "@/api/community.api";
 import { toCommunityPostVM } from "@/mappers/communityPostDetail.mapper";
@@ -90,6 +89,63 @@ export default function CommunityPostDetail() {
   const inflightPostRef = useRef(
     new Map<number, ReturnType<typeof getCommunityPostDetail>>()
   );
+
+  // 공유 기능 (URL 복사 후 안내 메시지 띄우기)
+  const [toast, setToast] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: "",
+  });
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const copyToClipboard = async (text: string) => {
+    // https(또는 localhost)에서 우선 시도
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    // 폴백 (일부 iOS/구형 브라우저)
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      const ok = document.execCommand("copy");
+      return ok;
+    } finally {
+      document.body.removeChild(ta);
+    }
+  };
+
+  const showToast = (message: string) => {
+    setToast({ open: true, message });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToast({ open: false, message: "" });
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  const handleCopyLink = async () => {
+    try {
+      const url = window.location.href;
+      const ok = await copyToClipboard(url);
+      showToast(
+        ok
+          ? "링크가 복사되었어요!"
+          : "복사에 실패했어요. 주소창에서 복사해주세요."
+      );
+    } catch {
+      showToast("복사에 실패했어요. 주소창에서 복사해주세요.");
+    }
+  };
 
   const fetchPostOnce = (id: number) => {
     const map = inflightPostRef.current;
@@ -223,7 +279,7 @@ export default function CommunityPostDetail() {
       setLikeCounts(Math.max(0, prevCount - 1));
 
       try {
-        await unlikeCommunityPost(pid);
+        await likeCommunityPost(pid);
         // 성공 시 그대로 둔다
       } catch {
         // 실패 시 롤백
@@ -485,16 +541,18 @@ export default function CommunityPostDetail() {
               </div>
 
               {/* 중요도 */}
-              <div className="flex items-center gap-[8px]">
-                <img
-                  src={starIcon}
-                  alt="importance"
-                  className="w-[24px] h-[24px]"
-                />
-                <div className="text-body-20-regular text-gray3">
-                  {post.importance}
+              {post.isMine && post.importance !== 0 && (
+                <div className="flex items-center gap-[8px]">
+                  <img
+                    src={starIcon}
+                    alt="importance"
+                    className="w-[24px] h-[24px]"
+                  />
+                  <div className="text-body-20-regular text-gray3">
+                    {post.importance}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -592,11 +650,18 @@ export default function CommunityPostDetail() {
                 </button>
 
                 {/* 공유 버튼 */}
-                <img
-                  src={shareIcon}
-                  alt="share"
-                  className="w-[40px] h-[40px]"
-                />
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="cursor-pointer"
+                  aria-label="현재 페이지 링크 복사"
+                >
+                  <img
+                    src={shareIcon}
+                    alt="share"
+                    className="w-[40px] h-[40px]"
+                  />
+                </button>
               </div>
             </div>
 
@@ -695,6 +760,17 @@ export default function CommunityPostDetail() {
           ))}
         </div>
       </div>
+
+      {/* 토스트 UI (공유 관련) */}
+      {toast.open && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black text-white text-body-16-regular shadow-card z-50"
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }

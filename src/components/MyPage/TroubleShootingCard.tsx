@@ -77,7 +77,12 @@ const TroubleShootingCard = ({
 
   // 문서 삭제
   const handleDelete = async () => {
-    if (!window.confirm("이 문서를 휴지통으로 이동할까요?")) return;
+    if (
+      !window.confirm(
+        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
+      )
+    )
+      return;
 
     try {
       setDeleting(true);
@@ -86,7 +91,7 @@ const TroubleShootingCard = ({
       await deletePost(postId);
 
       onDeleted?.(postId);
-      console.log("임시 삭제되었습니다. (관리자 복구 가능)");
+      console.log("문서가 영구 삭제되었습니다.");
     } catch (err: any) {
       console.error(err);
       alert(
@@ -180,7 +185,7 @@ const TroubleShootingCard = ({
             <div className="flex flex-wrap items-center gap-[12px]">
               <TagList tags={tags} variant="mypage" />
               <div className="flex items-center gap-[12px]">
-                {importance !== undefined && (
+                {!isSearchResult && importance !== undefined && (
                   <>
                     <div className="flex items-center gap-[4px]">
                       <img
