@@ -485,16 +485,18 @@ export default function CommunityPostDetail() {
               </div>
 
               {/* 중요도 */}
-              <div className="flex items-center gap-[8px]">
-                <img
-                  src={starIcon}
-                  alt="importance"
-                  className="w-[24px] h-[24px]"
-                />
-                <div className="text-body-20-regular text-gray3">
-                  {post.importance}
+              {post.importance !== 0 && (
+                <div className="flex items-center gap-[8px]">
+                  <img
+                    src={starIcon}
+                    alt="importance"
+                    className="w-[24px] h-[24px]"
+                  />
+                  <div className="text-body-20-regular text-gray3">
+                    {post.importance}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
