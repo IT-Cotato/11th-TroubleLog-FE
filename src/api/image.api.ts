@@ -11,6 +11,7 @@ export async function uploadImage(
   form.append("multipartFile", file, file.name);
 
   const res = await api.post<ApiEnvelope<string>>("/image", form, {
+    headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (e) => {
       if (!onProgress || !e.total) return;
       onProgress(Math.round((e.loaded * 100) / e.total));
