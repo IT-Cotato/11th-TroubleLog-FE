@@ -541,7 +541,7 @@ export default function CommunityPostDetail() {
               </div>
 
               {/* 중요도 */}
-              {post.importance !== 0 && (
+              {post.isMine && post.importance !== 0 && (
                 <div className="flex items-center gap-[8px]">
                   <img
                     src={starIcon}
