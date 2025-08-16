@@ -233,7 +233,6 @@ export default function ProjectDetailPage() {
           )}
         </ProjectAccordion>
       )}
-      ;
     </div>
   );
 }
