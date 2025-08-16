@@ -96,6 +96,8 @@ export default function FreeFormWritePage() {
   );
   const [statusMessage, setStatusMessage] = useState<string>("");
 
+  const [nextAction, setNextAction] = useState<"SUMMARY" | "SAVE" | null>(null);
+
   const closingRef = useRef(false);
   const navigate = useNavigate();
   const location = useLocation() as { state?: IncomingFreeformState };
@@ -126,9 +128,6 @@ export default function FreeFormWritePage() {
         summaryType: "NONE",
       }));
 
-  const toGuideContent = (text: string) =>
-    (text ?? "").split(/\n{2,}/).map((s) => s.trim());
-
   const handleAddBlock = () => {
     if (blocks.length >= 10) return;
     setBlocks((prev) => [
@@ -147,6 +146,57 @@ export default function FreeFormWritePage() {
     );
   };
 
+  const buildCreateForm = (
+    postStatus: "COMPLETED" | "DRAFT",
+    meta: PostSavePayload | null = previewMeta
+  ): PostForm => ({
+    title,
+    introduction: meta?.description ?? "",
+    postTags: selectedTags?.filter(Boolean) ?? [],
+    isVisible: (meta?.visibility ?? "public") === "public",
+    isSummaryCreated: false,
+    postStatus,
+    starRating: String(meta?.importance ?? 0),
+    thumbnailImageUrl: meta?.thumbnail ?? undefined,
+    projectId: Number(meta?.projectId ?? 0),
+    errorTag: selectedErrorType ?? "",
+    contents: toContentDtoList(blocks),
+  });
+
+  const saveOriginalOnly = async (
+    meta: PostSavePayload | null = previewMeta
+  ) => {
+    if (!meta?.projectId) {
+      setIsPostSaveModalOpen(true);
+      return;
+    }
+    try {
+      const req = toCreatePostRequest(buildCreateForm("COMPLETED", meta));
+      console.debug("[createPost] payload", req);
+      await createPost(req);
+      navigate(PATH.PROJECT_DETAIL(String(meta.projectId)), {
+        state: { projectName: meta.projectName },
+      });
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      console.error("createPost error", status, data, err);
+
+      if (status === 401) {
+        setStatusMessage("로그인이 만료되었어요. 다시 로그인해주세요.");
+        navigate(PATH.LOGIN);
+        return;
+      }
+
+      const msg =
+        (typeof data === "string" && data) ||
+        data?.message ||
+        data?.error ||
+        "원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.";
+      setStatusMessage(msg);
+    }
+  };
+
   const handleEnd = () => {
     if (!title.trim() || !selectedErrorType) {
       setShowAlert(true);
@@ -158,12 +208,54 @@ export default function FreeFormWritePage() {
       setTimeout(() => setShowBlockAlert(false), 3000);
       return;
     }
+    setNextAction("SUMMARY");
     setIsPostSaveModalOpen(true);
   };
 
-  const handleNextInPostSaveModal = (payload: PostSavePayload) => {
+  const handleGlobalSave = async () => {
+    if (!title.trim() || !selectedErrorType) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      return;
+    }
+    if (!blocks[0]?.content.trim()) {
+      setShowBlockAlert(true);
+      setTimeout(() => setShowBlockAlert(false), 3000);
+      return;
+    }
+
+    setBlocks((prev) => prev.map((b) => ({ ...b, isSaved: true })));
+    setShowSaveAlert(true);
+    setTimeout(() => setShowSaveAlert(false), 3000);
+
+    setNextAction("SAVE");
+
+    if (!previewMeta?.projectId) {
+      setIsPostSaveModalOpen(true);
+      return;
+    }
+
+    try {
+      await saveOriginalOnly(previewMeta);
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
+  };
+
+  const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
     setPreviewMeta(payload);
     setIsPostSaveModalOpen(false);
+
+    if (nextAction === "SAVE") {
+      try {
+        await saveOriginalOnly(payload);
+      } catch (e) {
+        console.error(e);
+        setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      }
+      return;
+    }
     setIsTemplateSelectModalOpen(true);
   };
 
@@ -179,21 +271,7 @@ export default function FreeFormWritePage() {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const form: PostForm = {
-        title,
-        introduction: previewMeta?.description ?? "",
-        postTags: selectedTags,
-        isVisible: (previewMeta?.visibility ?? "public") === "public",
-        isSummaryCreated: false,
-        postStatus: "DRAFT",
-        starRating: String(previewMeta?.importance ?? "0"),
-        thumbnailImageUrl: previewMeta?.thumbnail ?? undefined,
-        projectId: previewMeta?.projectId ?? 0,
-        errorTag: selectedErrorType ?? "",
-        contents: toContentDtoList(blocks),
-      };
-
-      const req = toCreatePostRequest(form);
+      const req = toCreatePostRequest(buildCreateForm("DRAFT"));
       const created = await createPost(req);
       const postId = created.id;
       setCreatedPostId(postId);
@@ -250,39 +328,28 @@ export default function FreeFormWritePage() {
     };
   }, [isLoadingModalOpen, createdPostId, summaryTaskId]);
 
-  const handleLater = () => {
-    const filled = blocks.filter((b) => b.content?.trim().length > 0);
-    const questions = filled.map((b) =>
-      b.title?.trim() ? b.title.trim() : "(제목 없음)"
-    );
-    const contents = filled.map((b) => toGuideContent(b.content));
+  const handleLater = async () => {
+    if (
+      !title.trim() ||
+      !selectedErrorType ||
+      !blocks[0]?.content.trim() ||
+      !previewMeta?.projectId
+    ) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      return;
+    }
 
-    navigate(PATH.PREVIEW, {
-      state: {
-        editorType: "FREEFORM",
-        title,
-        tags: selectedTags,
-        errorType: selectedErrorType,
-        importance: previewMeta?.importance,
-        // save modal
-        savePrefill: previewMeta
-          ? {
-              importance: previewMeta.importance ?? 0,
-              description: previewMeta.description ?? "",
-              visibility: previewMeta.visibility ?? "public",
-              projectId: previewMeta.projectId ?? null,
-              projectName: previewMeta.projectName,
-              thumbnail: previewMeta.thumbnail ?? null,
-            }
-          : undefined,
-        authorName: "나",
-        authorProfile: null,
-        authorBio: "",
-        date: new Date().toISOString().slice(2, 10).replace(/-/g, "."),
-        questions,
-        contents,
-      },
-    });
+    try {
+      const req = toCreatePostRequest(buildCreateForm("COMPLETED"));
+      await createPost(req);
+      navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
+        state: { projectName: previewMeta.projectName },
+      });
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   };
 
   const handleCloseLoading = async () => {
@@ -311,6 +378,7 @@ export default function FreeFormWritePage() {
       <HeaderWoSearch />
       <div className="flex justify-center px-[360px] pt-[68px] items-start">
         <div className="flex-1 flex w-[1200px] flex-col gap-3">
+          {/* Alerts */}
           {showAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               제목과 에러 종류를 모두 입력해주세요.
@@ -332,6 +400,7 @@ export default function FreeFormWritePage() {
             </div>
           )}
 
+          {/* 제목/태그 + 상단 액션바 */}
           <div className="flex flex-col items-start gap-[40px]">
             <input
               type="text"
@@ -340,22 +409,39 @@ export default function FreeFormWritePage() {
               placeholder="제목을 입력하세요."
               className="text-[36px] md:text-[48px] font-bold text-black outline-none w-full leading-tight"
             />
-            <div className="flex gap-[36px] items-center">
-              <DropDownButton
-                options={errorOptions}
-                placeholder="에러 종류를 선택하세요"
-                width="w-[340px]"
-                onSelect={(selectedError) =>
-                  setSelectedErrorType(selectedError)
-                }
-              />
-              <CategoryTag value={selectedTags} onChange={setSelectedTags} />
+            <div className="flex w-[1200px] justify-between">
+              <div className="flex gap-[36px] items-center">
+                <DropDownButton
+                  options={errorOptions}
+                  placeholder="에러 종류를 선택하세요"
+                  width="w-[340px]"
+                  onSelect={(selectedError) =>
+                    setSelectedErrorType(selectedError)
+                  }
+                />
+                <CategoryTag value={selectedTags} onChange={setSelectedTags} />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleGlobalSave}
+                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleEnd}
+                  className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600"
+                >
+                  End
+                </button>
+              </div>
             </div>
           </div>
 
-          {blocks.map((block, idx) => (
+          {/* 블록 리스트 */}
+          {blocks.map((block) => (
             <div key={block.id} className="max-w-[1200px]">
-              <div className="w-full flex flex-row justify-center items-end h-[60px] mb-3">
+              <div className="w-full flex items-end h-[60px] mb-2">
                 <input
                   type="text"
                   value={block.title}
@@ -363,30 +449,12 @@ export default function FreeFormWritePage() {
                     handleChangeBlock(block.id, "title", e.target.value)
                   }
                   placeholder="소제목을 입력하세요"
-                  className="w-[1070px] p-2 border-none rounded font-bold text-black text-[24px]"
+                  className="flex-1 px-0 py-2 border-none rounded font-bold text-black text-[24px]"
                 />
-                <div className="flex items-end justify-center gap-2">
-                  <button
-                    onClick={() => {
-                      setShowSaveAlert(true);
-                      setTimeout(() => setShowSaveAlert(false), 3000);
-                    }}
-                    className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100"
-                  >
-                    Save
-                  </button>
-                  {idx === 0 && (
-                    <button
-                      onClick={handleEnd}
-                      className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600"
-                    >
-                      End
-                    </button>
-                  )}
-                </div>
               </div>
 
               <MDEditor
+                className="mt-2"
                 value={block.content}
                 onChange={(val) =>
                   handleChangeBlock(block.id, "content", val || "")
@@ -404,6 +472,7 @@ export default function FreeFormWritePage() {
             + 블록 추가하기 ({blocks.length}/10)
           </button>
 
+          {/* 모달들 */}
           {isPostSaveModalOpen && (
             <PostSaveModal
               onClose={() => setIsPostSaveModalOpen(false)}
@@ -412,7 +481,6 @@ export default function FreeFormWritePage() {
               loadingProjects={projectsLoading}
               defaultProjectId={initialProjectId}
               selectedTags={selectedTags}
-              // 수정 반영
               initialImportance={location.state?.savePrefill?.importance}
               initialDescription={location.state?.savePrefill?.description}
               initialVisibility={location.state?.savePrefill?.visibility}
