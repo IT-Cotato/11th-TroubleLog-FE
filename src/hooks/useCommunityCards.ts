@@ -131,7 +131,7 @@ export default function useCommunityCards(opts: Options = {}) {
       try {
         const resp = dedupe
           ? await fetchOnce(sourceKey, fetcher, sortBy, targetPage, pageSize)
-          : await getCommunityList(targetPage, pageSize, sortBy);
+          : await fetcher(targetPage, pageSize, sortBy);
 
         if (seqRef.current !== mySeq) return;
 
