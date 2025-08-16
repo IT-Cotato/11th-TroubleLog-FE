@@ -61,6 +61,7 @@ export function useInfiniteMyTroubleSearch(
   const [hasNext, setHasNext] = useState(false);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [displayTotal, setDisplayTotal] = useState(0); // 화면 표시용 개수
 
   // 중복 호출 방지 락
   const inflightRef = useRef(false);
@@ -74,6 +75,7 @@ export function useInfiniteMyTroubleSearch(
     setTotalPages(0);
     setError(null);
     lastKeyRef.current = "";
+    setDisplayTotal(0);
   }, []);
 
   const fetchPage = useCallback(
@@ -117,7 +119,9 @@ export function useInfiniteMyTroubleSearch(
           const map = new Map<string, TroubleShootingCardProps>();
           for (const it of prev) map.set(it.id, it);
           for (const it of mapped) map.set(it.id, it);
-          return Array.from(map.values());
+          const arr = Array.from(map.values());
+          setDisplayTotal(arr.length); // 현재 화면에 보여질 총 개수
+          return arr;
         });
 
         setPage(safe.page);
@@ -162,6 +166,7 @@ export function useInfiniteMyTroubleSearch(
     hasNext,
     totalElements,
     totalPages,
+    displayTotal,
     loadMore,
     reset,
   };
