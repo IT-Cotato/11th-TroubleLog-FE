@@ -2,12 +2,27 @@ import axios, { AxiosError } from "axios";
 import { router } from "@/routes/Router";
 import { PATH } from "@/constants/paths";
 
-const baseURL =
-  import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_BASE_URL;
+const RAW_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_BASE_URL ?? "";
+
+const getOriginSafely = (maybeUrl?: string | null): string => {
+  try {
+    if (maybeUrl && /^https?:\/\//i.test(maybeUrl)) {
+      return new URL(maybeUrl).origin;
+    }
+  } catch {
+    /* noop: relative URL or invalid format */
+  }
+  // '/api' 같은 상대 경로일 때는 현재 오리진으로 간주
+  return window.location.origin;
+};
+
+const COMPUTED_BASE_URL = RAW_BASE_URL || "/api";
+const API_ORIGIN = getOriginSafely(COMPUTED_BASE_URL);
 const ENVTYPE = import.meta.env.VITE_ENV_TYPE;
 
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: COMPUTED_BASE_URL,
   timeout: 10000,
   withCredentials: true,
   headers: {
@@ -51,8 +66,7 @@ api.interceptors.request.use((config) => {
 
   // 외부 절대 URL은 내부 인증/EnvType 헤더 미부착
   const isAbsolute = /^https?:\/\//i.test(url);
-  const apiOrigin = baseURL ? new URL(baseURL).origin : window.location.origin;
-  const isExternalAbsolute = isAbsolute && !url.startsWith(apiOrigin);
+  const isExternalAbsolute = isAbsolute && !url.startsWith(API_ORIGIN);
   if (isExternalAbsolute) {
     return config;
   }
@@ -117,10 +131,7 @@ api.interceptors.response.use(
 
     // 외부 절대 URL만 제외 (상대 경로/동일 베이스 URL은 처리)
     const isAbsolute = /^https?:\/\//i.test(reqUrl);
-    const apiOrigin = baseURL
-      ? new URL(baseURL).origin
-      : window.location.origin;
-    const isExternalAbsolute = isAbsolute && !reqUrl.startsWith(apiOrigin);
+    const isExternalAbsolute = isAbsolute && !reqUrl.startsWith(API_ORIGIN);
     if (isExternalAbsolute) return Promise.reject(error);
 
     // 리프레시 자체 실패 → 즉시 로그인 이동(단 1회)
@@ -177,5 +188,8 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-if (import.meta.env.DEV) (window as any).__api = api;
+if (import.meta.env.DEV) {
+  (window as any).__api = api;
+  (window as any).__apiBase = COMPUTED_BASE_URL;
+  (window as any).__apiOrigin = API_ORIGIN;
+}
