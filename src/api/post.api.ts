@@ -45,10 +45,10 @@ export const editPost = (postId: number, body: EditPostRequest) =>
     data: body,
   });
 
-// 원본 문서 임시 삭제 --done
+// 원본 문서 삭제
 export const deletePost = (postId: number) =>
   getAPIResponseData<void>({
-    url: `/troubles/${postId}`,
+    url: `/troubles/${postId}/hard`,
     method: "DELETE",
   });
 
