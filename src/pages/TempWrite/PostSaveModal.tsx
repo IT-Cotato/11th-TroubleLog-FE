@@ -106,6 +106,8 @@ export default function PostSaveModal({
   const handleNextClick = () => {
     setHasTriedSubmit(true);
     if (importance === 0) return;
+    if (selectedProjectId == null) return;
+
     onNext({
       importance,
       thumbnail,
@@ -113,6 +115,7 @@ export default function PostSaveModal({
       visibility: selectedVisibility,
       projectId: selectedProjectId ?? null,
       projectName,
+      summaryType,
     });
   };
 

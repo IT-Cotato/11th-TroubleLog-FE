@@ -31,6 +31,7 @@ export interface TroubleShootingCardProps {
   isSearchResult?: boolean;
   onDeleted?: (postId: number) => void;
   onClick?: (postId: number) => void;
+  disabled?: boolean;
 }
 
 const TroubleShootingCard = ({
@@ -52,6 +53,7 @@ const TroubleShootingCard = ({
   isSearchResult,
   onDeleted,
   onClick,
+  disabled,
 }: TroubleShootingCardProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -61,7 +63,7 @@ const TroubleShootingCard = ({
   const shouldShowVisibilityIcon = status === "complete" && visibility;
   const shouldShowSummaryType = status === "created";
 
-  const isClickable = typeof onClick === "function";
+  const isClickable = typeof onClick === "function" && !disabled;
   const handleRootClick = () => {
     if (isClickable) onClick(Number(id));
   };
@@ -69,8 +71,7 @@ const TroubleShootingCard = ({
   const handleRootKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
     if (!isClickable) return;
     if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onClick(Number(id));
+      if (isClickable) onClick(Number(id));
     }
   };
 
@@ -101,12 +102,17 @@ const TroubleShootingCard = ({
   return (
     <div
       className={`w-full py-[30px] flex flex-col items-start gap-[10px] border-b border-gray3 bg-white ${
-        isClickable ? "cursor-pointer" : ""
+        isClickable
+          ? "cursor-pointer"
+          : disabled
+          ? "cursor-not-allowed opacity-60"
+          : ""
       }`}
       onClick={handleRootClick}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
       onKeyDown={handleRootKeyDown}
+      aria-disabled={disabled || undefined}
     >
       <div className="w-full flex flex-col">
         {/* 작성자 */}

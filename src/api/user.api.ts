@@ -29,35 +29,35 @@ export const patchProfile = (updatedProfile: UpdatedProfileData) =>
   });
 
 // 팔로워 목록 조회
-export const getFollowers = (userId: number) =>
+export const getFollowers = (targetUserId: number) =>
   getAPIResponseData<FollowingData[]>({
     url: "/user/followers",
     method: "GET",
-    params: { userId },
+    params: { targetUserId },
   });
 
 // 팔로잉 목록 조회
-export const getFollowings = (userId: number) =>
+export const getFollowings = (targetUserId: number) =>
   getAPIResponseData<FollowingData[]>({
     url: "/user/followings",
     method: "GET",
-    params: { userId },
+    params: { targetUserId },
   });
 
 // 팔로우
-export const postFollow = (userId: number) =>
+export const postFollow = (targetUserId: number) =>
   getAPIResponseData({
     url: "/user/follow",
     method: "POST",
-    params: { userId },
+    params: { targetUserId },
   });
 
 // 언팔로우
-export const postUnfollow = (userId: number) =>
+export const postUnfollow = (targetUserId: number) =>
   getAPIResponseData({
     url: "/user/unfollow",
     method: "POST",
-    params: { userId },
+    params: { targetUserId },
   });
 
 // 탈퇴
