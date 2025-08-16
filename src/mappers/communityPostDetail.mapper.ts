@@ -38,7 +38,7 @@ export function toCommunityPostVM(
     importance: 0,
     questions: sorted.map((c, i) => c.subTitle || `섹션 ${i + 1}`),
     contents: sorted.map((c) => [c.body || ""]),
-    isLiked: false,
+    isLiked: src.liked ?? false,
     likeCounts: src.likeCount ?? 0,
     commentCounts: src.commentCount ?? 0,
     comments: [],

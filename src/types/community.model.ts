@@ -38,6 +38,7 @@ export interface CommunityPostDetailServer {
   introduction: string | null;
   likeCount: number;
   commentCount: number;
+  liked: boolean;
   completedAt: string;
   errorTag: string;
   postTags: string[];
