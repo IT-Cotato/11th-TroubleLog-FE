@@ -66,7 +66,8 @@ api.interceptors.request.use((config) => {
 
   // 외부 절대 URL은 내부 인증/EnvType 헤더 미부착
   const isAbsolute = /^https?:\/\//i.test(url);
-  const isExternalAbsolute = isAbsolute && !url.startsWith(API_ORIGIN);
+  const reqOrigin = isAbsolute ? getOriginSafely(url) : API_ORIGIN;
+  const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
   if (isExternalAbsolute) {
     return config;
   }
@@ -131,7 +132,8 @@ api.interceptors.response.use(
 
     // 외부 절대 URL만 제외 (상대 경로/동일 베이스 URL은 처리)
     const isAbsolute = /^https?:\/\//i.test(reqUrl);
-    const isExternalAbsolute = isAbsolute && !reqUrl.startsWith(API_ORIGIN);
+    const reqOrigin = isAbsolute ? getOriginSafely(reqUrl) : API_ORIGIN;
+    const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
     if (isExternalAbsolute) return Promise.reject(error);
 
     // 리프레시 자체 실패 → 즉시 로그인 이동(단 1회)
