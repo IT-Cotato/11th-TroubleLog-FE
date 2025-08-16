@@ -51,6 +51,8 @@ export interface CommunityCommentServerItem {
   commentId: number;
   postId: number;
   userId: number;
+  name: string;
+  profileImg: string;
   content: string;
   createdAt: string;
   parentCommentId: number | null;
