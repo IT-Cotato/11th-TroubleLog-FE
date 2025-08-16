@@ -12,6 +12,8 @@ import privateIcon from "@/assets/icons/privateicon.svg";
 import purplePrivateIcon from "@/assets/icons/purpleprivateicon.svg";
 import type { SummaryTypeParam } from "@/models/post.model";
 
+import { uploadImage } from "@/api/image.api";
+
 type Visibility = "public" | "private";
 
 export type PostSavePayload = {
@@ -19,9 +21,9 @@ export type PostSavePayload = {
   thumbnail: string | null;
   description: string;
   visibility: Visibility;
-  projectId: number;
+  projectId: number | null;
   projectName?: string;
-  summaryType: SummaryTypeParam;
+  summaryType?: SummaryTypeParam;
 };
 
 type ProjectOption = { id: number; name: string };
@@ -33,7 +35,11 @@ export default function PostSaveModal({
   defaultProjectId,
   loadingProjects = false,
   selectedTags = [],
-  summaryType,
+  initialImportance,
+  initialDescription,
+  initialVisibility,
+  initialProjectId,
+  initialThumbnail,
 }: {
   onClose: () => void;
   onNext: (payload: PostSavePayload) => void;
@@ -41,44 +47,133 @@ export default function PostSaveModal({
   defaultProjectId?: number;
   loadingProjects?: boolean;
   selectedTags?: string[];
-  summaryType: SummaryTypeParam;
+  initialImportance?: number;
+  initialDescription?: string;
+  initialVisibility?: Visibility;
+  initialProjectId?: number | null;
+  initialThumbnail?: string | null;
 }) {
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
-  const [importance, setImportance] = useState(0);
-  const [description, setDescription] = useState("");
-  const [selectedVisibility, setSelectedVisibility] =
-    useState<Visibility>("public");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [hoverIndex, setHoverIndex] = useState(0);
+  const [thumbnail, setThumbnail] = useState<string | null>(
+    initialThumbnail ?? null
+  ); // 서버 URL
+  const [importance, setImportance] = useState<number>(initialImportance ?? 0);
+  const [description, setDescription] = useState<string>(
+    initialDescription ?? ""
+  );
+  const [selectedVisibility, setSelectedVisibility] = useState<Visibility>(
+    initialVisibility ?? "public"
+  );
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
-    defaultProjectId ?? null
+    initialProjectId ?? defaultProjectId ?? null
   );
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
+
+  // 업로드 상태
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [tempPreview, setTempPreview] = useState<string | null>(null); // 로컬 미리보기
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const MAX_MB = 8;
+
   const projectName =
     projects.find((p) => p.id === selectedProjectId)?.name ?? "";
-
   const projectNames = projects.map((p) => p.name);
   const nameToId = new Map(projects.map((p) => [p.name, p.id]));
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (initialImportance != null) setImportance(initialImportance);
+  }, [initialImportance]);
+
+  useEffect(() => {
+    if (initialDescription != null) setDescription(initialDescription);
+  }, [initialDescription]);
+
+  useEffect(() => {
+    if (initialVisibility) setSelectedVisibility(initialVisibility);
+  }, [initialVisibility]);
+
+  useEffect(() => {
+    const pid = initialProjectId ?? defaultProjectId ?? null;
+    setSelectedProjectId(pid);
+  }, [initialProjectId, defaultProjectId]);
+
+  useEffect(() => {
+    if (initialThumbnail !== undefined) setThumbnail(initialThumbnail);
+  }, [initialThumbnail]);
+
+  useEffect(() => {
+    return () => {
+      if (tempPreview) URL.revokeObjectURL(tempPreview);
+    };
+  }, [tempPreview]);
+
+  const previewTags: string[] = useMemo(
+    () => (selectedTags ?? []).slice(0, 3),
+    [selectedTags]
+  );
+  const extraCount = Math.max(0, (selectedTags?.length ?? 0) - 3);
+
+  const handleUploadClick = () => fileInputRef.current?.click();
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (thumbnail && thumbnail.startsWith("blob:")) {
-        URL.revokeObjectURL(thumbnail);
-      }
-      setThumbnail(URL.createObjectURL(file));
+    if (!file) return;
+
+    // 기본 검증
+    if (!file.type.startsWith("image/")) {
+      alert("이미지 파일만 업로드할 수 있어요.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    if (file.size > MAX_MB * 1024 * 1024) {
+      alert(`파일 용량이 너무 커요. 최대 ${MAX_MB}MB까지 가능합니다.`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // 로컬 프리뷰
+    if (tempPreview) URL.revokeObjectURL(tempPreview);
+    const localUrl = URL.createObjectURL(file);
+    setTempPreview(localUrl);
+
+    // 서버 업로드
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      const serverUrl = await uploadImage(file, (p) => setUploadProgress(p));
+
+      setThumbnail(serverUrl);
+      if (localUrl) URL.revokeObjectURL(localUrl);
+      setTempPreview(null);
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message ?? "이미지 업로드에 실패했습니다.");
+      setThumbnail(null);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
+  const handleRemoveImage = () => {
+    if (tempPreview) {
+      URL.revokeObjectURL(tempPreview);
+      setTempPreview(null);
+    }
+    setThumbnail(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleNextClick = () => {
     setHasTriedSubmit(true);
-
-    if (importance === 0) return; //홈화면 프로젝트생성 연동후 !selectedProjectId || 추가
-
+    if (isUploading) {
+      alert("이미지 업로드가 끝난 후 저장할 수 있어요.");
+      return;
+    }
+    if (importance === 0) return;
     if (selectedProjectId == null) return;
 
     onNext({
@@ -86,26 +181,10 @@ export default function PostSaveModal({
       thumbnail,
       description,
       visibility: selectedVisibility,
-      projectId: selectedProjectId,
+      projectId: selectedProjectId ?? null,
       projectName,
-      summaryType,
     });
   };
-  useEffect(() => {
-    if (defaultProjectId != null) setSelectedProjectId(defaultProjectId);
-  }, [defaultProjectId]);
-  useEffect(() => {
-    return () => {
-      if (thumbnail && thumbnail.startsWith("blob:")) {
-        URL.revokeObjectURL(thumbnail);
-      }
-    };
-  }, [thumbnail]);
-  const previewTags: string[] = useMemo(
-    () => (selectedTags ?? []).slice(0, 3),
-    [selectedTags]
-  );
-  const extraCount = Math.max(0, (selectedTags?.length ?? 0) - 3);
 
   return (
     <BaseModal
@@ -120,41 +199,56 @@ export default function PostSaveModal({
           <img src={exitIcon} alt="닫기" className="w-full h-full" />
         </button>
       </div>
+
       <div className="flex flex-col gap-[10px]">
         <div className="items-center gap-[40px]">
           {/* 썸네일 + 별점 */}
           <div className="inline-flex items-center pt-[33px] pr-[65px] gap-[108px]">
             {/* 썸네일 */}
-            <div className=" relative flex w-[351px] h-[154px] overflow-hidden justify-center items-center border-dashed border-[2px] border-gray1 bg-[#FCFCFC] rounded-[16px]">
-              {thumbnail ? (
-                <>
-                  <img
-                    src={thumbnail}
-                    alt="썸네일"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <button
-                    onClick={() => setThumbnail(null)}
-                    className="absolute bottom-[18px] z-10 px-[23px] pt-[10px] pb-[11px] bg-white border-[1.5px] border-gray1 rounded-[8px]"
-                  >
-                    썸네일 삭제
-                  </button>
-                </>
+            <div className="relative flex w-[351px] h-[154px] overflow-hidden justify-center items-center border-dashed border-[2px] border-gray1 bg-[#FCFCFC] rounded-[16px]">
+              {tempPreview || thumbnail ? (
+                <img
+                  src={tempPreview ?? thumbnail!}
+                  alt="썸네일"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
               ) : (
-                <>
-                  <div className="flex w-[111px] flex-col items-center gap-[23px]">
-                    <img src={addImageIcon} className="w-[52px] h-[52px]" />
-                    <button
-                      onClick={handleUploadClick}
-                      className=" flex w-[111px] h-[38px] self-stretch justify-center items-center bg-white border-[1.5px] border-gray1 rounded-[8px]"
-                    >
-                      <span className="text-sm font-normal text-black">
-                        썸네일 업로드
-                      </span>
-                    </button>
-                  </div>
-                </>
+                <div className="flex w-[111px] flex-col items-center gap-[23px]">
+                  <img src={addImageIcon} className="w-[52px] h-[52px]" />
+                  <button
+                    onClick={handleUploadClick}
+                    className="flex w-[111px] h-[38px] self-stretch justify-center items-center bg-white border-[1.5px] border-gray1 rounded-[8px]"
+                  >
+                    <span className="text-sm font-normal text-black">
+                      썸네일 업로드
+                    </span>
+                  </button>
+                </div>
               )}
+
+              {/* 진행률 오버레이 */}
+              {isUploading && (
+                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
+                  <div className="w-[70%] h-2 bg-white/40 rounded">
+                    <div
+                      className="h-2 bg-white rounded"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <span className="text-white text-sm">{uploadProgress}%</span>
+                </div>
+              )}
+
+              {/* 삭제 버튼 */}
+              {!isUploading && (thumbnail || tempPreview) && (
+                <button
+                  onClick={handleRemoveImage}
+                  className="absolute bottom-[18px] z-10 px-[23px] pt-[10px] pb-[11px] bg-white border-[1.5px] border-gray1 rounded-[8px]"
+                >
+                  썸네일 삭제
+                </button>
+              )}
+
               <input
                 type="file"
                 accept="image/*"
@@ -180,15 +274,11 @@ export default function PostSaveModal({
                   <button
                     key={i}
                     onClick={() => setImportance(i)}
-                    onMouseEnter={() => setHoverIndex(i)}
-                    onMouseLeave={() => setHoverIndex(0)}
+                    onMouseEnter={() => {}}
+                    onMouseLeave={() => {}}
                   >
                     <img
-                      src={
-                        i <= (hoverIndex || importance)
-                          ? starFilledIcon
-                          : starUnfilledIcon
-                      }
+                      src={i <= importance ? starFilledIcon : starUnfilledIcon}
                       className="w-[32px] h-[32px]"
                     />
                   </button>
@@ -197,17 +287,17 @@ export default function PostSaveModal({
             </div>
           </div>
 
-          {/*썸네일 아래 모든 컴포넌트(버튼 제외)*/}
-          <div className="flex-col items-center gap-[16px] w-[728px] pt-[40px] ">
+          {/* 아래 영역 */}
+          <div className="flex flex-col items-center gap-[16px] w-[728px] pt-[40px] ">
             {/* (에러타입+tag) + 소개 */}
             <div className="flex flex-row gap-[26px]">
-              {/*에러 +태그 */}
-              <div className="flex-col items-start gap-[16px]">
+              {/* 에러 + 태그 (프리뷰용) */}
+              <div className="flex flex-col items-start gap-[16px]">
                 <div className="flex flex-col w-[351px] justify-center items-start h-[78px] gap-[8px] pr-[26px] shrink-0">
                   <span className="text-head-20-semibold text-black ">
                     에러타입
                   </span>
-                  <div className="grid w-[345px] h-[46px] px-[15px] py-[14px] border rounded border-purple-300 bg-white ">
+                  <div className="grid w/[345px] w-[345px] h-[46px] px-[15px] py-[14px] border rounded border-purple-300 bg-white ">
                     <span className="flex flex-1 self-stretch font-normal text-sm text-purple-700">
                       Build / Compile
                     </span>
@@ -218,7 +308,6 @@ export default function PostSaveModal({
                   <span className="text-head-20-semibold text-black">
                     카테고리 태그
                   </span>
-
                   <div className="grid gap-[8px] h-[46px] shrink-0">
                     <div className="flex items-center gap-[12px] self-stretch shrink-0">
                       {previewTags.length > 0 ? (
@@ -231,15 +320,8 @@ export default function PostSaveModal({
                               #{tag}
                             </div>
                           ))}
-
                           {extraCount > 0 && (
-                            <div
-                              className="flex h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-gray-100 text-gray-600 rounded-full text-sm"
-                              title={selectedTags
-                                .slice(3)
-                                .map((t) => `#${t}`)
-                                .join(", ")}
-                            >
+                            <div className="flex h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-gray-100 text-gray-600 rounded-full text-sm">
                               +{extraCount}
                             </div>
                           )}
@@ -253,7 +335,8 @@ export default function PostSaveModal({
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col w-[351px] gap-[8px]">
+              {/* 소개 */}
+              <div className="flex flex-col w/[351px] w-[351px] gap-[8px]">
                 <span className="text-head-20-semibold text-black">
                   포스트 소개
                 </span>
@@ -263,7 +346,7 @@ export default function PostSaveModal({
                     onChange={(e) => setDescription(e.target.value)}
                     maxLength={200}
                     placeholder="포스트를 짧게 소개해주세요."
-                    className="w-[351px]  h-[119px] resize-none px-[12px] py-[8px] border border-gray1 rounded-[8px] text-body-14-regular"
+                    className="w-[351px] h-[119px] resize-none px-[12px] py-[8px] border border-gray1 rounded-[8px] text-body-14-regular"
                   />
                   <div className="text-right text-caption-12-regular text-gray2 mt-[4px]">
                     {description.length}/200
@@ -272,22 +355,20 @@ export default function PostSaveModal({
               </div>
             </div>
 
-            {/* 공개 설정 + 폴더 경로 */}
+            {/* 공개 설정 + 프로젝트 */}
             <div className="flex w-[728px] flex-row gap-[26px] ">
               <div className="flex flex-col w-[351px] gap-[8px]">
                 <span className="text-head-20-semibold text-gray7">
                   공개 설정
                 </span>
                 <div className="flex gap-3">
-                  {/* 전체 공개 */}
                   <button
                     type="button"
-                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition
-      ${
-        selectedVisibility === "public"
-          ? "border-purple-500  text-purple-500 bg-opacity-10"
-          : "border-gray2"
-      }`}
+                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                      selectedVisibility === "public"
+                        ? "border-purple-500 text-purple-500 bg-opacity-10"
+                        : "border-gray2"
+                    }`}
                     onClick={() => setSelectedVisibility("public")}
                   >
                     <img
@@ -308,15 +389,13 @@ export default function PostSaveModal({
                     </span>
                   </button>
 
-                  {/* 비공개 */}
                   <button
                     type="button"
-                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition
-    ${
-      selectedVisibility === "private"
-        ? "border-purple-500 text-purple-500 bg-opacity-10"
-        : "border-gray2"
-    }`}
+                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                      selectedVisibility === "private"
+                        ? "border-purple-500 text-purple-500 bg-opacity-10"
+                        : "border-gray2"
+                    }`}
                     onClick={() => setSelectedVisibility("private")}
                   >
                     <img
@@ -378,7 +457,7 @@ export default function PostSaveModal({
         {/* 버튼 */}
         <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
           <CancelButton onClick={onClose} />
-          <SaveButton onClick={handleNextClick} />
+          <SaveButton onClick={handleNextClick} disabled={isUploading} />
         </div>
       </div>
     </BaseModal>

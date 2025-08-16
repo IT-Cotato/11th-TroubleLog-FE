@@ -14,7 +14,6 @@ export const PATH = {
   FOLLOWER: (id: string) => `/user/mypage/${id}/follower`,
   STATISTICS: (id: string) => `/user/mypage/${id}/statistics`,
   LIKES: (id: string) => `/user/mypage/${id}/likes`,
-
   PROJECT_DETAIL: (id: string) => `/user/project/${id}`,
   COMMUNITY: "/user/community",
   COMMUNITY_POST: (postId: number) => `/user/community/${postId}`,

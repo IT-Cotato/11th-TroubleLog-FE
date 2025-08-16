@@ -1,9 +1,12 @@
+import { getCommunityRecentList } from "@/api/community.api";
 import TroublogCard from "@/components/Card/TroublogCard";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
 import { PATH } from "@/constants/paths";
-import useCommunityCards from "@/hooks/useCommunityCards";
+import useCommunityCards, {
+  type CommunityCardsFetcher,
+} from "@/hooks/useCommunityCards";
 import type { CommunitySort } from "@/types/community.model";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function CommunityPage() {
@@ -24,13 +27,34 @@ export default function CommunityPage() {
     return "likes";
   }, [selectedSort]);
 
-  // 커뮤니티 목록 불러오기 (무한스크롤)
-  const { cards, isLoading, error, hasNext, sentinelRef } = useCommunityCards({
+  // 커뮤니티 목록 불러오기 (기본 목록)
+  const trouble = useCommunityCards({
+    enabled: selectedTab === "trouble",
     sortBy,
     pageSize: 12,
     infinite: true,
     rootMargin: "400px 0px",
+    sourceKey: "community", // 기본값이라 생략 가능
   });
+
+  // 최근 읽은 포스트 목록
+  const recentFetcher = useCallback<CommunityCardsFetcher>(
+    (page, size) => getCommunityRecentList(page, size), // sort 미사용
+    []
+  );
+
+  const recent = useCommunityCards({
+    enabled: selectedTab === "recent",
+    sortBy: "latest", // 정렬 옵션 미사용이지만 시그니처 맞춤
+    pageSize: 12,
+    infinite: true,
+    rootMargin: "400px 0px",
+    fetcher: recentFetcher,
+    sourceKey: "community_recent", // 캐시/리셋 구분용
+  });
+
+  // 활성 데이터셋 선택
+  const active = selectedTab === "trouble" ? trouble : recent;
 
   return (
     <div className="flex flex-col mt-[79px] mb-[104px] max-w-[1600px] w-full mx-auto px-4 gap-[50px]">
@@ -85,26 +109,24 @@ export default function CommunityPage() {
       </div>
 
       {/* 에러 */}
-      {error && (
-        <div className="text-red-600 text-body-16-regular">{error}</div>
+      {active.error && (
+        <div className="text-red-600 text-body-16-regular">{active.error}</div>
       )}
 
       {/* 트러블로그 카드 */}
       <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-[24px] gap-y-[60px]">
-        {selectedTab === "trouble"
-          ? cards.map((card) => (
-              <div
-                key={card.id}
-                className="cursor-pointer"
-                onClick={() => navigate(PATH.COMMUNITY_POST(card.id))}
-              >
-                <TroublogCard {...card} />
-              </div>
-            ))
-          : null}
+        {active.cards.map((card) => (
+          <div
+            key={card.id}
+            className="cursor-pointer"
+            onClick={() => navigate(PATH.COMMUNITY_POST(card.id))}
+          >
+            <TroublogCard {...card} />
+          </div>
+        ))}
 
         {/* 로딩 스켈레톤 */}
-        {isLoading && (
+        {active.isLoading && (
           <>
             <div className="w-full h-[300px] bg-gray-100 rounded-2xl" />
             <div className="w-full h-[300px] bg-gray-100 rounded-2xl" />
@@ -113,8 +135,8 @@ export default function CommunityPage() {
         )}
 
         {/* 무한스크롤 센티널 */}
-        {selectedTab === "trouble" && hasNext && (
-          <div ref={sentinelRef} style={{ height: 1 }} />
+        {active.hasNext && (
+          <div ref={active.sentinelRef} style={{ height: 1 }} />
         )}
       </div>
     </div>

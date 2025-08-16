@@ -23,6 +23,7 @@ type ImageItem = { type: "image"; src: string; alt?: string };
 type GuideContent = string | ImageItem;
 
 interface PreviewState {
+  editorType?: "FREEFORM" | "TEMPLATE";
   guide?: { question: string; content: GuideContent[] };
   errorType?: string | null;
   title?: string;
@@ -40,6 +41,15 @@ interface PreviewState {
   likeCounts?: number;
   commentCounts?: number;
   comments?: PostCommentProps[];
+
+  savePrefill?: {
+    importance?: number;
+    description?: string;
+    visibility?: "public" | "private";
+    projectId?: number | null;
+    projectName?: string;
+    thumbnail?: string | null;
+  };
 }
 
 export interface CommunityPostDetailProps {
@@ -77,7 +87,6 @@ export default function PreviewPage() {
   );
 
   const hasAnySection = questions.length > 0 && contents.length > 0;
-
   const safeDate = data.date ?? formatDate(new Date());
 
   const seedComments = (data.comments ?? []).map((c) => ({
@@ -90,7 +99,7 @@ export default function PreviewPage() {
     title: data.title ?? "제목(프리뷰)",
     tags: data.tags ?? [],
     date: safeDate,
-    isMine: !!data.isMine,
+    isMine: data.isMine ?? true,
     authorProfile: data.authorProfile,
     authorName: data.authorName ?? "작성자",
     authorFollowers: data.authorFollowers ?? 0,
@@ -98,7 +107,7 @@ export default function PreviewPage() {
     importance: data.importance ?? 0,
     questions,
     contents: contents as CommunityPostDetailProps["contents"],
-    isLiked: !!data.isLiked,
+    isLiked: data.isLiked ?? false,
     likeCounts: data.likeCounts ?? 0,
     commentCounts:
       typeof data.commentCounts === "number"
@@ -133,11 +142,9 @@ export default function PreviewPage() {
       prev.map((c) => (c.id === id ? { ...c, content: newContent } : c))
     );
   };
-
   const handleDelete = (id: string) => {
     setComments((prev) => prev.filter((c) => c.id !== id && c.parentId !== id));
   };
-
   const handleReply = (parentId: string, replyContent: string) => {
     const newReply: PostCommentProps = {
       id: `${Date.now()}-r`,
@@ -150,7 +157,6 @@ export default function PreviewPage() {
     };
     setComments((prev) => [...prev, newReply]);
   };
-
   const handleCreateComment = () => {
     const content = commentInput.trim();
     if (!content) return;
@@ -165,6 +171,47 @@ export default function PreviewPage() {
     setComments((prev) => [newComment, ...prev]);
     setCommentInput("");
   };
+
+  // 수정 이동
+  const toMarkdownFromGuide = (
+    items: (string | { type: "image"; src: string; alt?: string })[]
+  ) =>
+    items
+      .map((it) =>
+        typeof it === "string" ? it : `![${it.alt ?? ""}](${it.src})`
+      )
+      .join("\n\n");
+
+  const buildFreeformPrefill = (post: CommunityPostDetailProps) => ({
+    editorType: "FREEFORM" as const,
+    title: post.title,
+    tags: post.tags,
+    errorType: post.errorType,
+    savePrefill: data.savePrefill,
+    blocks: post.questions.map((q, i) => ({
+      id: Date.now() + i,
+      title: q,
+      content: toMarkdownFromGuide(post.contents[i] ?? []),
+      isSaved: true,
+    })),
+  });
+
+  const buildTemplatePrefill = (post: CommunityPostDetailProps) => ({
+    editorType: "TEMPLATE" as const,
+    title: post.title,
+    tags: post.tags,
+    errorType: post.errorType,
+    savePrefill: data.savePrefill,
+    blocks: post.questions.map((q, i) => ({
+      id: Date.now() + i,
+      content: toMarkdownFromGuide(post.contents[i] ?? []),
+      checklist: [],
+      checklistItems: [],
+      checklistTitle: "",
+      question: q,
+      isSaved: true,
+    })),
+  });
 
   const handleProfileClick = () => {
     navigate(PATH.MYPAGE("1"));
@@ -186,9 +233,7 @@ export default function PreviewPage() {
       sectionRefs.current.forEach((ref, idx) => {
         if (ref) {
           const top = ref.getBoundingClientRect().top + window.scrollY;
-          if (scrollY >= top - 250) {
-            current = idx;
-          }
+          if (scrollY >= top - 250) current = idx;
         }
       });
       setCurrentSection(current);
@@ -200,10 +245,7 @@ export default function PreviewPage() {
   const scrollToSection = (idx: number) => {
     const target = sectionRefs.current[idx];
     if (target) {
-      window.scrollTo({
-        top: target.offsetTop - 180,
-        behavior: "smooth",
-      });
+      window.scrollTo({ top: target.offsetTop - 180, behavior: "smooth" });
     }
   };
 
@@ -217,7 +259,7 @@ export default function PreviewPage() {
           </p>
           <button
             className="px-4 py-2 bg-purple-500 text-white rounded-xl"
-            onClick={() => navigate("/")}
+            onClick={() => navigate(PATH.ROOT)}
           >
             작성하러 가기
           </button>
@@ -245,15 +287,14 @@ export default function PreviewPage() {
             ))}
           </nav>
         </div>
+
         <div className="flex flex-col">
-          {/* 포스트 영역 */}
-          <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb={[224]}">
-            {/* 상단 영역 */}
+          <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
+            {/* 상단 */}
             <div className="flex w-full pt-[180px] pb-[18px] items-center border-b border-gray1">
               <div className="flex flex-col items-start gap-[44px]">
                 <div className="flex flex-col items-start gap-[53px]">
                   <div className="flex flex-col items-start gap-[10px]">
-                    {/* 에러 종류 & 케밥 */}
                     <div className="flex w-[1200px] justify-between items-start">
                       <span className="text-head-20-semibold">
                         {basePost.errorType}
@@ -270,15 +311,22 @@ export default function PreviewPage() {
                                   label: "포스트 수정",
                                   onClick: () => {
                                     setShowMenu(false);
-                                    console.log("포스트 수정 동작 실행");
+                                    const editorType =
+                                      data.editorType ?? "FREEFORM";
+                                    if (editorType === "TEMPLATE") {
+                                      navigate(PATH.TEMP_WRITING, {
+                                        state: buildTemplatePrefill(basePost),
+                                      });
+                                    } else {
+                                      navigate(PATH.FREEFORM_WRITING, {
+                                        state: buildFreeformPrefill(basePost),
+                                      });
+                                    }
                                   },
                                 },
                                 {
                                   label: "삭제",
-                                  onClick: () => {
-                                    setShowMenu(false);
-                                    console.log("삭제 동작 실행");
-                                  },
+                                  onClick: () => setShowMenu(false),
                                 },
                               ]}
                               position={{ top: "0.1rem", left: "1.5rem" }}
@@ -287,12 +335,9 @@ export default function PreviewPage() {
                         </div>
                       )}
                     </div>
-
-                    {/* 포스트 제목 */}
                     <div className="text-head-48">{basePost.title}</div>
                   </div>
 
-                  {/* 태그 & 작성일 */}
                   {(basePost.tags.length || basePost.date) && (
                     <div className="flex items-center gap-[16px]">
                       {basePost.tags.length ? (
@@ -310,9 +355,7 @@ export default function PreviewPage() {
                   )}
                 </div>
 
-                {/* 작성자 정보 & 중요도 */}
                 <div className="flex w-full items-center justify-between">
-                  {/* 작성자 정보 */}
                   <div
                     className="flex items-center gap-[20px] cursor-pointer"
                     onClick={handleProfileClick}
@@ -329,8 +372,6 @@ export default function PreviewPage() {
                       {basePost.authorName}
                     </div>
                   </div>
-
-                  {/* 중요도 */}
                   <div className="flex items-center gap-[8px]">
                     <img
                       src={starIcon}
@@ -345,14 +386,11 @@ export default function PreviewPage() {
               </div>
             </div>
 
-            {/* 하단 영역 */}
+            {/* 본문 */}
             <div className="flex w-full flex-col items-start gap-[8px]">
-              {/* 메인 */}
               <div className="flex flex-col items-start gap-[36px] self-stretch">
-                {/* 포스트 내용 & 작성자 카드 */}
                 <div className="flex flex-col items-start self-stretch">
                   <div className="flex flex-col items-start gap-[48px] self-stretch">
-                    {/* 포스트 내용 */}
                     <div className="flex flex-col items-start gap-[48px] self-stretch">
                       {basePost.questions.map((q, idx) => (
                         <div
@@ -367,53 +405,12 @@ export default function PreviewPage() {
                         </div>
                       ))}
                     </div>
-
-                    {/* 작성자 정보 카드 */}
-                    {(basePost.authorName ||
-                      basePost.authorProfile ||
-                      basePost.authorBio) && (
-                      <div className="flex py-[32px] px-[40px] flex-col items-start gap-[10px] self-stretch rounded-[36px] bg-[#F2F2F2]">
-                        <div className="flex justify-between items-center self-stretch">
-                          <div className="flex items-center gap-[28px]">
-                            <img
-                              src={basePost.authorProfile || imageIcon}
-                              onError={(e) => {
-                                e.currentTarget.src = imageIcon;
-                              }}
-                              alt="profile"
-                              className="w-[131px] h-[131px] rounded-full object-cover"
-                            />
-                            <div className="flex flex-col items-start gap-[13px]">
-                              <div className="flex flex-col items-start gap-[2px]">
-                                <div className="text-head-24-bold">
-                                  {basePost.authorName}
-                                </div>
-                                <div className="text-body-16-regular">
-                                  {basePost.authorFollowers}팔로워
-                                </div>
-                              </div>
-                              {basePost.authorBio && (
-                                <div className="text-body-18-regular">
-                                  {basePost.authorBio}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 팔로우 버튼 (프리뷰용 더미) */}
-                          <button className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer">
-                            팔로우
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 {/* 좋아요, 공유 */}
                 <div className="flex pt+[52px] pb-[20px] items-center self-stretch border-b border-gray1">
                   <div className="flex items-center gap-[20px]">
-                    {/* 좋아요 */}
                     <div
                       className="flex items-center gap-[8px] cursor-pointer"
                       onClick={handleToggleLike}
@@ -427,8 +424,6 @@ export default function PreviewPage() {
                         {likeCounts}
                       </div>
                     </div>
-
-                    {/* 공유 버튼 (프리뷰용 더미) */}
                     <img
                       src={shareIcon}
                       alt="share"
@@ -437,7 +432,7 @@ export default function PreviewPage() {
                   </div>
                 </div>
 
-                {/* 댓글 작성 */}
+                {/* 댓글 */}
                 <div className="flex flex-col items-end gap-[12px] self-stretch">
                   <div className="flex flex-col items-start gap-[36px] self-stretch">
                     <div className="text-head-32-semibold">
@@ -479,7 +474,6 @@ export default function PreviewPage() {
                           handleReply(parent.id, replyContent)
                         }
                       />
-                      {/* 답글 목록 */}
                       {comments
                         .filter((c) => c.parentId === parent.id)
                         .map((reply) => (
@@ -506,7 +500,6 @@ export default function PreviewPage() {
   );
 }
 
-// -------- utils
 function formatDate(date: Date) {
   const yy = String(date.getFullYear()).slice(2);
   const mm = String(date.getMonth() + 1).padStart(2, "0");
