@@ -383,6 +383,7 @@ export default function FreeFormWritePage() {
               loadingProjects={projectsLoading}
               defaultProjectId={initialProjectId}
               selectedTags={selectedTags}
+              summaryType="NONE"
             />
           )}
 

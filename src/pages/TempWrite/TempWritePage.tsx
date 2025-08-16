@@ -407,6 +407,7 @@ const TempWritePage = () => {
               loadingProjects={projectsLoading}
               defaultProjectId={initialProjectId}
               selectedTags={selectedTags}
+              summaryType="NONE"
             />
           )}
           {isTemplateSelectModalOpen && (
