@@ -139,6 +139,16 @@ const Header = () => {
     navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
   };
 
+  // URL <-> 입력 동기화 (다른 페이지로 이동하면 검색창 비우기)
+  useEffect(() => {
+    if (location.pathname.startsWith(PATH.SEARCH)) {
+      const sp = new URLSearchParams(location.search);
+      setSearch(sp.get("query") ?? "");
+    } else {
+      setSearch("");
+    }
+  }, [location.pathname, location.search]);
+
   return (
     <div className="flex w-full py-[25px] px-[88px] gap-[10px] justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
       <img
