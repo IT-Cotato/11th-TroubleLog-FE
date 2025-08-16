@@ -180,7 +180,7 @@ const TroubleShootingCard = ({
             <div className="flex flex-wrap items-center gap-[12px]">
               <TagList tags={tags} variant="mypage" />
               <div className="flex items-center gap-[12px]">
-                {importance !== undefined && (
+                {!isSearchResult && importance !== undefined && (
                   <>
                     <div className="flex items-center gap-[4px]">
                       <img
