@@ -77,6 +77,7 @@ export default function FreeFormWritePage() {
   const [showBlockAlert, setShowBlockAlert] = useState(false);
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const [showCancelAlert, setShowCancelAlert] = useState(false);
+  const [showSubtitleAlert, setShowSubtitleAlert] = useState(false);
 
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
   const [createdPostId, setCreatedPostId] = useState<number | null>(null);
@@ -207,6 +208,13 @@ export default function FreeFormWritePage() {
       setShowBlockAlert(true);
       setTimeout(() => setShowBlockAlert(false), 3000);
       return;
+    }
+    for (const block of blocks) {
+      if (!block.title) {
+        setShowSubtitleAlert(true);
+        setTimeout(() => setShowSubtitleAlert(false), 3000);
+        return;
+      }
     }
     setNextAction("SUMMARY");
     setIsPostSaveModalOpen(true);
@@ -397,6 +405,11 @@ export default function FreeFormWritePage() {
           {showCancelAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               요약 작업이 중단되었어요.
+            </div>
+          )}
+          {showSubtitleAlert && (
+            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+              소제목을 입력해주세요.
             </div>
           )}
 

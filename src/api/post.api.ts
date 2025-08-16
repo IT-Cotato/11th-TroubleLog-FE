@@ -37,7 +37,7 @@ export const createPost = (body: CreatePostRequest) =>
     data: body,
   });
 
-// 원본 문서 수정
+// 원본 문서 수정 --done
 export const editPost = (postId: number, body: EditPostRequest) =>
   getAPIResponseData<EditPostResponse>({
     url: `/troubles/${postId}`,
