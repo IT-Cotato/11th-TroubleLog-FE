@@ -56,7 +56,7 @@ async function fetchOnce(
 ) {
   const key = keyFor(source, sort, page, size);
   if (!inflightPaged.has(key)) {
-    const p = getCommunityList(page, size, sort).finally(() =>
+    const p = fetcher(page, size, sort).finally(() =>
       inflightPaged.delete(key)
     );
     inflightPaged.set(key, p);
