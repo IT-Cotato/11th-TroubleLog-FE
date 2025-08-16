@@ -21,7 +21,6 @@ import {
   likeCommunityPost,
   replyCommunityComment,
   softDeleteCommunityComment,
-  unlikeCommunityPost,
   updateCommunityComment,
 } from "@/api/community.api";
 import { toCommunityPostVM } from "@/mappers/communityPostDetail.mapper";
@@ -223,7 +222,7 @@ export default function CommunityPostDetail() {
       setLikeCounts(Math.max(0, prevCount - 1));
 
       try {
-        await unlikeCommunityPost(pid);
+        await likeCommunityPost(pid);
         // 성공 시 그대로 둔다
       } catch {
         // 실패 시 롤백
