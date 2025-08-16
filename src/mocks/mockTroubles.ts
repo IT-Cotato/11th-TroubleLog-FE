@@ -2,6 +2,7 @@ import type { TroubleListItem } from "@/types/trouble.model";
 
 export const mockTroubleList: TroubleListItem[] = [
   {
+    projectId: 1,
     id: 100,
     title: "빌드 시 unknown host 오류 해결",
     imageUrl: "https://image.url/error.png",
@@ -14,6 +15,7 @@ export const mockTroubleList: TroubleListItem[] = [
     summaryType: "에러 중심 요약",
   },
   {
+    projectId: 1,
     id: 101,
     title: "배포 시 nginx 설정 오류 해결",
     imageUrl: "https://image.url/nginx.png",

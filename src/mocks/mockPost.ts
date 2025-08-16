@@ -2,6 +2,7 @@ import type { CommunityPostDetailProps } from "@/pages/Community/CommunityPostDe
 import postMockImage from "@/assets/images/post_mock_img.png";
 
 export const mockPost: CommunityPostDetailProps = {
+  authorId: 1,
   errorType: "Network/API Error",
   title: "CORS 오류",
   tags: ["Spring Boot", "React", "API 호출"],
