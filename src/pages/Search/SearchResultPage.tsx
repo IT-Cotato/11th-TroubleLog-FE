@@ -148,21 +148,26 @@ const SearchResultPage = () => {
         ) : (
           items.map((card) => {
             const blocked = isBlocked(card);
+            const idNum =
+              typeof card.id === "number"
+                ? card.id
+                : Number.parseInt(String(card.id), 10);
+            const idValid = Number.isFinite(idNum);
             return (
               <TroubleShootingCard
                 key={card.id}
                 {...card}
-                // 클릭 막기: blocked면 onClick 전달 안 함
+                // 클릭 막기: blocked 이거나 id가 유효하지 않으면 onClick 전달 안 함
                 onClick={
-                  blocked
+                  blocked || !idValid
                     ? undefined
                     : () =>
-                        navigate(PATH.COMMUNITY_POST(Number(card.id)), {
+                        navigate(PATH.COMMUNITY_POST(idNum), {
                           state: { from: "search", query, scope, userId },
                         })
                 }
-                // 접근성 힌트(읽기 전용)
-                aria-disabled={blocked || undefined}
+                // TroubleShootingCard가 직접 처리할 수 있도록 명시적 disabled 전달
+                disabled={blocked || !idValid}
               />
             );
           })
