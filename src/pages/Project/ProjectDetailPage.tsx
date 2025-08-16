@@ -4,15 +4,17 @@ import SummaryTypeDropdown from "@/components/Menu/SummaryTypeDropdown";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import SortButtonGroup from "@/components/Project/SortButtonGroup";
 import StatusFilterButton from "@/components/Project/StatusFilterButton";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import useTroubleCards from "@/hooks/useTroubleCards";
 import { getProjectDetail } from "@/api/project.api";
 import type {
   ProjectTroubleQuery,
   ProjectTroubleSummaryType,
 } from "@/types/trouble.model";
+import { PATH } from "@/constants/paths";
+import useClickOutside from "@/hooks/useClickOutside";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "complete" | "created";
@@ -33,6 +35,34 @@ export default function ProjectDetailPage() {
   );
 
   const hasProjectName = Boolean(location.state?.projectName);
+
+  // 글쓰기 버튼 드롭다운
+  const [showDropdown, setShowDropdown] = useState(false);
+  const navigate = useNavigate();
+  const dropdownRef = useClickOutside(() => setShowDropdown(false));
+
+  const goGuide = useCallback(
+    (projectId?: number) => {
+      setShowDropdown(false);
+      navigate(PATH.TEMP_WRITING, { state: { projectId } });
+    },
+    [navigate]
+  );
+
+  const goFreeform = useCallback(
+    (projectId?: number) => {
+      setShowDropdown(false);
+      navigate(PATH.FREEFORM_WRITING, { state: { projectId } });
+    },
+    [navigate]
+  );
+
+  // 글쓰기 드롭다운 버튼 클릭 핸들러
+  const handleGoGuideTemplate = () => goGuide();
+  const handleGoFreeformTemplate = () => goFreeform();
+  const handlePostClick = useCallback(() => {
+    setShowDropdown((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     if (isInvalid || hasProjectName) return;
@@ -105,7 +135,28 @@ export default function ProjectDetailPage() {
       {/* 상단 나의 프로젝트 텍스트 및 글쓰기 버튼 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">나의 프로젝트</span>
-        <PostButton />
+        <div ref={dropdownRef} className="relative">
+          <PostButton onClick={handlePostClick} />
+
+          {showDropdown && (
+            <div className="absolute right-0 top-full mt-2 w-[184px] rounded-[8px] shadow-card bg-subColor2 z-10">
+              <button
+                type="button"
+                onClick={handleGoGuideTemplate}
+                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-b border-gray2 text-body-16-regular"
+              >
+                가이드 템플릿
+              </button>
+              <button
+                type="button"
+                onClick={handleGoFreeformTemplate}
+                className="flex w-full pt-[8px] pb-[9px] justify-center items-center text-body-16-regular"
+              >
+                자유 템플릿
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       {/* 프로젝트 아코디언 영역 */}
       {isInvalid ? (
