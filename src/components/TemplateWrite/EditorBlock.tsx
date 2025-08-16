@@ -2,7 +2,7 @@ import MDEditor from "@uiw/react-md-editor";
 import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
-
+import { useLayoutEffect, useRef, useState, useEffect } from "react";
 export interface BlockData {
   id: number;
   content: string;
@@ -13,7 +13,7 @@ export interface BlockData {
   checklistTitle: string;
 }
 
-interface Props {
+type EditorBlockProps = {
   title: string;
   selectedErrorType: string | null;
   block: BlockData;
@@ -21,13 +21,15 @@ interface Props {
   onChange: (index: number, updated: Partial<BlockData>) => void;
   onToggleChecklist: (index: number, item: string, checked: boolean) => void;
   onAddBlock?: () => void;
-
   isActive: boolean;
   isLast: boolean;
   onEnd?: () => void;
   onShowSaveAlert?: () => void;
   onActivate: (index: number) => void;
-}
+};
+
+const MIN_H = 200;
+const MAX_H = 2000;
 
 const EditorBlock = ({
   block,
@@ -42,7 +44,45 @@ const EditorBlock = ({
   title,
   selectedErrorType,
   onShowSaveAlert,
-}: Props) => {
+}: EditorBlockProps) => {
+  const [editorHeight, setEditorHeight] = useState<number>(MIN_H);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  const autosizeToContent = () => {
+    const ta = wrapRef.current?.querySelector(
+      "textarea.w-md-editor-text-input"
+    ) as HTMLTextAreaElement | null;
+    if (!ta) return;
+    ta.style.height = "auto";
+    const needed = ta.scrollHeight;
+    const next = Math.max(MIN_H, Math.min(MAX_H, needed + 24));
+    setEditorHeight(next);
+  };
+
+  useLayoutEffect(() => {
+    autosizeToContent();
+    const t = setTimeout(autosizeToContent, 0);
+    return () => clearTimeout(t);
+  }, [block.content, isActive]);
+
+  const applyWrapperHeight = () => {
+    const h = wrapRef.current?.getBoundingClientRect().height;
+    if (!h) return;
+    setEditorHeight(Math.max(MIN_H, Math.min(MAX_H, Math.round(h))));
+  };
+
+  useEffect(() => {
+    const ta = wrapRef.current?.querySelector(
+      "textarea.w-md-editor-text-input"
+    ) as HTMLTextAreaElement | null;
+    if (!ta || !("ResizeObserver" in window)) return;
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(autosizeToContent);
+    });
+    ro.observe(ta);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <div
       className="flex flex-row gap-[25px] pb-[25px]"
@@ -83,30 +123,36 @@ const EditorBlock = ({
         </div>
 
         <div data-color-mode="light">
-          <MDEditor
-            value={block.content}
-            onChange={(val) => onChange(index, { content: val || "" })}
-            height={240}
-            preview={isActive ? "edit" : "preview"}
-            style={{ width: "1200px" }}
-            autoFocus={isActive}
-          />
+          <div
+            ref={wrapRef}
+            className="resize-y overflow-visible rounded-[8px] border border-gray-200"
+            style={{ minHeight: MIN_H, maxHeight: MAX_H, height: editorHeight }}
+            onMouseUp={applyWrapperHeight}
+            onTouchEnd={applyWrapperHeight}
+          >
+            <MDEditor
+              value={block.content}
+              onChange={(val) => {
+                onChange(index, { content: val || "" });
+                setTimeout(autosizeToContent, 0);
+              }}
+              height={editorHeight}
+              preview={isActive ? "edit" : "preview"}
+              style={{ width: "1200px", border: "none" }}
+              autoFocus={isActive}
+            />
+          </div>
         </div>
       </div>
 
-      {/* 오른쪽 체크리스트 */}
       <div className="flex flex-col gap-2 mt-14">
         {block.checklistItems.length > 0 && (
           <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
-
             <img src={alertIcon} alt="alert icon" className="w-5 h-5" />
-
-          
             {block.checklistTitle}
           </h3>
         )}
-
-        {block.checklistItems.map((item) => (
+        {block.checklistItems.map((item: string) => (
           <label
             key={item}
             className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer"
@@ -122,12 +168,10 @@ const EditorBlock = ({
                 ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
                 ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
               }}
-              className="
-    inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-    [background-image:var(--icon-unchecked)]
-    peer-checked:[background-image:var(--icon-checked)]
-  "
-            ></span>
+              className="inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
+                         [background-image:var(--icon-unchecked)]
+                         peer-checked:[background-image:var(--icon-checked)]"
+            />
             <span>{item}</span>
           </label>
         ))}
@@ -137,3 +181,4 @@ const EditorBlock = ({
 };
 
 export default EditorBlock;
+export type { EditorBlockProps };
