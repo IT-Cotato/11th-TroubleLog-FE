@@ -122,9 +122,9 @@ export default function CommunityPage() {
               onClick={() => {
                 const qs = new URLSearchParams({ from: "community" });
                 if (card.authorId != null)
-                  qs.set("ownerId", String(card.authorId)); // ← 있을 때만
+                  qs.set("ownerId", String(card.authorId));
                 navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
-                  state: { from: "community", ownerId: card.authorId }, // ← 보조용 state
+                  state: { from: "community", ownerId: card.authorId },
                 });
               }}
               onAvatarClick={() => {

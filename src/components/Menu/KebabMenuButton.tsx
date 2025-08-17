@@ -8,7 +8,11 @@ export default function KebabMenuButton({ onClick }: KebabMenuButtonProps) {
   return (
     <button
       onClick={onClick}
-      className="w-[16px] h-[16px] sm:w-[18px] sm:h-[18px]"
+      className="
+        inline-flex items-center justify-center
+        -m-2 p-2                 
+        rounded-full hover:bg-gray-100
+      "
     >
       <img
         src={kebabIcon}

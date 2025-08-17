@@ -68,13 +68,24 @@ const MyPageLayout = () => {
       enabled,
     });
 
+  // 공개글 판정 (여러 형태 대비)
+  const isPublicCard = (c: any) =>
+    c?.isVisible === true ||
+    c?.visibility === "public" ||
+    c?.raw?.isVisible === true;
+
+  // 다른 사람 마이페이지면 공개글만 사용
+  const cardsForView = useMemo(() => {
+    return isMyPage ? cards : cards.filter(isPublicCard);
+  }, [cards, isMyPage]);
+
   // 클라이언트 필터 적용
   const visibleCards = useMemo(() => {
-    if (!selectedTag) return cards;
-    return cards.filter((c) =>
+    if (!selectedTag) return cardsForView;
+    return cardsForView.filter((c) =>
       Array.isArray(c.tags) ? c.tags.includes(selectedTag) : false
     );
-  }, [cards, selectedTag]);
+  }, [cardsForView, selectedTag]);
 
   // 작성 상태별 트러블슈팅 개수 계산
   const counts = useMemo(() => {
@@ -89,9 +100,9 @@ const MyPageLayout = () => {
 
   // 다른 사용자의 마이페이지용 태그 분석
   const sortedTags = useMemo<[string, number][]>(() => {
-    if (cards.length === 0) return [];
+    if (cardsForView.length === 0) return [];
     const counter = new Map<string, number>();
-    for (const c of cards) {
+    for (const c of cardsForView) {
       if (!Array.isArray(c.tags)) continue;
       for (const raw of c.tags) {
         const tag = String(raw ?? "").trim();
@@ -102,7 +113,7 @@ const MyPageLayout = () => {
     return Array.from(counter.entries()).sort(
       (a, b) => b[1] - a[1] || a[0].localeCompare(b[0])
     );
-  }, [cards]);
+  }, [cardsForView]);
 
   return (
     <div className="flex items-start gap-[68px] pt-20 justify-center">

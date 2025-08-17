@@ -70,7 +70,6 @@ const TroubleShootingCard = ({
 
   const navigate = useNavigate();
 
-  const shouldShowVisibilityIcon = status === "complete" && visibility;
   const shouldShowSummaryType = status === "created";
 
   const isClickable = typeof onClick === "function" && !disabled;
@@ -204,7 +203,7 @@ const TroubleShootingCard = ({
                       · {summaryType}
                     </div>
                   )}
-                  {shouldShowVisibilityIcon && visibility && (
+                  {visibility && isMine && (
                     <img
                       src={visibility === "public" ? publicIcon : privateIcon}
                       alt={visibility}
@@ -222,7 +221,7 @@ const TroubleShootingCard = ({
             <div className="flex flex-wrap items-center gap-[12px]">
               <TagList tags={tags} variant="mypage" />
               <div className="flex items-center gap-[12px]">
-                {!isSearchResult && importance !== undefined && (
+                {!isSearchResult && importance !== undefined && isMine && (
                   <>
                     <div className="flex items-center gap-[4px]">
                       <img
