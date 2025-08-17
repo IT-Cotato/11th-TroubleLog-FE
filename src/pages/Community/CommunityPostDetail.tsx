@@ -780,7 +780,7 @@ export default function CommunityPostDetail() {
   if (loadError || !post) {
     return (
       <div className="flex justify-center">
-        <div className="max-w=[1200px] w-full pt-[180px] text-red-600">
+        <div className="max-w-[1200px] w-full pt-[180px] text-red-600">
           {loadError ?? "포스트를 찾을 수 없습니다."}
         </div>
       </div>
