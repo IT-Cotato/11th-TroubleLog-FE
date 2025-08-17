@@ -40,6 +40,7 @@ export default function PostSaveModal({
   initialVisibility,
   initialProjectId,
   initialThumbnail,
+  selectedErrorType,
 }: {
   onClose: () => void;
   onNext: (payload: PostSavePayload) => void;
@@ -47,6 +48,7 @@ export default function PostSaveModal({
   defaultProjectId?: number;
   loadingProjects?: boolean;
   selectedTags?: string[];
+  selectedErrorType: string | null;
   initialImportance?: number;
   initialDescription?: string;
   initialVisibility?: Visibility;
@@ -173,15 +175,21 @@ export default function PostSaveModal({
       alert("이미지 업로드가 끝난 후 저장할 수 있어요.");
       return;
     }
-    if (importance === 0) return;
-    if (selectedProjectId == null) return;
+    if (importance === 0) {
+      alert("중요도를 선택해주세요.");
+      return;
+    }
+    if (selectedProjectId == null) {
+      alert("프로젝트를 선택해주세요.");
+      return;
+    }
 
     onNext({
       importance,
       thumbnail,
       description,
       visibility: selectedVisibility,
-      projectId: selectedProjectId ?? null,
+      projectId: selectedProjectId,
       projectName,
     });
   };
@@ -299,7 +307,7 @@ export default function PostSaveModal({
                   </span>
                   <div className="grid w/[345px] w-[345px] h-[46px] px-[15px] py-[14px] border rounded border-purple-300 bg-white ">
                     <span className="flex flex-1 self-stretch font-normal text-sm text-purple-700">
-                      Build / Compile
+                      {selectedErrorType}
                     </span>
                   </div>
                 </div>

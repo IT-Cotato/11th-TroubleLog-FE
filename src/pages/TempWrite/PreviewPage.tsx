@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import TagList from "@/components/Card/TagList";
@@ -7,7 +7,6 @@ import PostGuideMd from "@/components/Community/PostGuideMd";
 import PostComment, {
   type PostCommentProps,
 } from "@/components/Community/PostComment";
-
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import useClickOutside from "@/hooks/useClickOutside";
@@ -18,6 +17,13 @@ import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
 import { PATH } from "@/constants/paths";
+
+import { getCombinedDetail, getPostDetail } from "@/api/post.api";
+import type {
+  ViewCombinedResponse,
+  ViewPostResponse,
+  PostContent,
+} from "@/models/post.model";
 
 type ImageItem = { type: "image"; src: string; alt?: string };
 type GuideContent = string | ImageItem;
@@ -41,7 +47,6 @@ interface PreviewState {
   likeCounts?: number;
   commentCounts?: number;
   comments?: PostCommentProps[];
-
   savePrefill?: {
     importance?: number;
     description?: string;
@@ -74,7 +79,52 @@ export interface CommunityPostDetailProps {
 export default function PreviewPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const data = (state ?? {}) as PreviewState;
+  const { postId } = useParams<{ postId: string }>();
+
+  const [loading, setLoading] = useState<boolean>(!!postId);
+  const [error, setError] = useState<string | null>(null);
+  const [fetched, setFetched] = useState<PreviewState | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    if (!postId) return;
+
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const combinedRes = await getCombinedDetail(Number(postId));
+        if (!ignore && combinedRes) {
+          const mapped = mapCombinedToPreviewState(combinedRes);
+          setFetched(mapped);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        //
+      }
+
+      try {
+        const postRes = await getPostDetail(Number(postId));
+        if (!ignore && postRes) {
+          const mapped = mapPostToPreviewState(postRes);
+          setFetched(mapped);
+        } else if (!ignore) {
+          setError("문서를 불러오지 못했습니다.");
+        }
+      } catch {
+        if (!ignore) setError("문서를 불러오지 못했습니다.");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [postId]);
+
+  const data: PreviewState = (state as PreviewState) ?? fetched ?? {};
 
   const questions: string[] = useMemo(
     () => data.questions ?? (data.guide ? [data.guide.question] : []),
@@ -118,18 +168,12 @@ export default function PreviewPage() {
 
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
-
   const [isLiked, setIsLiked] = useState<boolean>(basePost.isLiked);
   const [likeCounts, setLikeCounts] = useState<number>(basePost.likeCounts);
 
   const handleToggleLike = () => {
-    if (isLiked) {
-      setIsLiked(false);
-      setLikeCounts((prev) => Math.max(0, prev - 1));
-    } else {
-      setIsLiked(true);
-      setLikeCounts((prev) => prev + 1);
-    }
+    setIsLiked((prev) => !prev);
+    setLikeCounts((prev) => (isLiked ? Math.max(0, prev - 1) : prev + 1));
   };
 
   const [commentInput, setCommentInput] = useState("");
@@ -172,7 +216,6 @@ export default function PreviewPage() {
     setCommentInput("");
   };
 
-  // 수정 이동
   const toMarkdownFromGuide = (
     items: (string | { type: "image"; src: string; alt?: string })[]
   ) =>
@@ -213,9 +256,7 @@ export default function PreviewPage() {
     })),
   });
 
-  const handleProfileClick = () => {
-    navigate(PATH.MYPAGE("1"));
-  };
+  const handleProfileClick = () => navigate(PATH.MYPAGE?.("1") ?? "/");
 
   const [currentSection, setCurrentSection] = useState<number>(0);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
@@ -244,10 +285,37 @@ export default function PreviewPage() {
 
   const scrollToSection = (idx: number) => {
     const target = sectionRefs.current[idx];
-    if (target) {
+    if (target)
       window.scrollTo({ top: target.offsetTop - 180, behavior: "smooth" });
-    }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <HeaderWoSearch />
+        <div className="max-w-[960px] mx-auto mt-10 text-gray-600">
+          불러오는 중…
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <HeaderWoSearch />
+        <div className="max-w-[960px] mx-auto mt-10">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            className="px-4 py-2 bg-purple-500 text-white rounded-xl"
+            onClick={() => navigate(PATH.ROOT)}
+          >
+            목록으로
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!hasAnySection) {
     return (
@@ -272,6 +340,7 @@ export default function PreviewPage() {
     <div className="">
       <HeaderWoSearch />
       <div className="flex flex-col w-full">
+        {/* 오른쪽 목차 */}
         <div className="fixed right-[89px] top-[520px] z-30 hidden xl:block">
           <nav className="flex flex-col items-start gap-[16px] border-l border-gray3 pl-[12px] pr-[8px] py-[8px] rounded-lg bg-white/70 backdrop-blur-sm text-body-20-regular text-gray3 pointer-events-auto">
             {basePost.questions.map((q, idx) => (
@@ -312,7 +381,8 @@ export default function PreviewPage() {
                                   onClick: () => {
                                     setShowMenu(false);
                                     const editorType =
-                                      data.editorType ?? "FREEFORM";
+                                      (state as PreviewState)?.editorType ??
+                                      "FREEFORM";
                                     if (editorType === "TEMPLATE") {
                                       navigate(PATH.TEMP_WRITING, {
                                         state: buildTemplatePrefill(basePost),
@@ -408,7 +478,7 @@ export default function PreviewPage() {
                   </div>
                 </div>
 
-                {/* 좋아요, 공유 */}
+                {/* 좋아요/공유 */}
                 <div className="flex pt+[52px] pb-[20px] items-center self-stretch border-b border-gray1">
                   <div className="flex items-center gap-[20px]">
                     <div
@@ -432,7 +502,7 @@ export default function PreviewPage() {
                   </div>
                 </div>
 
-                {/* 댓글 */}
+                {/* 댓글 입력 */}
                 <div className="flex flex-col items-end gap-[12px] self-stretch">
                   <div className="flex flex-col items-start gap-[36px] self-stretch">
                     <div className="text-head-32-semibold">
@@ -445,7 +515,6 @@ export default function PreviewPage() {
                       className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
                     />
                   </div>
-
                   <button
                     onClick={handleCreateComment}
                     disabled={!commentInput.trim()}
@@ -498,6 +567,70 @@ export default function PreviewPage() {
       </div>
     </div>
   );
+}
+
+// 숫자 변환 - 별점
+const toInt = (s?: string) => (s == null ? 0 : Number.parseInt(s, 10) || 0);
+const ymd = (iso?: string) => (iso ? formatDate(new Date(iso)) : undefined);
+
+// 서버 PostContent[]
+function mapContentsToSections(contents: PostContent[] | undefined) {
+  const questions: string[] = [];
+  const blocks: (string | { type: "image"; src: string; alt?: string })[][] =
+    [];
+  (contents ?? []).forEach((c) => {
+    questions.push(c.subTitle || "섹션");
+    blocks.push([c.body ?? ""]);
+  });
+  return { questions, contents: blocks };
+}
+
+// PreviewState - 원본+요약
+function mapCombinedToPreviewState(data: ViewCombinedResponse): PreviewState {
+  const { questions, contents } = mapContentsToSections(data.contents);
+
+  return {
+    editorType: "FREEFORM",
+    title: data.title ?? "",
+    tags: data.postTags ?? [],
+    errorType: data.errorTag ?? "에러 유형",
+    date: ymd(data.createdAt),
+    importance: toInt(data.starRating),
+    isMine: true,
+    authorName: "작성자",
+    authorProfile: undefined,
+    authorBio: "",
+    likeCounts: data.likeCount ?? 0,
+    commentCounts: data.commentCount ?? 0,
+    isLiked: false,
+    questions: questions.length ? questions : [data.title ?? "내용"],
+    contents: questions.length ? contents : [[data.introduction ?? ""]],
+    comments: [],
+  };
+}
+
+// PreviewState
+function mapPostToPreviewState(data: ViewPostResponse): PreviewState {
+  const { questions, contents } = mapContentsToSections(data.contents);
+
+  return {
+    editorType: "FREEFORM",
+    title: data.title ?? "",
+    tags: data.postTags ?? [],
+    errorType: data.errorTag ?? "에러 유형",
+    date: ymd(data.createdAt),
+    importance: toInt(data.starRating),
+    isMine: true,
+    authorName: "작성자",
+    authorProfile: undefined,
+    authorBio: "",
+    likeCounts: data.likeCount ?? 0,
+    commentCounts: data.commentCount ?? 0,
+    isLiked: false,
+    questions: questions.length ? questions : [data.title ?? "내용"],
+    contents: questions.length ? contents : [[data.introduction ?? ""]],
+    comments: [],
+  };
 }
 
 function formatDate(date: Date) {
