@@ -4,7 +4,7 @@ import { FaUserCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/icons/logo.svg";
 import { PATH } from "@/constants/paths";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
 import NotificationModal from "../Modal/NotificationModal";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
@@ -16,31 +16,30 @@ const HeaderWoSearch = () => {
 
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-  const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
+  const closeUserDropdown = useCallback(() => setIsUserDropdownOpen(false), []);
+  const userDropdownRef = useClickOutside(closeUserDropdown);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
   const viewerId = useViewerId();
   const myUserId = viewerId != null ? String(viewerId) : null;
 
-  const { hasNew, clearNew } = useNotificationStore((s) => ({
-    hasNew: s.hasNew,
-    clearNew: s.clearNew,
-  }));
+  const hasNew = useNotificationStore((s) => s.hasNew);
+  const clearNew = useNotificationStore((s) => s.clearNew);
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     setIsNotificationModalOpen(true);
-    clearNew();
-  };
+    if (hasNew) clearNew();
+  }, [hasNew, clearNew]);
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = useCallback(() => {
     timeoutRef.current = setTimeout(() => {
       setIsNotificationModalOpen(false);
     }, 200);
-  };
+  }, []);
 
   // 타이머 정리
   useEffect(() => {
