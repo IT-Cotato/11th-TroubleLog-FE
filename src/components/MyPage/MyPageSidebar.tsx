@@ -22,7 +22,12 @@ type MyPageSideBarProps =
         created: number;
       };
     }
-  | { isMyPage: false; sortedTags: [string, number][] };
+  | {
+      isMyPage: false;
+      sortedTags: [string, number][];
+      selectedTag: string | null;
+      onSelectTag: (tag: string | null) => void;
+    };
 
 const MyPageSideBar = (props: MyPageSideBarProps) => {
   const navigate = useNavigate();
@@ -30,7 +35,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   const { id } = useParams<{ id: string }>();
   const { selectedStatus, setSelectedStatus, resetSelectedStatus } =
     useMyPageStore();
-  const { selectedTag, setSelectedTag, resetSelectedTag } = useMyPageStore();
+  const { resetSelectedTag } = useMyPageStore();
 
   const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
@@ -51,6 +56,16 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   useEffect(() => {
     refetch();
   }, [refetch]);
+
+  // 현재 경로가 메인 페이지가 아니면 태그 탭 자동 초기화
+  useEffect(() => {
+    const basePath = PATH.MYPAGE(id!);
+    const onMain = location.pathname === basePath;
+    if (!onMain) {
+      resetSelectedStatus();
+      resetSelectedTag();
+    }
+  }, [location.pathname, id, resetSelectedStatus, resetSelectedTag]);
 
   const handleNavigate =
     (subPath: string = "", clearStatus = false) =>
@@ -152,11 +167,11 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
             <p className="text-head-32-semibold">{userInfo?.nickname}</p>
 
             <div className="flex gap-1 text-body-20-regular text-gray4">
-              <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWING)}>
+              <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWING, true)}>
                 팔로잉 {userInfo?.followingNum}
               </button>
               <span>·</span>
-              <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWER)}>
+              <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWER, true)}>
                 팔로워 {userInfo?.followerNum}
               </button>
             </div>
@@ -275,32 +290,51 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col items-start gap-[12px] self-stretch">
-          <div className="w-full">
-            <div className="flex flex-col items-start gap-[12px]">
-              <span className="text-head-20-semibold">태그 분석</span>
-              <div className="w-full h-[1px] bg-[#939393]" />
-            </div>
-            <div className="flex flex-col items-start gap-[10px] pt-[12px]">
-              {props.sortedTags.map(([tag, count]) => {
-                const isSelected = tag === selectedTag;
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => setSelectedTag(isSelected ? null : tag)}
-                    className={`transition-colors ${
-                      isSelected
-                        ? "text-body-16-semibold"
-                        : "text-body-16-regular text-gray3"
-                    }`}
-                  >
-                    {tag} ({count})
-                  </button>
-                );
-              })}
+        <>
+          {/* 태그 분석 (다른 사용자) */}
+          <div className="flex flex-col items-start gap-[12px] self-stretch">
+            <div className="w-full">
+              <div className="flex flex-col items-start gap-[12px]">
+                <span className="text-head-20-semibold">태그 분석</span>
+                <div className="w-full h-[1px] bg-[#939393]" />
+              </div>
+
+              <div className="flex flex-col items-start gap-[10px] pt-[12px]">
+                {/* 전체 보기 */}
+                <button
+                  type="button"
+                  onClick={() => props.onSelectTag(null)}
+                  className={`text-left ${
+                    props.selectedTag === null
+                      ? "font-semibold text-black"
+                      : "text-gray-500"
+                  }`}
+                >
+                  전체 보기
+                </button>
+
+                {/* 태그 리스트 */}
+                {props.sortedTags.map(([tag, count]) => {
+                  const isSelected = props.selectedTag === tag;
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => props.onSelectTag(isSelected ? null : tag)}
+                      className={`transition-colors ${
+                        isSelected
+                          ? "text-body-16-semibold"
+                          : "text-body-16-regular text-gray3"
+                      }`}
+                    >
+                      {tag} ({count})
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
