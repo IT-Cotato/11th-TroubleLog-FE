@@ -7,8 +7,8 @@ import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
@@ -30,7 +30,7 @@ import {
   toPostComments,
 } from "@/mappers/communityComment.mapper";
 import { useViewerId } from "@/store/auth";
-import { getPostDetail } from "@/api/post.api";
+import { deletePost, getPostDetail } from "@/api/post.api";
 import { toPostDetailVM } from "@/mappers/myPostDetail.mapper";
 
 export interface CommunityPostDetailProps {
@@ -81,6 +81,7 @@ export default function CommunityPostDetail() {
 
   // 케밥 메뉴
   const [showMenu, setShowMenu] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
   // 섹션 추적
@@ -91,6 +92,41 @@ export default function CommunityPostDetail() {
   const inflightPostRef = useRef(
     new Map<number, ReturnType<typeof getCommunityPostDetail>>()
   );
+
+  const location = useLocation();
+  const from = (location.state as any)?.from;
+
+  // 포스트 삭제
+  const handleDeletePost = useCallback(async () => {
+    if (!postId) return;
+    if (
+      !window.confirm(
+        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
+      )
+    )
+      return;
+
+    try {
+      setDeleting(true);
+      await deletePost(Number(postId));
+      alert("문서가 영구 삭제되었습니다.");
+
+      if (from === "community") {
+        navigate(PATH.COMMUNITY, { replace: true });
+      } else {
+        navigate(-1);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message ??
+          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+      );
+    } finally {
+      setDeleting(false);
+      setShowMenu(false);
+    }
+  }, [postId, navigate, from]);
 
   // 공유 기능 (URL 복사 후 안내 메시지 띄우기)
   const [toast, setToast] = useState<{ open: boolean; message: string }>({
@@ -510,18 +546,13 @@ export default function CommunityPostDetail() {
                           options={[
                             {
                               label: "포스트 수정",
-                              onClick: () => {
-                                setShowMenu(false);
-                              },
+                              onClick: () => setShowMenu(false),
                             },
                             {
-                              label: "삭제",
-                              onClick: () => {
-                                setShowMenu(false);
-                              },
+                              label: deleting ? "삭제 중..." : "삭제",
+                              onClick: () => !deleting && handleDeletePost(),
                             },
                           ]}
-                          position={{ top: "0.1rem", left: "1.5rem" }}
                         />
                       )}
                     </div>

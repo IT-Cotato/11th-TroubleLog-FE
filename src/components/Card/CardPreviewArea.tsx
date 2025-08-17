@@ -7,6 +7,8 @@ interface CardPreviewAreaProps {
   status: StatusType;
   authorProfileImageUrl?: string;
   onAvatarClick?: () => void;
+  onRequestDelete?: () => void;
+  deleting?: boolean;
 }
 
 export default function CardPreviewArea({
@@ -15,6 +17,8 @@ export default function CardPreviewArea({
   status,
   authorProfileImageUrl,
   onAvatarClick,
+  onRequestDelete,
+  deleting,
 }: CardPreviewAreaProps) {
   return (
     <div
@@ -29,6 +33,8 @@ export default function CardPreviewArea({
           status={status}
           authorProfileImageUrl={authorProfileImageUrl}
           onAvatarClick={onAvatarClick}
+          onDelete={onRequestDelete}
+          deleting={deleting}
         />
       </div>
     </div>

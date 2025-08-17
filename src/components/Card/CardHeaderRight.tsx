@@ -11,6 +11,8 @@ interface CardHeaderRightProps {
   status: StatusType;
   authorProfileImageUrl?: string;
   onAvatarClick?: () => void;
+  onDelete?: () => void;
+  deleting?: boolean;
 }
 
 export default function CardHeaderRight({
@@ -18,6 +20,8 @@ export default function CardHeaderRight({
   status,
   authorProfileImageUrl,
   onAvatarClick,
+  onDelete,
+  deleting = false,
 }: CardHeaderRightProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
@@ -62,10 +66,11 @@ export default function CardHeaderRight({
               <KebabDropdown
                 options={[
                   {
-                    label: "삭제",
+                    label: deleting ? "삭제 중..." : "삭제",
                     onClick: () => {
-                      setShowMenu(false);
-                      console.log("삭제 동작 실행");
+                      if (!deleting) {
+                        onDelete?.();
+                      }
                     },
                   },
                 ]}

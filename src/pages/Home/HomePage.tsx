@@ -47,6 +47,9 @@ export default function HomePage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [removedRecentIds, setRemovedRecentIds] = useState<Set<number>>(
+    new Set()
+  );
 
   const navigate = useNavigate();
 
@@ -242,7 +245,7 @@ export default function HomePage() {
   const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
   const dropdownRef = useClickOutside(() => setShowDropdown(false));
 
-  // 카드 수정/삭제 후 현재 목록 갱신(1페이지부터 새로)
+  // 프로젝트 폴더 카드 수정/삭제 후 현재 목록 갱신(1페이지부터 새로)
   const handleCardUpdated = useCallback(() => {
     void loadPage(1, { append: false, useOnce: false });
   }, [loadPage]);
@@ -250,6 +253,15 @@ export default function HomePage() {
   const handleCardDeleted = useCallback(() => {
     void loadPage(1, { append: false, useOnce: false });
   }, [loadPage]);
+
+  // 트러블슈팅 카드 삭제 후 목록 갱신
+  const handleRecentDeleted = useCallback((postId: number) => {
+    setRemovedRecentIds((prev) => {
+      const next = new Set(prev);
+      next.add(postId);
+      return next;
+    });
+  }, []);
 
   return (
     <div className="flex px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[40px]">
@@ -375,17 +387,25 @@ export default function HomePage() {
         ) : (
           <>
             <div className="flex flex-wrap gap-[24px]">
-              {recentCards.map((card) => (
-                <TroublogCard
-                  key={card.id}
-                  {...card}
-                  onAvatarClick={() => {
-                    if (viewerId != null)
-                      navigate(PATH.MYPAGE(String(viewerId)));
-                    else navigate(PATH.LOGIN); // 로그인 유도 등
-                  }}
-                />
-              ))}
+              {recentCards
+                .filter((c) => !removedRecentIds.has(c.id))
+                .map((card) => (
+                  <TroublogCard
+                    key={card.id}
+                    {...card}
+                    onDeleted={handleRecentDeleted}
+                    onClick={(id) =>
+                      navigate(PATH.COMMUNITY_POST(id), {
+                        state: { from: "home" },
+                      })
+                    }
+                    onAvatarClick={() => {
+                      if (viewerId != null)
+                        navigate(PATH.MYPAGE(String(viewerId)));
+                      else navigate(PATH.LOGIN);
+                    }}
+                  />
+                ))}
             </div>
             {hasNextRecents && !isLoadingRecents && (
               <div ref={recentsSentinel} className="h-6 w-full" />

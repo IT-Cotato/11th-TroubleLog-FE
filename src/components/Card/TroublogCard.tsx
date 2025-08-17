@@ -5,6 +5,8 @@ import CardTitleSection from "./CardTitleSection";
 import TagList from "./TagList";
 import type { StatusType, VisibilityType } from "@/types/project";
 import { PATH } from "@/constants/paths";
+import { useCallback, useState } from "react";
+import { deletePost } from "@/api/post.api";
 
 export interface TroublogCardProps {
   id: number;
@@ -23,6 +25,7 @@ export interface TroublogCardProps {
   summaryType?: "자기소개서" | "면접대비" | "블로그" | "이슈관리";
   onClick?: (id: number) => void;
   onAvatarClick?: () => void;
+  onDeleted?: (id: number) => void;
 }
 
 export default function TroublogCard({
@@ -41,8 +44,10 @@ export default function TroublogCard({
   summaryType,
   onClick,
   onAvatarClick,
+  onDeleted,
 }: TroublogCardProps) {
   const navigate = useNavigate();
+  const [deleting, setDeleting] = useState(false);
 
   const handleRootClick = () => {
     if (typeof onClick === "function") {
@@ -58,6 +63,31 @@ export default function TroublogCard({
       handleRootClick();
     }
   };
+
+  // 케밥 > 삭제
+  const handleRequestDelete = useCallback(async () => {
+    if (!isMine) return;
+    if (
+      !window.confirm(
+        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
+      )
+    )
+      return;
+
+    try {
+      setDeleting(true);
+      await deletePost(id);
+      onDeleted?.(id); // 부모에 알림(목록 갱신)
+    } catch (err: any) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message ??
+          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }, [id, isMine, onDeleted]);
 
   return (
     <div
@@ -75,6 +105,8 @@ export default function TroublogCard({
         status={status}
         authorProfileImageUrl={authorProfileImageUrl}
         onAvatarClick={onAvatarClick}
+        onRequestDelete={handleRequestDelete}
+        deleting={deleting}
       />
 
       {/* 제목, 날짜, 태그 영역 */}
