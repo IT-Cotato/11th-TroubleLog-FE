@@ -183,6 +183,9 @@ export default function PostSaveModal({
       alert("프로젝트를 선택해주세요.");
       return;
     }
+    if (!description.trim()) {
+      return;
+    }
 
     onNext({
       importance,
@@ -344,22 +347,33 @@ export default function PostSaveModal({
                 </div>
               </div>
               {/* 소개 */}
-              <div className="flex flex-col w/[351px] w-[351px] gap-[8px]">
+              <div className="flex flex-col w-[351px] gap-[8px]">
                 <span className="text-head-20-semibold text-black">
                   포스트 소개
                 </span>
-                <div>
+                <div
+                  className={`transition-all ${
+                    hasTriedSubmit && !description.trim()
+                      ? "border border-purple-500 rounded-[8px] p-[10px]"
+                      : ""
+                  }`}
+                >
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     maxLength={200}
                     placeholder="포스트를 짧게 소개해주세요."
-                    className="w-[351px] h-[119px] resize-none px-[12px] py-[8px] border border-gray1 rounded-[8px] text-body-14-regular"
+                    className="w-[335px] h-[119px] resize-none pl-[14px] py-[8px] border border-gray1 rounded-[8px] text-body-14-regular"
                   />
                   <div className="text-right text-caption-12-regular text-gray2 mt-[4px]">
                     {description.length}/200
                   </div>
                 </div>
+                {hasTriedSubmit && !description.trim() && (
+                  <span className="text-sm text-purple-500 pl-[4px] pt-[2px]">
+                    소개글을 입력해주세요.
+                  </span>
+                )}
               </div>
             </div>
 

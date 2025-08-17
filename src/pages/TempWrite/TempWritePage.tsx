@@ -21,6 +21,7 @@ import {
   cancelSummary,
   getTagsByKeyword,
 } from "@/api/post.api";
+import type { CreatePostRequest } from "@/models/post.model";
 
 type IncomingTemplateState = {
   editorType?: "TEMPLATE";
@@ -79,22 +80,65 @@ const TempWritePage = () => {
   const toServerPostStatus = (s: UiPostStatus): ServerPostStatus =>
     s === "COMPLETED" ? "COMPLETE" : "WRITING";
 
-  // errorTag 매핑
-  const ERROR_TAG_MAP: Record<string, string> = {
-    "Build / Compile Error": "BUILD_COMPILE",
-    "Runtime Error": "RUNTIME",
-    "Dependency / Version Error": "DEPENDENCY",
-    "Network / API Error": "NETWORK_API",
-    "Authentication / Authorization Error": "AUTH",
-    "Database Error": "DATABASE",
-    "UI / Rendering Error": "UI_RENDER",
-    "Configuration Error": "CONFIG",
-    "Timeout / Error Handling": "TIMEOUT_HANDLING",
-    "Third-Party Library Error": "THIRD_PARTY",
-    Others: "OTHERS",
+  const ERROR_TAG_OPTIONS = [
+    "Build/Compile Error",
+    "Runtime Error",
+    "Dependency/Version Error",
+    "Network/API Error",
+    "Authentication/Authorization Error",
+    "Database Error",
+    "UI/Rendering Error",
+    "Configuration Error",
+    "Timeout/Error Handling",
+    "Third-Party Library Error",
+  ] as const;
+
+  // ✅ 서버에서 정의한 "체크리스트 문항 → 정수 ID"를 여기에 채워 넣으세요.
+  //   (아래 숫자는 예시입니다. 반드시 실제 ID로 교체!)
+  const CHECKLIST_ERROR_ID_MAP: Record<string, number> = {
+    "오류 메시지를 정확히 읽고 이해했나요?": 1,
+    "로컬과 배포 환경의 차이를 점검해봤나요?": 2,
+    "문제가 발생한 모듈/기능 범위를 파악했나요?": 3,
+    "디버깅 툴이나 로그 추적을 활용해보셨나요?": 4,
+    "개발 환경 (IDE, OS, 실행 조건 등)을 확인했나요?": 5,
   };
-  const mapErrorTag = (label: string | null): string =>
-    (label && ERROR_TAG_MAP[label]) || "OTHERS";
+
+  const CHECKLIST_REASON_ID_MAP: Record<string, number> = {
+    "공식 문서 또는 라이브러리 문서 확인": 1,
+    "구글 검색": 2,
+    "GPT / 오픈 AI 사용": 3,
+    "StackOverflow, OKKY 등 질문 커뮤니티": 4,
+    "GitHub Issue 또는 블로그 참고": 5,
+  };
+  // "오류를 정확히 인식하셨나요?" 섹션 → checklistError
+  // 나머지 섹션(원인/Tip/회고) → checklistReason
+  const buildChecklistIdsFromBlocks = (bs: BlockData[]) => {
+    const errorIds = new Set<number>();
+    const reasonIds = new Set<number>();
+
+    bs.forEach((b) => {
+      if (!b.checklist || b.checklist.length === 0) return;
+
+      const isErrorSection = b.checklistTitle === "오류를 정확히 인식하셨나요?";
+      const map = isErrorSection
+        ? CHECKLIST_ERROR_ID_MAP
+        : CHECKLIST_REASON_ID_MAP;
+
+      b.checklist.forEach((label) => {
+        const id = map[label];
+        if (typeof id === "number") {
+          (isErrorSection ? errorIds : reasonIds).add(id);
+        } else {
+          console.log("체크리스트 에러");
+        }
+      });
+    });
+
+    return {
+      checklistErrorIds: Array.from(errorIds),
+      checklistReasonIds: Array.from(reasonIds),
+    };
+  };
 
   type SummaryStatus =
     | "PENDING"
@@ -115,8 +159,6 @@ const TempWritePage = () => {
         subTitle: b.question,
         body: b.content,
         sequence: i + 1,
-        authorType: "USER_WRITTEN",
-        summaryType: "NONE",
       }));
 
   // ---------- prefill ----------
@@ -209,7 +251,7 @@ const TempWritePage = () => {
     setTimeout(() => setShowSaveAlert(false), 3000);
   };
 
-  // 저장버튼 필수 항목
+  // 저장버튼 필수 항목 -- 포스트 저장 모달
   const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
     if (isCreating) return;
     setIsCreating(true);
@@ -236,20 +278,10 @@ const TempWritePage = () => {
       for (const raw of selectedTags) {
         const q = String(raw).replace(/^#\s*/, "").trim();
         if (!q) continue;
-        const res: any = await getTagsByKeyword({ tagName: q });
-        const list: any[] = Array.isArray(res)
-          ? res
-          : res?.data ?? res?.content ?? res?.results ?? [];
 
-        const exact = list.find((t: any) => {
-          const n = typeof t === "string" ? t : t?.name ?? t;
-          return typeof n === "string" && n.toLowerCase() === q.toLowerCase();
-        });
-
-        const pickRaw = exact ?? list[0];
-        const pick =
-          typeof pickRaw === "string" ? pickRaw : pickRaw?.name ?? pickRaw;
-
+        const list = await getTagsByKeyword({ tagName: q });
+        const exact = list.find((n) => n.toLowerCase() === q.toLowerCase());
+        const pick = exact ?? list[0];
         if (!pick) throw new Error(`태그를 찾을 수 없습니다: ${raw}`);
 
         const normalized = String(pick).trim();
@@ -290,7 +322,7 @@ const TempWritePage = () => {
       setTemplateLabel(label);
 
       console.log("[startSummary:req]", { postId: createdPostId, type });
-      const start = await startSummary(createdPostId, { type });
+      const start = await startSummary(createdPostId, type);
       console.log("[startSummary:res]", start);
       setSummaryTaskId(start.taskId);
     } catch (e) {
@@ -320,7 +352,14 @@ const TempWritePage = () => {
         if (stopped) return;
         setSummaryProgress(p);
         if (data.status) setSummaryStatus(data.status as any);
-        if (data.message) setStatusMessage(data.message);
+        if (data.currentStep) setStatusMessage(data.currentStep);
+        else if (
+          data.result &&
+          typeof data.result === "object" &&
+          "message" in (data.result as any)
+        ) {
+          setStatusMessage((data.result as any).message ?? "");
+        }
         if (data.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
           if (timer !== null) {
@@ -389,21 +428,29 @@ const TempWritePage = () => {
     meta: PostSavePayload,
     tagsOverride?: string[]
   ) => {
+    const { checklistErrorIds, checklistReasonIds } =
+      buildChecklistIdsFromBlocks(blocks);
+
     return {
       title,
       introduction: meta.description ?? "",
       isVisible: (meta.visibility ?? "public") === "public",
       isSummaryCreated: false,
       postStatus: toServerPostStatus(postStatus),
-      starRating: String(meta.importance ?? 0),
+      starRating: Number(meta.importance ?? 0),
+      templateType: "GUIDELINE",
       projectId: Number(meta.projectId),
       thumbnailImageUrl: meta.thumbnail ?? undefined,
 
-      errorTagName: mapErrorTag(selectedErrorType),
+      errorTagName: selectedErrorType!,
       contentDtoList: toContentDtoList(blocks),
-      postTags: tagsOverride ?? selectedTags,
-      // (checklistError / checklistReason)
-    };
+      postTags: (tagsOverride ?? selectedTags).map((t) =>
+        t.replace(/^#\s*/, "").trim()
+      ),
+
+      checklistError: checklistErrorIds,
+      checklistReason: checklistReasonIds,
+    } satisfies CreatePostRequest;
   };
 
   return (
@@ -437,22 +484,11 @@ const TempWritePage = () => {
             />
             <div className="flex gap-[36px] items-center">
               <DropDownButton
-                options={[
-                  "Build/Compile Error",
-                  "Runtime Error",
-                  "Dependency/Version Error",
-                  "Network/API Error",
-                  "Authentication/Authorization Error",
-                  "Database Error",
-                  "UI/Rendering Error",
-                  "Configuration Error",
-                  "Timeout/Error Handling",
-                  "Third-Party Library Error",
-                ]}
+                options={ERROR_TAG_OPTIONS as unknown as string[]}
                 placeholder="에러 종류를 선택하세요"
                 width="w-[340px] h-[36px]"
-                onSelect={(selectedError) =>
-                  setSelectedErrorType(selectedError)
+                onSelect={(selectedErrorType) =>
+                  setSelectedErrorType(selectedErrorType)
                 }
               />
               <CategoryTag value={selectedTags} onChange={setSelectedTags} />

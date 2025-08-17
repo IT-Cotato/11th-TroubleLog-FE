@@ -10,7 +10,7 @@ import privateIcon from "@/assets/icons/private.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import commentIcon from "@/assets/icons/comment.svg";
-import { deletePost } from "@/api/post.api";
+import { hardDeletePost } from "@/api/post.api";
 
 export interface TroubleShootingCardProps {
   id: string;
@@ -88,7 +88,7 @@ const TroubleShootingCard = ({
       setDeleting(true);
       const postId = Number(id);
 
-      await deletePost(postId);
+      await hardDeletePost(postId);
 
       onDeleted?.(postId);
       console.log("문서가 영구 삭제되었습니다.");
