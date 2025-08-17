@@ -4,6 +4,7 @@ import type {
   MyTroubleDetailItem,
   CommunityTroubleSearchItem,
   TroubleSearchCard,
+  UserBrief,
 } from "@/types/troubles.server";
 import { formatYYMMDD } from "@/utils/troubleFormat";
 
@@ -55,13 +56,26 @@ const pickContent = (
   return "";
 };
 
+// 작성자(UserBrief) 우선 사용
+function extractUserBrief(
+  item: MyTroubleDetailItem | CommunityTroubleSearchItem | TroubleSearchCard
+): UserBrief | undefined {
+  if (has(item, "postCardUserInfoResDto")) {
+    return (item as any).postCardUserInfoResDto as UserBrief;
+  }
+  if (has(item, "userInfo")) {
+    return (item as any).userInfo as UserBrief;
+  }
+  return undefined;
+}
+
 export const toTroubleShootingCard = (
   item: MyTroubleDetailItem | CommunityTroubleSearchItem | TroubleSearchCard,
   opts?: { isMine?: boolean; authorName?: string; isSearchResult?: boolean }
 ): TroubleShootingCardProps => {
   const {
     isMine = true,
-    authorName = "나",
+    authorName: fallbackAuthorName = "나",
     isSearchResult = true,
   } = opts ?? {};
 
@@ -85,6 +99,13 @@ export const toTroubleShootingCard = (
       ? (item as any).contents?.[0]?.summaryType ?? undefined
       : undefined;
 
+  const brief = extractUserBrief(item);
+  const authorName = brief?.nickname ?? fallbackAuthorName;
+  const authorProfileImageUrl = brief?.profileImageUrl ?? undefined;
+  const authorUserId =
+    brief?.userId ??
+    (("userId" in (item as any) && (item as any).userId) || undefined);
+
   return {
     id: String((item as any).id),
     isMine,
@@ -103,6 +124,8 @@ export const toTroubleShootingCard = (
     likeCount: (item as any).likeCount ?? undefined,
     commentCount: (item as any).commentCount ?? undefined,
     authorName,
+    authorProfileImageUrl,
+    authorUserId,
     isSearchResult,
   } as TroubleShootingCardProps;
 };

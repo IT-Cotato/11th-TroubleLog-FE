@@ -12,6 +12,8 @@ import heartIcon from "@/assets/icons/heart.svg";
 import commentIcon from "@/assets/icons/comment.svg";
 import { deletePost } from "@/api/post.api";
 import type { MyTroubleDetailItem } from "@/types/troubles.server";
+import { useNavigate } from "react-router-dom";
+import { PATH } from "@/constants/paths";
 
 export interface TroubleShootingCardProps {
   id: string;
@@ -29,6 +31,8 @@ export interface TroubleShootingCardProps {
   likeCount?: number;
   commentCount?: number;
   authorName?: string;
+  authorProfileImageUrl?: string;
+  authorUserId?: number;
   isSearchResult?: boolean;
   onDeleted?: (postId: number) => void;
   onClick?: (postId: number) => void;
@@ -52,6 +56,8 @@ const TroubleShootingCard = ({
   likeCount,
   commentCount,
   authorName,
+  authorProfileImageUrl,
+  authorUserId,
   isSearchResult,
   onDeleted,
   onClick,
@@ -61,6 +67,8 @@ const TroubleShootingCard = ({
   const [deleting, setDeleting] = useState(false);
   const handleCloseMenu = useCallback(() => setShowMenu(false), []);
   const menuRef = useClickOutside(handleCloseMenu);
+
+  const navigate = useNavigate();
 
   const shouldShowVisibilityIcon = status === "complete" && visibility;
   const shouldShowSummaryType = status === "created";
@@ -106,6 +114,23 @@ const TroubleShootingCard = ({
     }
   };
 
+  const handleAuthorClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    e.stopPropagation();
+    if (!authorUserId) return;
+    navigate(PATH.MYPAGE(String(authorUserId)));
+  };
+
+  const handleAuthorKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (
+    e
+  ) => {
+    if (!authorUserId) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      navigate(PATH.MYPAGE(String(authorUserId)));
+    }
+  };
+
   return (
     <div
       className={`w-full py-[30px] flex flex-col items-start gap-[10px] border-b border-gray3 bg-white ${
@@ -124,8 +149,18 @@ const TroubleShootingCard = ({
       <div className="w-full flex flex-col">
         {/* 작성자 */}
         {isSearchResult && (
-          <div className="mb-[25px] flex items-center gap-[12px]">
-            <img src={imageIcon} alt="profile" className="w-[52px] h-[52px]" />
+          <div
+            className="mb-[25px] flex items-center gap-[12px] cursor-pointer" // ⬅️ 시각적 힌트
+            onClick={handleAuthorClick}
+            onKeyDown={handleAuthorKeyDown}
+            role={authorUserId ? "button" : undefined}
+            tabIndex={authorUserId ? 0 : undefined}
+          >
+            <img
+              src={authorProfileImageUrl ? authorProfileImageUrl : imageIcon}
+              alt="profile"
+              className="w-[52px] h-[52px]"
+            />
             <span className="text-head-24-bold">{authorName}</span>
           </div>
         )}
