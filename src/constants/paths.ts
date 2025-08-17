@@ -1,5 +1,3 @@
-import type { SummaryTypeParam } from "@/models/post.model";
-
 export const PATH = {
   ROOT: "/",
   LOGIN: "/",
@@ -23,7 +21,6 @@ export const PATH = {
   TEMP_WRITING: "/tempwriting",
   FREEFORM_WRITING: "/freeformwriting",
   PREVIEW: (postId: number) => `/troubles/${postId}`,
-  POST_SUMMARY: (id: string | number, type: SummaryTypeParam) =>
-    `/post/${id}/summary?type=${type}`,
-  POST_SUMMARY_ROUTE: "/post/:postId/summary",
+  POST_SUMMARY: (summaryId: string | number) => `/post/summary/${summaryId}`,
+  POST_SUMMARY_ROUTE: "/post/summary/:summaryId",
 };

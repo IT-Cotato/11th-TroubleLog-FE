@@ -20,7 +20,6 @@ import SearchResultPage from "@/pages/Search/SearchResultPage";
 import CommunityPage from "@/pages/Community/CommunityPage";
 import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
-// import PreviewPage from "@/pages/TempWrite/PreviewPage";
 import PostSummaryDetail from "@/pages/TempWrite/PostSummaryDetail";
 
 export const router = createBrowserRouter(
@@ -88,14 +87,6 @@ export const router = createBrowserRouter(
         </ProtectedRoute>
       ),
     },
-    // {
-    //   path: PATH.PREVIEW,
-    //   element: (
-    //     <ProtectedRoute>
-    //       <PreviewPage />
-    //     </ProtectedRoute>
-    //   ),
-    // },
     {
       path: PATH.POST_SUMMARY_ROUTE,
       element: (

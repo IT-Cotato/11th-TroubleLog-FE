@@ -89,9 +89,6 @@ export interface PostSummary {
   updatedAt: string;
 }
 
-// 요약 상세 응답
-export type GetSummaryResponse = PostSummary;
-
 // 요약 작업
 // 시작은 query ?summaryType= 으로 보냄(Req body 불필요)
 export interface StartLoadingResponse {
@@ -170,4 +167,26 @@ export interface RestorePostResponse
   isDeleted: boolean;
   errorTag: string;
   contents: PostContent[];
+}
+
+//////// 요약본 전용
+export interface PostSummaryContentItem {
+  id: number;
+  subTitle: string;
+  body: string;
+  sequence: number;
+}
+
+// 서버 응답 스키마에 맞춘 타입 (Swagger 기준)
+export interface GetSummaryResponse {
+  summaryId: number;
+  postId: number;
+  title: string;
+  userId: number;
+  projectId: number;
+  summaryType: SummaryTypeParam | "SHORT"; // 서버 예시에 SHORT가 있어 여유있게
+  errorTag: string;
+  postTags: string[];
+  summaryContents: PostSummaryContentItem[];
+  summaryCreatedAt: string;
 }

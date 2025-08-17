@@ -7,6 +7,7 @@ import EditorBlock, {
 } from "@/components/TemplateWrite/EditorBlock";
 import { questionData } from "@/components/TemplateWrite/questionTemplate";
 import PostSaveModal, { type PostSavePayload } from "./PostSaveModal";
+import PostSuccessModal from "./PostSuccessModal";
 import PostLoadingModal from "./PostLoadingModal";
 import TemplateSelectModal from "./TemplateSelectModal";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -65,6 +66,10 @@ const TempWritePage = () => {
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
   const [summaryProgress, setSummaryProgress] = useState(0);
   const [templateLabel, setTemplateLabel] = useState<string>("");
+  const [completedSummaryId, setCompletedSummaryId] = useState<number | null>(
+    null
+  );
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const closingRef = useRef(false);
 
   // 더블클릭
@@ -362,6 +367,11 @@ const TempWritePage = () => {
         }
         if (data.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
+          if (typeof data.postSummaryId === "number") {
+            setCompletedSummaryId(data.postSummaryId);
+            setIsLoadingModalOpen(false);
+            setIsSuccessModalOpen(true);
+          }
           if (timer !== null) {
             clearInterval(timer);
             timer = null;
@@ -563,6 +573,12 @@ const TempWritePage = () => {
               templateLabel={templateLabel}
               status={summaryStatus ?? undefined}
               serverMessage={statusMessage}
+            />
+          )}
+          {isSuccessModalOpen && completedSummaryId != null && (
+            <PostSuccessModal
+              onClose={() => setIsSuccessModalOpen(false)}
+              summaryId={completedSummaryId}
             />
           )}
         </div>

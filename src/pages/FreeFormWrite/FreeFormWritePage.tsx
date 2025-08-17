@@ -8,6 +8,7 @@ import PostSaveModal, {
 } from "@/pages/TempWrite/PostSaveModal";
 import PostLoadingModal from "@/pages/TempWrite/PostLoadingModal";
 import TemplateSelectModal from "@/pages/TempWrite/TemplateSelectModal";
+import PostSuccessModal from "@/pages/TempWrite/PostSuccessModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import { useProjectList } from "@/hooks/useProjectList";
@@ -63,40 +64,6 @@ type ServerPostStatus = "WRITING" | "COMPLETE";
 const toServerPostStatus = (s: UiPostStatus): ServerPostStatus =>
   s === "COMPLETED" ? "COMPLETE" : "WRITING";
 
-// errorTag 매핑(슬래시/공백 차이 흡수)
-const ERROR_TAG_MAP: Record<string, string> = {
-  BUILD_COMPILE: "BUILD_COMPILE",
-  RUNTIME: "RUNTIME",
-  DEPENDENCY: "DEPENDENCY",
-  NETWORK_API: "NETWORK_API",
-  AUTH: "AUTH",
-  DATABASE: "DATABASE",
-  UI_RENDER: "UI_RENDER",
-  CONFIG: "CONFIG",
-  TIMEOUT_HANDLING: "TIMEOUT_HANDLING",
-  THIRD_PARTY: "THIRD_PARTY",
-  OTHERS: "OTHERS",
-};
-const normalizeErrorLabel = (label: string) =>
-  label
-    .toUpperCase()
-    .replace(/\s+/g, "")
-    .replace(/-/g, "")
-    .replace(/\/+/g, "_")
-    .replace(/AUTHENTICATIONAUTHORIZATION/g, "AUTH")
-    .replace(/UIRENDERING/g, "UI_RENDER")
-    .replace(/BUILD_COMPILE/g, "BUILD_COMPILE")
-    .replace(/DEPENDENCYVERSION/g, "DEPENDENCY")
-    .replace(/NETWORK_API/g, "NETWORK_API")
-    .replace(/TIMEOUTERRORHANDLING/g, "TIMEOUT_HANDLING")
-    .replace(/THIRDPARTYLIBRARY/g, "THIRD_PARTY");
-
-const mapErrorTag = (label: string | null): string => {
-  if (!label) return "OTHERS";
-  const key = normalizeErrorLabel(label);
-  return ERROR_TAG_MAP[key] ?? "OTHERS";
-};
-
 // ==== 페이지 컴포넌트 ====
 export default function FreeFormWritePage() {
   const [title, setTitle] = useState("");
@@ -113,6 +80,7 @@ export default function FreeFormWritePage() {
   const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
     useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const [showAlert, setShowAlert] = useState(false);
   const [showBlockAlert, setShowBlockAlert] = useState(false);
@@ -125,6 +93,9 @@ export default function FreeFormWritePage() {
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
   const [summaryProgress, setSummaryProgress] = useState(0);
   const [templateLabel, setTemplateLabel] = useState("");
+  const [completedSummaryId, setCompletedSummaryId] = useState<number | null>(
+    null
+  );
 
   type SummaryStatus =
     | "PENDING"
@@ -141,7 +112,6 @@ export default function FreeFormWritePage() {
   const [nextAction, setNextAction] = useState<"SUMMARY" | "SAVE" | null>(null);
 
   // 더블 클릭 가드
-  const [isCreating, setIsCreating] = useState(false);
   const [isStartingSummary, setIsStartingSummary] = useState(false);
   const closingRef = useRef(false);
 
@@ -161,7 +131,7 @@ export default function FreeFormWritePage() {
     }
   }, [location.state]);
 
-  // contents 변환
+  // contents 변환 (TempWrite와 동일 shape)
   const toContentDtoList = (items: BlockData[]): PostContentDto[] =>
     items
       .filter((b) => (b.content ?? "").trim().length > 0)
@@ -169,8 +139,6 @@ export default function FreeFormWritePage() {
         subTitle: (b.title ?? "").trim() || `Section ${i + 1}`,
         body: b.content,
         sequence: i + 1,
-        authorType: "USER_WRITTEN",
-        summaryType: "NONE",
       }));
 
   // 블록 조작
@@ -191,7 +159,7 @@ export default function FreeFormWritePage() {
     );
   };
 
-  // 서버 폼 빌드(템플릿 페이지와 동일 스키마)
+  // 서버 폼 빌드(TempWrite와 동일 스키마)
   const buildCreateForm = (
     postStatus: UiPostStatus,
     meta: PostSavePayload,
@@ -202,11 +170,12 @@ export default function FreeFormWritePage() {
     isVisible: (meta?.visibility ?? "public") === "public",
     isSummaryCreated: false,
     postStatus: toServerPostStatus(postStatus),
-    starRating: String(meta?.importance ?? 0),
+    starRating: Number(meta?.importance ?? 0),
+    templateType: "FREE_FORM",
     projectId: Number(meta.projectId),
     thumbnailImageUrl: meta?.thumbnail ?? undefined,
 
-    errorTagName: mapErrorTag(selectedErrorType),
+    errorTagName: selectedErrorType!,
     contentDtoList: toContentDtoList(blocks),
     postTags,
   });
@@ -222,17 +191,14 @@ export default function FreeFormWritePage() {
       const list: any[] = Array.isArray(res)
         ? res
         : res?.data ?? res?.content ?? res?.results ?? [];
-
       const exact = list.find((t: any) => {
         const n = typeof t === "string" ? t : t?.name ?? t;
         return typeof n === "string" && n.toLowerCase() === q.toLowerCase();
       });
-
       const pickRaw = exact ?? list[0];
       const pick =
         typeof pickRaw === "string" ? pickRaw : pickRaw?.name ?? pickRaw;
       if (!pick) throw new Error(`태그를 찾을 수 없습니다: ${raw}`);
-
       const normalized = String(pick).trim();
       if (!seen.has(normalized.toLowerCase())) {
         seen.add(normalized.toLowerCase());
@@ -262,7 +228,7 @@ export default function FreeFormWritePage() {
 
     if (!previewMeta?.projectId) {
       setIsTemplateSelectModalOpen(false);
-      setIsPostSaveModalOpen(true);
+      // setIsPostSaveModalOpen(true);
       setStatusMessage("프로젝트를 먼저 선택해주세요.");
       return;
     }
@@ -345,12 +311,12 @@ export default function FreeFormWritePage() {
       setTemplateLabel(label);
 
       const canonicalTags = await canonicalizeTags(selectedTags);
-      const req = buildCreateForm("WRITING", previewMeta, canonicalTags); // 초안(WRITING)
+      const req = buildCreateForm("WRITING", previewMeta, canonicalTags);
       const created = await createPost(req as any);
       const postId = Number((created as any).id);
       setCreatedPostId(postId);
 
-      const start = await startSummary(postId, { type });
+      const start = await startSummary(postId, type);
       setSummaryTaskId(start.taskId);
     } catch (e) {
       console.error(e);
@@ -366,7 +332,7 @@ export default function FreeFormWritePage() {
     }
   };
 
-  // 폴링
+  // 폴링 (TempWrite와 동일)
   useEffect(() => {
     if (!isLoadingModalOpen || !createdPostId || !summaryTaskId) return;
 
@@ -377,12 +343,26 @@ export default function FreeFormWritePage() {
       try {
         const data = await getSummaryStatus(createdPostId, summaryTaskId);
         if (stopped) return;
+
         const p = Math.max(0, Math.min(100, data.progress ?? 0));
         setSummaryProgress(p);
         if (data.status) setSummaryStatus(data.status as any);
-        if (data.message) setStatusMessage(data.message);
+        if (data.currentStep) setStatusMessage(data.currentStep);
+        else if (
+          data.result &&
+          typeof data.result === "object" &&
+          "message" in (data.result as any)
+        ) {
+          setStatusMessage((data.result as any).message ?? "");
+        }
+
         if (data.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
+          if (typeof data.postSummaryId === "number") {
+            setCompletedSummaryId(data.postSummaryId);
+            setIsLoadingModalOpen(false);
+            setIsSuccessModalOpen(true);
+          }
           if (timer !== null) {
             clearInterval(timer);
             timer = null;
@@ -612,6 +592,13 @@ export default function FreeFormWritePage() {
               templateLabel={templateLabel}
               status={summaryStatus ?? undefined}
               serverMessage={statusMessage}
+            />
+          )}
+
+          {isSuccessModalOpen && completedSummaryId != null && (
+            <PostSuccessModal
+              onClose={() => setIsSuccessModalOpen(false)}
+              summaryId={completedSummaryId}
             />
           )}
         </div>

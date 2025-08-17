@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import TagList from "@/components/Card/TagList";
 import PostGuideMd from "@/components/Community/PostGuideMd";
 import { getPostSummary } from "@/api/post.api";
-import type { GetSummaryResponse, SummaryTypeParam } from "@/models/post.model";
-// import { PATH } from "@/constants/paths";
+import type { GetSummaryResponse } from "@/models/post.model";
+import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 
 export default function PostSummaryDetail() {
-  const { postId } = useParams<{ postId: string }>();
-  const [sp] = useSearchParams();
-  const type = (sp.get("type") ?? "RESUME") as SummaryTypeParam;
+  const { summaryId } = useParams<{ summaryId: string }>();
 
   const [data, setData] = useState<GetSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,11 +20,10 @@ export default function PostSummaryDetail() {
     let cancelled = false;
     (async () => {
       try {
-        if (!postId) throw new Error("잘못된 포스트 ID");
+        if (!summaryId) throw new Error("잘못된 요약 ID");
         setLoading(true);
-        const res = await getPostSummary(Number(postId), { type });
-        if (cancelled) return;
-        setData(res);
+        const res = await getPostSummary(Number(summaryId));
+        if (!cancelled) setData(res);
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "요약본을 불러오지 못했어요.");
       } finally {
@@ -36,7 +33,7 @@ export default function PostSummaryDetail() {
     return () => {
       cancelled = true;
     };
-  }, [postId, type]);
+  }, [summaryId]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -53,14 +50,15 @@ export default function PostSummaryDetail() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const questions: string[] = useMemo(
-    () => (data?.contents ?? []).map((c) => c.subTitle),
+  const questions = useMemo(
+    () => (data?.summaryContents ?? []).map((c) => c.subTitle),
     [data]
   );
-  const contents: string[][] = useMemo(
-    () => (data?.contents ?? []).map((c) => [c.body]),
+  const contents = useMemo(
+    () => (data?.summaryContents ?? []).map((c) => [c.body]),
     [data]
   );
+
   if (loading) {
     return (
       <div className="flex justify-center">
@@ -82,7 +80,8 @@ export default function PostSummaryDetail() {
   }
 
   return (
-    <div className="flex justify-center">
+    <div className="flex flex-col justify-center">
+      <HeaderWoSearch />
       {/* 본문 */}
       <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
         {/* 상단 */}
@@ -100,7 +99,7 @@ export default function PostSummaryDetail() {
                 <TagList tags={data.postTags ?? []} variant="post" />
                 <div className="text-body-16-regular text-gray3">·</div>
                 <div className="text-body-20-regular text-gray3">
-                  {new Date(data.createdAt).toLocaleDateString()}
+                  {new Date(data.summaryCreatedAt).toLocaleDateString()}
                 </div>
               </div>
             </div>
