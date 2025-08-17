@@ -86,7 +86,7 @@ export async function searchUserTroubles(params: {
   const key = `user:${userId}::${keyword}::${p}::${size}`;
   if (!inflightUser.has(key)) {
     const promise = getAPIResponseData<UserTroubleSearchPage | null>({
-      url: `/troubles/users/${userId}`,
+      url: `/troubles/users/${userId}/search`,
       method: "GET",
       params: { keyword, page: p, size },
     }).finally(() => setTimeout(() => inflightUser.delete(key), 0));

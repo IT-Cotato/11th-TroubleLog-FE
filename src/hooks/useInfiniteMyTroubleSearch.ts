@@ -13,7 +13,7 @@ export interface UseInfiniteMyTroubleSearchOptions {
   isSearchResult?: boolean;
 }
 
-type Fetcher = (args: {
+export type Fetcher = (args: {
   keyword: string;
   page: number; // 1-based 요청
   size: number;
