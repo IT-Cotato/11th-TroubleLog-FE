@@ -13,6 +13,6 @@ export interface AlertServerItem {
   message: string;
   alertType: string;
   isRead: boolean;
-  targetUrl: string;
+  targetUrl: string | null;
   userId: number;
 }
