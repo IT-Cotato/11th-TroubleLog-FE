@@ -21,6 +21,7 @@ const Header = () => {
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
   const viewerId = useViewerId();
@@ -158,9 +159,18 @@ const Header = () => {
         onClick={() => navigate(PATH.HOME)}
       />
       <div className="flex w-full gap-12 items-center">
-        <div className="flex w-full h-12 p-2 justify-between items-center gap-1 rounded-md border border-gray1">
+        <div
+          role="search"
+          onClick={() => inputRef.current?.focus()}
+          className="
+    group flex w-full h-12 p-2 justify-between items-center gap-1
+    rounded-md border border-gray1 transition
+    focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40
+  "
+        >
           <input
-            className="text-body-14-regular w-full"
+            ref={inputRef}
+            className="text-body-16-regular w-full h-full focus:outline-none"
             placeholder={placeholder}
             value={search}
             onChange={handleSearch}
