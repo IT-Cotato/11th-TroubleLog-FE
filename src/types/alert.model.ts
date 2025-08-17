@@ -4,6 +4,7 @@ export type Handlers = {
   onOpen?: () => void;
   onMessage?: (data: any) => void;
   onError?: (err: any) => void;
+  onUnauthorized?: (status: number) => void;
 };
 
 export interface AlertServerItem {

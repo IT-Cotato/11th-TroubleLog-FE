@@ -45,17 +45,16 @@ type IncomingFreeformState = {
 };
 
 const errorOptions = [
-  "Build / Compile Error",
+  "Build/Compile Error",
   "Runtime Error",
-  "Dependency / Version Error",
-  "Network / API Error",
-  "Authentication / Authorization Error",
+  "Dependency/Version Error",
+  "Network/API Error",
+  "Authentication/Authorization Error",
   "Database Error",
-  "UI / Rendering Error",
+  "UI/Rendering Error",
   "Configuration Error",
-  "Timeout / Error Handling",
+  "Timeout/Error Handling",
   "Third-Party Library Error",
-  "Others",
 ];
 
 export default function FreeFormWritePage() {
@@ -481,15 +480,29 @@ export default function FreeFormWritePage() {
               loadingProjects={projectsLoading}
               defaultProjectId={initialProjectId}
               selectedTags={selectedTags}
-              initialImportance={location.state?.savePrefill?.importance}
-              initialDescription={location.state?.savePrefill?.description}
-              initialVisibility={location.state?.savePrefill?.visibility}
+              initialImportance={
+                previewMeta?.importance ??
+                location.state?.savePrefill?.importance
+              }
+              initialDescription={
+                previewMeta?.description ??
+                location.state?.savePrefill?.description
+              }
+              initialVisibility={
+                previewMeta?.visibility ??
+                location.state?.savePrefill?.visibility
+              }
               initialProjectId={
+                previewMeta?.projectId ??
                 location.state?.savePrefill?.projectId ??
                 initialProjectId ??
                 null
               }
-              initialThumbnail={location.state?.savePrefill?.thumbnail ?? null}
+              initialThumbnail={
+                previewMeta?.thumbnail ??
+                location.state?.savePrefill?.thumbnail ??
+                null
+              }
             />
           )}
 
@@ -498,6 +511,10 @@ export default function FreeFormWritePage() {
               onConfirm={(type, label) => handleConfirmTemplate(type, label)}
               onClose={() => setIsTemplateSelectModalOpen(false)}
               onLater={handleLater}
+              onPrev={() => {
+                setIsTemplateSelectModalOpen(false);
+                setIsPostSaveModalOpen(true);
+              }}
             />
           )}
 

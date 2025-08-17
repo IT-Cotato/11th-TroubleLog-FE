@@ -17,10 +17,12 @@ export default function TemplateSelectModal({
   onClose,
   onConfirm,
   onLater,
+  onPrev,
 }: {
   onClose: () => void;
   onConfirm: (type: SummaryTypeParam, label: string) => void;
   onLater: () => void;
+  onPrev?: () => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
@@ -93,6 +95,7 @@ export default function TemplateSelectModal({
 
         {/* 버튼 */}
         <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
+          {onPrev && <CancelButton onClick={onPrev} label="이전" />}
           <CancelButton onClick={onLater} label="다음에" />
           <SaveButton onClick={handleConfirm} label="요약" />
         </div>

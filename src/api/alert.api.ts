@@ -68,17 +68,26 @@ export function connectAlertSSE(
     openWhenHidden: true,
 
     async onopen(res) {
-      const ok =
-        res.ok &&
-        (res.headers.get("content-type") || "").startsWith("text/event-stream");
-      if (!ok) {
-        const err = new Error(`SSE open failed: ${res.status}`);
-        h.onError?.(err);
+      // 302/401/403 등 비정상 상태는 즉시 중단
+      if (!res.ok) {
+        const status = res.status;
+        if (status === 401 || status === 403 || status === 302) {
+          h.onUnauthorized?.(status);
+        } else {
+          h.onError?.(new Error(`SSE open failed: ${status}`));
+        }
+        // 재연결 루프 차단
+        ctrl.abort();
+        throw new Error(`stop-retry:${status}`);
+      }
+
+      const ct = res.headers.get("content-type") || "";
+      if (!ct.startsWith("text/event-stream")) {
+        h.onError?.(new Error(`Bad Content-Type: ${ct}`));
         if (!autoReconnect) ctrl.abort();
-        throw err;
+        throw new Error(`bad-ctype:${ct}`);
       }
       h.onOpen?.();
-      return;
     },
 
     onmessage(ev) {

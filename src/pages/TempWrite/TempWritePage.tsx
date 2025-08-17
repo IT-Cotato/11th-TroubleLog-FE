@@ -350,17 +350,16 @@ const TempWritePage = () => {
             <div className="flex gap-[36px] items-center">
               <DropDownButton
                 options={[
-                  "Build / Compile Error",
+                  "Build/Compile Error",
                   "Runtime Error",
-                  "Dependency / Version Error",
-                  "Network / API Error",
-                  "Authentication / Authorization Error",
+                  "Dependency/Version Error",
+                  "Network/API Error",
+                  "Authentication/Authorization Error",
                   "Database Error",
-                  "UI / Rendering Error",
+                  "UI/Rendering Error",
                   "Configuration Error",
-                  "Timeout / Error Handling",
+                  "Timeout/Error Handling",
                   "Third-Party Library Error",
-                  "Others",
                 ]}
                 placeholder="에러 종류를 선택하세요"
                 width="w-[340px] h-[36px]"
@@ -404,15 +403,29 @@ const TempWritePage = () => {
               defaultProjectId={initialProjectId}
               selectedTags={selectedTags}
               // 수정 프리필 반영
-              initialImportance={location.state?.savePrefill?.importance}
-              initialDescription={location.state?.savePrefill?.description}
-              initialVisibility={location.state?.savePrefill?.visibility}
+              initialImportance={
+                previewMeta?.importance ??
+                location.state?.savePrefill?.importance
+              }
+              initialDescription={
+                previewMeta?.description ??
+                location.state?.savePrefill?.description
+              }
+              initialVisibility={
+                previewMeta?.visibility ??
+                location.state?.savePrefill?.visibility
+              }
               initialProjectId={
+                previewMeta?.projectId ??
                 location.state?.savePrefill?.projectId ??
                 initialProjectId ??
                 null
               }
-              initialThumbnail={location.state?.savePrefill?.thumbnail ?? null}
+              initialThumbnail={
+                previewMeta?.thumbnail ??
+                location.state?.savePrefill?.thumbnail ??
+                null
+              }
             />
           )}
 
@@ -421,6 +434,10 @@ const TempWritePage = () => {
               onConfirm={(type, label) => handleConfirmTemplate(type, label)}
               onClose={() => setIsTemplateSelectModalOpen(false)}
               onLater={handleLater}
+              onPrev={() => {
+                setIsTemplateSelectModalOpen(false);
+                setIsPostSaveModalOpen(true);
+              }}
             />
           )}
 
