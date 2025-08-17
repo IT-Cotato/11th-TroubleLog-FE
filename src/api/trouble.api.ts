@@ -25,7 +25,7 @@ const inflightCommunity = new Map<
 export const getTroubleList = (
   page = 1,
   size = 10,
-  sortBy: "latest" | "likes" = "latest"
+  sortBy: "latest" | "importance" = "latest"
 ) =>
   getAPIResponseData<GetTroubleListResponse>(
     api.get<GetTroubleListResponse>("/troubles/my/list", {
@@ -66,15 +66,10 @@ export async function searchMyTroubles(params: {
 }
 
 // 특정 사용자 트러블슈팅 목록 조회 (카드)
-export const getUserTroubleList = (
-  userId: number,
-  page = 1,
-  size = 10,
-  sortBy: "latest" | "likes" = "latest"
-) =>
+export const getUserTroubleList = (userId: number, page = 1, size = 10) =>
   getAPIResponseData<GetTroubleListResponse>(
     api.get<GetTroubleListResponse>(`/troubles/users/${userId}/list`, {
-      params: { page, size, sortBy },
+      params: { page, size },
     })
   );
 

@@ -15,7 +15,7 @@ import type {
 import { useViewerId } from "@/store/auth";
 
 // 내 전체 목록 정렬용 (서버 스펙)
-type SortParam = "latest" | "likes";
+type SortParam = "latest" | "importance";
 
 type Source =
   | { type: "all" }
@@ -85,7 +85,7 @@ async function fetchUserPagedOnce(
   const sk = `user:${userId}`;
   const key = makePagedKey(sk, page, size, sortBy);
   if (!inflightUserPaged.has(key)) {
-    const p = getUserTroubleList(userId, page, size, sortBy).finally(() =>
+    const p = getUserTroubleList(userId, page, size).finally(() =>
       inflightUserPaged.delete(key)
     );
     inflightUserPaged.set(key, p);
@@ -219,12 +219,7 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
                 pageSize,
                 sortBy
               )
-            : await getUserTroubleList(
-                source.userId,
-                targetPage,
-                pageSize,
-                sortBy
-              );
+            : await getUserTroubleList(source.userId, targetPage, pageSize);
         } else {
           // all
           resp = dedupe
