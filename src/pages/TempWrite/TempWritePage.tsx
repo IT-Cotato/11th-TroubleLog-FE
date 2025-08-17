@@ -403,15 +403,29 @@ const TempWritePage = () => {
               defaultProjectId={initialProjectId}
               selectedTags={selectedTags}
               // 수정 프리필 반영
-              initialImportance={location.state?.savePrefill?.importance}
-              initialDescription={location.state?.savePrefill?.description}
-              initialVisibility={location.state?.savePrefill?.visibility}
+              initialImportance={
+                previewMeta?.importance ??
+                location.state?.savePrefill?.importance
+              }
+              initialDescription={
+                previewMeta?.description ??
+                location.state?.savePrefill?.description
+              }
+              initialVisibility={
+                previewMeta?.visibility ??
+                location.state?.savePrefill?.visibility
+              }
               initialProjectId={
+                previewMeta?.projectId ??
                 location.state?.savePrefill?.projectId ??
                 initialProjectId ??
                 null
               }
-              initialThumbnail={location.state?.savePrefill?.thumbnail ?? null}
+              initialThumbnail={
+                previewMeta?.thumbnail ??
+                location.state?.savePrefill?.thumbnail ??
+                null
+              }
             />
           )}
 
@@ -420,6 +434,10 @@ const TempWritePage = () => {
               onConfirm={(type, label) => handleConfirmTemplate(type, label)}
               onClose={() => setIsTemplateSelectModalOpen(false)}
               onLater={handleLater}
+              onPrev={() => {
+                setIsTemplateSelectModalOpen(false);
+                setIsPostSaveModalOpen(true);
+              }}
             />
           )}
 
