@@ -25,7 +25,7 @@ const inflightCommunity = new Map<
 export const getTroubleList = (
   page = 1,
   size = 10,
-  sortBy: "latest" | "importance" = "latest"
+  sortBy: "latest" | "important" = "latest"
 ) =>
   getAPIResponseData<GetTroubleListResponse>(
     api.get<GetTroubleListResponse>("/troubles/my/list", {

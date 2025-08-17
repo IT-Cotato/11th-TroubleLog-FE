@@ -15,8 +15,8 @@ interface OutletContextType {
   hasNext: boolean;
   sentinelRef: React.RefObject<HTMLDivElement | null>;
   reload: () => void | Promise<void>;
-  sortBy: "latest" | "likes";
-  setSortBy: (v: "latest" | "likes") => void;
+  sortBy: "latest" | "important";
+  setSortBy: (v: "latest" | "important") => void;
 }
 
 const TroubleShootingList = () => {

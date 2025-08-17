@@ -18,7 +18,7 @@ const MyPageLayout = () => {
   const isMyPage = !!myUserId && id === myUserId;
 
   // 정렬 상태
-  const [sortBy, setSortBy] = useState<"latest" | "importance">("latest");
+  const [sortBy, setSortBy] = useState<"latest" | "important">("latest");
 
   // userId 숫자 파싱 (없거나 잘못된 경우 NaN)
   const userIdNum = useMemo(() => {
