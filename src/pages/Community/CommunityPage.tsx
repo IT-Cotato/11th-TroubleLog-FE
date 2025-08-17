@@ -119,12 +119,12 @@ export default function CommunityPage() {
           <div key={card.id} className="cursor-pointer">
             <TroublogCard
               {...card}
-              onClick={() => {
+              onClick={(id) => {
+                const ownerId = card.authorId;
                 const qs = new URLSearchParams({ from: "community" });
-                if (card.authorId != null)
-                  qs.set("ownerId", String(card.authorId));
-                navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
-                  state: { from: "community", ownerId: card.authorId },
+                if (ownerId != null) qs.set("ownerId", String(ownerId));
+                navigate(`${PATH.COMMUNITY_POST(id)}?${qs.toString()}`, {
+                  state: { from: "community", ownerId },
                 });
               }}
               onAvatarClick={() => {
