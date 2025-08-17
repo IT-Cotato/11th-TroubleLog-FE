@@ -744,9 +744,20 @@ export default function CommunityPostDetail() {
       </div>
 
       {/* 목차 */}
-      <div className="inline-flex items-start mt-[588px] mr-[89px] sticky top-[588px] h-fit">
+      <div
+        className="inline-flex items-start mt-[588px] mr-[89px]
+    sticky top-[588px] h-fit
+    w-[220px] sm:w-[240px] md:w-[280px] lg:w-[320px]
+    flex-shrink-0"
+      >
         {/* 목차 리스트 */}
-        <div className="flex flex-col items-start gap-[16px] border-l border-gray3 p-[12px] text-body-20-regular text-gray3">
+        <div
+          className=" flex flex-col items-start gap-[16px]
+      border-l border-gray3
+      pl-[12px] pr-[8px]  
+      text-body-20-regular text-gray3
+      w-full"
+        >
           {post.questions.map((q, idx) => (
             <button
               key={idx}
