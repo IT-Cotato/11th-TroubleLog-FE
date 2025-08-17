@@ -491,8 +491,8 @@ export default function CommunityPostDetail() {
 
   // 작성자 프로필 클릭
   const handleProfileClick = () => {
-    if (!post) return;
-    navigate(PATH.MYPAGE(String(post.authorId) || ""));
+    if (!post || post.authorId == null) return;
+    navigate(PATH.MYPAGE(String(post.authorId)));
   };
 
   // 좋아요 토글(커뮤니티 글에서만)
