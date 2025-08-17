@@ -2,6 +2,16 @@ import axios, { AxiosError } from "axios";
 import { router } from "@/routes/Router";
 import { PATH } from "@/constants/paths";
 
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(
+  /\/+$/,
+  ""
+);
+if (!API_BASE_URL) {
+  console.warn(
+    "[API] VITE_API_BASE_URL가 비었습니다. SSE 등은 절대 URL을 만들 수 없습니다."
+  );
+}
+
 const RAW_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_BASE_URL ?? "";
 
@@ -22,7 +32,8 @@ const API_ORIGIN = getOriginSafely(COMPUTED_BASE_URL);
 const ENVTYPE = import.meta.env.VITE_ENV_TYPE;
 
 const api = axios.create({
-  baseURL: COMPUTED_BASE_URL,
+  // baseURL: COMPUTED_BASE_URL,
+  baseURL: API_BASE_URL || undefined,
   timeout: 10000,
   withCredentials: true,
   headers: {
