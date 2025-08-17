@@ -32,6 +32,7 @@ import {
 import { useViewerId } from "@/store/auth";
 import { deletePost, getPostDetail } from "@/api/post.api";
 import { toPostDetailVM } from "@/mappers/myPostDetail.mapper";
+import { postFollow, postUnfollow } from "@/api/user.api";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -44,6 +45,7 @@ export interface CommunityPostDetailProps {
   authorName: string;
   authorFollowers: number;
   authorBio: string;
+  isFollowed: boolean;
   importance: number;
   questions: string[];
   contents: (string | { type: "image"; src: string; alt?: string })[][];
@@ -708,6 +710,62 @@ export default function CommunityPostDetail() {
     }
   };
 
+  // 팔로우
+  const handleFollow = async () => {
+    setPost((prev) =>
+      prev
+        ? {
+            ...prev,
+            isFollowed: true,
+            authorFollowers: (prev.authorFollowers ?? 0) + 1,
+          }
+        : prev
+    );
+
+    try {
+      await postFollow(Number(post?.authorId));
+    } catch (e) {
+      setPost((prev) =>
+        prev
+          ? {
+              ...prev,
+              isFollowed: false,
+              authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1),
+            }
+          : prev
+      );
+      console.error("팔로우 실패", e);
+    }
+  };
+
+  // 언팔로우
+  const handleUnfollow = async () => {
+    setPost((prev) =>
+      prev
+        ? {
+            ...prev,
+            isFollowed: false,
+            authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1),
+          }
+        : prev
+    );
+
+    try {
+      await postUnfollow(Number(post?.authorId));
+    } catch (e) {
+      setPost((prev) =>
+        prev
+          ? {
+              ...prev,
+              isFollowed: true,
+              authorFollowers: (prev.authorFollowers ?? 0) + 1,
+            }
+          : prev
+      );
+      console.error("언팔로우 실패", e);
+    }
+  };
+
   // 로딩/에러 처리
   if (loading) {
     return (
@@ -863,10 +921,25 @@ export default function CommunityPostDetail() {
                       </div>
                     </div>
 
+                    {/* 팔로우 버튼 */}
                     {!post.isMine && (
-                      <button className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer">
-                        팔로우
-                      </button>
+                      <>
+                        {post.isFollowed ? (
+                          <button
+                            onClick={() => handleUnfollow()}
+                            className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-subColor1 text-head-20-semibold text-white cursor-pointer"
+                          >
+                            팔로잉
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleFollow()}
+                            className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer"
+                          >
+                            팔로우
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
