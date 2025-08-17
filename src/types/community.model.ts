@@ -29,6 +29,7 @@ export interface CommunityUserInfoDetail {
   bio: string | null;
   followerNum: number;
   followingNum: number;
+  isFollowed: boolean;
 }
 
 export interface CommunityPostDetailServer {
