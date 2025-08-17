@@ -2,33 +2,46 @@ import type { CommunityPostDetailProps } from "@/pages/Community/CommunityPostDe
 
 // getPostDetail의 data 형태(래퍼 제거 후)
 export type PostDetailServer = {
+  userInfoResDto?: {
+    userId: number;
+    nickname: string;
+    profileUrl: string | null;
+    bio: string | null;
+    followerNum: number;
+    followingNum: number;
+    isFollowed: boolean;
+  } | null;
+
   id: number;
   title: string;
   introduction: string | null;
+
   likeCount: number;
   commentCount: number;
-  isVisible: boolean;
+  liked?: boolean | null;
+
   isSummaryCreated: boolean;
-  isDeleted: boolean;
   postStatus: string;
-  starRating: string | number;
-  checklistError: string[];
-  checklistReason: string[];
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
-  deletedAt: string | null;
-  userId: number;
-  projectId: number;
+  starRating: number | string;
+  templateType?: "FREE_FORM" | "GUIDELINE" | string;
+
+  checklistError: number[];
+  checklistReason: number[];
+
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+
   errorTag: string;
   postTags: string[];
+
   contents: Array<{
     id: number;
     subTitle: string;
     body: string;
     sequence: number;
-    authorType: "USER_WRITTEN" | string;
-    summaryType: "NONE" | string;
   }>;
+
   thumbnailUrl?: string | null;
 };
 
@@ -73,7 +86,14 @@ export function toPostDetailVM(
   src: PostDetailServer,
   viewerId: number | string | null
 ): CommunityPostDetailProps {
-  const isMine = viewerId != null && String(src.userId) === String(viewerId);
+  const author = src.userInfoResDto ?? null;
+  const authorId = author?.userId;
+
+  const isMine =
+    viewerId != null &&
+    authorId != null &&
+    String(authorId) === String(viewerId);
+
   const sorted = [...(src.contents ?? [])].sort(
     (a, b) => (a?.sequence ?? 0) - (b?.sequence ?? 0)
   );
@@ -83,16 +103,20 @@ export function toPostDetailVM(
     title: src.title ?? "",
     tags: src.postTags ?? [],
     date: isoToYYMMDD(src.updatedAt || src.createdAt),
+
     isMine,
-    authorId: src.userId,
-    authorProfile: undefined,
-    authorName: "",
-    authorFollowers: 0,
-    authorBio: "",
+    authorId: authorId ?? 0,
+    authorProfile: author?.profileUrl ?? undefined,
+    authorName: author?.nickname ?? "",
+    authorFollowers: author?.followerNum ?? 0,
+    authorBio: author?.bio ?? "",
+
     importance: starToNumber(src.starRating),
+
     questions: sorted.map((c, i) => c?.subTitle || `섹션 ${i + 1}`),
     contents: sorted.map((c) => [c?.body || ""]),
-    isLiked: false,
+
+    isLiked: !!src.liked,
     likeCounts: src.likeCount ?? 0,
     commentCounts: src.commentCount ?? 0,
     comments: [],

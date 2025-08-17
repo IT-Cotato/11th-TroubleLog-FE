@@ -75,6 +75,7 @@ export const toTroubleShootingCard = (
     commentCount: item.commentCount ?? undefined,
     authorName,
     isSearchResult,
+    raw: item,
   };
 };
 

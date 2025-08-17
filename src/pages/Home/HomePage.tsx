@@ -394,11 +394,16 @@ export default function HomePage() {
                     key={card.id}
                     {...card}
                     onDeleted={handleRecentDeleted}
-                    onClick={(id) =>
-                      navigate(PATH.COMMUNITY_POST(id), {
-                        state: { from: "home" },
-                      })
-                    }
+                    onClick={() => {
+                      const ownerId = card.authorId ?? viewerId;
+                      const qs = new URLSearchParams({
+                        from: "home",
+                        ownerId: ownerId != null ? String(ownerId) : "",
+                      });
+                      navigate(
+                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+                      );
+                    }}
                     onAvatarClick={() => {
                       if (viewerId != null)
                         navigate(PATH.MYPAGE(String(viewerId)));

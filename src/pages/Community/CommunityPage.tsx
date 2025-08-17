@@ -119,15 +119,17 @@ export default function CommunityPage() {
           <div key={card.id} className="cursor-pointer">
             <TroublogCard
               {...card}
-              onClick={(id) =>
-                navigate(PATH.COMMUNITY_POST(id), {
-                  state: { from: "community" },
-                })
-              }
+              onClick={() => {
+                const qs = new URLSearchParams({ from: "community" });
+                if (card.authorId != null)
+                  qs.set("ownerId", String(card.authorId)); // ← 있을 때만
+                navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
+                  state: { from: "community", ownerId: card.authorId }, // ← 보조용 state
+                });
+              }}
               onAvatarClick={() => {
-                if (card.authorId != null) {
+                if (card.authorId != null)
                   navigate(PATH.MYPAGE(String(card.authorId)));
-                }
               }}
             />
           </div>

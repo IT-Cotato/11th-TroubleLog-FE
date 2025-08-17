@@ -39,8 +39,9 @@ const SearchResultPage = () => {
 
   const isBlocked = (card: any) => {
     const vis = String(card.visibility ?? "").toUpperCase(); // "PUBLIC" | "PRIVATE"
-    const st = String(card.status ?? "").toUpperCase(); // "COMPLETED" | "IN_PROGRESS" 등
-    return vis === "PRIVATE" || st === "IN_PROGRESS";
+    const st = String(card.status ?? "").toUpperCase(); // "INPROGRESS" 등
+    const mine = !!card.isMine;
+    return vis === "PRIVATE" || (st === "INPROGRESS" && !mine);
   };
 
   // 현재 로그인한 사용자 트러블슈팅 문서 내 검색
@@ -121,6 +122,21 @@ const SearchResultPage = () => {
     };
   }, [hasNext, activeKey, query, size]);
 
+  // 별점 enum → 숫자 변환
+  const parseStar = (raw: unknown) => {
+    if (typeof raw === "number") return raw;
+    if (typeof raw !== "string") return 0;
+    const k = raw.toUpperCase();
+    const map: Record<string, number> = {
+      ONE_STAR: 1,
+      TWO_STARS: 2,
+      THREE_STARS: 3,
+      FOUR_STARS: 4,
+      FIVE_STARS: 5,
+    };
+    return map[k] ?? 0;
+  };
+
   return (
     <div className="mt-[179px] mb-[68px] flex w-[1200px] flex-col items-start gap-[56px] mx-auto">
       <span className="text-head-32-regular self-stretch">
@@ -153,6 +169,56 @@ const SearchResultPage = () => {
                 ? card.id
                 : Number.parseInt(String(card.id), 10);
             const idValid = Number.isFinite(idNum);
+
+            // 원본 검색 아이템
+            const raw = card.raw; // (MyTroubleServerItem | undefined)
+            const contents = raw?.contents ?? [];
+
+            // 어떤 에디터로 갈지: 하나라도 USER_WRITTEN이 아니면 TEMPLATE
+            const goFreeform = contents.every(
+              (c) => (c.authorType ?? "USER_WRITTEN") === "USER_WRITTEN"
+            );
+
+            // FREEFORM 프리필 블록
+            const freeformBlocks =
+              contents
+                .slice()
+                .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+                .map((c, i) => ({
+                  id: c.id ?? i,
+                  title: c.subTitle ?? "",
+                  content: c.body ?? "",
+                  isSaved: false,
+                })) ?? [];
+
+            // TEMPLATE 프리필 블록
+            const templateBlocks =
+              contents
+                .slice()
+                .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+                .map((c, i) => ({
+                  id: c.id ?? i,
+                  content: c.body ?? "",
+                  checklist: [],
+                  checklistItems: [],
+                  checklistTitle: c.subTitle ? `${c.subTitle} 체크리스트` : "",
+                  question: c.subTitle ?? `질문 ${i + 1}`,
+                  isSaved: false,
+                })) ?? [];
+
+            const prefillBase = {
+              title: card.title,
+              tags: card.tags,
+              errorType: card.errorCategory || null,
+              savePrefill: {
+                importance: parseStar(raw?.starRating),
+                visibility: card.visibility, // "public" | "private"
+                projectId: raw?.projectId ?? null,
+                projectName: undefined,
+                thumbnail: raw?.thumbnailUrl ?? null,
+              } as const,
+            };
+
             return (
               <TroubleShootingCard
                 key={card.id}
@@ -161,10 +227,35 @@ const SearchResultPage = () => {
                 onClick={
                   blocked || !idValid
                     ? undefined
-                    : () =>
-                        navigate(PATH.COMMUNITY_POST(idNum), {
-                          state: { from: "search", query, scope, userId },
-                        })
+                    : () => {
+                        // 안내 메시지
+                        const ok = window.confirm(
+                          goFreeform
+                            ? "이 문서는 자유형식으로 작성된 글이에요.\n이어쓰기 화면으로 이동할까요?"
+                            : "이 문서는 가이드 템플릿 기반으로 작성된 글이에요.\n이어쓰기 화면으로 이동할까요?"
+                        );
+                        if (!ok) return;
+
+                        if (goFreeform) {
+                          // FREEFORM 편집으로 이동 + 프리필
+                          navigate(PATH.FREEFORM_WRITING, {
+                            state: {
+                              editorType: "FREEFORM",
+                              ...prefillBase,
+                              blocks: freeformBlocks, // FreeFormWritePage에서 그대로 반영
+                            },
+                          });
+                        } else {
+                          // TEMPLATE 편집으로 이동 + 프리필
+                          navigate(PATH.TEMP_WRITING, {
+                            state: {
+                              editorType: "TEMPLATE",
+                              ...prefillBase,
+                              blocks: templateBlocks, // TempWritePage에서 그대로 반영
+                            },
+                          });
+                        }
+                      }
                 }
                 // TroubleShootingCard가 직접 처리할 수 있도록 명시적 disabled 전달
                 disabled={blocked || !idValid}

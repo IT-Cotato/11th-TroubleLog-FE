@@ -8,7 +8,7 @@ export interface CommunityServerCard {
     userId: number;
     nickname: string;
     profileImageUrl: string | null;
-  };
+  } | null;
   id: number;
   title: string;
   thumbnailUrl: string | null;

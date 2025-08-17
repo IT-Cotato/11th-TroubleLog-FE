@@ -48,7 +48,7 @@ export const editPost = (postId: number, body: EditPostRequest) =>
 // 원본 문서 삭제
 export const deletePost = (postId: number) =>
   getAPIResponseData<void>({
-    url: `/troubles/${postId}/hard`,
+    url: `/troubles/${postId}`,
     method: "DELETE",
   });
 
