@@ -1,39 +1,36 @@
 import { useCallback, useMemo } from "react";
-import { useInfiniteMyTroubleSearch } from "./useInfiniteMyTroubleSearch";
+import {
+  useInfiniteMyTroubleSearch,
+  type Fetcher,
+} from "./useInfiniteMyTroubleSearch";
 import { searchUserTroubles } from "@/api/trouble.api";
-import type { MyTroubleDetailItem } from "@/types/troubles.server";
+import type {
+  TroubleSearchCard,
+  MyTroubleSearchPage,
+} from "@/types/troubles.server";
 
 export function useInfiniteUserTroubleSearch(
   keyword: string,
   userId: number | null,
   size = 10
 ) {
-  // 공개 + 완료만 (작성 중 제외)
-  const filterVisible = useCallback((x: MyTroubleDetailItem) => {
-    const visible = x.isVisible === true; // 서버가 boolean로 내려줌
-    const statusRaw = String(x.postStatus ?? "");
-    const inProgress =
-      /작성\s*중/i.test(statusRaw) || /in[\s_-]*progress/i.test(statusRaw);
-    const completed = /완료/i.test(statusRaw) && !inProgress; // "요약 완료"/"작성 완료" 등
-    return visible && completed;
+  // 카드 기준 필터: 완료(= completedAt 존재)만 통과
+  const filterCompleted = useCallback((x: TroubleSearchCard) => {
+    return !!x.completedAt;
   }, []);
 
-  const fetcher = useMemo(() => {
-    return ({
-      keyword,
-      page,
-      size,
-    }: {
-      keyword: string;
-      page: number;
-      size: number;
-    }) =>
-      userId
-        ? searchUserTroubles({ userId, keyword, page, size })
-        : Promise.resolve(null);
+  // Fetcher 시그니처에 맞춰 반환: MyTroubleSearchPage | null
+  const fetcher = useMemo<Fetcher>(() => {
+    return async ({ keyword, page, size }) => {
+      if (!userId || !keyword.trim()) return null;
+
+      const res = await searchUserTroubles({ userId, keyword, page, size });
+      const pageObj = (res as any)?.content ? res : (res as any)?.data;
+      return pageObj as MyTroubleSearchPage;
+    };
   }, [userId]);
 
-  // 다른 사용자 카드
+  // 다른 사용자 카드 렌더링 옵션
   const opts = useMemo(
     () => ({ isMine: false, authorName: "사용자", isSearchResult: true }),
     []
@@ -41,7 +38,7 @@ export function useInfiniteUserTroubleSearch(
 
   return useInfiniteMyTroubleSearch(keyword, size, opts, {
     fetcher,
-    filterItem: filterVisible,
+    filterItem: filterCompleted,
     enabled: !!userId && !!keyword.trim(),
   });
 }

@@ -38,6 +38,9 @@ export default function CardHeaderRight({
         src={authorProfileImageUrl || image}
         alt="작성자 프로필"
         className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] rounded-full"
+        role="button"
+        tabIndex={0}
+        aria-label="작성자 프로필 보기"
         onClick={(e) => {
           e.stopPropagation();
           onAvatarClick?.();

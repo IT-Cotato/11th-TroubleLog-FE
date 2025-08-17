@@ -89,7 +89,7 @@ export const toTroubleShootingCard = (
     has(item, "createdAt") && (item as any).createdAt
       ? formatYYMMDD((item as any).createdAt as string)
       : has(item, "completedAt") && (item as any).completedAt
-      ? ((item as any).completedAt as string)
+      ? formatYYMMDD((item as any).completedAt as string)
       : "";
 
   const summaryType =

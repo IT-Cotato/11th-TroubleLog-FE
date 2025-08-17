@@ -13,7 +13,7 @@ export interface UseInfiniteMyTroubleSearchOptions {
   isSearchResult?: boolean;
 }
 
-type Fetcher = (args: {
+export type Fetcher = (args: {
   keyword: string;
   page: number; // 1-based 요청
   size: number;
@@ -87,7 +87,6 @@ export function useInfiniteMyTroubleSearch(
 
       const key = `${keyword}::${p}::${size}`;
       if (key === lastKeyRef.current) return;
-      lastKeyRef.current = key;
 
       inflightRef.current = true;
       try {
@@ -95,6 +94,7 @@ export function useInfiniteMyTroubleSearch(
         else setLoadingMore(true);
 
         const res = await fetcher({ keyword, page: Math.max(1, p), size });
+        lastKeyRef.current = key;
 
         // 서버가 0-based page를 줄 수 있으니 안전 보정
         const safe: MyTroubleSearchPage = {

@@ -114,8 +114,8 @@ const TroubleShootingCard = ({
   };
 
   const handleAuthorClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
-    e.stopPropagation();
     if (!authorUserId) return;
+    e.stopPropagation();
     navigate(PATH.MYPAGE(String(authorUserId)));
   };
 

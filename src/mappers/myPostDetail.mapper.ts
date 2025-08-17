@@ -120,5 +120,7 @@ export function toPostDetailVM(
     likeCounts: src.likeCount ?? 0,
     commentCounts: src.commentCount ?? 0,
     comments: [],
+
+    isFollowed: author?.isFollowed ?? false,
   };
 }

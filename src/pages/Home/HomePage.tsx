@@ -396,10 +396,8 @@ export default function HomePage() {
                     onDeleted={handleRecentDeleted}
                     onClick={() => {
                       const ownerId = card.authorId ?? viewerId;
-                      const qs = new URLSearchParams({
-                        from: "home",
-                        ownerId: ownerId != null ? String(ownerId) : "",
-                      });
+                      const qs = new URLSearchParams({ from: "home" });
+                      if (ownerId != null) qs.set("ownerId", String(ownerId));
                       navigate(
                         `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
                       );

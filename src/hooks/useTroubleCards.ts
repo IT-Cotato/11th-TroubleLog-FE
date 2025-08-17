@@ -15,7 +15,7 @@ import type {
 import { useViewerId } from "@/store/auth";
 
 // 내 전체 목록 정렬용 (서버 스펙)
-type SortParam = "latest" | "importance";
+type SortParam = "latest" | "important";
 
 type Source =
   | { type: "all" }

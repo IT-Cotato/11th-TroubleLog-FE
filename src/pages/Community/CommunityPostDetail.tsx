@@ -7,7 +7,7 @@ import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
@@ -56,6 +56,8 @@ export interface CommunityPostDetailProps {
 }
 
 export default function CommunityPostDetail() {
+  const HEADER_OFFSET = 520;
+
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
 
@@ -82,6 +84,7 @@ export default function CommunityPostDetail() {
   // 케밥 메뉴
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const closeMenu = useCallback(() => setShowMenu(false), []);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
   // 섹션 추적
@@ -323,16 +326,11 @@ export default function CommunityPostDetail() {
   };
 
   // 상세 로드
-  const {
-    from: fromCtx,
-    ownerId,
-    viewerId: currentViewerId,
-  } = useDetailContext();
-  const preferMyFirst = shouldTryMyDetailFirst({
-    from: fromCtx,
-    ownerId,
-    viewerId: currentViewerId,
-  });
+  const detailCtx = useDetailContext();
+  const preferMyFirst = useMemo(
+    () => shouldTryMyDetailFirst(detailCtx),
+    [detailCtx.from, detailCtx.ownerId, detailCtx.viewerId]
+  );
   const [isCommunitySource, setIsCommunitySource] = useState(true); // 좋아요/댓글 표시 가드
 
   useEffect(() => {
@@ -354,19 +352,19 @@ export default function CommunityPostDetail() {
     const loadCommunity = async () => {
       const communityData = await getCommunityPostDetail(numId);
       if (!communityData) throw new Error("빈 응답입니다."); // 널 가드
-      const vm = toCommunityPostVM(communityData, currentViewerId);
+      const vm = toCommunityPostVM(communityData, detailCtx.viewerId);
       setPost(vm);
       setIsLiked(vm.isLiked);
       setLikeCounts(vm.likeCounts);
       setIsCommunitySource(true);
-      void loadComments(numId, 1, currentViewerId ?? null);
+      void loadComments(numId, 1, detailCtx.viewerId ?? null);
     };
 
     const loadMine = async (id: number) => {
       const myDetail = await getPostDetail(id);
 
       // 화면용 VM 세팅
-      const vmMine = toPostDetailVM(myDetail as any, currentViewerId);
+      const vmMine = toPostDetailVM(myDetail as any, detailCtx.viewerId);
       setPost(vmMine);
       setIsLiked(vmMine.isLiked);
       setLikeCounts(vmMine.likeCounts);
@@ -453,46 +451,60 @@ export default function CommunityPostDetail() {
     return () => {
       cancelled = true;
     };
-  }, [postId, currentViewerId, fromCtx, ownerId, preferMyFirst, navigate]);
+  }, [
+    postId,
+    detailCtx.viewerId,
+    detailCtx.from,
+    detailCtx.ownerId,
+    preferMyFirst,
+    navigate,
+  ]);
 
-  // 수정 화면으로 이동(프리필 포함)
+  const navigatingRef = useRef(false);
+
   const goEditWithPrefill = useCallback(async () => {
-    const pid = Number(postId);
-    if (!Number.isFinite(pid)) return;
+    if (navigatingRef.current) return;
+    navigatingRef.current = true;
 
-    setShowMenu(false);
+    closeMenu();
 
     try {
-      const myDetail = await getPostDetail(pid);
-      const tt = String((myDetail as any)?.templateType ?? "").toUpperCase(); // FREE_FORM | GUIDELINE | FREEFORM
+      const pid = Number(postId);
+      if (!Number.isFinite(pid)) return;
 
+      const myDetail = await getPostDetail(pid);
+      const tt = String((myDetail as any)?.templateType ?? "").toUpperCase();
       const isFreeform = tt === "FREE_FORM" || tt === "FREEFORM";
       const editorPath = isFreeform ? PATH.FREEFORM_WRITING : PATH.TEMP_WRITING;
       const prefill = isFreeform
         ? buildFreeformPrefill(myDetail)
         : buildTemplatePrefill(myDetail);
 
-      navigate(editorPath, {
-        replace: true,
-        state: {
-          ...prefill,
-          postId: pid,
-          mode: "edit",
-          from: "community-detail",
-        },
+      // 같은 페인트 사이클에서의 상태 폭주 방지
+      queueMicrotask(() => {
+        navigate(editorPath, {
+          replace: true,
+          state: {
+            ...prefill,
+            postId: pid,
+            mode: "edit",
+            from: "community-detail",
+          },
+        });
       });
     } catch (err) {
       console.error(err);
       alert(
-        "수정 화면으로 이동하기 위한 상세 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+        "수정 화면으로 이동하기 위한 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
       );
+      navigatingRef.current = false; // 실패 시에만 잠금 해제
     }
-  }, [postId, navigate, setShowMenu]);
+  }, [postId, navigate, closeMenu]);
 
   // 작성자 프로필 클릭
   const handleProfileClick = () => {
-    if (!post) return;
-    navigate(PATH.MYPAGE(String(post.authorId) || ""));
+    if (!post || post.authorId == null) return;
+    navigate(PATH.MYPAGE(String(post.authorId)));
   };
 
   // 좋아요 토글(커뮤니티 글에서만)
@@ -563,7 +575,7 @@ export default function CommunityPostDetail() {
       const created = await createCommunityComment(Number(postId), {
         contents,
       });
-      const mapped = toPostComment(created, currentViewerId, {
+      const mapped = toPostComment(created, detailCtx.viewerId, {
         isReply: false,
       });
       setComments((prev) => {
@@ -599,7 +611,7 @@ export default function CommunityPostDetail() {
         Number(parentId),
         { contents }
       );
-      const mapped = toPostComment(created, currentViewerId, {
+      const mapped = toPostComment(created, detailCtx.viewerId, {
         isReply: true,
         parentId,
       });
@@ -627,7 +639,7 @@ export default function CommunityPostDetail() {
         commentId: cid,
         contents: newContent,
       });
-      const vm = toPostComment(updated, currentViewerId);
+      const vm = toPostComment(updated, detailCtx.viewerId);
       setComments((prev) =>
         prev.map((c) =>
           c.id === id ? { ...c, content: vm.content, date: vm.date } : c
@@ -669,7 +681,7 @@ export default function CommunityPostDetail() {
       await deletePost(Number(postId));
       alert("문서가 영구 삭제되었습니다.");
 
-      if (fromCtx === "community") {
+      if (detailCtx.from === "community") {
         navigate(PATH.COMMUNITY, { replace: true });
       } else {
         navigate(-1);
@@ -684,30 +696,34 @@ export default function CommunityPostDetail() {
       setDeleting(false);
       setShowMenu(false);
     }
-  }, [postId, navigate, fromCtx]);
+  }, [postId, navigate, detailCtx.from]);
 
   // 스크롤 감시
   useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
+    const updateCurrentSection = () => {
+      // 화면의 현재 스크롤 위치에 오프셋을 더해 기준점을 맞춤
+      const y = window.scrollY + HEADER_OFFSET + 1;
       let cur = 0;
+
       sectionRefs.current.forEach((ref, idx) => {
-        if (ref) {
-          const top = ref.getBoundingClientRect().top + window.scrollY;
-          if (y >= top - 250) cur = idx;
-        }
+        if (!ref) return;
+        const top = ref.getBoundingClientRect().top + window.scrollY;
+        if (y >= top) cur = idx;
       });
+
       setCurrentSection(cur);
     };
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+
+    window.addEventListener("scroll", updateCurrentSection, { passive: true });
+    updateCurrentSection();
+
+    return () => window.removeEventListener("scroll", updateCurrentSection);
   }, []);
 
   const scrollToSection = (idx: number) => {
     const target = sectionRefs.current[idx];
-    if (target) {
-      window.scrollTo({ top: target.offsetTop - 180, behavior: "smooth" });
-    }
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   // 팔로우
@@ -780,7 +796,7 @@ export default function CommunityPostDetail() {
   if (loadError || !post) {
     return (
       <div className="flex justify-center">
-        <div className="max-w=[1200px] w-full pt-[180px] text-red-600">
+        <div className="max-w-[1200px] w-full pt-[180px] text-red-600">
           {loadError ?? "포스트를 찾을 수 없습니다."}
         </div>
       </div>
@@ -840,7 +856,10 @@ export default function CommunityPostDetail() {
 
             {/* 작성자 정보 & 중요도 */}
             <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-[20px]">
+              <div
+                className="flex items-center gap-[20px] cursor-pointer"
+                onClick={() => navigate(PATH.MYPAGE(String(post.authorId)))}
+              >
                 <img
                   src={post.authorProfile || imageIcon}
                   onError={(e) => {
@@ -884,7 +903,7 @@ export default function CommunityPostDetail() {
                       ref={(el) => {
                         sectionRefs.current[idx] = el;
                       }}
-                      className="scroll-mt-[200px]"
+                      className="scroll-mt-[520px]"
                     >
                       <PostGuideMd question={q} content={post.contents[idx]} />
                     </div>
@@ -1055,7 +1074,11 @@ export default function CommunityPostDetail() {
                 <button
                   disabled={cLoading}
                   onClick={() =>
-                    loadComments(Number(postId), cPage, currentViewerId ?? null)
+                    loadComments(
+                      Number(postId),
+                      cPage,
+                      detailCtx.viewerId ?? null
+                    )
                   }
                   className={`mt-4 px-6 py-2 rounded-full text-white ${
                     cLoading ? "bg-gray-300" : "bg-primary"

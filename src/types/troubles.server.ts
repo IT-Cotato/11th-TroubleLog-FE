@@ -72,8 +72,8 @@ export interface TroubleContentBlock {
   subTitle: string | null;
   body: string | null;
   sequence: number;
-  authorType: string; // 상세 응답에서만 존재
-  summaryType: string; // 상세 응답에서만 존재
+  authorType?: string; // 상세 응답에서만 존재
+  summaryType?: string; // 상세 응답에서만 존재
 }
 
 // 예전의 MyTroubleDetailItem은 상세 전용으로 이름을 바꿔두는 걸 추천

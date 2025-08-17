@@ -25,7 +25,7 @@ const inflightCommunity = new Map<
 export const getTroubleList = (
   page = 1,
   size = 10,
-  sortBy: "latest" | "importance" = "latest"
+  sortBy: "latest" | "important" = "latest"
 ) =>
   getAPIResponseData<GetTroubleListResponse>(
     api.get<GetTroubleListResponse>("/troubles/my/list", {
@@ -86,7 +86,7 @@ export async function searchUserTroubles(params: {
   const key = `user:${userId}::${keyword}::${p}::${size}`;
   if (!inflightUser.has(key)) {
     const promise = getAPIResponseData<UserTroubleSearchPage | null>({
-      url: `/troubles/users/${userId}`,
+      url: `/troubles/users/${userId}/search`,
       method: "GET",
       params: { keyword, page: p, size },
     }).finally(() => setTimeout(() => inflightUser.delete(key), 0));
