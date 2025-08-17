@@ -30,6 +30,8 @@ import {
   toPostComments,
 } from "@/mappers/communityComment.mapper";
 import { useViewerId } from "@/store/auth";
+import { getPostDetail } from "@/api/post.api";
+import { toPostDetailVM } from "@/mappers/myPostDetail.mapper";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -202,22 +204,45 @@ export default function CommunityPostDetail() {
 
       setLoading(true);
       try {
-        const data = await fetchPostOnce(numId);
+        // community 상세로 작성자 ID 확인
+        const communityData = await fetchPostOnce(numId);
         if (cancelled) return;
 
-        if (!data) {
+        if (!communityData) {
           setLoadError("빈 응답입니다.");
           return;
         }
 
-        const vm = toCommunityPostVM(data, viewerId);
-        setPost(vm);
-        setIsLiked(vm.isLiked);
-        setLikeCounts(vm.likeCounts);
-        setComments(vm.comments);
+        const authorIdFromCommunity =
+          communityData?.userInfoResDto?.userId ?? null;
+        const isMineNow =
+          authorIdFromCommunity != null &&
+          viewerId != null &&
+          String(authorIdFromCommunity) === String(viewerId);
 
-        // 댓글은 비동기로 시작(상세 렌더는 먼저)
-        void loadComments(numId, 1);
+        if (isMineNow) {
+          try {
+            const resp = await getPostDetail(numId);
+            const vm = toPostDetailVM(resp as any, viewerId);
+            setPost(vm);
+            setIsLiked(vm.isLiked);
+            setLikeCounts(vm.likeCounts);
+            void loadComments(numId, 1);
+          } catch {
+            // post.api 실패 시 기존 커뮤니티 응답으로 폴백
+            const vm = toCommunityPostVM(communityData, viewerId);
+            setPost(vm);
+            setIsLiked(vm.isLiked);
+            setLikeCounts(vm.likeCounts);
+            void loadComments(numId, 1);
+          }
+        } else {
+          const vm = toCommunityPostVM(communityData, viewerId);
+          setPost(vm);
+          setIsLiked(vm.isLiked);
+          setLikeCounts(vm.likeCounts);
+          void loadComments(numId, 1);
+        }
       } catch (err: any) {
         if (!cancelled) setLoadError(err?.message ?? "포스트 불러오기 실패");
       } finally {
@@ -615,9 +640,11 @@ export default function CommunityPostDetail() {
                     </div>
 
                     {/* 팔로우 버튼 */}
-                    <button className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer">
-                      팔로우
-                    </button>
+                    {!post.isMine && (
+                      <button className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer">
+                        팔로우
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
