@@ -840,7 +840,10 @@ export default function CommunityPostDetail() {
 
             {/* 작성자 정보 & 중요도 */}
             <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-[20px]">
+              <div
+                className="flex items-center gap-[20px] cursor-pointer"
+                onClick={() => navigate(PATH.MYPAGE(String(post.authorId)))}
+              >
                 <img
                   src={post.authorProfile || imageIcon}
                   onError={(e) => {
