@@ -12,7 +12,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import { useProjectList } from "@/hooks/useProjectList";
 import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
-import { toCreatePostRequest, type PostForm } from "@/mappers/postMapper";
+import {
+  toCreatePostRequest,
+  toEditPostRequest,
+  type PostForm,
+} from "@/mappers/postMapper";
 import {
   createPost,
   startSummary,
@@ -326,14 +330,16 @@ export default function FreeFormWritePage() {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const req = toCreatePostRequest(buildCreateForm("WRITING"));
+      const form = buildCreateForm("WRITING");
 
       let targetPostId: number;
       if (isResume && resumePostId) {
-        await editPost(resumePostId, req as any);
+        const editReq = toEditPostRequest(form);
+        await editPost(resumePostId, editReq);
         targetPostId = resumePostId;
       } else {
-        const created = await createPost(req);
+        const createReq = toCreatePostRequest(form);
+        const created = await createPost(createReq);
         targetPostId = created.id;
       }
 
