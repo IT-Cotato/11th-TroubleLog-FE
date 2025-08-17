@@ -411,11 +411,13 @@ export default function FreeFormWritePage() {
     }
 
     try {
-      const req = toCreatePostRequest(buildCreateForm("COMPLETED"));
+      const form = buildCreateForm("COMPLETED");
       if (isResume && resumePostId) {
-        await editPost(resumePostId, req as any);
+        const editReq = toEditPostRequest(form);
+        await editPost(resumePostId, editReq);
       } else {
-        await createPost(req);
+        const createReq = toCreatePostRequest(form);
+        await createPost(createReq);
       }
       navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
         state: { projectName: previewMeta.projectName },
