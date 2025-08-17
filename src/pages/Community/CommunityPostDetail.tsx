@@ -86,8 +86,18 @@ export default function CommunityPostDetail() {
   const [currentSection, setCurrentSection] = useState<number>(0);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
 
-  // ===== 컨텍스트/판정 유틸 =====
+  // 이어서 작성 안내 경고창
+  const resumePromptShownRef = useRef<Record<number, boolean>>({});
+
+  // 컨텍스트/판정 유틸
   type FromSource = "home" | "community" | "search" | "mypage" | undefined;
+
+  type DetailContentItem = {
+    id?: number;
+    subTitle?: string | null;
+    body?: string | null;
+    sequence?: number;
+  };
 
   function useDetailContext() {
     const location = useLocation();
@@ -104,9 +114,6 @@ export default function CommunityPostDetail() {
 
     return { from, ownerId, viewerId: viewerIdInStore };
   }
-
-  const isDraftStatus = (s?: string) =>
-    s === "작성 중" || s === "DRAFT" || s === "WRITING";
 
   function shouldTryMyDetailFirst(params: {
     from?: FromSource;
@@ -132,6 +139,104 @@ export default function CommunityPostDetail() {
 
     // 기본은 커뮤니티 우선
     return false;
+  }
+
+  // 별점 enum/문자 → 숫자
+  const parseStar = (raw: unknown) => {
+    if (typeof raw === "number") return raw;
+    if (typeof raw !== "string") return 0;
+    const k = raw.toUpperCase();
+    const map: Record<string, number> = {
+      ONE_STAR: 1,
+      TWO_STARS: 2,
+      THREE_STARS: 3,
+      FOUR_STARS: 4,
+      FIVE_STARS: 5,
+      ONE: 1,
+      TWO: 2,
+      THREE: 3,
+      FOUR: 4,
+      FIVE: 5,
+      NONE: 0,
+    };
+    return map[k] ?? 0;
+  };
+
+  // 상세 응답 → FREEFORM 프리필 state
+  function buildFreeformPrefill(detail: any) {
+    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
+      ? detail.contents
+      : [];
+
+    const blocks = contents
+      .slice()
+      .sort(
+        (a: DetailContentItem, b: DetailContentItem) =>
+          (a.sequence ?? 0) - (b.sequence ?? 0)
+      )
+      .map((c: DetailContentItem, i: number) => ({
+        id: c.id ?? i,
+        title: c.subTitle ?? "",
+        content: c.body ?? "",
+        isSaved: false,
+      }));
+
+    return {
+      editorType: "FREEFORM" as const,
+      title: detail?.title ?? "",
+      tags: detail?.postTags ?? [],
+      errorType: detail?.errorTag ?? null,
+      blocks,
+      savePrefill: {
+        importance: parseStar(detail?.starRating),
+        description: detail?.introduction ?? "",
+        visibility: detail?.isVisible ? "public" : "private",
+        projectId: detail?.projectId ?? null,
+        projectName: undefined,
+        thumbnail: detail?.thumbnailUrl ?? null,
+      },
+      projectId: detail?.projectId ?? undefined,
+    };
+  }
+
+  // 상세 응답 → TEMPLATE 프리필 state
+  function buildTemplatePrefill(detail: any) {
+    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
+      ? detail.contents
+      : [];
+
+    const blocks = contents
+      .slice()
+      .sort(
+        (a: DetailContentItem, b: DetailContentItem) =>
+          (a.sequence ?? 0) - (b.sequence ?? 0)
+      )
+      .map((c: DetailContentItem, i: number) => ({
+        id: c.id ?? i,
+        content: c.body ?? "",
+        checklist: [],
+        checklistItems: [],
+        checklistTitle: c.subTitle ? `${c.subTitle} 체크리스트` : "",
+        question: c.subTitle ?? `질문 ${i + 1}`,
+        isSaved: false,
+      }));
+
+    return {
+      editorType: "TEMPLATE" as const,
+      title: detail?.title ?? "",
+      tags: detail?.postTags ?? [],
+      errorType: detail?.errorTag ?? null,
+      blocks,
+      savePrefill: {
+        importance: parseStar(detail?.starRating),
+        description: detail?.introduction ?? "",
+        visibility: detail?.isVisible ? "public" : "private",
+        projectId: detail?.projectId ?? null,
+        projectName: undefined,
+        thumbnail: detail?.thumbnailUrl ?? null,
+      },
+      projectId: detail?.projectId ?? undefined,
+    };
   }
 
   // 공유 토스트
@@ -215,7 +320,7 @@ export default function CommunityPostDetail() {
     }
   };
 
-  // ===== 상세 로드 =====
+  // 상세 로드
   const {
     from: fromCtx,
     ownerId,
@@ -255,23 +360,59 @@ export default function CommunityPostDetail() {
       void loadComments(numId, 1, currentViewerId ?? null);
     };
 
-    const loadMine = async () => {
-      const myDetail = await getPostDetail(numId);
+    const loadMine = async (id: number) => {
+      const myDetail = await getPostDetail(id);
+
+      // 화면용 VM 세팅
       const vmMine = toPostDetailVM(myDetail as any, currentViewerId);
       setPost(vmMine);
       setIsLiked(vmMine.isLiked);
       setLikeCounts(vmMine.likeCounts);
       setIsCommunitySource(false);
-      // 작성중/비공개면 댓글/좋아요 숨김 (렌더에서 가드됨)
-      if (
-        isDraftStatus(
-          (myDetail as any)?.postStatus ?? (vmMine as any)?.postStatus
-        )
-      ) {
-        // 필요시 에디터로 자동 이동하려면 아래 주석 해제
-        // const editorPath = (myDetail as any)?.templateType === "FREEFORM"
-        //   ? PATH.FREEFORM_WRITING : PATH.TEMP_WRITING;
-        // navigate(editorPath, { replace: true, state: { postId: numId, mode: "edit", from: "detail" }});
+
+      // 초안 여부 판단 (completedAt이 null)
+      const completedAt = (myDetail as any)?.completedAt ?? null;
+      const templateTypeRaw =
+        (myDetail as any)?.templateType ?? (vmMine as any)?.templateType;
+      const tt = String(templateTypeRaw ?? "").toUpperCase(); // "FREE_FORM" | "GUIDELINE" | "FREEFORM"
+      const isDraft = completedAt == null;
+
+      // 이 postId에 대해 안내창을 이미 띄웠다면 다시 띄우지 않음
+      if (isDraft && !resumePromptShownRef.current[id]) {
+        resumePromptShownRef.current[id] = true;
+
+        const ok = window.confirm(
+          tt === "FREE_FORM" || tt === "FREEFORM"
+            ? "이 문서는 자유형식 글 작성 중이에요. 이어서 작성할까요?"
+            : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?"
+        );
+
+        if (ok) {
+          const baseState =
+            tt === "FREE_FORM" || tt === "FREEFORM"
+              ? buildFreeformPrefill(myDetail)
+              : buildTemplatePrefill(myDetail);
+
+          const editorPath =
+            tt === "FREE_FORM" || tt === "FREEFORM"
+              ? PATH.FREEFORM_WRITING
+              : PATH.TEMP_WRITING;
+
+          navigate(editorPath, {
+            replace: true,
+            state: {
+              ...baseState,
+              // 이어쓰기 식별자 (에디터에서 이 값이 있으면 editPost 분기)
+              postId: id,
+              mode: "edit",
+              from: "community-detail",
+              projectId: (myDetail as any)?.projectId ?? undefined,
+              savePrefill: {
+                ...(baseState as any).savePrefill,
+              },
+            },
+          });
+        }
       }
     };
 
@@ -279,7 +420,7 @@ export default function CommunityPostDetail() {
       try {
         if (preferMyFirst) {
           try {
-            await loadMine();
+            await loadMine(numId);
           } catch {
             await loadCommunity();
           }
@@ -289,7 +430,7 @@ export default function CommunityPostDetail() {
           } catch (err: any) {
             const status = err?.response?.status ?? err?.status;
             if (status === 401 || status === 403 || status === 404) {
-              await loadMine();
+              await loadMine(numId);
             } else {
               throw err;
             }
@@ -311,6 +452,40 @@ export default function CommunityPostDetail() {
       cancelled = true;
     };
   }, [postId, currentViewerId, fromCtx, ownerId, preferMyFirst, navigate]);
+
+  // 수정 화면으로 이동(프리필 포함)
+  const goEditWithPrefill = useCallback(async () => {
+    const pid = Number(postId);
+    if (!Number.isFinite(pid)) return;
+
+    setShowMenu(false);
+
+    try {
+      const myDetail = await getPostDetail(pid);
+      const tt = String((myDetail as any)?.templateType ?? "").toUpperCase(); // FREE_FORM | GUIDELINE | FREEFORM
+
+      const isFreeform = tt === "FREE_FORM" || tt === "FREEFORM";
+      const editorPath = isFreeform ? PATH.FREEFORM_WRITING : PATH.TEMP_WRITING;
+      const prefill = isFreeform
+        ? buildFreeformPrefill(myDetail)
+        : buildTemplatePrefill(myDetail);
+
+      navigate(editorPath, {
+        replace: true,
+        state: {
+          ...prefill,
+          postId: pid,
+          mode: "edit",
+          from: "community-detail",
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      alert(
+        "수정 화면으로 이동하기 위한 상세 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+      );
+    }
+  }, [postId, navigate, setShowMenu]);
 
   // 작성자 프로필 클릭
   const handleProfileClick = () => {
@@ -577,18 +752,7 @@ export default function CommunityPostDetail() {
                             {
                               label: "포스트 수정",
                               onClick: () => {
-                                setShowMenu(false);
-                                const editorPath =
-                                  (post as any)?.templateType === "FREEFORM"
-                                    ? PATH.FREEFORM_WRITING
-                                    : PATH.TEMP_WRITING;
-                                navigate(editorPath, {
-                                  state: {
-                                    postId: Number(postId),
-                                    mode: "edit",
-                                    from: "community-detail",
-                                  },
-                                });
+                                void goEditWithPrefill();
                               },
                             },
                             {

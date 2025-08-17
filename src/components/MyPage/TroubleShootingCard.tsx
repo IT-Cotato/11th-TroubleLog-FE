@@ -11,7 +11,7 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import commentIcon from "@/assets/icons/comment.svg";
 import { deletePost } from "@/api/post.api";
-import type { MyTroubleServerItem } from "@/types/troubles.server";
+import type { MyTroubleDetailItem } from "@/types/troubles.server";
 
 export interface TroubleShootingCardProps {
   id: string;
@@ -33,7 +33,7 @@ export interface TroubleShootingCardProps {
   onDeleted?: (postId: number) => void;
   onClick?: (postId: number) => void;
   disabled?: boolean;
-  raw?: MyTroubleServerItem;
+  raw?: MyTroubleDetailItem;
 }
 
 const TroubleShootingCard = ({

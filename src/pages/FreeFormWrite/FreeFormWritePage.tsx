@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import DropDownButton from "@/components/Button/DropDownButton";
 import CategoryTag from "@/components/TemplateWrite/CategoryTag";
@@ -18,6 +18,7 @@ import {
   startSummary,
   getSummaryStatus,
   cancelSummary,
+  editPost,
 } from "@/api/post.api";
 
 export type BlockData = {
@@ -42,6 +43,10 @@ type IncomingFreeformState = {
     thumbnail?: string | null;
   };
   projectId?: number;
+
+  // 수정 식별용
+  postId?: number;
+  mode?: "edit" | "create";
 };
 
 const errorOptions = [
@@ -56,6 +61,21 @@ const errorOptions = [
   "Timeout/Error Handling",
   "Third-Party Library Error",
 ];
+
+const ERROR_CODE_TO_LABEL: Record<string, string> = {
+  BUILD_COMPILE_ERROR: "Build/Compile Error",
+  RUNTIME_ERROR: "Runtime Error",
+  DEPENDENCY_VERSION_ERROR: "Dependency/Version Error",
+  NETWORK_API_ERROR: "Network/API Error",
+  AUTHENTICATION_AUTHORIZATION_ERROR: "Authentication/Authorization Error",
+  DATABASE_ERROR: "Database Error",
+  UI_RENDERING_ERROR: "UI/Rendering Error",
+  CONFIGURATION_ERROR: "Configuration Error",
+  TIMEOUT_ERROR_HANDLING: "Timeout/Error Handling",
+  THIRD_PARTY_LIBRARY_ERROR: "Third-Party Library Error",
+};
+const toErrorLabel = (code?: string | null) =>
+  code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
 
 export default function FreeFormWritePage() {
   const [title, setTitle] = useState("");
@@ -103,6 +123,15 @@ export default function FreeFormWritePage() {
   const initialProjectId = location.state?.projectId;
   const { data: projectList, loading: projectsLoading } = useProjectList();
 
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 수정여부 판단
+  const resumePostId = useMemo(() => {
+    const pid = location.state?.postId;
+    return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
+  }, [location.state]);
+  const isResume = resumePostId != null;
+
   // 프리필 반영
   useEffect(() => {
     if (
@@ -111,10 +140,18 @@ export default function FreeFormWritePage() {
     ) {
       setTitle(location.state.title ?? "");
       setSelectedTags(location.state.tags ?? []);
-      setSelectedErrorType(location.state.errorType ?? null);
+      setSelectedErrorType(toErrorLabel(location.state.errorType) ?? null);
       setBlocks(location.state.blocks);
+
+      // 프리필 후 최상단으로 포커스
+      setTimeout(() => titleInputRef.current?.focus(), 0);
     }
   }, [location.state]);
+
+  // 초기 진입 시에도 한 번 보장
+  useEffect(() => {
+    setTimeout(() => titleInputRef.current?.focus(), 0);
+  }, []);
 
   const toContentDtoList = (items: BlockData[]): PostContentDto[] =>
     items
@@ -146,7 +183,7 @@ export default function FreeFormWritePage() {
   };
 
   const buildCreateForm = (
-    postStatus: "COMPLETED" | "DRAFT",
+    postStatus: "COMPLETED" | "WRITING",
     meta: PostSavePayload | null = previewMeta
   ): PostForm => ({
     title,
@@ -156,12 +193,15 @@ export default function FreeFormWritePage() {
     isSummaryCreated: false,
     postStatus,
     starRating: String(meta?.importance ?? 0),
+    templateType:
+      location.state?.editorType === "FREEFORM" ? "FREE_FORM" : "GUIDELINE",
     thumbnailImageUrl: meta?.thumbnail ?? undefined,
     projectId: Number(meta?.projectId ?? 0),
     errorTag: selectedErrorType ?? "",
     contents: toContentDtoList(blocks),
   });
 
+  // (원본 저장 함수) create ↔ edit 분기
   const saveOriginalOnly = async (
     meta: PostSavePayload | null = previewMeta
   ) => {
@@ -171,15 +211,29 @@ export default function FreeFormWritePage() {
     }
     try {
       const req = toCreatePostRequest(buildCreateForm("COMPLETED", meta));
-      console.debug("[createPost] payload", req);
-      await createPost(req);
+      console.debug(
+        isResume ? "[editPost] payload" : "[createPost] payload",
+        req
+      );
+
+      if (isResume && resumePostId) {
+        await editPost(resumePostId, req as any);
+      } else {
+        await createPost(req);
+      }
+
       navigate(PATH.PROJECT_DETAIL(String(meta.projectId)), {
         state: { projectName: meta.projectName },
       });
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
-      console.error("createPost error", status, data, err);
+      console.error(
+        isResume ? "editPost error" : "createPost error",
+        status,
+        data,
+        err
+      );
 
       if (status === 401) {
         setStatusMessage("로그인이 만료되었어요. 다시 로그인해주세요.");
@@ -258,6 +312,8 @@ export default function FreeFormWritePage() {
     setIsTemplateSelectModalOpen(true);
   };
 
+  // (요약 시작 분기) 기존: 생성 → 요약 시작
+  // 이어쓰기면 수정(WRITING) → 기존 postId로 요약 시작
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
@@ -270,12 +326,20 @@ export default function FreeFormWritePage() {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const req = toCreatePostRequest(buildCreateForm("DRAFT"));
-      const created = await createPost(req);
-      const postId = created.id;
-      setCreatedPostId(postId);
+      const req = toCreatePostRequest(buildCreateForm("WRITING"));
 
-      const start = await startSummary(postId, { type });
+      let targetPostId: number;
+      if (isResume && resumePostId) {
+        await editPost(resumePostId, req as any);
+        targetPostId = resumePostId;
+      } else {
+        const created = await createPost(req);
+        targetPostId = created.id;
+      }
+
+      setCreatedPostId(targetPostId);
+
+      const start = await startSummary(targetPostId, { type });
       setSummaryTaskId(start.taskId);
     } catch (e) {
       console.error(e);
@@ -327,6 +391,7 @@ export default function FreeFormWritePage() {
     };
   }, [isLoadingModalOpen, createdPostId, summaryTaskId]);
 
+  // (나중에 완료 저장) create ↔ edit 분기
   const handleLater = async () => {
     if (
       !title.trim() ||
@@ -341,7 +406,11 @@ export default function FreeFormWritePage() {
 
     try {
       const req = toCreatePostRequest(buildCreateForm("COMPLETED"));
-      await createPost(req);
+      if (isResume && resumePostId) {
+        await editPost(resumePostId, req as any);
+      } else {
+        await createPost(req);
+      }
       navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
         state: { projectName: previewMeta.projectName },
       });
@@ -402,6 +471,7 @@ export default function FreeFormWritePage() {
           {/* 제목/태그 + 상단 액션바 */}
           <div className="flex flex-col items-start gap-[40px]">
             <input
+              ref={titleInputRef}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -412,7 +482,7 @@ export default function FreeFormWritePage() {
               <div className="flex gap-[36px] items-center">
                 <DropDownButton
                   options={errorOptions}
-                  placeholder="에러 종류를 선택하세요"
+                  placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
                   width="w-[340px]"
                   onSelect={(selectedError) =>
                     setSelectedErrorType(selectedError)
