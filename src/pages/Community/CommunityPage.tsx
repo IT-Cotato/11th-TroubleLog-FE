@@ -121,7 +121,14 @@ export default function CommunityPage() {
             className="cursor-pointer"
             onClick={() => navigate(PATH.COMMUNITY_POST(card.id))}
           >
-            <TroublogCard {...card} />
+            <TroublogCard
+              {...card}
+              onAvatarClick={() => {
+                if (card.authorId != null) {
+                  navigate(PATH.MYPAGE(String(card.authorId)));
+                }
+              }}
+            />
           </div>
         ))}
 

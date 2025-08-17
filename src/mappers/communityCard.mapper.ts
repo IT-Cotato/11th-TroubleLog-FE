@@ -11,6 +11,7 @@ export const toCommunityCard = (s: CommunityServerCard): TroublogCardProps => ({
   createdAt: s.completedAt ?? "",
   tags: s.postTags ?? [],
   authorProfileImageUrl: s.postCardUserInfoResDto?.profileImageUrl ?? undefined,
+  authorId: s.postCardUserInfoResDto.userId,
   likeCount: s.likeCount ?? 0,
   commentCount: s.commentCount ?? 0,
 });

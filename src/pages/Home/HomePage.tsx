@@ -15,6 +15,7 @@ import useTroubleCards from "@/hooks/useTroubleCards";
 import { PATH } from "@/constants/paths";
 import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
+import { useViewerId } from "@/store/auth";
 
 const PAGE_SIZE = 10;
 
@@ -48,6 +49,8 @@ export default function HomePage() {
   const [creating, setCreating] = useState(false);
 
   const navigate = useNavigate();
+
+  const viewerId = useViewerId();
 
   const goGuide = useCallback(
     (projectId?: number) => {
@@ -373,7 +376,15 @@ export default function HomePage() {
           <>
             <div className="flex flex-wrap gap-[24px]">
               {recentCards.map((card) => (
-                <TroublogCard key={card.id} {...card} />
+                <TroublogCard
+                  key={card.id}
+                  {...card}
+                  onAvatarClick={() => {
+                    if (viewerId != null)
+                      navigate(PATH.MYPAGE(String(viewerId)));
+                    else navigate(PATH.LOGIN); // 로그인 유도 등
+                  }}
+                />
               ))}
             </div>
             {hasNextRecents && !isLoadingRecents && (

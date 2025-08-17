@@ -16,11 +16,13 @@ export interface TroublogCardProps {
   createdAt: string;
   tags: string[];
   authorProfileImageUrl?: string;
+  authorId?: number;
   likeCount?: number;
   commentCount?: number;
   importance?: number;
   summaryType?: "자기소개서" | "면접대비" | "블로그" | "이슈관리";
   onClick?: (id: number) => void;
+  onAvatarClick?: () => void;
 }
 
 export default function TroublogCard({
@@ -38,6 +40,7 @@ export default function TroublogCard({
   importance,
   summaryType,
   onClick,
+  onAvatarClick,
 }: TroublogCardProps) {
   const navigate = useNavigate();
 
@@ -71,6 +74,7 @@ export default function TroublogCard({
         isMine={isMine}
         status={status}
         authorProfileImageUrl={authorProfileImageUrl}
+        onAvatarClick={onAvatarClick}
       />
 
       {/* 제목, 날짜, 태그 영역 */}

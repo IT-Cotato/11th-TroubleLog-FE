@@ -10,12 +10,14 @@ interface CardHeaderRightProps {
   isMine: boolean;
   status: StatusType;
   authorProfileImageUrl?: string;
+  onAvatarClick?: () => void;
 }
 
 export default function CardHeaderRight({
   isMine,
   status,
   authorProfileImageUrl,
+  onAvatarClick,
 }: CardHeaderRightProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
@@ -32,7 +34,17 @@ export default function CardHeaderRight({
         src={authorProfileImageUrl || image}
         alt="작성자 프로필"
         className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] rounded-full"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAvatarClick?.();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            onAvatarClick?.();
+          }
+        }}
       />
     );
   }
