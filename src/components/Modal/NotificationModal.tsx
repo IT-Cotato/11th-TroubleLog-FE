@@ -62,7 +62,20 @@ export default function NotificationModal() {
                 className="flex justify-between items-start group"
               >
                 <div
-                  onClick={() => item.link && navigate(item.link)}
+                  onClick={() => {
+                    if (!item.link) return;
+                    try {
+                      const url = new URL(item.link);
+                      if (url.origin === window.location.origin) {
+                        navigate(url.pathname + url.search + url.hash);
+                      } else {
+                        window.location.href = item.link;
+                      }
+                    } catch {
+                      // 절대 URL 파싱 실패 → 내부 경로로 간주
+                      navigate(item.link);
+                    }
+                  }}
                   className={clsx(
                     "text-body-20-regular cursor-pointer transition-all",
                     item.link &&

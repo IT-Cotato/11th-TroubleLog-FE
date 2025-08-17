@@ -19,6 +19,7 @@ import {
   startSummary,
   getSummaryStatus,
   cancelSummary,
+  editPost,
 } from "@/api/post.api";
 
 type IncomingTemplateState = {
@@ -36,6 +37,47 @@ type IncomingTemplateState = {
     thumbnail?: string | null;
   };
   projectId?: number;
+
+  // 수정 식별용
+  postId?: number;
+  mode?: "edit" | "create";
+};
+
+const ERROR_CODE_TO_LABEL: Record<string, string> = {
+  BUILD_COMPILE_ERROR: "Build/Compile Error",
+  RUNTIME_ERROR: "Runtime Error",
+  DEPENDENCY_VERSION_ERROR: "Dependency/Version Error",
+  NETWORK_API_ERROR: "Network/API Error",
+  AUTHENTICATION_AUTHORIZATION_ERROR: "Authentication/Authorization Error",
+  DATABASE_ERROR: "Database Error",
+  UI_RENDERING_ERROR: "UI/Rendering Error",
+  CONFIGURATION_ERROR: "Configuration Error",
+  TIMEOUT_ERROR_HANDLING: "Timeout/Error Handling",
+  THIRD_PARTY_LIBRARY_ERROR: "Third-Party Library Error",
+};
+const toErrorLabel = (code?: string | null) =>
+  code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
+
+const enrichBlocksWithChecklist = (blocks: BlockData[]): BlockData[] => {
+  return blocks.map((b, i) => {
+    // 질문 문구로 먼저 매칭 시도 → 없으면 인덱스 fallback
+    const matched =
+      questionData.find(
+        (q) => q.question === b.question || q.question === b.checklistTitle
+      ) ?? questionData[i];
+
+    return {
+      ...b,
+      question: b.question ?? matched?.question ?? `질문 ${i + 1}`,
+      checklistItems:
+        b.checklistItems && b.checklistItems.length > 0
+          ? b.checklistItems
+          : matched?.checklistItems ?? [],
+      checklistTitle: b.checklistTitle ?? matched?.title ?? "",
+      checklist: Array.isArray(b.checklist) ? b.checklist : [],
+      isSaved: b.isSaved ?? false,
+    };
+  });
 };
 
 const TempWritePage = () => {
@@ -67,6 +109,15 @@ const TempWritePage = () => {
   const location = useLocation() as { state?: IncomingTemplateState };
   const initialProjectId = location.state?.projectId;
 
+  // 수정여부 판단
+  const resumePostId = ((): number | null => {
+    const pid = location.state?.postId;
+    return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
+  })();
+  const isResume = resumePostId != null;
+
+  const initialActiveSetRef = useRef(false);
+
   type SummaryStatus =
     | "PENDING"
     | "STARTED"
@@ -95,11 +146,22 @@ const TempWritePage = () => {
     if (location.state?.editorType === "TEMPLATE") {
       if (location.state.title) setTitle(location.state.title);
       if (location.state.tags) setSelectedTags(location.state.tags);
-      if (location.state.errorType !== undefined)
-        setSelectedErrorType(location.state.errorType ?? null);
-      if (location.state.blocks?.length) setBlocks(location.state.blocks);
+      if (location.state?.errorType !== undefined)
+        setSelectedErrorType(toErrorLabel(location.state.errorType) ?? null);
+      if (location.state.blocks?.length) {
+        // 프리필 블록에 체크리스트를 보강해서 주입
+        setBlocks(enrichBlocksWithChecklist(location.state.blocks));
+      }
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (initialActiveSetRef.current) return;
+    if (blocks.length > 0) {
+      setActiveIndex(blocks.length - 1); // 최상단(화면상 첫 블록)
+      initialActiveSetRef.current = true;
+    }
+  }, [blocks.length]);
 
   // 첫 블록 생성 (프리필 없을 때만)
   useEffect(() => {
@@ -186,6 +248,7 @@ const TempWritePage = () => {
     setIsTemplateSelectModalOpen(true);
   };
 
+  // (요약 시작) create ↔ edit 분기
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
@@ -198,13 +261,20 @@ const TempWritePage = () => {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      // 요약을 돌릴 거라 임시로 DRAFT로 생성
-      const req = toCreatePostRequest(buildCreateForm("DRAFT"));
-      const created = await createPost(req);
-      const postId = created.id;
-      setCreatedPostId(postId);
+      const req = toCreatePostRequest(buildCreateForm("WRITING"));
 
-      const start = await startSummary(postId, { type });
+      let targetPostId: number;
+      if (isResume && resumePostId) {
+        await editPost(resumePostId, req as any);
+        targetPostId = resumePostId;
+      } else {
+        const created = await createPost(req);
+        targetPostId = created.id;
+      }
+
+      setCreatedPostId(targetPostId);
+
+      const start = await startSummary(targetPostId, { type });
       setSummaryTaskId(start.taskId);
     } catch (e) {
       console.error(e);
@@ -256,6 +326,7 @@ const TempWritePage = () => {
     };
   }, [isLoadingModalOpen, createdPostId, summaryTaskId]);
 
+  // (나중에 완료 저장) create ↔ edit 분기
   const handleLater = async () => {
     if (
       !title.trim() ||
@@ -270,7 +341,11 @@ const TempWritePage = () => {
 
     try {
       const req = toCreatePostRequest(buildCreateForm("COMPLETED"));
-      await createPost(req);
+      if (isResume && resumePostId) {
+        await editPost(resumePostId, req as any);
+      } else {
+        await createPost(req);
+      }
       navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
         state: { projectName: previewMeta.projectName },
       });
@@ -301,7 +376,7 @@ const TempWritePage = () => {
     }
   };
 
-  const buildCreateForm = (postStatus: "COMPLETED" | "DRAFT") => {
+  const buildCreateForm = (postStatus: "COMPLETED" | "WRITING") => {
     const form: PostForm = {
       title,
       introduction: previewMeta?.description ?? "",
@@ -310,6 +385,7 @@ const TempWritePage = () => {
       isSummaryCreated: false,
       postStatus,
       starRating: String(previewMeta?.importance ?? 0),
+      templateType: "GUIDELINE",
       thumbnailImageUrl: previewMeta?.thumbnail ?? undefined,
       projectId: previewMeta?.projectId ?? 0,
       errorTag: selectedErrorType ?? "",
@@ -361,7 +437,7 @@ const TempWritePage = () => {
                   "Timeout/Error Handling",
                   "Third-Party Library Error",
                 ]}
-                placeholder="에러 종류를 선택하세요"
+                placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
                 width="w-[340px] h-[36px]"
                 onSelect={(selectedError) =>
                   setSelectedErrorType(selectedError)

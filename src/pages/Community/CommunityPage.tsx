@@ -116,12 +116,22 @@ export default function CommunityPage() {
       {/* 트러블로그 카드 */}
       <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-[24px] gap-y-[60px]">
         {active.cards.map((card) => (
-          <div
-            key={card.id}
-            className="cursor-pointer"
-            onClick={() => navigate(PATH.COMMUNITY_POST(card.id))}
-          >
-            <TroublogCard {...card} />
+          <div key={card.id} className="cursor-pointer">
+            <TroublogCard
+              {...card}
+              onClick={() => {
+                const qs = new URLSearchParams({ from: "community" });
+                if (card.authorId != null)
+                  qs.set("ownerId", String(card.authorId));
+                navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
+                  state: { from: "community", ownerId: card.authorId },
+                });
+              }}
+              onAvatarClick={() => {
+                if (card.authorId != null)
+                  navigate(PATH.MYPAGE(String(card.authorId)));
+              }}
+            />
           </div>
         ))}
 

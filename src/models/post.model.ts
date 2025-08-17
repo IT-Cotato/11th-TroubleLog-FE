@@ -33,6 +33,7 @@ export interface PostBasicFields {
   isSummaryCreated: boolean;
   postStatus: string;
   starRating: string;
+  templateType: string;
   thumbnailImageUrl?: string;
 }
 
@@ -43,6 +44,7 @@ export interface PostServerMeta {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  completedAt: string | null;
   userId: number;
   projectId: number;
 }

@@ -7,8 +7,8 @@ import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
@@ -30,6 +30,8 @@ import {
   toPostComments,
 } from "@/mappers/communityComment.mapper";
 import { useViewerId } from "@/store/auth";
+import { deletePost, getPostDetail } from "@/api/post.api";
+import { toPostDetailVM } from "@/mappers/myPostDetail.mapper";
 import { postFollow, postUnfollow } from "@/api/user.api";
 
 export interface CommunityPostDetailProps {
@@ -38,7 +40,7 @@ export interface CommunityPostDetailProps {
   tags: string[];
   date: string;
   isMine: boolean;
-  authorId: number;
+  authorId?: number;
   authorProfile?: string;
   authorName: string;
   authorFollowers: number;
@@ -54,10 +56,8 @@ export interface CommunityPostDetailProps {
 }
 
 export default function CommunityPostDetail() {
-  const { postId } = useParams<{ postId: string }>(); // postId 불러오기
+  const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
-  // 중앙 상태의 로그인 사용자 ID
-  const viewerId = useViewerId();
 
   const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,18 +81,167 @@ export default function CommunityPostDetail() {
 
   // 케밥 메뉴
   const [showMenu, setShowMenu] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
   // 섹션 추적
   const [currentSection, setCurrentSection] = useState<number>(0);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
 
-  // 진행 중 요청 캐시(StrictMode 중복호출 디듀프)
-  const inflightPostRef = useRef(
-    new Map<number, ReturnType<typeof getCommunityPostDetail>>()
-  );
+  // 이어서 작성 안내 경고창
+  const resumePromptShownRef = useRef<Record<number, boolean>>({});
 
-  // 공유 기능 (URL 복사 후 안내 메시지 띄우기)
+  // 컨텍스트/판정 유틸
+  type FromSource = "home" | "community" | "search" | "mypage" | undefined;
+
+  type DetailContentItem = {
+    id?: number;
+    subTitle?: string | null;
+    body?: string | null;
+    sequence?: number;
+  };
+
+  function useDetailContext() {
+    const location = useLocation();
+    const viewerIdInStore = useViewerId();
+
+    const stateFrom = (location.state as any)?.from as FromSource | undefined;
+    const stateOwnerId = (location.state as any)?.ownerId as number | undefined;
+
+    const qs = new URLSearchParams(location.search);
+    const qsFrom = (qs.get("from") as FromSource) || undefined;
+    const qsOwnerId = qs.get("ownerId");
+    const ownerId = stateOwnerId ?? (qsOwnerId ? Number(qsOwnerId) : undefined);
+    const from = stateFrom ?? qsFrom;
+
+    return { from, ownerId, viewerId: viewerIdInStore };
+  }
+
+  function shouldTryMyDetailFirst(params: {
+    from?: FromSource;
+    ownerId?: number;
+    viewerId?: number | null;
+  }) {
+    const { from, ownerId, viewerId } = params;
+    const isMine =
+      viewerId != null &&
+      ownerId != null &&
+      String(ownerId) === String(viewerId);
+
+    // 포스트 상세를 먼저 시도해야 하는 경우
+    if (from === "home") return true;
+    if (from === "mypage" && isMine) return true;
+    if (from === "search" && isMine) return true;
+    if (from === "community" && isMine) return true;
+
+    // 커뮤니티 상세를 먼저 시도해야 하는 경우
+    if (from === "community" && !isMine) return false;
+    if (from === "search" && !isMine) return false;
+    if (from === "mypage" && !isMine) return false;
+
+    // 기본은 커뮤니티 우선
+    return false;
+  }
+
+  // 별점 enum/문자 → 숫자
+  const parseStar = (raw: unknown) => {
+    if (typeof raw === "number") return raw;
+    if (typeof raw !== "string") return 0;
+    const k = raw.toUpperCase();
+    const map: Record<string, number> = {
+      ONE_STAR: 1,
+      TWO_STARS: 2,
+      THREE_STARS: 3,
+      FOUR_STARS: 4,
+      FIVE_STARS: 5,
+      ONE: 1,
+      TWO: 2,
+      THREE: 3,
+      FOUR: 4,
+      FIVE: 5,
+      NONE: 0,
+    };
+    return map[k] ?? 0;
+  };
+
+  // 상세 응답 → FREEFORM 프리필 state
+  function buildFreeformPrefill(detail: any) {
+    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
+      ? detail.contents
+      : [];
+
+    const blocks = contents
+      .slice()
+      .sort(
+        (a: DetailContentItem, b: DetailContentItem) =>
+          (a.sequence ?? 0) - (b.sequence ?? 0)
+      )
+      .map((c: DetailContentItem, i: number) => ({
+        id: c.id ?? i,
+        title: c.subTitle ?? "",
+        content: c.body ?? "",
+        isSaved: false,
+      }));
+
+    return {
+      editorType: "FREEFORM" as const,
+      title: detail?.title ?? "",
+      tags: detail?.postTags ?? [],
+      errorType: detail?.errorTag ?? null,
+      blocks,
+      savePrefill: {
+        importance: parseStar(detail?.starRating),
+        description: detail?.introduction ?? "",
+        visibility: detail?.isVisible ? "public" : "private",
+        projectId: detail?.projectId ?? null,
+        projectName: undefined,
+        thumbnail: detail?.thumbnailUrl ?? null,
+      },
+      projectId: detail?.projectId ?? undefined,
+    };
+  }
+
+  // 상세 응답 → TEMPLATE 프리필 state
+  function buildTemplatePrefill(detail: any) {
+    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
+      ? detail.contents
+      : [];
+
+    const blocks = contents
+      .slice()
+      .sort(
+        (a: DetailContentItem, b: DetailContentItem) =>
+          (a.sequence ?? 0) - (b.sequence ?? 0)
+      )
+      .map((c: DetailContentItem, i: number) => ({
+        id: c.id ?? i,
+        content: c.body ?? "",
+        checklist: [],
+        checklistItems: [],
+        checklistTitle: c.subTitle ? `${c.subTitle} 체크리스트` : "",
+        question: c.subTitle ?? `질문 ${i + 1}`,
+        isSaved: false,
+      }));
+
+    return {
+      editorType: "TEMPLATE" as const,
+      title: detail?.title ?? "",
+      tags: detail?.postTags ?? [],
+      errorType: detail?.errorTag ?? null,
+      blocks,
+      savePrefill: {
+        importance: parseStar(detail?.starRating),
+        description: detail?.introduction ?? "",
+        visibility: detail?.isVisible ? "public" : "private",
+        projectId: detail?.projectId ?? null,
+        projectName: undefined,
+        thumbnail: detail?.thumbnailUrl ?? null,
+      },
+      projectId: detail?.projectId ?? undefined,
+    };
+  }
+
+  // 공유 토스트
   const [toast, setToast] = useState<{ open: boolean; message: string }>({
     open: false,
     message: "",
@@ -100,12 +249,10 @@ export default function CommunityPostDetail() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const copyToClipboard = async (text: string) => {
-    // https(또는 localhost)에서 우선 시도
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
       return true;
     }
-    // 폴백 (일부 iOS/구형 브라우저)
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.style.position = "fixed";
@@ -114,8 +261,7 @@ export default function CommunityPostDetail() {
     ta.focus();
     ta.select();
     try {
-      const ok = document.execCommand("copy");
-      return ok;
+      return document.execCommand("copy");
     } finally {
       document.body.removeChild(ta);
     }
@@ -149,24 +295,16 @@ export default function CommunityPostDetail() {
     }
   };
 
-  const fetchPostOnce = (id: number) => {
-    const map = inflightPostRef.current;
-    if (!map.has(id)) {
-      const p = getCommunityPostDetail(id).finally(() => {
-        // 같은 tick 끝나고 캐시 비우기 (메모리 누수 방지 & 후속 요청 허용)
-        setTimeout(() => map.delete(id), 0);
-      });
-      map.set(id, p);
-    }
-    return map.get(id)!;
-  };
-
   // 댓글 로더
-  const loadComments = async (id: number, page1: number) => {
+  const loadComments = async (
+    id: number,
+    page1: number,
+    currentViewerId: number | null
+  ) => {
     setCLoading(true);
     try {
       const resp = await getCommunityComments(id, page1, 10);
-      const mapped = toPostComments(resp.content, viewerId);
+      const mapped = toPostComments(resp.content, currentViewerId);
 
       setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
 
@@ -184,53 +322,369 @@ export default function CommunityPostDetail() {
     }
   };
 
-  // 포스트 + 댓글 1페이지 로드 (StrictMode 안전)
+  // 상세 로드
+  const {
+    from: fromCtx,
+    ownerId,
+    viewerId: currentViewerId,
+  } = useDetailContext();
+  const preferMyFirst = shouldTryMyDetailFirst({
+    from: fromCtx,
+    ownerId,
+    viewerId: currentViewerId,
+  });
+  const [isCommunitySource, setIsCommunitySource] = useState(true); // 좋아요/댓글 표시 가드
+
   useEffect(() => {
     let cancelled = false;
 
-    // 새 포스트 들어올 때 댓글 상태 초기화
     setComments([]);
     setCPage(1);
     setCHasNext(false);
+    setLoading(true);
+    setLoadError(null);
+
+    const numId = Number(postId);
+    if (!Number.isFinite(numId)) {
+      setLoadError("잘못된 포스트 ID");
+      setLoading(false);
+      return;
+    }
+
+    const loadCommunity = async () => {
+      const communityData = await getCommunityPostDetail(numId);
+      if (!communityData) throw new Error("빈 응답입니다."); // 널 가드
+      const vm = toCommunityPostVM(communityData, currentViewerId);
+      setPost(vm);
+      setIsLiked(vm.isLiked);
+      setLikeCounts(vm.likeCounts);
+      setIsCommunitySource(true);
+      void loadComments(numId, 1, currentViewerId ?? null);
+    };
+
+    const loadMine = async (id: number) => {
+      const myDetail = await getPostDetail(id);
+
+      // 화면용 VM 세팅
+      const vmMine = toPostDetailVM(myDetail as any, currentViewerId);
+      setPost(vmMine);
+      setIsLiked(vmMine.isLiked);
+      setLikeCounts(vmMine.likeCounts);
+      setIsCommunitySource(false);
+
+      // 초안 여부 판단 (completedAt이 null)
+      const completedAt = (myDetail as any)?.completedAt ?? null;
+      const templateTypeRaw =
+        (myDetail as any)?.templateType ?? (vmMine as any)?.templateType;
+      const tt = String(templateTypeRaw ?? "").toUpperCase(); // "FREE_FORM" | "GUIDELINE" | "FREEFORM"
+      const isDraft = completedAt == null;
+
+      // 이 postId에 대해 안내창을 이미 띄웠다면 다시 띄우지 않음
+      if (isDraft && !resumePromptShownRef.current[id]) {
+        resumePromptShownRef.current[id] = true;
+
+        const ok = window.confirm(
+          tt === "FREE_FORM" || tt === "FREEFORM"
+            ? "이 문서는 자유형식 글 작성 중이에요. 이어서 작성할까요?"
+            : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?"
+        );
+
+        if (ok) {
+          const baseState =
+            tt === "FREE_FORM" || tt === "FREEFORM"
+              ? buildFreeformPrefill(myDetail)
+              : buildTemplatePrefill(myDetail);
+
+          const editorPath =
+            tt === "FREE_FORM" || tt === "FREEFORM"
+              ? PATH.FREEFORM_WRITING
+              : PATH.TEMP_WRITING;
+
+          navigate(editorPath, {
+            replace: true,
+            state: {
+              ...baseState,
+              // 이어쓰기 식별자 (에디터에서 이 값이 있으면 editPost 분기)
+              postId: id,
+              mode: "edit",
+              from: "community-detail",
+              projectId: (myDetail as any)?.projectId ?? undefined,
+              savePrefill: {
+                ...(baseState as any).savePrefill,
+              },
+            },
+          });
+        }
+      }
+    };
 
     (async () => {
-      const idStr = postId ?? "";
-      const numId = Number(idStr);
-      if (!Number.isFinite(numId)) {
-        setLoadError("잘못된 포스트 ID");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
       try {
-        const data = await fetchPostOnce(numId);
-        if (cancelled) return;
-
-        if (!data) {
-          setLoadError("빈 응답입니다.");
-          return;
+        if (preferMyFirst) {
+          try {
+            await loadMine(numId);
+          } catch {
+            await loadCommunity();
+          }
+        } else {
+          try {
+            await loadCommunity();
+          } catch (err: any) {
+            const status = err?.response?.status ?? err?.status;
+            if (status === 401 || status === 403 || status === 404) {
+              await loadMine(numId);
+            } else {
+              throw err;
+            }
+          }
         }
-
-        const vm = toCommunityPostVM(data, viewerId);
-        setPost(vm);
-        setIsLiked(vm.isLiked);
-        setLikeCounts(vm.likeCounts);
-        setComments(vm.comments);
-
-        // 댓글은 비동기로 시작(상세 렌더는 먼저)
-        void loadComments(numId, 1);
       } catch (err: any) {
-        if (!cancelled) setLoadError(err?.message ?? "포스트 불러오기 실패");
+        if (!cancelled)
+          setLoadError(
+            err?.response?.data?.message ??
+              err?.message ??
+              "포스트 불러오기 실패"
+          );
       } finally {
-        if (!cancelled) setLoading(false); // 반드시 한 번은 내려가도록
+        if (!cancelled) setLoading(false);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [postId, viewerId]);
+  }, [postId, currentViewerId, fromCtx, ownerId, preferMyFirst, navigate]);
+
+  // 수정 화면으로 이동(프리필 포함)
+  const goEditWithPrefill = useCallback(async () => {
+    const pid = Number(postId);
+    if (!Number.isFinite(pid)) return;
+
+    setShowMenu(false);
+
+    try {
+      const myDetail = await getPostDetail(pid);
+      const tt = String((myDetail as any)?.templateType ?? "").toUpperCase(); // FREE_FORM | GUIDELINE | FREEFORM
+
+      const isFreeform = tt === "FREE_FORM" || tt === "FREEFORM";
+      const editorPath = isFreeform ? PATH.FREEFORM_WRITING : PATH.TEMP_WRITING;
+      const prefill = isFreeform
+        ? buildFreeformPrefill(myDetail)
+        : buildTemplatePrefill(myDetail);
+
+      navigate(editorPath, {
+        replace: true,
+        state: {
+          ...prefill,
+          postId: pid,
+          mode: "edit",
+          from: "community-detail",
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      alert(
+        "수정 화면으로 이동하기 위한 상세 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+      );
+    }
+  }, [postId, navigate, setShowMenu]);
+
+  // 작성자 프로필 클릭
+  const handleProfileClick = () => {
+    if (!post) return;
+    navigate(PATH.MYPAGE(String(post.authorId) || ""));
+  };
+
+  // 좋아요 토글(커뮤니티 글에서만)
+  const handleToggleLike = async () => {
+    if (!postId) return;
+    if (!isCommunitySource) {
+      alert("작성 중/비공개 문서는 좋아요를 사용할 수 없어요.");
+      return;
+    }
+    if (likeLockRef.current) return;
+    likeLockRef.current = true;
+    setIsLiking(true);
+
+    const pid = Number(postId);
+    const wasLiked = isLiked;
+    const prevCount = likeCounts;
+
+    if (wasLiked) {
+      setIsLiked(false);
+      setLikeCounts(Math.max(0, prevCount - 1));
+      try {
+        await likeCommunityPost(pid);
+      } catch {
+        setIsLiked(true);
+        setLikeCounts(prevCount);
+      } finally {
+        likeLockRef.current = false;
+        setIsLiking(false);
+      }
+    } else {
+      setIsLiked(true);
+      setLikeCounts(prevCount + 1);
+      try {
+        const res = await likeCommunityPost(pid);
+        setLikeCounts(res?.likeCount ?? prevCount + 1);
+      } catch (err: any) {
+        const status = err?.response?.status ?? err?.status;
+        if (status === 409) {
+          setIsLiked(true);
+          setLikeCounts(prevCount);
+        } else {
+          setIsLiked(false);
+          setLikeCounts(prevCount);
+        }
+      } finally {
+        likeLockRef.current = false;
+        setIsLiking(false);
+      }
+    }
+  };
+
+  // 댓글 제출(커뮤니티 글에서만)
+  const handleSubmitComment = async () => {
+    if (!postId || !isCommunitySource) return;
+    const contents = commentInput.trim();
+    if (!contents || isCommentPosting) return;
+
+    setIsCommentPosting(true);
+
+    const optimistic = makeOptimisticComment({ contents });
+    setComments((prev) => [optimistic, ...prev]);
+    setPost((p) =>
+      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p
+    );
+    setCommentInput("");
+
+    try {
+      const created = await createCommunityComment(Number(postId), {
+        contents,
+      });
+      const mapped = toPostComment(created, currentViewerId, {
+        isReply: false,
+      });
+      setComments((prev) => {
+        const i = prev.findIndex((c) => c.id === optimistic.id);
+        if (i === -1) return [mapped, ...prev];
+        const next = [...prev];
+        next[i] = mapped;
+        return next;
+      });
+    } catch {
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+      setPost((p) =>
+        p ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) } : p
+      );
+      setCommentInput(contents);
+    } finally {
+      setIsCommentPosting(false);
+    }
+  };
+
+  // 대댓글 제출
+  const handleReply = async (parentId: string, replyContent: string) => {
+    if (!postId || !isCommunitySource) return;
+    const contents = replyContent.trim();
+    if (!contents) return;
+
+    const optimistic = makeOptimisticComment({ contents, parentId });
+    setComments((prev) => [...prev, optimistic]);
+
+    try {
+      const created = await replyCommunityComment(
+        Number(postId),
+        Number(parentId),
+        { contents }
+      );
+      const mapped = toPostComment(created, currentViewerId, {
+        isReply: true,
+        parentId,
+      });
+      setComments((prev) => {
+        const i = prev.findIndex((c) => c.id === optimistic.id);
+        if (i === -1) return [...prev, mapped];
+        const next = [...prev];
+        next[i] = mapped;
+        return next;
+      });
+    } catch {
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+      console.error("대댓글 작성 실패");
+    }
+  };
+
+  // 댓글 내용 수정
+  const handleEdit = async (id: string, newContent: string) => {
+    if (!postId || !isCommunitySource) return;
+    const pid = Number(postId);
+    const cid = Number(id);
+    try {
+      const updated = await updateCommunityComment({
+        postId: pid,
+        commentId: cid,
+        contents: newContent,
+      });
+      const vm = toPostComment(updated, currentViewerId);
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, content: vm.content, date: vm.date } : c
+        )
+      );
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // 댓글 삭제 (soft)
+  const handleDelete = async (id: string) => {
+    if (!isCommunitySource) return;
+    try {
+      await softDeleteCommunityComment(Number(id));
+      setComments((prev) => prev.filter((c) => c.id !== id));
+      setPost((prev) =>
+        prev
+          ? { ...prev, commentCounts: Math.max(0, prev.commentCounts - 1) }
+          : prev
+      );
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // 포스트 삭제
+  const handleDeletePost = useCallback(async () => {
+    if (!postId) return;
+    if (
+      !window.confirm(
+        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
+      )
+    )
+      return;
+
+    try {
+      setDeleting(true);
+      await deletePost(Number(postId));
+      alert("문서가 영구 삭제되었습니다.");
+
+      if (fromCtx === "community") {
+        navigate(PATH.COMMUNITY, { replace: true });
+      } else {
+        navigate(-1);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message ??
+          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+      );
+    } finally {
+      setDeleting(false);
+      setShowMenu(false);
+    }
+  }, [postId, navigate, fromCtx]);
 
   // 스크롤 감시
   useEffect(() => {
@@ -253,194 +707,6 @@ export default function CommunityPostDetail() {
     const target = sectionRefs.current[idx];
     if (target) {
       window.scrollTo({ top: target.offsetTop - 180, behavior: "smooth" });
-    }
-  };
-
-  // 작성자 프로필 클릭 핸들러
-  const handleProfileClick = () => {
-    // 작성자 마이페이지로
-    if (!post) return;
-    // post 객체에 작성자 userId가 있다면 사용, 없으면 API 응답 구조 확인 필요
-    navigate(PATH.MYPAGE(String(post.authorId) || ""));
-  };
-
-  // 포스트 좋아요 토글
-  const handleToggleLike = async () => {
-    if (!postId) return;
-    if (likeLockRef.current) return;
-    likeLockRef.current = true;
-    setIsLiking(true);
-
-    const pid = Number(postId);
-    const wasLiked = isLiked;
-    const prevCount = likeCounts;
-
-    if (wasLiked) {
-      // 낙관적 감소
-      setIsLiked(false);
-      setLikeCounts(Math.max(0, prevCount - 1));
-
-      try {
-        await likeCommunityPost(pid);
-        // 성공 시 그대로 둔다
-      } catch {
-        // 실패 시 롤백
-        setIsLiked(true);
-        setLikeCounts(prevCount);
-      } finally {
-        likeLockRef.current = false;
-        setIsLiking(false);
-      }
-    } else {
-      // 낙관적 증가
-      setIsLiked(true);
-      setLikeCounts(prevCount + 1);
-
-      try {
-        const res = await likeCommunityPost(pid);
-        // 서버 카운트로 보정(응답에 likeCount 포함)
-        setLikeCounts(res?.likeCount ?? prevCount + 1);
-      } catch (err: any) {
-        const status = err?.response?.status ?? err?.status;
-        if (status === 409) {
-          // 이미 좋아요 상태인 경우 -> isLiked는 true 유지, 카운트는 원래 값으로 되돌림
-          setIsLiked(true);
-          setLikeCounts(prevCount);
-        } else {
-          // 기타 에러 → 완전 롤백
-          setIsLiked(false);
-          setLikeCounts(prevCount);
-        }
-      } finally {
-        likeLockRef.current = false;
-        setIsLiking(false);
-      }
-    }
-  };
-
-  // 댓글 제출
-  const handleSubmitComment = async () => {
-    if (!postId) return;
-    const contents = commentInput.trim();
-    if (!contents || isCommentPosting) return;
-
-    setIsCommentPosting(true);
-
-    // 낙관적 추가
-    const optimistic = makeOptimisticComment({ contents });
-    setComments((prev) => [optimistic, ...prev]);
-    setPost((p) =>
-      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p
-    );
-    setCommentInput("");
-
-    try {
-      const created = await createCommunityComment(Number(postId), {
-        contents,
-      });
-      const mapped = toPostComment(created, viewerId, { isReply: false });
-      setComments((prev) => {
-        const i = prev.findIndex((c) => c.id === optimistic.id);
-        if (i === -1) return [mapped, ...prev];
-        const next = [...prev];
-        next[i] = mapped;
-        return next;
-      });
-    } catch {
-      // 실패 → 롤백
-      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
-      setPost((p) =>
-        p ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) } : p
-      );
-      setCommentInput(contents);
-    } finally {
-      setIsCommentPosting(false);
-    }
-  };
-
-  // 대댓글 제출 (부모 id, 내용)
-  const handleReply = async (parentId: string, replyContent: string) => {
-    if (!postId) return;
-    const contents = replyContent.trim();
-    if (!contents) return;
-
-    // 낙관적 추가
-    const optimistic = makeOptimisticComment({ contents, parentId });
-    setComments((prev) => [...prev, optimistic]);
-
-    try {
-      const created = await replyCommunityComment(
-        Number(postId),
-        Number(parentId),
-        { contents }
-      );
-
-      // 백엔드에서 parentCommentId가 null로 올 수 있으므로 강제 보정
-      const mapped = toPostComment(created, viewerId, {
-        isReply: true,
-        parentId,
-      });
-      setComments((prev) => {
-        const i = prev.findIndex((c) => c.id === optimistic.id);
-        if (i === -1) return [...prev, mapped];
-        const next = [...prev];
-        next[i] = mapped;
-        return next;
-      });
-    } catch {
-      // 실패 → 롤백
-      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
-      // 에러 메시지를 표시하거나 로깅
-      console.error("대댓글 작성 실패");
-    }
-  };
-
-  // 댓글 내용 수정
-  const handleEdit = async (id: string, newContent: string) => {
-    if (!postId) return;
-    const pid = Number(postId);
-    const cid = Number(id);
-    try {
-      // 서버 수정
-      const updated = await updateCommunityComment({
-        postId: pid,
-        commentId: cid,
-        contents: newContent,
-      });
-
-      const vm = toPostComment(updated, viewerId);
-
-      // 목록 반영 (id 일치하는 아이템 교체)
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === id
-            ? {
-                ...c,
-                content: vm.content,
-                date: vm.date,
-              }
-            : c
-        )
-      );
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // 댓글 삭제 (soft)
-  const handleDelete = async (id: string) => {
-    try {
-      await softDeleteCommunityComment(Number(id));
-      // 목록에서 제거 (부모/대댓글 동일)
-      setComments((prev) => prev.filter((c) => c.id !== id));
-      // 카운트 갱신
-      setPost((prev) =>
-        prev
-          ? { ...prev, commentCounts: Math.max(0, prev.commentCounts - 1) }
-          : prev
-      );
-    } catch (e) {
-      console.error(e);
     }
   };
 
@@ -514,7 +780,7 @@ export default function CommunityPostDetail() {
   if (loadError || !post) {
     return (
       <div className="flex justify-center">
-        <div className="max-w-[1200px] w-full pt-[180px] text-red-600">
+        <div className="max-w=[1200px] w-full pt-[180px] text-red-600">
           {loadError ?? "포스트를 찾을 수 없습니다."}
         </div>
       </div>
@@ -544,17 +810,14 @@ export default function CommunityPostDetail() {
                             {
                               label: "포스트 수정",
                               onClick: () => {
-                                setShowMenu(false);
+                                void goEditWithPrefill();
                               },
                             },
                             {
-                              label: "삭제",
-                              onClick: () => {
-                                setShowMenu(false);
-                              },
+                              label: deleting ? "삭제 중..." : "삭제",
+                              onClick: () => !deleting && handleDeletePost(),
                             },
                           ]}
-                          position={{ top: "0.1rem", left: "1.5rem" }}
                         />
                       )}
                     </div>
@@ -567,13 +830,8 @@ export default function CommunityPostDetail() {
 
               {/* 태그 & 작성일 */}
               <div className="flex items-center gap-[16px]">
-                {/* 태그 */}
                 <TagList tags={post.tags} variant="post" />
-
-                {/* 구분점 */}
                 <div className="text-body-16-regular text-gray3">·</div>
-
-                {/* 작성일 */}
                 <div className="text-body-20-regular text-gray3">
                   {post.date}
                 </div>
@@ -582,9 +840,7 @@ export default function CommunityPostDetail() {
 
             {/* 작성자 정보 & 중요도 */}
             <div className="flex w-full items-center justify-between">
-              {/* 작성자 정보 */}
               <div className="flex items-center gap-[20px]">
-                {/* 프로필 이미지 */}
                 <img
                   src={post.authorProfile || imageIcon}
                   onError={(e) => {
@@ -593,12 +849,9 @@ export default function CommunityPostDetail() {
                   alt="profile"
                   className="w-[66px] h-[66px]"
                 />
-
-                {/* 작성자명 */}
                 <div className="text-head-24-bold">{post.authorName}</div>
               </div>
 
-              {/* 중요도 */}
               {post.isMine && post.importance !== 0 && (
                 <div className="flex items-center gap-[8px]">
                   <img
@@ -645,7 +898,6 @@ export default function CommunityPostDetail() {
                       className="flex items-center gap-[28px] cursor-pointer"
                       onClick={handleProfileClick}
                     >
-                      {/* 프로필 이미지 */}
                       <img
                         src={post.authorProfile || imageIcon}
                         onError={(e) => {
@@ -655,7 +907,6 @@ export default function CommunityPostDetail() {
                         className="w-[131px] h-[131px]"
                       />
                       <div className="flex flex-col items-start gap-[13px]">
-                        {/* 작성자명 & 팔로워 수 */}
                         <div className="flex flex-col items-start gap-[2px]">
                           <div className="text-head-24-bold">
                             {post.authorName}
@@ -664,8 +915,6 @@ export default function CommunityPostDetail() {
                             {post.authorFollowers} 팔로워
                           </div>
                         </div>
-
-                        {/* 한줄 소개 */}
                         <div className="text-body-18-regular">
                           {post.authorBio}
                         </div>
@@ -673,150 +922,167 @@ export default function CommunityPostDetail() {
                     </div>
 
                     {/* 팔로우 버튼 */}
-                    {post.isFollowed ? (
-                      <button
-                        onClick={() => handleUnfollow()}
-                        className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-subColor1 text-head-20-semibold text-white cursor-pointer"
-                      >
-                        팔로잉
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleFollow()}
-                        className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer"
-                      >
-                        팔로우
-                      </button>
+                    {!post.isMine && (
+                      <>
+                        {post.isFollowed ? (
+                          <button
+                            onClick={() => handleUnfollow()}
+                            className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-subColor1 text-head-20-semibold text-white cursor-pointer"
+                          >
+                            팔로잉
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleFollow()}
+                            className="flex py-[18px] pl-[41px] pr-[40px] justify-center items-center rounded-[100px] bg-primary text-head-20-semibold text-white cursor-pointer"
+                          >
+                            팔로우
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 좋아요, 공유 */}
-            <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
-              <div className="flex items-center gap-[20px]">
-                {/* 좋아요 */}
+            {/* 좋아요, 공유 (커뮤니티 글에서만 노출) */}
+            {isCommunitySource && (
+              <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
+                <div className="flex items-center gap-[20px]">
+                  <button
+                    type="button"
+                    aria-pressed={isLiked}
+                    aria-busy={isLiking}
+                    disabled={isLiking}
+                    onClick={handleToggleLike}
+                    className={`flex items-center gap-[8px] ${
+                      isLiking
+                        ? "opacity-60 cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
+                  >
+                    <img
+                      src={isLiked ? heartIcon : likeEmptyIcon}
+                      alt="like"
+                      className="w-[40px] h-[40px]"
+                    />
+                    <div className="text-body-20-regular text-gray3">
+                      {likeCounts}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="cursor-pointer"
+                    aria-label="현재 페이지 링크 복사"
+                  >
+                    <img
+                      src={shareIcon}
+                      alt="share"
+                      className="w-[40px] h-[40px]"
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 댓글 작성 창 (커뮤니티 글에서만) */}
+            {isCommunitySource && (
+              <div className="flex flex-col items-end gap-[12px] self-stretch">
+                <div className="flex flex-col items-start gap-[36px] self-stretch">
+                  <div className="text-head-32-semibold">
+                    {post.commentCounts}개의 댓글
+                  </div>
+                  <textarea
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    placeholder="댓글을 작성해주세요."
+                    className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
+                  ></textarea>
+                </div>
+
                 <button
-                  type="button"
-                  aria-pressed={isLiked}
-                  aria-busy={isLiking}
-                  disabled={isLiking}
-                  onClick={handleToggleLike}
-                  className={`flex items-center gap-[8px] ${
-                    isLiking
-                      ? "opacity-60 cursor-not-allowed"
-                      : "cursor-pointer"
+                  disabled={!commentInput.trim() || isCommentPosting}
+                  onClick={handleSubmitComment}
+                  className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
+                    commentInput.trim() && !isCommentPosting
+                      ? "bg-primary"
+                      : "bg-subColor1"
                   }`}
                 >
-                  <img
-                    src={isLiked ? heartIcon : likeEmptyIcon}
-                    alt="like"
-                    className="w-[40px] h-[40px]"
-                  />
-                  <div className="text-body-20-regular text-gray3">
-                    {likeCounts}
-                  </div>
-                </button>
-
-                {/* 공유 버튼 */}
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="cursor-pointer"
-                  aria-label="현재 페이지 링크 복사"
-                >
-                  <img
-                    src={shareIcon}
-                    alt="share"
-                    className="w-[40px] h-[40px]"
-                  />
+                  {isCommentPosting ? "작성 중…" : "작성하기"}
                 </button>
               </div>
-            </div>
-
-            {/* 댓글 작성 창 */}
-            <div className="flex flex-col items-end gap-[12px] self-stretch">
-              <div className="flex flex-col items-start gap-[36px] self-stretch">
-                <div className="text-head-32-semibold">
-                  {post.commentCounts}개의 댓글
-                </div>
-                <textarea
-                  value={commentInput}
-                  onChange={(e) => setCommentInput(e.target.value)}
-                  placeholder="댓글을 작성해주세요."
-                  className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
-                ></textarea>
-              </div>
-
-              {/* 작성하기 버튼 */}
-              <button
-                disabled={!commentInput.trim() || isCommentPosting}
-                onClick={handleSubmitComment}
-                className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
-                  commentInput.trim() && !isCommentPosting
-                    ? "bg-primary"
-                    : "bg-subColor1"
-                }`}
-              >
-                {isCommentPosting ? "작성 중…" : "작성하기"}
-              </button>
-            </div>
-          </div>
-
-          {/* 댓글 목록 */}
-          <div className="flex flex-col items-end self-stretch">
-            {comments
-              .filter((c) => !c.isReply) // 부모 댓글만
-              .map((parent) => (
-                <div key={parent.id} className="w-full">
-                  <PostComment
-                    {...parent}
-                    onEdit={(newContent) => handleEdit(parent.id, newContent)}
-                    onDelete={() => handleDelete(parent.id)}
-                    onReply={(replyContent) =>
-                      handleReply(parent.id, replyContent)
-                    }
-                  />
-                  {/* 답글 목록 */}
-                  {comments
-                    .filter((c) => c.parentId === parent.id)
-                    .map((reply) => (
-                      <PostComment
-                        key={reply.id}
-                        {...reply}
-                        onEdit={(newContent) =>
-                          handleEdit(reply.id, newContent)
-                        }
-                        onDelete={() => handleDelete(reply.id)}
-                        onReply={(replyContent) =>
-                          handleReply(reply.id, replyContent)
-                        }
-                      />
-                    ))}
-                </div>
-              ))}
-
-            {/* 댓글 더 보기 */}
-            {cHasNext && postId && (
-              <button
-                disabled={cLoading}
-                onClick={() => loadComments(Number(postId), cPage)}
-                className={`mt-4 px-6 py-2 rounded-full text-white ${
-                  cLoading ? "bg-gray-300" : "bg-primary"
-                }`}
-              >
-                {cLoading ? "불러오는 중…" : "댓글 더 보기"}
-              </button>
             )}
           </div>
+
+          {/* 댓글 목록 (커뮤니티 글에서만) */}
+          {isCommunitySource && (
+            <div className="flex flex-col items-end self-stretch">
+              {comments
+                .filter((c) => !c.isReply)
+                .map((parent) => (
+                  <div key={parent.id} className="w-full">
+                    <PostComment
+                      {...parent}
+                      onEdit={(newContent) => handleEdit(parent.id, newContent)}
+                      onDelete={() => handleDelete(parent.id)}
+                      onReply={(replyContent) =>
+                        handleReply(parent.id, replyContent)
+                      }
+                    />
+                    {comments
+                      .filter((c) => c.parentId === parent.id)
+                      .map((reply) => (
+                        <PostComment
+                          key={reply.id}
+                          {...reply}
+                          onEdit={(newContent) =>
+                            handleEdit(reply.id, newContent)
+                          }
+                          onDelete={() => handleDelete(reply.id)}
+                          onReply={(replyContent) =>
+                            handleReply(reply.id, replyContent)
+                          }
+                        />
+                      ))}
+                  </div>
+                ))}
+
+              {cHasNext && postId && (
+                <button
+                  disabled={cLoading}
+                  onClick={() =>
+                    loadComments(Number(postId), cPage, currentViewerId ?? null)
+                  }
+                  className={`mt-4 px-6 py-2 rounded-full text-white ${
+                    cLoading ? "bg-gray-300" : "bg-primary"
+                  }`}
+                >
+                  {cLoading ? "불러오는 중…" : "댓글 더 보기"}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* 목차 */}
-      <div className="inline-flex items-start mt-[588px] mr-[89px] sticky top-[588px] h-fit">
-        {/* 목차 리스트 */}
-        <div className="flex flex-col items-start gap-[16px] border-l border-gray3 p-[12px] text-body-20-regular text-gray3">
+      <div
+        className="inline-flex items-start mt-[588px] mr-[89px]
+        sticky top-[588px] h-fit
+        w-[220px] sm:w-[240px] md:w-[280px] lg:w-[320px]
+        flex-shrink-0"
+      >
+        <div
+          className=" flex flex-col items-start gap-[16px]
+          border-l border-gray3
+          pl-[12px] pr-[8px]  
+          text-body-20-regular text-gray3
+          w-full"
+        >
           {post.questions.map((q, idx) => (
             <button
               key={idx}

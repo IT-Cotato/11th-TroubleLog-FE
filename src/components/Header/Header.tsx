@@ -11,6 +11,7 @@ import NotificationModal from "../Modal/NotificationModal";
 import { PATH } from "@/constants/paths";
 import logo from "@/assets/icons/logo.svg";
 import { useViewerId } from "@/store/auth";
+import { useNotificationStore } from "@/store/notification";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -21,16 +22,21 @@ const Header = () => {
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
   const viewerId = useViewerId();
   const myUserIdStr = viewerId != null ? String(viewerId) : null;
+
+  const hasNew = useNotificationStore((s) => s.hasNew);
+  const clearNew = useNotificationStore((s) => s.clearNew);
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     setIsNotificationModalOpen(true);
+    if (hasNew) clearNew();
   };
 
   const handleMouseLeave = () => {
@@ -158,9 +164,18 @@ const Header = () => {
         onClick={() => navigate(PATH.HOME)}
       />
       <div className="flex w-full gap-12 items-center">
-        <div className="flex w-full h-12 p-2 justify-between items-center gap-1 rounded-md border border-gray1">
+        <div
+          role="search"
+          onClick={() => inputRef.current?.focus()}
+          className="
+    group flex w-full h-12 p-2 justify-between items-center gap-1
+    rounded-md border border-gray1 transition
+    focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40
+  "
+        >
           <input
-            className="text-body-14-regular w-full"
+            ref={inputRef}
+            className="text-body-16-regular w-full h-full focus:outline-none"
             placeholder={placeholder}
             value={search}
             onChange={handleSearch}
@@ -187,8 +202,8 @@ const Header = () => {
           >
             <BsFillBellFill
               size={40}
-              color="#525252"
-              className="cursor-pointer"
+              color={hasNew ? "#7C3AED" : "#525252"}
+              className="cursor-pointer transition-colors"
             />
             {isNotificationModalOpen && (
               <div className="absolute right-[-10px] top-full mt-[41.5px] z-10">

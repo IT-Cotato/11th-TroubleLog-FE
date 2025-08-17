@@ -30,5 +30,6 @@ export function toNotificationItem(
     text: s.message ?? s.title ?? "",
     isRead: s.isRead,
     title: s.title,
+    link: s.targetUrl ?? undefined,
   };
 }

@@ -1,31 +1,36 @@
 import type { TroubleShootingCardProps } from "@/components/MyPage/TroubleShootingCard";
 import type { StatusType, VisibilityType } from "@/types/project";
-import type { MyTroubleServerItem } from "@/types/troubles.server";
+import type {
+  MyTroubleDetailItem,
+  CommunityTroubleSearchItem,
+  TroubleSearchCard,
+  UserBrief,
+} from "@/types/troubles.server";
 import { formatYYMMDD } from "@/utils/troubleFormat";
 
-// 서버 상태 + 요약 생성 여부 -> 카드 StatusType
+// 타입 가드
+const has = (o: unknown, k: string) => !!o && typeof o === "object" && k in o;
+
 const toStatus = (
   postStatus?: string | null,
-  isSummaryCreated?: boolean | null
+  isSummaryCreated?: boolean | null,
+  completedAt?: string | null
 ): StatusType => {
   if (isSummaryCreated) return "created";
   const v = String(postStatus ?? "").trim();
   const U = v.toUpperCase();
-
   if (U === "COMPLETED" || v === "작성 완료") return "complete";
   if (
     U === "IN_PROGRESS" ||
-    U === "DRAFT" ||
+    U === "WRITING" ||
     v === "임시 저장" ||
     v === "작성 중"
   )
     return "inProgress";
-
-  // 모호하면 완료로
+  if (completedAt != null) return "complete";
   return "complete";
 };
 
-// boolean/string -> 카드 VisibilityType
 const toVisibility = (
   raw?: boolean | string | null
 ): VisibilityType | undefined => {
@@ -38,48 +43,89 @@ const toVisibility = (
   return undefined;
 };
 
-// 소개문 -> 첫 본문 -> 빈 문자열
-const pickContent = (x: MyTroubleServerItem): string =>
-  x.introduction ?? x.contents?.[0].body ?? "";
+const pickContent = (
+  item: MyTroubleDetailItem | CommunityTroubleSearchItem | TroubleSearchCard
+): string => {
+  if (has(item, "introduction") && (item as any).introduction) {
+    return (item as any).introduction as string;
+  }
+  if (has(item, "contents") && Array.isArray((item as any).contents)) {
+    const c0 = (item as any).contents?.[0];
+    if (c0?.body) return c0.body as string;
+  }
+  return "";
+};
 
-// 서버 아이템 -> TroubleShootingCardProps
+// 작성자(UserBrief) 우선 사용
+function extractUserBrief(
+  item: MyTroubleDetailItem | CommunityTroubleSearchItem | TroubleSearchCard
+): UserBrief | undefined {
+  if (has(item, "postCardUserInfoResDto")) {
+    return (item as any).postCardUserInfoResDto as UserBrief;
+  }
+  if (has(item, "userInfo")) {
+    return (item as any).userInfo as UserBrief;
+  }
+  return undefined;
+}
+
 export const toTroubleShootingCard = (
-  item: MyTroubleServerItem,
+  item: MyTroubleDetailItem | CommunityTroubleSearchItem | TroubleSearchCard,
   opts?: { isMine?: boolean; authorName?: string; isSearchResult?: boolean }
 ): TroubleShootingCardProps => {
   const {
     isMine = true,
-    authorName = "나",
+    authorName: fallbackAuthorName = "나",
     isSearchResult = true,
   } = opts ?? {};
 
-  const status = toStatus(item.postStatus, item.isSummaryCreated);
+  const status = toStatus(
+    has(item, "postStatus") ? (item as any).postStatus : null,
+    has(item, "isSummaryCreated") ? (item as any).isSummaryCreated : null,
+    has(item, "completedAt") ? (item as any).completedAt : null
+  );
+
+  const createdAt =
+    has(item, "createdAt") && (item as any).createdAt
+      ? formatYYMMDD((item as any).createdAt as string)
+      : has(item, "completedAt") && (item as any).completedAt
+      ? ((item as any).completedAt as string)
+      : "";
+
+  const summaryType =
+    status === "created" &&
+    has(item, "contents") &&
+    Array.isArray((item as any).contents)
+      ? (item as any).contents?.[0]?.summaryType ?? undefined
+      : undefined;
+
+  const brief = extractUserBrief(item);
+  const authorName = brief?.nickname ?? fallbackAuthorName;
+  const authorProfileImageUrl = brief?.profileImageUrl ?? undefined;
+  const authorUserId =
+    brief?.userId ??
+    (("userId" in (item as any) && (item as any).userId) || undefined);
 
   return {
-    id: String(item.id),
+    id: String((item as any).id),
     isMine,
-    errorCategory: item.errorTag ?? "",
-    title: item.title ?? "",
+    errorCategory: (item as any).errorTag ?? "",
+    title: (item as any).title ?? "",
     content: pickContent(item),
-    tags: item.postTags ?? [],
-    importance: item.starRating ?? undefined,
-    createdAt: item.createdAt ? formatYYMMDD(item.createdAt) : "",
-    thumbnailUrl: item.thumbnailUrl ?? undefined,
-    visibility: toVisibility(item.isVisible),
-    summaryType:
-      status === "created"
-        ? item.contents?.[0]?.summaryType ?? undefined
-        : undefined,
+    tags: (item as any).postTags ?? [],
+    importance: (item as any).starRating ?? undefined,
+    createdAt,
+    thumbnailUrl: (item as any).thumbnailUrl ?? undefined,
+    visibility: has(item, "isVisible")
+      ? toVisibility((item as any).isVisible)
+      : undefined,
+    summaryType,
     status,
-    likeCount: item.likeCount ?? undefined,
-    commentCount: item.commentCount ?? undefined,
+    likeCount: (item as any).likeCount ?? undefined,
+    commentCount: (item as any).commentCount ?? undefined,
     authorName,
+    authorProfileImageUrl,
+    authorUserId,
     isSearchResult,
-  };
+  } as TroubleShootingCardProps;
 };
-
-export const toTroubleShootingCards = (
-  items: MyTroubleServerItem[],
-  opts: { isMine?: boolean; authorName?: string; isSearchResult?: boolean }
-): TroubleShootingCardProps[] =>
-  (items ?? []).map((it) => toTroubleShootingCard(it, opts));

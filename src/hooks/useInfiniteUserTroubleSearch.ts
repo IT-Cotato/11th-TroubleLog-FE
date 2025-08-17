@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useInfiniteMyTroubleSearch } from "./useInfiniteMyTroubleSearch";
 import { searchUserTroubles } from "@/api/trouble.api";
-import type { MyTroubleServerItem } from "@/types/troubles.server";
+import type { MyTroubleDetailItem } from "@/types/troubles.server";
 
 export function useInfiniteUserTroubleSearch(
   keyword: string,
@@ -9,7 +9,7 @@ export function useInfiniteUserTroubleSearch(
   size = 10
 ) {
   // 공개 + 완료만 (작성 중 제외)
-  const filterVisible = useCallback((x: MyTroubleServerItem) => {
+  const filterVisible = useCallback((x: MyTroubleDetailItem) => {
     const visible = x.isVisible === true; // 서버가 boolean로 내려줌
     const statusRaw = String(x.postStatus ?? "");
     const inProgress =
