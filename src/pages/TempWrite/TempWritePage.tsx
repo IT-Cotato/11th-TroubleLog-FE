@@ -350,17 +350,16 @@ const TempWritePage = () => {
             <div className="flex gap-[36px] items-center">
               <DropDownButton
                 options={[
-                  "Build / Compile Error",
+                  "Build/Compile Error",
                   "Runtime Error",
-                  "Dependency / Version Error",
-                  "Network / API Error",
-                  "Authentication / Authorization Error",
+                  "Dependency/Version Error",
+                  "Network/API Error",
+                  "Authentication/Authorization Error",
                   "Database Error",
-                  "UI / Rendering Error",
+                  "UI/Rendering Error",
                   "Configuration Error",
-                  "Timeout / Error Handling",
+                  "Timeout/Error Handling",
                   "Third-Party Library Error",
-                  "Others",
                 ]}
                 placeholder="에러 종류를 선택하세요"
                 width="w-[340px] h-[36px]"

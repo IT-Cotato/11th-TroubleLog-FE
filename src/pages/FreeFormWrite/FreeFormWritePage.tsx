@@ -45,17 +45,16 @@ type IncomingFreeformState = {
 };
 
 const errorOptions = [
-  "Build / Compile Error",
+  "Build/Compile Error",
   "Runtime Error",
-  "Dependency / Version Error",
-  "Network / API Error",
-  "Authentication / Authorization Error",
+  "Dependency/Version Error",
+  "Network/API Error",
+  "Authentication/Authorization Error",
   "Database Error",
-  "UI / Rendering Error",
+  "UI/Rendering Error",
   "Configuration Error",
-  "Timeout / Error Handling",
+  "Timeout/Error Handling",
   "Third-Party Library Error",
-  "Others",
 ];
 
 export default function FreeFormWritePage() {
