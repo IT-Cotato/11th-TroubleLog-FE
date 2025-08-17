@@ -2,6 +2,8 @@ import { type PropsWithChildren, useEffect, useRef } from "react";
 import { connectAlertSSE } from "@/api/alert.api";
 import { useIsLoggedIn, useViewerId, useAuthStore } from "@/store/auth";
 import api from "@/api/axios";
+import { useNotificationStore } from "@/store/notification";
+import type { AlertServerItem } from "@/types/alert.model";
 
 async function tryRefreshOnce() {
   try {
@@ -10,6 +12,11 @@ async function tryRefreshOnce() {
   } catch {
     return false;
   }
+}
+
+// 타입 가드
+function isAlertPayload(x: any): x is AlertServerItem {
+  return x && typeof x === "object" && "title" in x && "message" in x;
 }
 
 export default function AlertSSEProvider({ children }: PropsWithChildren) {
@@ -67,8 +74,11 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       const close = connectAlertSSE(
         {
           onOpen: () => console.log("[SSE] connected"),
-          onMessage: () => {
-            // TODO: 알림 스토어 반영
+          onMessage: (payload) => {
+            if (!isAlertPayload(payload)) {
+              return;
+            }
+            useNotificationStore.getState().pushFromSSE(payload);
           },
           onError: (e) => console.warn("[SSE] error", e),
           onUnauthorized: async () => {

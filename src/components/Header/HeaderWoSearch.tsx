@@ -9,6 +9,7 @@ import useClickOutside from "@/hooks/useClickOutside";
 import NotificationModal from "../Modal/NotificationModal";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
 import { useViewerId } from "@/store/auth";
+import { useNotificationStore } from "@/store/notification";
 
 const HeaderWoSearch = () => {
   const navigate = useNavigate();
@@ -22,11 +23,17 @@ const HeaderWoSearch = () => {
   const viewerId = useViewerId();
   const myUserId = viewerId != null ? String(viewerId) : null;
 
+  const { hasNew, clearNew } = useNotificationStore((s) => ({
+    hasNew: s.hasNew,
+    clearNew: s.clearNew,
+  }));
+
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     setIsNotificationModalOpen(true);
+    clearNew();
   };
 
   const handleMouseLeave = () => {
@@ -67,8 +74,8 @@ const HeaderWoSearch = () => {
         >
           <BsFillBellFill
             size={40}
-            color="#525252"
-            className="cursor-pointer"
+            color={hasNew ? "#7C3AED" : "#525252"}
+            className="cursor-pointer transition-colors"
           />
           {isNotificationModalOpen && (
             <div className="absolute right-[-10px] top-full mt-[41.5px] z-10">

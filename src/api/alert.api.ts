@@ -91,12 +91,20 @@ export function connectAlertSSE(
     },
 
     onmessage(ev) {
+      // 서버가 이벤트 이름을 준다면 'alert'만 처리
+      if (ev.event && ev.event !== "alert") return;
+
       const d = ev.data;
+      // 서버/프록시 keepalive 주석 라인 무시
       if (typeof d === "string" && d.startsWith(":")) return;
+      if (!d) return;
+
+      // 알림 payload만 파싱 시도
       try {
-        h.onMessage?.(JSON.parse(d));
+        const parsed = JSON.parse(d);
+        h.onMessage?.(parsed);
       } catch {
-        h.onMessage?.(d);
+        // 비-JSON은 무시 (예: "SSE 연결 성공")
       }
     },
 
