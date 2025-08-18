@@ -105,6 +105,7 @@ export default function HomePage() {
     error: recentsError,
     hasNext: hasNextRecents,
     sentinelRef: recentsSentinel,
+    reload: recentsReload,
   } = useTroubleCards(
     { type: "all" },
     { infinite: true, pageSize: 10, sortBy: "latest" }
@@ -250,9 +251,21 @@ export default function HomePage() {
     void loadPage(1, { append: false, useOnce: false });
   }, [loadPage]);
 
+  // 프로젝트 폴더 삭제 후 목록 갱신
   const handleCardDeleted = useCallback(() => {
-    void loadPage(1, { append: false, useOnce: false });
-  }, [loadPage]);
+    (async () => {
+      // 프로젝트 목록 갱신
+      await loadPage(1, { append: false, useOnce: false });
+      // Recents 갱신
+      try {
+        await recentsReload?.();
+      } catch (e) {
+        console.error("Recents reload failed", e);
+      }
+      // 삭제 필터 상태 초기화
+      setRemovedRecentIds(new Set());
+    })();
+  }, [loadPage, recentsReload]);
 
   // 트러블슈팅 카드 삭제 후 목록 갱신
   const handleRecentDeleted = useCallback((postId: number) => {
