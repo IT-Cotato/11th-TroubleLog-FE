@@ -237,34 +237,35 @@ const TroubleShootingCard = ({
                 )}
 
                 {/* 좋아요 + 댓글 수 */}
-                {(likeCount !== undefined || commentCount !== undefined) && (
-                  <div className="flex items-center gap-[12px]">
-                    {likeCount !== undefined && (
-                      <div className="flex items-center gap-[4px]">
-                        <img
-                          src={heartIcon}
-                          alt="likes"
-                          className="w-[20px] h-[20px]"
-                        />
-                        <span className="text-gray3 text-body-16-regular">
-                          {likeCount}
-                        </span>
-                      </div>
-                    )}
-                    {commentCount !== undefined && (
-                      <div className="flex items-center gap-[4px]">
-                        <img
-                          src={commentIcon}
-                          alt="comments"
-                          className="w-[20px] h-[20px]"
-                        />
-                        <span className="text-gray3 text-body-16-regular">
-                          {commentCount}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {!isMine &&
+                  (likeCount !== undefined || commentCount !== undefined) && (
+                    <div className="flex items-center gap-[12px]">
+                      {likeCount !== undefined && (
+                        <div className="flex items-center gap-[4px]">
+                          <img
+                            src={heartIcon}
+                            alt="likes"
+                            className="w-[20px] h-[20px]"
+                          />
+                          <span className="text-gray3 text-body-16-regular">
+                            {likeCount}
+                          </span>
+                        </div>
+                      )}
+                      {commentCount !== undefined && (
+                        <div className="flex items-center gap-[4px]">
+                          <img
+                            src={commentIcon}
+                            alt="comments"
+                            className="w-[20px] h-[20px]"
+                          />
+                          <span className="text-gray3 text-body-16-regular">
+                            {commentCount}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 <div className="text-gray3 text-body-16-regular">·</div>
                 <div className="text-gray3 text-body-16-regular">
                   {createdAt}
