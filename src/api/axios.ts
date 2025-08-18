@@ -86,7 +86,6 @@ const navigateToAuthGuardOnce = (status: 401 | 403, rawNext?: string) => {
 // 요청 인터셉터: 토큰 자동 첨부
 api.interceptors.request.use((config) => {
   const url = config.url ?? "";
-  const isRefresh = url.includes("/auth/refresh");
   config.headers = config.headers ?? {};
 
   // 외부 절대 URL은 내부 인증/EnvType 헤더 미부착
@@ -97,12 +96,10 @@ api.interceptors.request.use((config) => {
     return config;
   }
 
-  // /auth/refresh 에는 Authorization 미첨부
-  if (!isRefresh) {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      (config.headers as any).Authorization = `Bearer ${token}`;
-    }
+  // 모든 내부 요청(리프레시 포함)에 Authorization 부착
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    (config.headers as any).Authorization = `Bearer ${token}`;
   }
 
   // EnvType은 항상 강제(리프레시 포함)
@@ -116,7 +113,7 @@ api.interceptors.request.use((config) => {
 let refreshPromise: Promise<string | null> | null = null;
 const startRefresh = async (): Promise<string | null> => {
   try {
-    const r = await api.post("/auth/refresh", {});
+    const r = await api.post("/auth/refresh", { __skipGlobalAuthGuard: true });
     const newToken: string | undefined = r.data?.data?.accessToken;
     if (!newToken) {
       console.error("[Auth] Refresh response missing accessToken:", r.data);
@@ -183,6 +180,14 @@ api.interceptors.response.use(
     // 401/403 → /auth-required (새 정책)
     const skipAuth = cfg.__skipGlobalAuthGuard === true;
     const isSSEAuth = /\/alert|\/connect|\/events/i.test(String(reqUrl));
+    const isRefreshCall = /\/auth\/refresh\b/.test(String(reqUrl));
+
+    // 리프레시 자체가 실패하면 재귀 금지, 즉시 로그아웃 흐름
+    if ((status === 401 || status === 403) && isRefreshCall && !skipAuth) {
+      localStorage.removeItem("accessToken");
+      await navigateToAuthGuardOnce(status as 401 | 403);
+      return Promise.reject(error);
+    }
 
     // 401 → 토큰 갱신 시도
     if (status === 401 && !skipAuth && !isSSEAuth) {
