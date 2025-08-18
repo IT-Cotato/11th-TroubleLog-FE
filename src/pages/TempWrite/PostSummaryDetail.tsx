@@ -6,15 +6,14 @@ import { getPostSummary } from "@/api/post.api";
 import type { GetSummaryResponse } from "@/models/post.model";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 
+type GuideContent = string | { type: "image"; src: string; alt?: string };
+
 export default function PostSummaryDetail() {
   const { summaryId } = useParams<{ summaryId: string }>();
 
   const [data, setData] = useState<GetSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-
-  const sectionRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const [currentSection, setCurrentSection] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +34,25 @@ export default function PostSummaryDetail() {
     };
   }, [summaryId]);
 
+  const questions = useMemo<string[]>(
+    () => (data?.summaryContents ?? []).map((c) => c.subTitle),
+    [data]
+  );
+
+  const contents = useMemo<GuideContent[][]>(
+    () => (data?.summaryContents ?? []).map((c) => [c.body]),
+    [data]
+  );
+
+  const [currentSection, setCurrentSection] = useState<number>(0);
+  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+
+  useEffect(() => {
+    sectionRefs.current = questions.map((_, idx) =>
+      document.getElementById(`section-${idx}`)
+    );
+  }, [questions]);
+
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
@@ -50,14 +68,12 @@ export default function PostSummaryDetail() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const questions = useMemo(
-    () => (data?.summaryContents ?? []).map((c) => c.subTitle),
-    [data]
-  );
-  const contents = useMemo(
-    () => (data?.summaryContents ?? []).map((c) => [c.body]),
-    [data]
-  );
+  const scrollToSection = (idx: number) => {
+    const t = sectionRefs.current[idx];
+    if (t) {
+      window.scrollTo({ top: t.offsetTop - 180, behavior: "smooth" });
+    }
+  };
 
   if (loading) {
     return (
@@ -80,8 +96,28 @@ export default function PostSummaryDetail() {
   }
 
   return (
-    <div className="flex flex-col justify-center">
+    <div className="relative">
       <HeaderWoSearch />
+
+      {/* 오른쪽 목차  */}
+      {questions.length > 0 && (
+        <div className="fixed right-[89px] top-[520px] z-30 hidden xl:block">
+          <nav className="flex flex-col items-start gap-[16px] border-l border-gray3 pl-[12px] pr-[8px] py-[8px] rounded-lg bg-white/70 backdrop-blur-sm text-body-20-regular text-gray3">
+            {questions.map((q, idx) => (
+              <button
+                key={idx}
+                onClick={() => scrollToSection(idx)}
+                className={`text-left hover:text-black ${
+                  currentSection === idx ? "text-black" : ""
+                }`}
+              >
+                {idx + 1}. {q}
+              </button>
+            ))}
+          </nav>
+        </div>
+      )}
+
       {/* 본문 */}
       <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
         {/* 상단 */}
@@ -111,13 +147,10 @@ export default function PostSummaryDetail() {
           <div className="flex flex-col items-start gap-[36px] self-stretch">
             <div className="flex flex-col items-start self-stretch">
               <div className="flex flex-col items-start gap-[48px] self-stretch">
-                {(questions ?? []).map((q, idx) => (
+                {questions.map((q, idx) => (
                   <div
                     id={`section-${idx}`}
                     key={idx}
-                    ref={(el) => {
-                      sectionRefs.current[idx] = el;
-                    }}
                     className="scroll-mt-[200px]"
                   >
                     <PostGuideMd question={q} content={contents[idx] ?? []} />
@@ -126,32 +159,6 @@ export default function PostSummaryDetail() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* 목차 */}
-      <div className="inline-flex items-start mt-[588px] mr-[89px] sticky top-[588px] h-fit">
-        <div className="flex flex-col items-start gap-[16px] border-l border-gray3 p-[12px] text-body-20-regular text-gray3">
-          {(questions ?? []).map((q, idx) => (
-            <a
-              key={idx}
-              href={`#section-${idx}`}
-              className={`text-left ${
-                currentSection === idx ? "text-black" : ""
-              }`}
-              onClick={(e) => {
-                e.preventDefault();
-                const t = sectionRefs.current[idx];
-                if (t)
-                  window.scrollTo({
-                    top: t.offsetTop - 180,
-                    behavior: "smooth",
-                  });
-              }}
-            >
-              {idx + 1}. {q}
-            </a>
-          ))}
         </div>
       </div>
     </div>
