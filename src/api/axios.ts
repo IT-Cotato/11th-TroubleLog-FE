@@ -40,6 +40,16 @@ declare module "axios" {
   }
 }
 
+declare global {
+  interface Window {
+    __authRefreshPromise?: Promise<string | null> | null;
+  }
+}
+const getRefreshPromise = () => window.__authRefreshPromise ?? null;
+const setRefreshPromise = (p: Promise<string | null> | null) => {
+  window.__authRefreshPromise = p;
+};
+
 const api = axios.create({
   // baseURL: COMPUTED_BASE_URL,
   baseURL: API_BASE_URL || undefined,
@@ -84,7 +94,7 @@ const navigateToAuthGuardOnce = (status: 401 | 403, rawNext?: string) => {
 };
 
 // 요청 인터셉터: 토큰 자동 첨부
-api.interceptors.request.use((config) => {
+const reqId = api.interceptors.request.use((config) => {
   const url = config.url ?? "";
   config.headers = config.headers ?? {};
 
@@ -110,10 +120,9 @@ api.interceptors.request.use((config) => {
 });
 
 // 리프레시 공용 Promise (동시 401 한 번만 처리)
-let refreshPromise: Promise<string | null> | null = null;
 const startRefresh = async (): Promise<string | null> => {
   try {
-    const r = await api.post("/auth/refresh", { __skipGlobalAuthGuard: true });
+    const r = await api.post("/auth/refresh", undefined, {});
     const newToken: string | undefined = r.data?.data?.accessToken;
     if (!newToken) {
       console.error("[Auth] Refresh response missing accessToken:", r.data);
@@ -127,7 +136,7 @@ const startRefresh = async (): Promise<string | null> => {
 };
 
 // 응답 인터셉터
-api.interceptors.response.use(
+const resId = api.interceptors.response.use(
   (res) => {
     const ct = res.headers?.["content-type"] as string | undefined;
     const url: string | undefined = (res as any)?.request?.responseURL;
@@ -198,13 +207,15 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      if (!refreshPromise) {
-        refreshPromise = startRefresh().finally(() =>
-          setTimeout(() => (refreshPromise = null), 100)
+      let p = getRefreshPromise();
+      if (!p) {
+        p = startRefresh().finally(() =>
+          setTimeout(() => setRefreshPromise(null), 100)
         );
+        setRefreshPromise(p);
       }
+      const newToken = await p;
 
-      const newToken = await refreshPromise;
       if (newToken) {
         cfg._retry = true;
         cfg.headers = cfg.headers ?? {};
@@ -227,6 +238,13 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    api.interceptors.request.eject(reqId);
+    api.interceptors.response.eject(resId);
+  });
+}
 
 export default api;
 if (import.meta.env.DEV) {
