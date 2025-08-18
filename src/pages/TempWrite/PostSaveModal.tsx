@@ -40,6 +40,7 @@ export default function PostSaveModal({
   initialVisibility,
   initialProjectId,
   initialThumbnail,
+  selectedErrorType,
 }: {
   onClose: () => void;
   onNext: (payload: PostSavePayload) => void;
@@ -47,6 +48,7 @@ export default function PostSaveModal({
   defaultProjectId?: number;
   loadingProjects?: boolean;
   selectedTags?: string[];
+  selectedErrorType: string | null;
   initialImportance?: number;
   initialDescription?: string;
   initialVisibility?: Visibility;
@@ -173,15 +175,24 @@ export default function PostSaveModal({
       alert("이미지 업로드가 끝난 후 저장할 수 있어요.");
       return;
     }
-    if (importance === 0) return;
-    if (selectedProjectId == null) return;
+    if (importance === 0) {
+      alert("중요도를 선택해주세요.");
+      return;
+    }
+    if (selectedProjectId == null) {
+      alert("프로젝트를 선택해주세요.");
+      return;
+    }
+    if (!description.trim()) {
+      return;
+    }
 
     onNext({
       importance,
       thumbnail,
       description,
       visibility: selectedVisibility,
-      projectId: selectedProjectId ?? null,
+      projectId: selectedProjectId,
       projectName,
     });
   };
@@ -299,7 +310,7 @@ export default function PostSaveModal({
                   </span>
                   <div className="grid w/[345px] w-[345px] h-[46px] px-[15px] py-[14px] border rounded border-purple-300 bg-white ">
                     <span className="flex flex-1 self-stretch font-normal text-sm text-purple-700">
-                      Build / Compile
+                      {selectedErrorType}
                     </span>
                   </div>
                 </div>
@@ -336,22 +347,33 @@ export default function PostSaveModal({
                 </div>
               </div>
               {/* 소개 */}
-              <div className="flex flex-col w/[351px] w-[351px] gap-[8px]">
+              <div className="flex flex-col w-[351px] gap-[8px]">
                 <span className="text-head-20-semibold text-black">
                   포스트 소개
                 </span>
-                <div>
+                <div
+                  className={`transition-all ${
+                    hasTriedSubmit && !description.trim()
+                      ? "border border-purple-500 rounded-[8px] p-[10px]"
+                      : ""
+                  }`}
+                >
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     maxLength={200}
                     placeholder="포스트를 짧게 소개해주세요."
-                    className="w-[351px] h-[119px] resize-none px-[12px] py-[8px] border border-gray1 rounded-[8px] text-body-14-regular"
+                    className="w-[335px] h-[119px] resize-none pl-[14px] py-[8px] border border-gray1 rounded-[8px] text-body-14-regular"
                   />
                   <div className="text-right text-caption-12-regular text-gray2 mt-[4px]">
                     {description.length}/200
                   </div>
                 </div>
+                {hasTriedSubmit && !description.trim() && (
+                  <span className="text-sm text-purple-500 pl-[4px] pt-[2px]">
+                    소개글을 입력해주세요.
+                  </span>
+                )}
               </div>
             </div>
 

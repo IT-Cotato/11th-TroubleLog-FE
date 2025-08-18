@@ -3,6 +3,7 @@ export const PATH = {
   LOGIN: "/",
   SIGNUP: "/signup",
   SIGNUP_DETAIL: "/signup/detail",
+  SIGNUP_OAUTH: "/signup/oauth",
   OAUTH: "/oauth",
 
   USER: "/user",
@@ -20,8 +21,15 @@ export const PATH = {
 
   TEMP_WRITING: "/tempwriting",
   FREEFORM_WRITING: "/freeformwriting",
-  PREVIEW: "/preview",
+  PREVIEW: (postId: number, summaryId?: number | string) =>
+    summaryId != null
+      ? `/troubles/${postId}?summaryId=${summaryId}`
+      : `/troubles/${postId}`,
+  PREVIEW_ROUTE: "/troubles/:postId",
 
-  NOT_FOUND: "/404",
+  POST_SUMMARY: (summaryId: string | number) => `/post/summary/${summaryId}`, // ← 슬래시 두 개였던거 fix
+
+  POST_SUMMARY_ROUTE: "/post/summary/:summaryId",
+     NOT_FOUND: "/404",
   AUTH_GUARD: "/auth-required",
 };

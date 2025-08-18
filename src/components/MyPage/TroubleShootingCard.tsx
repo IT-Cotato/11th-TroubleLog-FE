@@ -10,10 +10,7 @@ import privateIcon from "@/assets/icons/private.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import commentIcon from "@/assets/icons/comment.svg";
-import { deletePost } from "@/api/post.api";
-import type { MyTroubleDetailItem } from "@/types/troubles.server";
-import { useNavigate } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { hardDeletePost } from "@/api/post.api";
 
 export interface TroubleShootingCardProps {
   id: string;
@@ -31,13 +28,10 @@ export interface TroubleShootingCardProps {
   likeCount?: number;
   commentCount?: number;
   authorName?: string;
-  authorProfileImageUrl?: string;
-  authorUserId?: number;
   isSearchResult?: boolean;
   onDeleted?: (postId: number) => void;
   onClick?: (postId: number) => void;
   disabled?: boolean;
-  raw?: MyTroubleDetailItem;
 }
 
 const TroubleShootingCard = ({
@@ -56,8 +50,6 @@ const TroubleShootingCard = ({
   likeCount,
   commentCount,
   authorName,
-  authorProfileImageUrl,
-  authorUserId,
   isSearchResult,
   onDeleted,
   onClick,
@@ -68,8 +60,7 @@ const TroubleShootingCard = ({
   const handleCloseMenu = useCallback(() => setShowMenu(false), []);
   const menuRef = useClickOutside(handleCloseMenu);
 
-  const navigate = useNavigate();
-
+  const shouldShowVisibilityIcon = status === "complete" && visibility;
   const shouldShowSummaryType = status === "created";
 
   const isClickable = typeof onClick === "function" && !disabled;
@@ -97,7 +88,7 @@ const TroubleShootingCard = ({
       setDeleting(true);
       const postId = Number(id);
 
-      await deletePost(postId);
+      await hardDeletePost(postId);
 
       onDeleted?.(postId);
       console.log("문서가 영구 삭제되었습니다.");
@@ -110,23 +101,6 @@ const TroubleShootingCard = ({
     } finally {
       setDeleting(false);
       setShowMenu(false);
-    }
-  };
-
-  const handleAuthorClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
-    if (!authorUserId) return;
-    e.stopPropagation();
-    navigate(PATH.MYPAGE(String(authorUserId)));
-  };
-
-  const handleAuthorKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (
-    e
-  ) => {
-    if (!authorUserId) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      e.stopPropagation();
-      navigate(PATH.MYPAGE(String(authorUserId)));
     }
   };
 
@@ -148,18 +122,8 @@ const TroubleShootingCard = ({
       <div className="w-full flex flex-col">
         {/* 작성자 */}
         {isSearchResult && (
-          <div
-            className="mb-[25px] flex items-center gap-[12px] cursor-pointer" // ⬅️ 시각적 힌트
-            onClick={handleAuthorClick}
-            onKeyDown={handleAuthorKeyDown}
-            role={authorUserId ? "button" : undefined}
-            tabIndex={authorUserId ? 0 : undefined}
-          >
-            <img
-              src={authorProfileImageUrl ? authorProfileImageUrl : imageIcon}
-              alt="profile"
-              className="w-[52px] h-[52px]"
-            />
+          <div className="mb-[25px] flex items-center gap-[12px]">
+            <img src={imageIcon} alt="profile" className="w-[52px] h-[52px]" />
             <span className="text-head-24-bold">{authorName}</span>
           </div>
         )}
@@ -203,7 +167,7 @@ const TroubleShootingCard = ({
                       · {summaryType}
                     </div>
                   )}
-                  {visibility && isMine && (
+                  {shouldShowVisibilityIcon && visibility && (
                     <img
                       src={visibility === "public" ? publicIcon : privateIcon}
                       alt={visibility}
@@ -221,7 +185,7 @@ const TroubleShootingCard = ({
             <div className="flex flex-wrap items-center gap-[12px]">
               <TagList tags={tags} variant="mypage" />
               <div className="flex items-center gap-[12px]">
-                {!isSearchResult && importance !== undefined && isMine && (
+                {!isSearchResult && importance !== undefined && (
                   <>
                     <div className="flex items-center gap-[4px]">
                       <img

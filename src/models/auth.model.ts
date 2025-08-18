@@ -63,3 +63,11 @@ export interface EmailCheckResponse {
   error: ErrorInfo;
   timestamp: string;
 }
+
+export interface OauthRegisterRequest {
+  userId: number;
+  nickname: string;
+  field: string;
+  bio: string;
+  githubUrl?: string;
+}

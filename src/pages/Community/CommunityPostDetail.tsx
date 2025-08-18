@@ -30,7 +30,7 @@ import {
   toPostComments,
 } from "@/mappers/communityComment.mapper";
 import { useViewerId } from "@/store/auth";
-import { deletePost, getPostDetail } from "@/api/post.api";
+import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { toPostDetailVM } from "@/mappers/myPostDetail.mapper";
 import { postFollow, postUnfollow } from "@/api/user.api";
 
@@ -692,7 +692,7 @@ export default function CommunityPostDetail() {
 
     try {
       setDeleting(true);
-      await deletePost(Number(postId));
+      await hardDeletePost(Number(postId));
       alert("문서가 영구 삭제되었습니다.");
 
       if (detailCtx.from === "community") {

@@ -5,9 +5,6 @@ import type {
   EditPostRequest,
   EditPostResponse,
   RestorePostResponse,
-  GetSummaryParams,
-  GetSummaryResponse,
-  WaitLoadingRequest,
   StartLoadingResponse,
   WaitLoadingResponse,
   ViewCombinedResponse,
@@ -17,19 +14,21 @@ import type {
   GetTagsByKeywordParams,
   SearchPostsParams,
   SearchMyPostsParams,
+  SummaryTypeParam,
   SearchPostByKeywordResponse,
   SearchMyPostByKeywordResponse,
+  GetSummaryResponse,
 } from "@/models/post.model";
-import getAPIResponseData from "../utils/getAPIResponseData";
+import getAPIResponseData from "@/utils/getAPIResponseData";
 
-// 원본 문서 상세 조회
+// 상세
 export const getPostDetail = (postId: number) =>
   getAPIResponseData<ViewPostResponse>({
     url: `/troubles/${postId}`,
     method: "GET",
   });
 
-// 원본 문서 생성 --done
+// 생성
 export const createPost = (body: CreatePostRequest) =>
   getAPIResponseData<CreatePostResponse>({
     url: "/troubles",
@@ -37,7 +36,7 @@ export const createPost = (body: CreatePostRequest) =>
     data: body,
   });
 
-// 원본 문서 수정
+// 수정
 export const editPost = (postId: number, body: EditPostRequest) =>
   getAPIResponseData<EditPostResponse>({
     url: `/troubles/${postId}`,
@@ -45,58 +44,64 @@ export const editPost = (postId: number, body: EditPostRequest) =>
     data: body,
   });
 
-// 원본 문서 삭제
-export const deletePost = (postId: number) =>
+// 영구 삭제 (스웨거: DELETE /troubles/{postId})
+export const hardDeletePost = (postId: number) =>
   getAPIResponseData<void>({
     url: `/troubles/${postId}`,
     method: "DELETE",
   });
 
-// 원본 문서 복구
+// 임시 삭제 (Deprecated: DELETE /troubles/{postId}/soft)
+export const softDeletePost = (postId: number) =>
+  getAPIResponseData<void>({
+    url: `/troubles/${postId}/soft`,
+    method: "DELETE",
+  });
+
+// 복구 (Deprecated지만 제공됨)
 export const restorePost = (postId: number) =>
   getAPIResponseData<RestorePostResponse>({
     url: `/troubles/${postId}/restore`,
     method: "POST",
   });
 
-// 요약본 상세 조회
-export const getPostSummary = (postId: number, params: GetSummaryParams) =>
-  getAPIResponseData<GetSummaryResponse>({
-    url: `/troubles/${postId}/summary`,
-    method: "GET",
-    params,
-  });
-
-// 요약 작업 시작 -- done
-export const startSummary = (postId: number, body: WaitLoadingRequest) =>
+// 요약 작업 시작 — query로 summaryType 전달
+export const startSummary = (postId: number, summaryType: SummaryTypeParam) =>
   getAPIResponseData<StartLoadingResponse>({
     url: `/troubles/${postId}/summary`,
     method: "POST",
-    data: body,
+    params: { summaryType },
   });
 
-// 요약 작업 상태 조회 -- done
+// 요약 작업 상태
 export const getSummaryStatus = (postId: number, taskId: string) =>
   getAPIResponseData<WaitLoadingResponse>({
     url: `/troubles/${postId}/summary/${taskId}`,
     method: "GET",
   });
 
-// 요약 작업 취소 -- done
+// 요약 작업 취소
 export const cancelSummary = (postId: number, taskId: string) =>
   getAPIResponseData<void>({
     url: `/troubles/${postId}/summary/${taskId}`,
     method: "DELETE",
   });
 
-// 원본+요약본 상세 조회
-export const getCombinedDetail = (postId: number) =>
-  getAPIResponseData<ViewCombinedResponse>({
-    url: `/troubles/${postId}/combine`,
+// 요약본 상세 (summaryId로 조회)
+export const getPostSummary = (summaryId: number) =>
+  getAPIResponseData<GetSummaryResponse>({
+    url: `/troubles/summary/${summaryId}`,
     method: "GET",
   });
 
-// 기술 태그 조회 - 키워드 --done
+// 합본 상세 (postId + summaryId)
+export const getCombinedDetail = (postId: number, summaryId: number) =>
+  getAPIResponseData<ViewCombinedResponse>({
+    url: `/troubles/${postId}/combine/${summaryId}`,
+    method: "GET",
+  });
+
+// 태그
 export const getTagsByKeyword = (params: GetTagsByKeywordParams) =>
   getAPIResponseData<TagsByKeywordResponse>({
     url: "/troubles/tags",
@@ -104,15 +109,14 @@ export const getTagsByKeyword = (params: GetTagsByKeywordParams) =>
     params,
   });
 
-// 기술 태그 조회 - 카테고리 --done
 export const getTagsByCategory = (params: GetTagsByCategoryParams) =>
   getAPIResponseData<TagsByCategoryResponse>({
-    url: "/troubles/tags/category",
+    url: `/troubles/tags/category`,
     method: "GET",
     params,
   });
 
-// 문서 검색
+// 검색
 export const searchPostsByKeyword = (params: SearchPostsParams) =>
   getAPIResponseData<SearchPostByKeywordResponse>({
     url: "/troubles/search",
@@ -120,10 +124,9 @@ export const searchPostsByKeyword = (params: SearchPostsParams) =>
     params,
   });
 
-// 내 문서 검색
 export const searchMyPostsByKeyword = (params: SearchMyPostsParams) =>
   getAPIResponseData<SearchMyPostByKeywordResponse>({
-    url: "/troubles/my",
+    url: "/troubles/my/search",
     method: "GET",
     params,
   });

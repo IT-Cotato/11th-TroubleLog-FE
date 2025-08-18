@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import DropDownButton from "@/components/Button/DropDownButton";
 import CategoryTag from "@/components/TemplateWrite/CategoryTag";
@@ -9,9 +9,16 @@ import { questionData } from "@/components/TemplateWrite/questionTemplate";
 import PostSaveModal, { type PostSavePayload } from "./PostSaveModal";
 import PostLoadingModal from "./PostLoadingModal";
 import TemplateSelectModal from "./TemplateSelectModal";
+import PostSuccessModal from "./PostSuccessModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PATH } from "@/constants/paths";
-import { toCreatePostRequest, type PostForm } from "@/mappers/postMapper";
+
+import {
+  toCreatePostRequest,
+  toEditPostRequest,
+  type PostForm,
+} from "@/mappers/postMapper";
+
 import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
 import { useProjectList } from "@/hooks/useProjectList";
 import {
@@ -20,13 +27,15 @@ import {
   getSummaryStatus,
   cancelSummary,
   editPost,
+  getTagsByKeyword,
 } from "@/api/post.api";
 
+// ---------- 상태 타입 ----------
 type IncomingTemplateState = {
   editorType?: "TEMPLATE";
   title?: string;
   tags?: string[];
-  errorType?: string | null;
+  errorType?: string | null; // 서버 코드 or 라벨
   blocks?: BlockData[];
   savePrefill?: {
     importance?: number;
@@ -43,6 +52,7 @@ type IncomingTemplateState = {
   mode?: "edit" | "create";
 };
 
+// ---------- 에러 라벨/코드 매핑 ----------
 const ERROR_CODE_TO_LABEL: Record<string, string> = {
   BUILD_COMPILE_ERROR: "Build/Compile Error",
   RUNTIME_ERROR: "Runtime Error",
@@ -58,65 +68,63 @@ const ERROR_CODE_TO_LABEL: Record<string, string> = {
 const toErrorLabel = (code?: string | null) =>
   code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
 
+// ---------- 체크리스트 보강(질문 템플릿 결합) ----------
 const enrichBlocksWithChecklist = (blocks: BlockData[]): BlockData[] => {
   return blocks.map((b, i) => {
-    // 질문 문구로 먼저 매칭 시도 → 없으면 인덱스 fallback
     const matched =
       questionData.find(
-        (q) => q.question === b.question || q.question === b.checklistTitle
+        (q) =>
+          q.question === (b as any).question ||
+          q.question === (b as any).checklistTitle
       ) ?? questionData[i];
 
     return {
       ...b,
-      question: b.question ?? matched?.question ?? `질문 ${i + 1}`,
+      question: (b as any).question ?? matched?.question ?? `질문 ${i + 1}`,
       checklistItems:
-        b.checklistItems && b.checklistItems.length > 0
-          ? b.checklistItems
+        (b as any).checklistItems && (b as any).checklistItems.length > 0
+          ? (b as any).checklistItems
           : matched?.checklistItems ?? [],
-      checklistTitle: b.checklistTitle ?? matched?.title ?? "",
-      checklist: Array.isArray(b.checklist) ? b.checklist : [],
-      isSaved: b.isSaved ?? false,
-    };
+      checklistTitle: (b as any).checklistTitle ?? matched?.title ?? "",
+      checklist: Array.isArray((b as any).checklist)
+        ? (b as any).checklist
+        : [],
+      isSaved: (b as any).isSaved ?? false,
+    } as BlockData;
   });
 };
 
+// ---------- 페이지 ----------
 const TempWritePage = () => {
+  // 기본 상태
   const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-
   const [selectedErrorType, setSelectedErrorType] = useState<string | null>(
     null
   );
+
+  // 모달/알림
   const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
   const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
     useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
   const [showAlert, setShowAlert] = useState(false);
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const [showCancelAlert, setShowCancelAlert] = useState(false);
 
-  const navigate = useNavigate();
+  // 요약 상태
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
-  const { data: projectList, loading: projectsLoading } = useProjectList();
   const [createdPostId, setCreatedPostId] = useState<number | null>(null);
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
   const [summaryProgress, setSummaryProgress] = useState(0);
   const [templateLabel, setTemplateLabel] = useState<string>("");
-  const closingRef = useRef(false);
-
-  const location = useLocation() as { state?: IncomingTemplateState };
-  const initialProjectId = location.state?.projectId;
-
-  // 수정여부 판단
-  const resumePostId = ((): number | null => {
-    const pid = location.state?.postId;
-    return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
-  })();
-  const isResume = resumePostId != null;
-
-  const initialActiveSetRef = useRef(false);
+  const [completedSummaryId, setCompletedSummaryId] = useState<number | null>(
+    null
+  );
 
   type SummaryStatus =
     | "PENDING"
@@ -130,40 +138,53 @@ const TempWritePage = () => {
   );
   const [statusMessage, setStatusMessage] = useState<string>("");
 
-  const toContentDtoList = (bs: BlockData[]): PostContentDto[] =>
-    bs
-      .filter((b) => (b.content ?? "").trim().length > 0)
-      .map((b, i) => ({
-        subTitle: b.question,
-        body: b.content,
-        sequence: i + 1,
-        authorType: "USER_WRITTEN",
-        summaryType: "NONE",
-      }));
+  // 더블클릭 가드
+  const [isCreating, setIsCreating] = useState(false);
+  const [isStartingSummary, setIsStartingSummary] = useState(false);
+  const closingRef = useRef(false);
 
-  // 프리필 반영
+  const navigate = useNavigate();
+  const location = useLocation() as { state?: IncomingTemplateState };
+  const initialProjectId =
+    location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null;
+
+  const { data: projectList = [], loading: projectsLoading } = useProjectList();
+
+  // 이어쓰기(수정) 판단
+  const resumePostId = useMemo(() => {
+    const pid = location.state?.postId;
+    return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
+  }, [location.state]);
+  const isResume = resumePostId != null;
+
+  // ---------- 프리필 ----------
   useEffect(() => {
     if (location.state?.editorType === "TEMPLATE") {
       if (location.state.title) setTitle(location.state.title);
       if (location.state.tags) setSelectedTags(location.state.tags);
-      if (location.state?.errorType !== undefined)
-        setSelectedErrorType(toErrorLabel(location.state.errorType) ?? null);
+      if (location.state.errorType !== undefined)
+        setSelectedErrorType(
+          toErrorLabel(location.state.errorType) ??
+            location.state.errorType ??
+            null
+        );
       if (location.state.blocks?.length) {
-        // 프리필 블록에 체크리스트를 보강해서 주입
         setBlocks(enrichBlocksWithChecklist(location.state.blocks));
       }
     }
   }, [location.state]);
 
+  // 초기 활성 블록
+  const initialActiveSetRef = useRef(false);
   useEffect(() => {
     if (initialActiveSetRef.current) return;
     if (blocks.length > 0) {
-      setActiveIndex(blocks.length - 1); // 최상단(화면상 첫 블록)
+      setActiveIndex(blocks.length - 1);
       initialActiveSetRef.current = true;
     }
   }, [blocks.length]);
 
-  // 첫 블록 생성 (프리필 없을 때만)
+  // 프리필 없으면 첫 블록 생성
   useEffect(() => {
     const hasPrefill = !!(
       location.state?.editorType === "TEMPLATE" && location.state.blocks?.length
@@ -177,37 +198,219 @@ const TempWritePage = () => {
         checklistTitle: questionData[0].title ?? "",
         question: questionData[0].question,
         isSaved: false,
-      };
+      } as any;
       setBlocks([firstBlock]);
     }
   }, [blocks.length, location.state]);
 
+  // ---------- DTO ----------
+  const toContentDtoList = (bs: BlockData[]): PostContentDto[] =>
+    bs
+      .filter((b) => (b.content ?? "").trim().length > 0)
+      .map(
+        (b, i) =>
+          ({
+            subTitle: (b as any).question,
+            body: b.content,
+            sequence: i + 1,
+            authorType: "USER_WRITTEN",
+            summaryType: "NONE",
+          } as any)
+      );
+
+  // ---------- 체크리스트 → ID 맵 ----------
+  const CHECKLIST_ERROR_ID_MAP: Record<string, number> = {
+    "오류 메시지를 정확히 읽고 이해했나요?": 1,
+    "로컬과 배포 환경의 차이를 점검해봤나요?": 2,
+    "문제가 발생한 모듈/기능 범위를 파악했나요?": 3,
+    "디버깅 툴이나 로그 추적을 활용해보셨나요?": 4,
+    "개발 환경 (IDE, OS, 실행 조건 등)을 확인했나요?": 5,
+  };
+  const CHECKLIST_REASON_ID_MAP: Record<string, number> = {
+    "공식 문서 또는 라이브러리 문서 확인": 1,
+    "구글 검색": 2,
+    "GPT / 오픈 AI 사용": 3,
+    "StackOverflow, OKKY 등 질문 커뮤니티": 4,
+    "GitHub Issue 또는 블로그 참고": 5,
+  };
+  const buildChecklistIdsFromBlocks = (bs: BlockData[]) => {
+    const errorIds = new Set<number>();
+    const reasonIds = new Set<number>();
+    bs.forEach((b) => {
+      const items: string[] = ((b as any).checklist ?? []) as string[];
+      if (!items.length) return;
+      const isErrorSection =
+        (b as any).checklistTitle === "오류를 정확히 인식하셨나요?";
+      const map = isErrorSection
+        ? CHECKLIST_ERROR_ID_MAP
+        : CHECKLIST_REASON_ID_MAP;
+      for (const label of items) {
+        const id = map[label];
+        if (typeof id === "number")
+          (isErrorSection ? errorIds : reasonIds).add(id);
+      }
+    });
+    return {
+      checklistErrorIds: Array.from(errorIds),
+      checklistReasonIds: Array.from(reasonIds),
+    };
+  };
+
+  const canonicalizeTags = async (rawTags: string[]) => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of rawTags) {
+      const q = String(raw).replace(/^#\s*/, "").trim();
+      if (!q) continue;
+
+      const res: any = await getTagsByKeyword({ tagName: q });
+      const list: any[] = Array.isArray(res)
+        ? res
+        : res?.data ?? res?.content ?? res?.results ?? [];
+
+      const names = list
+        .map((t) => (typeof t === "string" ? t : t?.name ?? t))
+        .filter(Boolean);
+      const exact = names.find(
+        (n: string) => n.toLowerCase() === q.toLowerCase()
+      );
+      const pick = (exact ?? names[0]) as string | undefined;
+
+      const normalized = String(pick ?? q).trim();
+      if (!seen.has(normalized.toLowerCase())) {
+        seen.add(normalized.toLowerCase());
+        out.push(normalized);
+      }
+    }
+    return out;
+  };
+
+  const buildFormDevelop = (
+    postStatus: "COMPLETED" | "WRITING",
+    meta: PostSavePayload,
+    postTags: string[]
+  ): PostForm => ({
+    title,
+    introduction: meta?.description ?? "",
+    postTags,
+    isVisible: (meta?.visibility ?? "public") === "public",
+    isSummaryCreated: false,
+    postStatus,
+    starRating: String(meta?.importance ?? 0),
+    templateType: "GUIDELINE",
+    thumbnailImageUrl: meta?.thumbnail ?? undefined,
+    projectId: Number(meta?.projectId ?? 0),
+    errorTag: selectedErrorType ?? "",
+    contents: toContentDtoList(blocks),
+  });
+
+  type UiPostStatus = "WRITING" | "COMPLETED";
+  type ServerPostStatus = "WRITING" | "COMPLETE";
+  const toServerPostStatus = (s: UiPostStatus): ServerPostStatus =>
+    s === "COMPLETED" ? "COMPLETE" : "WRITING";
+
+  const buildFormServer = (
+    postStatus: UiPostStatus,
+    meta: PostSavePayload,
+    postTags: string[]
+  ) => {
+    const { checklistErrorIds, checklistReasonIds } =
+      buildChecklistIdsFromBlocks(blocks);
+    return {
+      title,
+      introduction: meta.description ?? "",
+      isVisible: (meta.visibility ?? "public") === "public",
+      isSummaryCreated: false,
+      postStatus: toServerPostStatus(postStatus),
+      starRating: Number(meta.importance ?? 0),
+      templateType: "GUIDELINE",
+      projectId: Number(meta.projectId),
+      thumbnailImageUrl: meta.thumbnail ?? undefined,
+
+      errorTagName: selectedErrorType!,
+      contentDtoList: toContentDtoList(blocks),
+      postTags,
+
+      checklistError: checklistErrorIds,
+      checklistReason: checklistReasonIds,
+    };
+  };
+
+  // ---------- create/edit 호환 저장 ----------
+  const saveDraftCompat = async (
+    postStatus: UiPostStatus,
+    meta: PostSavePayload,
+    postTags: string[]
+  ): Promise<number> => {
+    try {
+      const form = buildFormDevelop(postStatus, meta, postTags);
+      if (isResume && resumePostId) {
+        await editPost(resumePostId, toEditPostRequest(form) as any);
+        return resumePostId;
+      } else {
+        const created: any = await createPost(toCreatePostRequest(form) as any);
+        return Number(created?.id ?? created?.data?.id ?? created?.content?.id);
+      }
+    } catch (e) {
+      console.warn(
+        "[saveDraftCompat] develop 경로 실패, feat 스키마로 폴백 시도",
+        e
+      );
+    }
+
+    const reqServer = buildFormServer(postStatus, meta, postTags);
+    if (isResume && resumePostId) {
+      await editPost(resumePostId, reqServer as any);
+      return resumePostId;
+    } else {
+      const created2: any = await createPost(reqServer as any);
+      return Number(
+        created2?.id ?? created2?.data?.id ?? created2?.content?.id
+      );
+    }
+  };
+
+  // ---------- startSummary 호환 ----------
+  const startSummaryCompat = async (postId: number, type: SummaryTypeParam) => {
+    try {
+      const res: any = await startSummary(postId, { type } as any);
+      const taskId = res?.taskId ?? res?.data?.taskId ?? res?.content?.taskId;
+      if (!taskId) throw new Error("No taskId (object signature)");
+      return taskId as string;
+    } catch {
+      const res2: any = await startSummary(postId, type as any);
+      const taskId2 =
+        res2?.taskId ?? res2?.data?.taskId ?? res2?.content?.taskId;
+      if (!taskId2) throw new Error("No taskId (positional signature)");
+      return taskId2 as string;
+    }
+  };
+
+  // ---------- 변경 핸들러 ----------
   const handleChangeBlockContent = (
     index: number,
     updated: Partial<BlockData>
   ) => {
     setBlocks((prev) => {
-      const newBlocks = [...prev];
-      newBlocks[index] = { ...newBlocks[index], ...updated };
-      return newBlocks;
+      const next = [...prev];
+      next[index] = { ...next[index], ...updated };
+      return next;
     });
   };
-
   const handleToggleChecklist = (
     index: number,
     item: string,
     checked: boolean
   ) => {
     setBlocks((prev) => {
-      const newBlocks = [...prev];
-      const checklist = new Set(newBlocks[index].checklist);
+      const next = [...prev];
+      const checklist = new Set<string>((next[index] as any).checklist ?? []);
       if (checked) checklist.add(item);
       else checklist.delete(item);
-      newBlocks[index].checklist = Array.from(checklist);
-      return newBlocks;
+      (next[index] as any).checklist = Array.from(checklist);
+      return next;
     });
   };
-
   const handleAddBlock = () => {
     setBlocks((prev) => {
       const nextStep = prev.length;
@@ -221,39 +424,70 @@ const TempWritePage = () => {
         checklistTitle: stepData.title ?? "",
         question: stepData.question,
         isSaved: false,
-      };
-      const newBlocks = [...prev, newBlock];
-      setActiveIndex(newBlocks.length - 1);
-      return newBlocks;
+      } as any;
+      const next = [...prev, newBlock];
+      setActiveIndex(next.length - 1);
+      return next;
     });
   };
 
   const handleEnd = () => {
-    if (!title.trim() || !selectedErrorType || !blocks[0]?.content.trim()) {
+    if (!title.trim() || !selectedErrorType || !blocks[0]?.content?.trim()) {
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       return;
     }
     setIsPostSaveModalOpen(true);
   };
-
   const handleShowSaveAlert = () => {
     setShowSaveAlert(true);
     setTimeout(() => setShowSaveAlert(false), 3000);
   };
 
-  const handleNextInPostSaveModal = (payload: PostSavePayload) => {
+  // ---------- 저장 모달 Next ----------
+  const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
+    if (isCreating) return;
+    setIsCreating(true);
+
     setPreviewMeta(payload);
     setIsPostSaveModalOpen(false);
-    setIsTemplateSelectModalOpen(true);
+
+    if (
+      !payload.projectId ||
+      !title.trim() ||
+      !selectedErrorType ||
+      !blocks[0]?.content?.trim()
+    ) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      setIsCreating(false);
+      return;
+    }
+
+    try {
+      const canonicalTags = await canonicalizeTags(selectedTags);
+      const postId = await saveDraftCompat("WRITING", payload, canonicalTags);
+      setCreatedPostId(postId);
+      setIsTemplateSelectModalOpen(true);
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("문서 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  // (요약 시작) create ↔ edit 분기
+  // ---------- 템플릿 확정 → 요약 ----------
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
   ) => {
+    if (isStartingSummary) return;
+    setIsStartingSummary(true);
     try {
+      if (!createdPostId && !resumePostId)
+        throw new Error("Post가 아직 생성되지 않았어요.");
+
       setIsTemplateSelectModalOpen(false);
       setIsLoadingModalOpen(true);
       setSummaryProgress(0);
@@ -261,21 +495,11 @@ const TempWritePage = () => {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const req = toCreatePostRequest(buildCreateForm("WRITING"));
-
-      let targetPostId: number;
-      if (isResume && resumePostId) {
-        await editPost(resumePostId, req as any);
-        targetPostId = resumePostId;
-      } else {
-        const created = await createPost(req);
-        targetPostId = created.id;
-      }
-
-      setCreatedPostId(targetPostId);
-
-      const start = await startSummary(targetPostId, { type });
-      setSummaryTaskId(start.taskId);
+      const taskId = await startSummaryCompat(
+        createdPostId ?? (resumePostId as number),
+        type
+      );
+      setSummaryTaskId(taskId);
     } catch (e) {
       console.error(e);
       setIsLoadingModalOpen(false);
@@ -285,25 +509,53 @@ const TempWritePage = () => {
       setSummaryProgress(0);
       setSummaryStatus(null);
       setStatusMessage("요약 시작에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsStartingSummary(false);
     }
   };
 
+  // ---------- 폴링 ----------
   useEffect(() => {
-    if (!isLoadingModalOpen || !createdPostId || !summaryTaskId) return;
+    if (
+      !isLoadingModalOpen ||
+      !(createdPostId ?? resumePostId) ||
+      !summaryTaskId
+    )
+      return;
 
     let stopped = false;
     let timer: number | null = null;
 
     const tick = async () => {
       try {
-        const data = await getSummaryStatus(createdPostId, summaryTaskId);
-        const p = Math.max(0, Math.min(100, data.progress ?? 0));
+        const targetId = (createdPostId ?? resumePostId) as number;
+        const data: any = await getSummaryStatus(targetId, summaryTaskId);
+        const p = Math.max(0, Math.min(100, data?.progress ?? 0));
         if (stopped) return;
+
         setSummaryProgress(p);
-        if (data.status) setSummaryStatus(data.status as any);
-        if (data.message) setStatusMessage(data.message);
-        if (data.status === "COMPLETED" || p >= 100) {
+        if (data?.status) setSummaryStatus(data.status as SummaryStatus);
+
+        if (data?.currentStep) setStatusMessage(data.currentStep);
+        else if (data?.message) setStatusMessage(data.message);
+        else if (
+          data?.result &&
+          typeof data.result === "object" &&
+          "message" in (data.result as any)
+        ) {
+          setStatusMessage((data.result as any).message ?? "");
+        }
+
+        if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
+          // feat: postSummaryId 있으면 성공 모달
+          if (typeof data?.postSummaryId === "number") {
+            setCompletedSummaryId(data.postSummaryId);
+            setIsLoadingModalOpen(false);
+            setIsSuccessModalOpen(true);
+          } else {
+            setIsLoadingModalOpen(false);
+          }
           if (timer !== null) {
             clearInterval(timer);
             timer = null;
@@ -324,44 +576,48 @@ const TempWritePage = () => {
         timer = null;
       }
     };
-  }, [isLoadingModalOpen, createdPostId, summaryTaskId]);
+  }, [isLoadingModalOpen, createdPostId, resumePostId, summaryTaskId]);
 
-  // (나중에 완료 저장) create ↔ edit 분기
+  const buildPreviewState = () => ({
+    editorType: "TEMPLATE" as const,
+    title,
+    tags: selectedTags,
+    errorType: selectedErrorType,
+    date: new Date().toISOString(),
+    isMine: true,
+    importance: Number(previewMeta?.importance ?? 0),
+    savePrefill: previewMeta ?? undefined,
+    questions: blocks.map((b) => (b as any).question),
+    contents: blocks.map((b) => [b.content]),
+  });
+
   const handleLater = async () => {
-    if (
-      !title.trim() ||
-      !selectedErrorType ||
-      !blocks[0]?.content.trim() ||
-      !previewMeta?.projectId
-    ) {
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
+    if (createdPostId) {
+      navigate(PATH.PREVIEW(createdPostId), {
+        replace: true,
+        state: buildPreviewState(),
+      });
       return;
     }
-
-    try {
-      const req = toCreatePostRequest(buildCreateForm("COMPLETED"));
-      if (isResume && resumePostId) {
-        await editPost(resumePostId, req as any);
-      } else {
-        await createPost(req);
-      }
+    if (previewMeta?.projectId) {
       navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
         state: { projectName: previewMeta.projectName },
+        replace: true,
       });
-    } catch (e) {
-      console.error(e);
-      setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      return;
     }
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 3000);
   };
 
   const handleCloseLoading = async () => {
     if (closingRef.current) return;
     closingRef.current = true;
     try {
-      if (summaryProgress < 100 && createdPostId && summaryTaskId) {
+      const targetId = createdPostId ?? resumePostId;
+      if (summaryProgress < 100 && targetId && summaryTaskId) {
         try {
-          await cancelSummary(createdPostId, summaryTaskId);
+          await cancelSummary(targetId, summaryTaskId);
         } catch (e) {
           console.error("요약 작업 취소 실패:", e);
         }
@@ -376,24 +632,7 @@ const TempWritePage = () => {
     }
   };
 
-  const buildCreateForm = (postStatus: "COMPLETED" | "WRITING") => {
-    const form: PostForm = {
-      title,
-      introduction: previewMeta?.description ?? "",
-      postTags: selectedTags,
-      isVisible: (previewMeta?.visibility ?? "public") === "public",
-      isSummaryCreated: false,
-      postStatus,
-      starRating: String(previewMeta?.importance ?? 0),
-      templateType: "GUIDELINE",
-      thumbnailImageUrl: previewMeta?.thumbnail ?? undefined,
-      projectId: previewMeta?.projectId ?? 0,
-      errorTag: selectedErrorType ?? "",
-      contents: toContentDtoList(blocks),
-    };
-    return form;
-  };
-
+  // ---------- UI ----------
   return (
     <div>
       <HeaderWoSearch />
@@ -415,6 +654,7 @@ const TempWritePage = () => {
             </div>
           )}
 
+          {/* 제목/태그 */}
           <div className="flex flex-col items-start gap-[40px]">
             <input
               type="text"
@@ -447,12 +687,13 @@ const TempWritePage = () => {
             </div>
           </div>
 
+          {/* 블록들(최신이 위) */}
           <div>
             {[...blocks].reverse().map((block, index) => {
               const originalIndex = blocks.length - 1 - index;
               return (
                 <EditorBlock
-                  key={block.id}
+                  key={(block as any).id}
                   block={block}
                   index={originalIndex}
                   isActive={originalIndex === activeIndex}
@@ -470,15 +711,16 @@ const TempWritePage = () => {
             })}
           </div>
 
+          {/* 모달들 */}
           {isPostSaveModalOpen && (
             <PostSaveModal
               onClose={() => setIsPostSaveModalOpen(false)}
               onNext={handleNextInPostSaveModal}
               projects={projectList.map((p) => ({ id: p.id, name: p.name }))}
               loadingProjects={projectsLoading}
-              defaultProjectId={initialProjectId}
+              defaultProjectId={initialProjectId ?? undefined}
               selectedTags={selectedTags}
-              // 수정 프리필 반영
+              selectedErrorType={selectedErrorType}
               initialImportance={
                 previewMeta?.importance ??
                 location.state?.savePrefill?.importance
@@ -524,6 +766,13 @@ const TempWritePage = () => {
               templateLabel={templateLabel}
               status={summaryStatus ?? undefined}
               serverMessage={statusMessage}
+            />
+          )}
+
+          {isSuccessModalOpen && completedSummaryId != null && (
+            <PostSuccessModal
+              onClose={() => setIsSuccessModalOpen(false)}
+              summaryId={completedSummaryId}
             />
           )}
         </div>
