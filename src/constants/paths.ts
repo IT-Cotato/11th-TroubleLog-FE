@@ -23,4 +23,5 @@ export const PATH = {
   PREVIEW: "/preview",
 
   NOT_FOUND: "/404",
+  AUTH_GUARD: "/auth-required",
 };

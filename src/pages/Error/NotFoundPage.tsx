@@ -1,17 +1,10 @@
-import { useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import { useViewerId } from "@/store/auth";
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const viewerId = useViewerId();
-
-  const missingPath = useMemo(() => {
-    const full = location.pathname + (location.search || "");
-    return full.length > 80 ? full.slice(0, 77) + "..." : full;
-  }, [location.pathname, location.search]);
 
   const goBack = () => {
     // 히스토리가 거의 없는 진입(새로고침/딥링크) 대비
@@ -32,15 +25,6 @@ export default function NotFoundPage() {
     }
   };
 
-  const goSearch = () => {
-    const sp = new URLSearchParams();
-    sp.set("query", "");
-    sp.set("scope", "community");
-    sp.set("page", "1");
-    sp.set("size", "10");
-    navigate(`${PATH.SEARCH}?${sp.toString()}`);
-  };
-
   return (
     <main className="w-full flex items-center justify-center py-24 px-6">
       <section className="w-full max-w-3xl rounded-2xl border border-gray-200 bg-white p-10 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
@@ -56,12 +40,6 @@ export default function NotFoundPage() {
             <p className="text-body-16-regular text-gray-500">
               요청하신 주소가 변경되었거나 삭제되었을 수 있어요.
             </p>
-            <p className="text-body-14-regular text-gray-400">
-              <span className="mr-1">요청 경로:</span>
-              <code className="rounded bg-gray-50 px-2 py-1 text-gray-600">
-                {missingPath || "/"}
-              </code>
-            </p>
           </div>
 
           <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
@@ -76,12 +54,6 @@ export default function NotFoundPage() {
               className="px-4 h-11 rounded-lg bg-primary text-white hover:opacity-90 transition"
             >
               홈으로 가기
-            </button>
-            <button
-              onClick={goSearch}
-              className="px-4 h-11 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-            >
-              검색으로 찾아보기
             </button>
             <button
               onClick={goMyPage}
