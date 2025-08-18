@@ -150,12 +150,14 @@ export default function PostComment({
           </div>
 
           {/* 답글 달기 버튼 */}
-          <div
-            className="text-body-16-regular text-gray3 cursor-pointer"
-            onClick={() => setReplyOpen(!replyOpen)}
-          >
-            {replyOpen ? "답글 취소" : "답글 달기"}
-          </div>
+          {onReply && (
+            <div
+              className="text-body-16-regular text-gray3 cursor-pointer"
+              onClick={() => setReplyOpen(!replyOpen)}
+            >
+              {replyOpen ? "답글 취소" : "답글 달기"}
+            </div>
+          )}
 
           {/* 답글 입력창 (임시 디자인) */}
           {replyOpen && (
