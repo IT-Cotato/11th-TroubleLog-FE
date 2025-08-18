@@ -27,6 +27,11 @@ export default function ProjectDetailPage() {
   const isInvalid = Number.isNaN(projectId);
   const viewerId = useViewerId();
 
+  // 트러블슈팅 문서 삭제 상태
+  const [removedRecentIds, setRemovedRecentIds] = useState<Set<number>>(
+    new Set()
+  );
+
   // 라우팅 시 폴더 카드에서 넘겨준 이름 사용, 없으면 api로 조회
   const location = useLocation() as { state?: { projectName?: string } };
   const [projectName, setProjectName] = useState<string>(
@@ -132,6 +137,15 @@ export default function ProjectDetailPage() {
     troubleOpts
   );
 
+  // 트러블슈팅 카드 삭제 후 목록 갱신
+  const handleRecentDeleted = useCallback((postId: number) => {
+    setRemovedRecentIds((prev) => {
+      const next = new Set(prev);
+      next.add(postId);
+      return next;
+    });
+  }, []);
+
   return (
     <div className="flex w-full px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[36px]">
       {/* 상단 나의 프로젝트 텍스트 및 글쓰기 버튼 */}
@@ -228,20 +242,23 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             <div className="flex flex-wrap justify-center sm:justify-start gap-[24px] w-full">
-              {cards.map((card) => (
-                <TroublogCard
-                  key={card.id}
-                  {...card}
-                  onClick={() => {
-                    const ownerId = card.authorId ?? viewerId;
-                    const qs = new URLSearchParams({ from: "project" });
-                    if (ownerId != null) qs.set("ownerId", String(ownerId));
-                    navigate(
-                      `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
-                    );
-                  }}
-                />
-              ))}
+              {cards
+                .filter((c) => !removedRecentIds.has(c.id))
+                .map((card) => (
+                  <TroublogCard
+                    key={card.id}
+                    {...card}
+                    onDeleted={handleRecentDeleted}
+                    onClick={() => {
+                      const ownerId = card.authorId ?? viewerId;
+                      const qs = new URLSearchParams({ from: "project" });
+                      if (ownerId != null) qs.set("ownerId", String(ownerId));
+                      navigate(
+                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+                      );
+                    }}
+                  />
+                ))}
             </div>
           )}
         </ProjectAccordion>
