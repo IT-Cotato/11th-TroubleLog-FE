@@ -15,6 +15,7 @@ import type {
 } from "@/types/trouble.model";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
+import { useViewerId } from "@/store/auth";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "complete" | "created";
@@ -24,6 +25,7 @@ export default function ProjectDetailPage() {
   const { id: routeProjectId } = useParams<{ id: string }>();
   const projectId = Number(routeProjectId);
   const isInvalid = Number.isNaN(projectId);
+  const viewerId = useViewerId();
 
   // 라우팅 시 폴더 카드에서 넘겨준 이름 사용, 없으면 api로 조회
   const location = useLocation() as { state?: { projectName?: string } };
@@ -227,7 +229,18 @@ export default function ProjectDetailPage() {
           ) : (
             <div className="flex flex-wrap justify-center sm:justify-start gap-[24px] w-full">
               {cards.map((card) => (
-                <TroublogCard key={card.id} {...card} />
+                <TroublogCard
+                  key={card.id}
+                  {...card}
+                  onClick={() => {
+                    const ownerId = card.authorId ?? viewerId;
+                    const qs = new URLSearchParams({ from: "project" });
+                    if (ownerId != null) qs.set("ownerId", String(ownerId));
+                    navigate(
+                      `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+                    );
+                  }}
+                />
               ))}
             </div>
           )}
