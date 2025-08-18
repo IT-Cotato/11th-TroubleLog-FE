@@ -21,6 +21,7 @@ import CommunityPage from "@/pages/Community/CommunityPage";
 import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
 import PreviewPage from "@/pages/TempWrite/PreviewPage";
+import NotFoundPage from "@/pages/Error/NotFoundPage";
 
 export const router = createBrowserRouter(
   [
@@ -94,6 +95,15 @@ export const router = createBrowserRouter(
           <PreviewPage />
         </ProtectedRoute>
       ),
+    },
+
+    {
+      path: PATH.NOT_FOUND,
+      element: <NotFoundPage />,
+    },
+    {
+      path: "*",
+      element: <NotFoundPage />,
     },
   ],
   {

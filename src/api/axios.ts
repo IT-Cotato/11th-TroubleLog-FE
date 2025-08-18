@@ -31,6 +31,13 @@ const COMPUTED_BASE_URL = RAW_BASE_URL || "/api";
 const API_ORIGIN = getOriginSafely(COMPUTED_BASE_URL);
 const ENVTYPE = import.meta.env.VITE_ENV_TYPE;
 
+// 타입 보강: 요청단위로 전역 404 스킵할 수 있게
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    __skipGlobal404?: boolean;
+  }
+}
+
 const api = axios.create({
   // baseURL: COMPUTED_BASE_URL,
   baseURL: API_BASE_URL || undefined,
@@ -42,6 +49,8 @@ const api = axios.create({
     EnvType: ENVTYPE,
   },
 });
+
+let navigating404 = false;
 
 // 공통 유틸: 로그인 페이지로의 네비게이션을 1회만
 let authNavigationPromise: Promise<void> | null = null;
@@ -137,6 +146,7 @@ api.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const status = error.response?.status;
+    const cfg = error.config;
     const reqUrl = (error.config?.url ?? "") as string;
     const isRefresh = reqUrl.includes("/auth/refresh");
     const onLogin = location.pathname === PATH.ROOT;
@@ -146,6 +156,36 @@ api.interceptors.response.use(
     const reqOrigin = isAbsolute ? getOriginSafely(reqUrl) : API_ORIGIN;
     const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
     if (isExternalAbsolute) return Promise.reject(error);
+
+    const isGET = (cfg?.method ?? "get").toUpperCase() === "GET";
+    const skip = cfg?.__skipGlobal404 === true;
+
+    // 현재 라우트가 이미 404면 추가 네비게이션 방지
+    const alreadyOn404 =
+      router?.state?.location?.pathname === PATH.NOT_FOUND ||
+      router?.state?.location?.pathname === "/404";
+
+    // SSE 등 특정 엔드포인트 제외
+    const url = cfg?.url ?? "";
+    const isSSE = /\/alert|\/connect|\/events/i.test(url);
+
+    if (
+      status === 404 &&
+      isGET &&
+      !skip &&
+      !alreadyOn404 &&
+      !isSSE &&
+      !navigating404
+    ) {
+      navigating404 = true;
+      // replace로 기록 오염 최소화
+      router
+        .navigate(PATH.NOT_FOUND ?? "/404", { replace: true })
+        .finally(() => {
+          // 약간의 지연 후 플래그 해제 (동시 요청 대비)
+          setTimeout(() => (navigating404 = false), 300);
+        });
+    }
 
     // 리프레시 자체 실패 → 즉시 로그인 이동(단 1회)
     if (isRefresh) {
