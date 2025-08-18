@@ -13,6 +13,7 @@ export interface PostForm {
   isSummaryCreated: boolean;
   postStatus: string;
   starRating: string;
+  templateType: string;
   thumbnailImageUrl?: string;
   projectId: number;
 
@@ -28,6 +29,7 @@ export const toCreatePostRequest = (form: PostForm): CreatePostRequest => ({
   isSummaryCreated: form.isSummaryCreated,
   postStatus: form.postStatus,
   starRating: form.starRating,
+  templateType: form.templateType,
   thumbnailImageUrl: form.thumbnailImageUrl,
   projectId: form.projectId,
   errorTagName: form.errorTag,
@@ -42,6 +44,7 @@ export const toEditPostRequest = (form: PostForm): EditPostRequest => ({
   isSummaryCreated: form.isSummaryCreated,
   postStatus: form.postStatus,
   starRating: form.starRating,
+  templateType: form.templateType,
   thumbnailImageUrl: form.thumbnailImageUrl,
   projectId: form.projectId,
   errorTagName: form.errorTag,
@@ -56,6 +59,7 @@ export const toPostForm = (res: ViewPostResponse): PostForm => ({
   isSummaryCreated: res.isSummaryCreated,
   postStatus: res.postStatus,
   starRating: res.starRating,
+  templateType: res.templateType,
   thumbnailImageUrl: res.thumbnailImageUrl,
   projectId: res.projectId,
   errorTag: res.errorTag,

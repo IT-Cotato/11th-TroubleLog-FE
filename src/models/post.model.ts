@@ -1,5 +1,3 @@
-// ===== models/post.model.ts
-
 export const SUMMARY_TYPES = [
   "NONE",
   "RESUME",
@@ -42,6 +40,7 @@ export interface PostServerMeta {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  completedAt: string | null;
   userId: number;
   projectId: number;
 }

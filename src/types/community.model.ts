@@ -8,7 +8,7 @@ export interface CommunityServerCard {
     userId: number;
     nickname: string;
     profileImageUrl: string | null;
-  };
+  } | null;
   id: number;
   title: string;
   thumbnailUrl: string | null;
@@ -29,6 +29,7 @@ export interface CommunityUserInfoDetail {
   bio: string | null;
   followerNum: number;
   followingNum: number;
+  isFollowed: boolean;
 }
 
 export interface CommunityPostDetailServer {

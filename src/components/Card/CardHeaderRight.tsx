@@ -10,15 +10,27 @@ interface CardHeaderRightProps {
   isMine: boolean;
   status: StatusType;
   authorProfileImageUrl?: string;
+  onAvatarClick?: () => void;
+  onDelete?: () => void;
+  deleting?: boolean;
 }
 
 export default function CardHeaderRight({
   isMine,
   status,
   authorProfileImageUrl,
+  onAvatarClick,
+  onDelete,
+  deleting = false,
 }: CardHeaderRightProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
+
+  // 카드 클릭으로 전파되지 않도록 막는 핸들러
+  const stopCardClick = {
+    onClick: (e: React.MouseEvent) => e.stopPropagation(),
+    onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
+  };
 
   if (!isMine) {
     return (
@@ -26,6 +38,20 @@ export default function CardHeaderRight({
         src={authorProfileImageUrl || image}
         alt="작성자 프로필"
         className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] rounded-full"
+        role="button"
+        tabIndex={0}
+        aria-label="작성자 프로필 보기"
+        onClick={(e) => {
+          e.stopPropagation();
+          onAvatarClick?.();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            onAvatarClick?.();
+          }
+        }}
       />
     );
   }
@@ -34,22 +60,27 @@ export default function CardHeaderRight({
     <div className="relative flex items-center gap-1 sm:gap-2" ref={menuRef}>
       <StatusDot status={status} />
       {status !== "inProgress" && (
-        <>
-          <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
+        <div className="relative" {...stopCardClick}>
+          <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
+
           {showMenu && (
-            <KebabDropdown
-              options={[
-                {
-                  label: "삭제",
-                  onClick: () => {
-                    setShowMenu(false);
-                    console.log("삭제 동작 실행");
+            // 아이템 클릭 시 카드 onClick 방지
+            <div {...stopCardClick}>
+              <KebabDropdown
+                options={[
+                  {
+                    label: deleting ? "삭제 중..." : "삭제",
+                    onClick: () => {
+                      if (!deleting) {
+                        onDelete?.();
+                      }
+                    },
                   },
-                },
-              ]}
-            />
+                ]}
+              />
+            </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

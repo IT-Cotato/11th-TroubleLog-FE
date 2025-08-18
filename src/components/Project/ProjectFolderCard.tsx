@@ -144,7 +144,11 @@ export default function ProjectFolderCard({
         e.stopPropagation();
       }}
     >
-      <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
+      <KebabMenuButton
+        onClick={() => setShowMenu((v) => !v)}
+        iconSize={16}
+        hitArea="comfortable"
+      />
       {showMenu && (
         <KebabDropdown
           options={[

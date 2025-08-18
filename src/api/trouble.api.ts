@@ -5,21 +5,27 @@ import type {
 } from "@/types/trouble.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "./axios";
-import type { MyTroublesServerPage } from "@/types/troubles.server";
+
+// 엔드포인트별 검색 응답 타입으로 분리
+import type {
+  MyTroubleSearchPage,
+  UserTroubleSearchPage,
+  CommunityTroubleSearchPage,
+} from "@/types/troubles.server";
 
 // 키별 디듀프(StrictMode 이펙트 2회 방지)
-const inflight = new Map<string, Promise<MyTroublesServerPage | null>>();
-const inflightUser = new Map<string, Promise<MyTroublesServerPage | null>>();
+const inflightMy = new Map<string, Promise<MyTroubleSearchPage | null>>();
+const inflightUser = new Map<string, Promise<UserTroubleSearchPage | null>>();
 const inflightCommunity = new Map<
   string,
-  Promise<MyTroublesServerPage | null>
+  Promise<CommunityTroubleSearchPage | null>
 >();
 
 /// 전체 트러블슈팅 목록 조회
 export const getTroubleList = (
   page = 1,
   size = 10,
-  sortBy: "latest" | "likes" = "latest"
+  sortBy: "latest" | "important" = "latest"
 ) =>
   getAPIResponseData<GetTroubleListResponse>(
     api.get<GetTroubleListResponse>("/troubles/my/list", {
@@ -38,53 +44,48 @@ export const getProjectTroubleList = (
     params: query, // { status: 'COMPLETED'|'SUMMARIZED', ...선택 }
   });
 
-// 사용자의 트러블슈팅 문서 기반 검색
+// 내 트러블슈팅 검색
 export async function searchMyTroubles(params: {
   keyword: string;
   page?: number;
   size?: number;
-}): Promise<MyTroublesServerPage | null> {
+}): Promise<MyTroubleSearchPage | null> {
   const { keyword, page = 1, size = 10 } = params;
   const p = Math.max(1, page);
 
   const key = `my::${keyword}::${p}::${size}`;
-  if (!inflight.has(key)) {
-    const promise = getAPIResponseData<MyTroublesServerPage | null>({
-      url: "/troubles/my/search",
+  if (!inflightMy.has(key)) {
+    const promise = getAPIResponseData<MyTroubleSearchPage | null>({
+      url: "troubles/my/search",
       method: "GET",
       params: { keyword, page: p, size },
-    }).finally(() => setTimeout(() => inflight.delete(key), 0));
-    inflight.set(key, promise);
+    }).finally(() => setTimeout(() => inflightMy.delete(key), 0));
+    inflightMy.set(key, promise);
   }
-  return inflight.get(key)!;
+  return inflightMy.get(key)!;
 }
 
-// 특정 사용자의 트러블슈팅 목록 조회
-export const getUserTroubleList = (
-  userId: number,
-  page = 1,
-  size = 10,
-  sortBy: "latest" | "likes" = "latest"
-) =>
+// 특정 사용자 트러블슈팅 목록 조회 (카드)
+export const getUserTroubleList = (userId: number, page = 1, size = 10) =>
   getAPIResponseData<GetTroubleListResponse>(
     api.get<GetTroubleListResponse>(`/troubles/users/${userId}/list`, {
-      params: { page, size, sortBy },
+      params: { page, size },
     })
   );
 
-// 특정 사용자의 트러블슈팅 문서 기반 검색
+// 특정 사용자 트러블슈팅 검색
 export async function searchUserTroubles(params: {
   userId: number;
   keyword: string;
   page?: number;
   size?: number;
-}): Promise<MyTroublesServerPage | null> {
+}): Promise<UserTroubleSearchPage | null> {
   const { userId, keyword, page = 1, size = 10 } = params;
   const p = Math.max(1, page);
 
   const key = `user:${userId}::${keyword}::${p}::${size}`;
   if (!inflightUser.has(key)) {
-    const promise = getAPIResponseData<MyTroublesServerPage | null>({
+    const promise = getAPIResponseData<UserTroubleSearchPage | null>({
       url: `/troubles/users/${userId}/search`,
       method: "GET",
       params: { keyword, page: p, size },
@@ -94,18 +95,18 @@ export async function searchUserTroubles(params: {
   return inflightUser.get(key)!;
 }
 
-// 공개 커뮤니티 검색 (제목/본문/태그)
+// 커뮤니티 검색
 export async function searchCommunityTroubles(params: {
   keyword: string;
   page?: number;
   size?: number;
-}): Promise<MyTroublesServerPage | null> {
+}): Promise<CommunityTroubleSearchPage | null> {
   const { keyword, page = 1, size = 10 } = params;
-  const p = Math.max(1, page); // ← 서버는 1부터
+  const p = Math.max(1, page);
 
   const key = `community::${keyword}::${p}::${size}`;
   if (!inflightCommunity.has(key)) {
-    const promise = getAPIResponseData<MyTroublesServerPage | null>({
+    const promise = getAPIResponseData<CommunityTroubleSearchPage | null>({
       url: "/community/search",
       method: "GET",
       params: { keyword, page: p, size },

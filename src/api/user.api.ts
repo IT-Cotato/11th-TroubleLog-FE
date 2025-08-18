@@ -25,7 +25,7 @@ export const patchProfile = (updatedProfile: UpdatedProfileData) =>
   getAPIResponseData({
     url: "/user",
     method: "PATCH",
-    data: { updatedProfile },
+    data: updatedProfile,
   });
 
 // 팔로워 목록 조회

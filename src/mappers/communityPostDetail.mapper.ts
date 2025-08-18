@@ -35,6 +35,7 @@ export function toCommunityPostVM(
     authorName: src.userInfoResDto.nickname ?? "",
     authorFollowers: src.userInfoResDto.followerNum ?? 0,
     authorBio: src.userInfoResDto.bio ?? "",
+    isFollowed: src.userInfoResDto.isFollowed,
     importance: 0,
     questions: sorted.map((c, i) => c.subTitle || `섹션 ${i + 1}`),
     contents: sorted.map((c) => [c.body || ""]),

@@ -108,7 +108,7 @@ const EditProfile = () => {
           field: data.field,
           bio: data.bio,
           githubUrl: data.githubUrl,
-          profileUrl: "",
+          profileUrl: profile.profileUrl,
         });
       } catch (error) {
         console.error("정보를 불러오는 데 실패했습니다", error);
@@ -138,6 +138,7 @@ const EditProfile = () => {
     }
 
     try {
+      console.log(profile);
       await patchProfile(profile);
       navigate(PATH.MYPAGE(id!));
     } catch (error) {
