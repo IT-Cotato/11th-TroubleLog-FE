@@ -18,7 +18,7 @@ import useClickOutside from "@/hooks/useClickOutside";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "complete" | "created";
-type SortUI = "latest" | "likes";
+type SortUI = "latest" | "important";
 
 export default function ProjectDetailPage() {
   const { id: routeProjectId } = useParams<{ id: string }>();
@@ -93,7 +93,7 @@ export default function ProjectDetailPage() {
   const toApiStatus = (s: StatusType) =>
     s === "complete" ? "COMPLETED" : ("SUMMARIZED" as const);
   const toApiSort = (s: SortUI) =>
-    s === "latest" ? "LATEST" : ("IMPORTANT" as const);
+    s === "latest" ? "LATEST" : ("LIKES" as const);
   const toApiVisibility = (v: VisibilityOption) =>
     v === "공개" ? "PUBLIC" : v === "비공개" ? "PRIVATE" : "ALL";
 

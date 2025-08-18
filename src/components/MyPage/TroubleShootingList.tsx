@@ -3,7 +3,9 @@ import SortButtonGroup from "../Project/SortButtonGroup";
 import TroubleShootingCard from "./TroubleShootingCard";
 import { mapToTroubleShootingCard } from "@/mappers/cardMapper";
 import { useMyPageStore } from "@/store/useMyPageStore";
-import { useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { PATH } from "@/constants/paths";
+import { useViewerId } from "@/store/auth";
 
 interface OutletContextType {
   isMyPage: boolean;
@@ -13,8 +15,8 @@ interface OutletContextType {
   hasNext: boolean;
   sentinelRef: React.RefObject<HTMLDivElement | null>;
   reload: () => void | Promise<void>;
-  sortBy: "latest" | "likes";
-  setSortBy: (v: "latest" | "likes") => void;
+  sortBy: "latest" | "important";
+  setSortBy: (v: "latest" | "important") => void;
 }
 
 const TroubleShootingList = () => {
@@ -29,6 +31,8 @@ const TroubleShootingList = () => {
     setSortBy,
     reload,
   } = useOutletContext<OutletContextType>();
+  const navigate = useNavigate();
+  const viewerId = useViewerId();
 
   const selectedStatus = useMyPageStore((state) => state.selectedStatus);
   const selectedTag = useMyPageStore((state) => state.selectedTag);
@@ -83,6 +87,15 @@ const TroubleShootingList = () => {
             key={card.id}
             {...mapToTroubleShootingCard(card)}
             onDeleted={handleDeleted}
+            onClick={() => {
+              const qs = new URLSearchParams({ from: "mypage" });
+              if (isMyPage) {
+                qs.set("ownerId", String(viewerId));
+              }
+              navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
+                state: { from: "mypage" },
+              });
+            }}
           />
         ))}
 

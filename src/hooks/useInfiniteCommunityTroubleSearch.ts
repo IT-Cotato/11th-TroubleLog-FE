@@ -1,36 +1,69 @@
 import { useCallback, useMemo } from "react";
-import { useInfiniteMyTroubleSearch } from "./useInfiniteMyTroubleSearch";
+import {
+  useInfiniteMyTroubleSearch,
+  type Fetcher,
+} from "./useInfiniteMyTroubleSearch";
 import { searchCommunityTroubles } from "@/api/trouble.api";
-import type { MyTroubleServerItem } from "@/types/troubles.server";
+
+import type {
+  TroubleSearchCard,
+  MyTroubleSearchPage,
+  CommunityTroubleSearchItem,
+  CommunityTroubleSearchPage,
+} from "@/types/troubles.server";
+
+// CommunityTroubleSearchItem -> TroubleSearchCard
+function toTroubleSearchCard(x: CommunityTroubleSearchItem): TroubleSearchCard {
+  // 완료/진행중 판정
+  const statusRaw = String(x.postStatus ?? "");
+  const inProgress =
+    /작성\s*중/i.test(statusRaw) || /in[\s_-]*progress/i.test(statusRaw);
+  const isDoneByStatus = /완료/i.test(statusRaw) && !inProgress;
+
+  // 공개글만 completedAt 부여
+  const isPublic = x.isVisible === true || (x as any).visibility === "PUBLIC";
+
+  const completedAt =
+    isPublic && (isDoneByStatus || x.isSummaryCreated)
+      ? x.updatedAt ?? x.createdAt
+      : null;
+
+  return {
+    id: x.id,
+    title: x.title,
+    thumbnailUrl: x.thumbnailUrl,
+    completedAt,
+    errorTag: x.errorTag,
+    postTags: x.postTags ?? [],
+    likeCount: x.likeCount,
+    commentCount: x.commentCount,
+    postCardUserInfoResDto: x.userInfo,
+  };
+}
+
+// CommunityTroubleSearchPage -> MyTroubleSearchPage
+function adaptPage(p: CommunityTroubleSearchPage): MyTroubleSearchPage {
+  return {
+    ...p,
+    content: p.content.map(toTroubleSearchCard),
+  };
+}
 
 export function useInfiniteCommunityTroubleSearch(keyword: string, size = 10) {
-  // 공개 + 완료만 (작성 중 제외)
-  const filterVisible = useCallback((x: MyTroubleServerItem) => {
-    const visible = x.isVisible === true; // 서버가 boolean로 내려줌
-    const statusRaw = String(x.postStatus ?? "");
-    const inProgress =
-      /작성\s*중/i.test(statusRaw) || /in[\s_-]*progress/i.test(statusRaw);
-    const completed = /완료/i.test(statusRaw) && !inProgress; // "요약 완료"/"작성 완료" 등
-    return visible && completed;
+  const filterCompleted = useCallback((x: TroubleSearchCard) => {
+    return !!x.completedAt;
   }, []);
 
-  // fetcher 주입 (키워드 없으면 호출 안 함)
-  const fetcher = useMemo(() => {
-    return ({
-      keyword,
-      page,
-      size,
-    }: {
-      keyword: string;
-      page: number;
-      size: number;
-    }) =>
-      keyword.trim()
-        ? searchCommunityTroubles({ keyword, page, size })
-        : Promise.resolve(null);
-  }, []);
+  const fetcher = useMemo<Fetcher>(
+    () =>
+      async ({ keyword, page, size }) => {
+        if (!keyword.trim()) return null;
+        const res = await searchCommunityTroubles({ keyword, page, size });
+        return adaptPage(res as CommunityTroubleSearchPage);
+      },
+    []
+  );
 
-  // 커뮤니티 결과 카드: 내 글 아님 + 검색 결과 표시
   const opts = useMemo(
     () => ({ isMine: false, authorName: "사용자", isSearchResult: true }),
     []
@@ -38,7 +71,7 @@ export function useInfiniteCommunityTroubleSearch(keyword: string, size = 10) {
 
   return useInfiniteMyTroubleSearch(keyword, size, opts, {
     fetcher,
-    filterItem: filterVisible,
+    filterItem: filterCompleted,
     enabled: !!keyword.trim(),
   });
 }

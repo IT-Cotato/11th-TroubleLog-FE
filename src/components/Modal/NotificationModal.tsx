@@ -62,7 +62,35 @@ export default function NotificationModal() {
                 className="flex justify-between items-start group"
               >
                 <div
-                  onClick={() => item.link && navigate(item.link)}
+                  onClick={() => {
+                    const link = item.link;
+                    if (!link) return;
+                    // 내부 상대 경로 우선 처리
+                    if (
+                      link.startsWith("/") ||
+                      link.startsWith("?") ||
+                      link.startsWith("#")
+                    ) {
+                      navigate(link);
+                      return;
+                    }
+                    try {
+                      const url = new URL(link);
+                      const protocol = url.protocol.toLowerCase();
+                      // http/https 만 허용
+                      if (protocol === "http:" || protocol === "https:") {
+                        if (url.origin === window.location.origin) {
+                          navigate(url.pathname + url.search + url.hash);
+                        } else {
+                          window.location.href = url.href; // 필요 시 새 탭: window.open(url.href, "_blank", "noopener")
+                        }
+                      }
+                      // 그 외 스킴은 무시
+                    } catch {
+                      // 절대 URL 파싱 실패 → 내부 경로로 간주
+                      navigate(link);
+                    }
+                  }}
                   className={clsx(
                     "text-body-20-regular cursor-pointer transition-all",
                     item.link &&

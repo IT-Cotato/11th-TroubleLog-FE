@@ -94,10 +94,12 @@ export default function TemplateSelectModal({
         </div>
 
         {/* 버튼 */}
-        <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
-          {onPrev && <CancelButton onClick={onPrev} label="이전" />}
-          <CancelButton onClick={onLater} label="다음에" />
-          <SaveButton onClick={handleConfirm} label="요약" />
+        <div className="flex items-center justify-between pt-[12px] pb-[32px]">
+          <div>{onPrev && <CancelButton onClick={onPrev} label="이전" />}</div>
+          <div className="flex gap-[16px]">
+            <CancelButton onClick={onLater} label="다음에" />
+            <SaveButton onClick={handleConfirm} label="요약" />
+          </div>
         </div>
       </div>
     </BaseModal>

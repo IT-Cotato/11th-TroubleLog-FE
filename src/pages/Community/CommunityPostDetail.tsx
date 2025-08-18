@@ -30,7 +30,7 @@ import {
   toPostComments,
 } from "@/mappers/communityComment.mapper";
 import { useViewerId } from "@/store/auth";
-import { hardDeletePost, getPostDetail } from "@/api/post.api";
+import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { toPostDetailVM } from "@/mappers/myPostDetail.mapper";
 import { postFollow, postUnfollow } from "@/api/user.api";
 
@@ -95,7 +95,13 @@ export default function CommunityPostDetail() {
   const resumePromptShownRef = useRef<Record<number, boolean>>({});
 
   // 컨텍스트/판정 유틸
-  type FromSource = "home" | "community" | "search" | "mypage" | undefined;
+  type FromSource =
+    | "home"
+    | "community"
+    | "search"
+    | "mypage"
+    | "project"
+    | undefined;
 
   type DetailContentItem = {
     id?: number;
@@ -132,7 +138,7 @@ export default function CommunityPostDetail() {
       String(ownerId) === String(viewerId);
 
     // 포스트 상세를 먼저 시도해야 하는 경우
-    if (from === "home") return true;
+    if (from === "home" || from === "project") return true;
     if (from === "mypage" && isMine) return true;
     if (from === "search" && isMine) return true;
     if (from === "community" && isMine) return true;

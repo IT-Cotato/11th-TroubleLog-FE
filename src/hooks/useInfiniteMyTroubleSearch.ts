@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { searchMyTroubles } from "@/api/trouble.api";
 import type {
-  MyTroublesServerPage,
-  MyTroubleServerItem,
+  MyTroubleSearchPage,
+  TroubleSearchCard,
 } from "@/types/troubles.server";
 import type { TroubleShootingCardProps } from "@/components/MyPage/TroubleShootingCard";
 import { toTroubleShootingCard } from "@/mappers/trouble.list-to-ts-card";
@@ -13,15 +13,15 @@ export interface UseInfiniteMyTroubleSearchOptions {
   isSearchResult?: boolean;
 }
 
-type Fetcher = (args: {
+export type Fetcher = (args: {
   keyword: string;
-  page: number;
+  page: number; // 1-based 요청
   size: number;
-}) => Promise<MyTroublesServerPage | null>;
+}) => Promise<MyTroubleSearchPage | null>;
 
 interface Ext {
   fetcher?: Fetcher;
-  filterItem?: (x: MyTroubleServerItem) => boolean;
+  filterItem?: (x: TroubleSearchCard) => boolean; // 여기도 카드 타입으로
   enabled?: boolean;
 }
 
@@ -40,13 +40,14 @@ export function useInfiniteMyTroubleSearch(
     [options?.isMine, options?.authorName, options?.isSearchResult]
   );
 
+  // /my/search 반환 타입에 맞춘 Fetcher
   const fetcher: Fetcher = useMemo(
     () => ext?.fetcher ?? ((args) => searchMyTroubles(args)),
     [ext?.fetcher]
   );
   const enabled = ext?.enabled ?? true;
 
-  // filterItem은 ref에 담아 콜백 의존성 불변화
+  // filterItem은 ref로 유지
   const filterRef = useRef<Ext["filterItem"]>(ext?.filterItem);
   useEffect(() => {
     filterRef.current = ext?.filterItem;
@@ -57,13 +58,13 @@ export function useInfiniteMyTroubleSearch(
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 내부 page는 1-based
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [displayTotal, setDisplayTotal] = useState(0); // 화면 표시용 개수
+  const [displayTotal, setDisplayTotal] = useState(0);
 
-  // 중복 호출 방지 락
   const inflightRef = useRef(false);
   const lastKeyRef = useRef<string>("");
 
@@ -85,8 +86,7 @@ export function useInfiniteMyTroubleSearch(
       if (inflightRef.current) return;
 
       const key = `${keyword}::${p}::${size}`;
-      if (key === lastKeyRef.current) return; // 같은 요청 반복 방지
-      lastKeyRef.current = key;
+      if (key === lastKeyRef.current) return;
 
       inflightRef.current = true;
       try {
@@ -94,20 +94,27 @@ export function useInfiniteMyTroubleSearch(
         else setLoadingMore(true);
 
         const res = await fetcher({ keyword, page: Math.max(1, p), size });
+        lastKeyRef.current = key;
 
-        const safe: MyTroublesServerPage = res ?? {
-          content: [],
-          hasNext: false,
-          totalPages: 0,
-          totalElements: 0,
-          page: p,
-          size,
-          isFirst: p === 1,
-          isLast: true,
+        // 서버가 0-based page를 줄 수 있으니 안전 보정
+        const safe: MyTroubleSearchPage = {
+          content: res?.content ?? [],
+          hasNext: !!res?.hasNext,
+          totalPages: res?.totalPages ?? 0,
+          totalElements: res?.totalElements ?? 0,
+          page:
+            typeof res?.page === "number"
+              ? res.page >= 0
+                ? res.page + 1
+                : Math.max(1, p)
+              : Math.max(1, p),
+          size: res?.size ?? size,
+          isFirst: res?.isFirst ?? p === 1,
+          isLast: res?.isLast ?? !res?.hasNext,
         };
 
-        // 필터링 (다른 사용자 검색에서 공개글만)
-        const raw = (safe.content as MyTroubleServerItem[]) ?? [];
+        // /my/search 아이템 타입 사용
+        const raw = (safe.content as TroubleSearchCard[]) ?? [];
         const filtered = filterRef.current
           ? raw.filter(filterRef.current)
           : raw;
@@ -120,12 +127,12 @@ export function useInfiniteMyTroubleSearch(
           for (const it of prev) map.set(it.id, it);
           for (const it of mapped) map.set(it.id, it);
           const arr = Array.from(map.values());
-          setDisplayTotal(arr.length); // 현재 화면에 보여질 총 개수
+          setDisplayTotal(arr.length);
           return arr;
         });
 
         setPage(safe.page);
-        setHasNext(safe.hasNext);
+        setHasNext(!!safe.hasNext);
         setTotalElements(safe.totalElements);
         setTotalPages(safe.totalPages);
       } catch (e) {
@@ -140,7 +147,6 @@ export function useInfiniteMyTroubleSearch(
     [opt, enabled, keyword, size, fetcher]
   );
 
-  // 키워드/사이즈/옵션 변경 시 초기 1페이지 로드
   useEffect(() => {
     if (!enabled || !keyword.trim()) {
       reset();

@@ -12,6 +12,7 @@ export const mockPost: CommunityPostDetailProps = {
   authorFollowers: 6,
   authorBio: "한줄 소개......",
   importance: 5,
+  isFollowed: true,
   questions: [
     "어떤 오류가 발생했나요?",
     "문제 원인 파악",
