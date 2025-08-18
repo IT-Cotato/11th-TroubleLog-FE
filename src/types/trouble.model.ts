@@ -19,6 +19,7 @@ export interface TroubleListItem {
   summaryType: TroubleSummaryType | string;
   likeCount: number | undefined;
   commentCount: number | undefined;
+  introduction?: string;
 }
 
 // 페이징 응답(서버가 ApiResponse로 감싸지 않는 케이스)

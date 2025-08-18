@@ -18,6 +18,7 @@ export interface TroubleSearchCard {
   postTags: string[];
   likeCount: number;
   commentCount: number;
+  introduction: string | null;
 }
 
 export type MyTroubleSearchPage = PaginatedResponse<TroubleSearchCard>;
