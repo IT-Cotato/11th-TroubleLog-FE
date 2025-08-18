@@ -1,6 +1,11 @@
+// src/pages/TempWrite/PreviewPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import TagList from "@/components/Card/TagList";
 import PostGuideMd from "@/components/Community/PostGuideMd";
@@ -10,14 +15,12 @@ import PostComment, {
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import useClickOutside from "@/hooks/useClickOutside";
-
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
 import { PATH } from "@/constants/paths";
-
 import { getCombinedDetail, getPostDetail } from "@/api/post.api";
 import type {
   ViewCombinedResponse,
@@ -28,9 +31,8 @@ import type {
 type ImageItem = { type: "image"; src: string; alt?: string };
 type GuideContent = string | ImageItem;
 
-interface PreviewState {
+type PreviewState = {
   editorType?: "FREEFORM" | "TEMPLATE";
-  guide?: { question: string; content: GuideContent[] };
   errorType?: string | null;
   title?: string;
   tags?: string[];
@@ -55,32 +57,16 @@ interface PreviewState {
     projectName?: string;
     thumbnail?: string | null;
   };
-}
-
-export interface CommunityPostDetailProps {
-  errorType: string;
-  title: string;
-  tags: string[];
-  date: string;
-  isMine: boolean;
-  authorProfile?: string;
-  authorName: string;
-  authorFollowers: number;
-  authorBio: string;
-  importance: number;
-  questions: string[];
-  contents: (string | { type: "image"; src: string; alt?: string })[][];
-  isLiked: boolean;
-  likeCounts: number;
-  commentCounts: number;
-  comments: PostCommentProps[];
-}
+};
 
 export default function PreviewPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { postId } = useParams<{ postId: string }>();
+  const [sp] = useSearchParams(); // ← summaryId 쿼리
+  const summaryId = sp.get("summaryId");
 
+  // 서버 로딩은 postId가 있을 때만
   const [loading, setLoading] = useState<boolean>(!!postId);
   const [error, setError] = useState<string | null>(null);
   const [fetched, setFetched] = useState<PreviewState | null>(null);
@@ -92,26 +78,29 @@ export default function PreviewPage() {
     (async () => {
       setLoading(true);
       setError(null);
+
+      // 1) summaryId 있으면 합본 조회
       try {
-        const combinedRes = await getCombinedDetail(Number(postId));
-        if (!ignore && combinedRes) {
-          const mapped = mapCombinedToPreviewState(combinedRes);
-          setFetched(mapped);
-          setLoading(false);
-          return;
+        if (summaryId != null) {
+          const combined = await getCombinedDetail(
+            Number(postId),
+            Number(summaryId)
+          );
+          if (!ignore && combined) {
+            setFetched(mapCombinedToPreviewState(combined));
+            setLoading(false);
+            return;
+          }
         }
       } catch {
-        //
+        // fallthrough -> 원본만
       }
 
+      // 2) 합본 실패 or summaryId 없음 → 원본만
       try {
-        const postRes = await getPostDetail(Number(postId));
-        if (!ignore && postRes) {
-          const mapped = mapPostToPreviewState(postRes);
-          setFetched(mapped);
-        } else if (!ignore) {
-          setError("문서를 불러오지 못했습니다.");
-        }
+        const post = await getPostDetail(Number(postId));
+        if (!ignore && post) setFetched(mapPostToPreviewState(post));
+        else if (!ignore) setError("문서를 불러오지 못했습니다.");
       } catch {
         if (!ignore) setError("문서를 불러오지 못했습니다.");
       } finally {
@@ -122,29 +111,34 @@ export default function PreviewPage() {
     return () => {
       ignore = true;
     };
-  }, [postId]);
+  }, [postId, summaryId]);
 
+  // state 우선 → fetched → 기본
   const data: PreviewState = (state as PreviewState) ?? fetched ?? {};
-
   const questions: string[] = useMemo(
-    () => data.questions ?? (data.guide ? [data.guide.question] : []),
-    [data.questions, data.guide]
+    () => data.questions ?? [],
+    [data.questions]
   );
-
   const contents: GuideContent[][] = useMemo(
-    () => data.contents ?? (data.guide ? [data.guide.content] : []),
-    [data.contents, data.guide]
+    () => data.contents ?? [],
+    [data.contents]
   );
-
   const hasAnySection = questions.length > 0 && contents.length > 0;
-  const safeDate = data.date ?? formatDate(new Date());
+  const safeDate = data.date ? ymd(new Date(data.date)) : ymd(new Date());
 
   const seedComments = (data.comments ?? []).map((c) => ({
     ...c,
     isReply: !!c.isReply,
   }));
+  const [isLiked, setIsLiked] = useState<boolean>(data.isLiked ?? false);
+  const [likeCounts, setLikeCounts] = useState<number>(data.likeCounts ?? 0);
+  const [commentInput, setCommentInput] = useState("");
+  const [comments, setComments] = useState<PostCommentProps[]>(seedComments);
 
-  const basePost: CommunityPostDetailProps = {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useClickOutside(() => setShowMenu(false));
+
+  const base = {
     errorType: data.errorType ?? "에러 유형",
     title: data.title ?? "제목(프리뷰)",
     tags: data.tags ?? [],
@@ -156,31 +150,41 @@ export default function PreviewPage() {
     authorBio: data.authorBio ?? "",
     importance: data.importance ?? 0,
     questions,
-    contents: contents as CommunityPostDetailProps["contents"],
-    isLiked: data.isLiked ?? false,
-    likeCounts: data.likeCounts ?? 0,
-    commentCounts:
-      typeof data.commentCounts === "number"
-        ? data.commentCounts
-        : seedComments.filter((c) => !c.isReply).length,
-    comments: seedComments,
+    contents,
   };
 
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useClickOutside(() => setShowMenu(false));
-  const [isLiked, setIsLiked] = useState<boolean>(basePost.isLiked);
-  const [likeCounts, setLikeCounts] = useState<number>(basePost.likeCounts);
+  // 목차 스크롤
+  const [currentSection, setCurrentSection] = useState<number>(0);
+  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+  useEffect(() => {
+    sectionRefs.current = base.questions.map((_, idx) =>
+      document.getElementById(`section-${idx}`)
+    );
+  }, [base.questions]);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      let cur = 0;
+      sectionRefs.current.forEach((ref, idx) => {
+        if (!ref) return;
+        const top = ref.getBoundingClientRect().top + window.scrollY;
+        if (y >= top - 250) cur = idx;
+      });
+      setCurrentSection(cur);
+    };
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const scrollToSection = (idx: number) => {
+    const t = sectionRefs.current[idx];
+    if (t) window.scrollTo({ top: t.offsetTop - 180, behavior: "smooth" });
+  };
 
+  // 인터랙션
   const handleToggleLike = () => {
-    setIsLiked((prev) => !prev);
-    setLikeCounts((prev) => (isLiked ? Math.max(0, prev - 1) : prev + 1));
+    setIsLiked((v) => !v);
+    setLikeCounts((c) => (isLiked ? Math.max(0, c - 1) : c + 1));
   };
-
-  const [commentInput, setCommentInput] = useState("");
-  const [comments, setComments] = useState<PostCommentProps[]>(
-    basePost.comments
-  );
-
   const handleEdit = (id: string, newContent: string) => {
     setComments((prev) =>
       prev.map((c) => (c.id === id ? { ...c, content: newContent } : c))
@@ -190,105 +194,34 @@ export default function PreviewPage() {
     setComments((prev) => prev.filter((c) => c.id !== id && c.parentId !== id));
   };
   const handleReply = (parentId: string, replyContent: string) => {
-    const newReply: PostCommentProps = {
+    const r: PostCommentProps = {
       id: `${Date.now()}-r`,
-      name: "현재 유저",
-      date: formatDate(new Date()),
+      name: base.authorName,
+      date: ymd(new Date()),
       content: replyContent,
       isMine: true,
       isReply: true,
       parentId,
     };
-    setComments((prev) => [...prev, newReply]);
+    setComments((prev) => [...prev, r]);
   };
   const handleCreateComment = () => {
     const content = commentInput.trim();
     if (!content) return;
-    const newComment: PostCommentProps = {
-      id: Date.now().toString(),
-      name: basePost.authorName ?? "익명",
-      date: formatDate(new Date()),
+    const c: PostCommentProps = {
+      id: String(Date.now()),
+      name: base.authorName,
+      date: ymd(new Date()),
       content,
       isMine: true,
       isReply: false,
     };
-    setComments((prev) => [newComment, ...prev]);
+    setComments((prev) => [c, ...prev]);
     setCommentInput("");
   };
-
-  const toMarkdownFromGuide = (
-    items: (string | { type: "image"; src: string; alt?: string })[]
-  ) =>
-    items
-      .map((it) =>
-        typeof it === "string" ? it : `![${it.alt ?? ""}](${it.src})`
-      )
-      .join("\n\n");
-
-  const buildFreeformPrefill = (post: CommunityPostDetailProps) => ({
-    editorType: "FREEFORM" as const,
-    title: post.title,
-    tags: post.tags,
-    errorType: post.errorType,
-    savePrefill: data.savePrefill,
-    blocks: post.questions.map((q, i) => ({
-      id: Date.now() + i,
-      title: q,
-      content: toMarkdownFromGuide(post.contents[i] ?? []),
-      isSaved: true,
-    })),
-  });
-
-  const buildTemplatePrefill = (post: CommunityPostDetailProps) => ({
-    editorType: "TEMPLATE" as const,
-    title: post.title,
-    tags: post.tags,
-    errorType: post.errorType,
-    savePrefill: data.savePrefill,
-    blocks: post.questions.map((q, i) => ({
-      id: Date.now() + i,
-      content: toMarkdownFromGuide(post.contents[i] ?? []),
-      checklist: [],
-      checklistItems: [],
-      checklistTitle: "",
-      question: q,
-      isSaved: true,
-    })),
-  });
-
   const handleProfileClick = () => navigate(PATH.MYPAGE?.("1") ?? "/");
 
-  const [currentSection, setCurrentSection] = useState<number>(0);
-  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
-
-  useEffect(() => {
-    sectionRefs.current = basePost.questions.map((_, idx) =>
-      document.getElementById(`section-${idx}`)
-    );
-  }, [basePost.questions]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      let current = 0;
-      sectionRefs.current.forEach((ref, idx) => {
-        if (ref) {
-          const top = ref.getBoundingClientRect().top + window.scrollY;
-          if (scrollY >= top - 250) current = idx;
-        }
-      });
-      setCurrentSection(current);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToSection = (idx: number) => {
-    const target = sectionRefs.current[idx];
-    if (target)
-      window.scrollTo({ top: target.offsetTop - 180, behavior: "smooth" });
-  };
-
+  // 로딩/에러/빈데이터 처리
   if (loading) {
     return (
       <div className="p-6">
@@ -299,7 +232,6 @@ export default function PreviewPage() {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="p-6">
@@ -310,21 +242,18 @@ export default function PreviewPage() {
             className="px-4 py-2 bg-purple-500 text-white rounded-xl"
             onClick={() => navigate(PATH.ROOT)}
           >
-            목록으로
+            홈으로
           </button>
         </div>
       </div>
     );
   }
-
   if (!hasAnySection) {
     return (
       <div className="p-6">
         <HeaderWoSearch />
         <div className="max-w-[960px] mx-auto mt-10">
-          <p className="text-gray-600 mb-4">
-            미리보기 데이터가 없습니다. 작성 화면으로 돌아갑니다.
-          </p>
+          <p className="text-gray-600 mb-4">미리보기 데이터가 없습니다.</p>
           <button
             className="px-4 py-2 bg-purple-500 text-white rounded-xl"
             onClick={() => navigate(PATH.ROOT)}
@@ -337,194 +266,222 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="">
+    <div>
       <HeaderWoSearch />
-      <div className="flex flex-col w-full">
-        {/* 오른쪽 목차 */}
-        <div className="fixed right-[89px] top-[520px] z-30 hidden xl:block">
-          <nav className="flex flex-col items-start gap-[16px] border-l border-gray3 pl-[12px] pr-[8px] py-[8px] rounded-lg bg-white/70 backdrop-blur-sm text-body-20-regular text-gray3 pointer-events-auto">
-            {basePost.questions.map((q, idx) => (
-              <button
-                key={idx}
-                onClick={() => scrollToSection(idx)}
-                className={`text-left hover:text-black ${
-                  currentSection === idx ? "text-black" : ""
-                }`}
-              >
-                {idx + 1}. {q}
-              </button>
-            ))}
-          </nav>
-        </div>
 
-        <div className="flex flex-col">
-          <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
-            {/* 상단 */}
-            <div className="flex w-full pt-[180px] pb-[18px] items-center border-b border-gray1">
-              <div className="flex flex-col items-start gap-[44px]">
-                <div className="flex flex-col items-start gap-[53px]">
-                  <div className="flex flex-col items-start gap-[10px]">
-                    <div className="flex w-[1200px] justify-between items-start">
-                      <span className="text-head-20-semibold">
-                        {basePost.errorType}
-                      </span>
-                      {basePost.isMine && (
-                        <div className="relative" ref={menuRef}>
-                          <KebabMenuButton
-                            onClick={() => setShowMenu(!showMenu)}
+      {/* 오른쪽 목차 */}
+      <div className="fixed right-[89px] top-[520px] z-30 hidden xl:block">
+        <nav className="flex flex-col items-start gap-[16px] border-l border-gray3 pl-[12px] pr-[8px] py-[8px] rounded-lg bg-white/70 backdrop-blur-sm text-body-20-regular text-gray3">
+          {base.questions.map((q, idx) => (
+            <button
+              key={idx}
+              onClick={() => scrollToSection(idx)}
+              className={`text-left hover:text-black ${
+                currentSection === idx ? "text-black" : ""
+              }`}
+            >
+              {idx + 1}. {q}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* 본문 */}
+      <div className="flex flex-col">
+        <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
+          {/* 상단 */}
+          <div className="flex w-full pt-[180px] pb-[18px] items-center border-b border-gray1">
+            <div className="flex flex-col items-start gap-[44px]">
+              <div className="flex flex-col items-start gap-[53px]">
+                <div className="flex flex-col items-start gap-[10px]">
+                  <div className="flex w-[1200px] justify-between items-start">
+                    <span className="text-head-20-semibold">
+                      {base.errorType}
+                    </span>
+
+                    {base.isMine && (
+                      <div className="relative" ref={menuRef}>
+                        <KebabMenuButton
+                          onClick={() => setShowMenu(!showMenu)}
+                        />
+                        {showMenu && (
+                          <KebabDropdown
+                            options={[
+                              {
+                                label: "포스트 수정",
+                                onClick: () => {
+                                  setShowMenu(false);
+                                  const editorType = (data.editorType ??
+                                    "FREEFORM") as "FREEFORM" | "TEMPLATE";
+                                  const toMd = (items: GuideContent[]) =>
+                                    items
+                                      .map((it) =>
+                                        typeof it === "string"
+                                          ? it
+                                          : `![${it.alt ?? ""}](${it.src})`
+                                      )
+                                      .join("\n\n");
+
+                                  if (editorType === "TEMPLATE") {
+                                    navigate(PATH.TEMP_WRITING, {
+                                      state: {
+                                        editorType,
+                                        title: base.title,
+                                        tags: base.tags,
+                                        errorType: base.errorType,
+                                        savePrefill: data.savePrefill,
+                                        blocks: base.questions.map((q, i) => ({
+                                          id: Date.now() + i,
+                                          content: toMd(base.contents[i] ?? []),
+                                          checklist: [],
+                                          checklistItems: [],
+                                          checklistTitle: "",
+                                          question: q,
+                                          isSaved: true,
+                                        })),
+                                      },
+                                    });
+                                  } else {
+                                    navigate(PATH.FREEFORM_WRITING, {
+                                      state: {
+                                        editorType,
+                                        title: base.title,
+                                        tags: base.tags,
+                                        errorType: base.errorType,
+                                        savePrefill: data.savePrefill,
+                                        blocks: base.questions.map((q, i) => ({
+                                          id: Date.now() + i,
+                                          title: q,
+                                          content: toMd(base.contents[i] ?? []),
+                                          isSaved: true,
+                                        })),
+                                      },
+                                    });
+                                  }
+                                },
+                              },
+                              {
+                                label: "삭제",
+                                onClick: () => setShowMenu(false),
+                              },
+                            ]}
+                            position={{ top: "0.1rem", left: "1.5rem" }}
                           />
-                          {showMenu && (
-                            <KebabDropdown
-                              options={[
-                                {
-                                  label: "포스트 수정",
-                                  onClick: () => {
-                                    setShowMenu(false);
-                                    const editorType =
-                                      (state as PreviewState)?.editorType ??
-                                      "FREEFORM";
-                                    if (editorType === "TEMPLATE") {
-                                      navigate(PATH.TEMP_WRITING, {
-                                        state: buildTemplatePrefill(basePost),
-                                      });
-                                    } else {
-                                      navigate(PATH.FREEFORM_WRITING, {
-                                        state: buildFreeformPrefill(basePost),
-                                      });
-                                    }
-                                  },
-                                },
-                                {
-                                  label: "삭제",
-                                  onClick: () => setShowMenu(false),
-                                },
-                              ]}
-                              position={{ top: "0.1rem", left: "1.5rem" }}
-                            />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-head-48">{basePost.title}</div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {(basePost.tags.length || basePost.date) && (
-                    <div className="flex items-center gap-[16px]">
-                      {basePost.tags.length ? (
-                        <TagList tags={basePost.tags} variant="post" />
-                      ) : null}
-                      {basePost.tags.length && basePost.date ? (
-                        <div className="text-body-16-regular text-gray3">·</div>
-                      ) : null}
-                      {basePost.date && (
-                        <div className="text-body-20-regular text-gray3">
-                          {basePost.date}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="text-head-48">{base.title}</div>
                 </div>
 
-                <div className="flex w-full items-center justify-between">
-                  <div
-                    className="flex items-center gap-[20px] cursor-pointer"
-                    onClick={handleProfileClick}
-                  >
-                    <img
-                      src={basePost.authorProfile || imageIcon}
-                      onError={(e) => {
-                        e.currentTarget.src = imageIcon;
-                      }}
-                      alt="profile"
-                      className="w-[66px] h-[66px] rounded-full object-cover"
-                    />
-                    <div className="text-head-24-bold">
-                      {basePost.authorName}
-                    </div>
+                {(base.tags.length || base.date) && (
+                  <div className="flex items-center gap-[16px]">
+                    {base.tags.length ? (
+                      <TagList tags={base.tags} variant="post" />
+                    ) : null}
+                    {base.tags.length && base.date ? (
+                      <div className="text-body-16-regular text-gray3">·</div>
+                    ) : null}
+                    {base.date && (
+                      <div className="text-body-20-regular text-gray3">
+                        {base.date}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-[8px]">
-                    <img
-                      src={starIcon}
-                      alt="importance"
-                      className="w-[24px] h-[24px]"
-                    />
-                    <div className="text-body-20-regular text-gray3">
-                      {basePost.importance}
-                    </div>
+                )}
+              </div>
+
+              <div className="flex w-full items-center justify-between">
+                <div
+                  className="flex items-center gap-[20px] cursor-pointer"
+                  onClick={handleProfileClick}
+                >
+                  <img
+                    src={base.authorProfile || imageIcon}
+                    onError={(e) => (e.currentTarget.src = imageIcon)}
+                    alt="profile"
+                    className="w-[66px] h-[66px] rounded-full object-cover"
+                  />
+                  <div className="text-head-24-bold">{base.authorName}</div>
+                </div>
+                <div className="flex items-center gap-[8px]">
+                  <img
+                    src={starIcon}
+                    alt="star"
+                    className="w-[24px] h-[24px]"
+                  />
+                  <div className="text-body-20-regular text-gray3">
+                    {base.importance}
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* 본문 */}
-            <div className="flex w-full flex-col items-start gap-[8px]">
-              <div className="flex flex-col items-start gap-[36px] self-stretch">
-                <div className="flex flex-col items-start self-stretch">
-                  <div className="flex flex-col items-start gap-[48px] self-stretch">
-                    <div className="flex flex-col items-start gap-[48px] self-stretch">
-                      {basePost.questions.map((q, idx) => (
-                        <div
-                          id={`section-${idx}`}
-                          key={idx}
-                          className="scroll-mt-[200px]"
-                        >
-                          <PostGuideMd
-                            question={q}
-                            content={basePost.contents[idx]}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 좋아요/공유 */}
-                <div className="flex pt+[52px] pb-[20px] items-center self-stretch border-b border-gray1">
-                  <div className="flex items-center gap-[20px]">
+          {/* 섹션 */}
+          <div className="flex w-full flex-col items-start gap-[8px]">
+            <div className="flex flex-col items-start gap-[36px] self-stretch">
+              <div className="flex flex-col items-start self-stretch">
+                <div className="flex flex-col items-start gap-[48px] self-stretch">
+                  {base.questions.map((q, idx) => (
                     <div
-                      className="flex items-center gap-[8px] cursor-pointer"
-                      onClick={handleToggleLike}
+                      id={`section-${idx}`}
+                      key={idx}
+                      className="scroll-mt-[200px]"
                     >
-                      <img
-                        src={isLiked ? heartIcon : likeEmptyIcon}
-                        alt="like"
-                        className="w-[40px] h-[40px]"
-                      />
-                      <div className="text-body-20-regular text-gray3">
-                        {likeCounts}
-                      </div>
+                      <PostGuideMd question={q} content={base.contents[idx]} />
                     </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 좋아요/공유 */}
+              <div className="flex pt+[52px] pb-[20px] items-center self-stretch border-b border-gray1">
+                <div className="flex items-center gap-[20px]">
+                  <button
+                    className="flex items-center gap-[8px]"
+                    onClick={handleToggleLike}
+                  >
                     <img
-                      src={shareIcon}
-                      alt="share"
+                      src={isLiked ? heartIcon : likeEmptyIcon}
+                      alt="like"
                       className="w-[40px] h-[40px]"
                     />
-                  </div>
-                </div>
-
-                {/* 댓글 입력 */}
-                <div className="flex flex-col items-end gap-[12px] self-stretch">
-                  <div className="flex flex-col items-start gap-[36px] self-stretch">
-                    <div className="text-head-32-semibold">
-                      {comments.filter((c) => !c.isReply).length}개의 댓글
+                    <div className="text-body-20-regular text-gray3">
+                      {likeCounts}
                     </div>
-                    <textarea
-                      value={commentInput}
-                      onChange={(e) => setCommentInput(e.target.value)}
-                      placeholder="댓글을 작성해주세요."
-                      className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
-                    />
-                  </div>
-                  <button
-                    onClick={handleCreateComment}
-                    disabled={!commentInput.trim()}
-                    className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
-                      commentInput.trim() ? "bg-primary" : "bg-subColor1"
-                    }`}
-                  >
-                    작성하기
                   </button>
+                  <img
+                    src={shareIcon}
+                    alt="share"
+                    className="w-[40px] h-[40px]"
+                  />
                 </div>
+              </div>
+
+              {/* 댓글 입력 */}
+              <div className="flex flex-col items-end gap-[12px] self-stretch">
+                <div className="flex flex-col items-start gap-[36px] self-stretch">
+                  <div className="text-head-32-semibold">
+                    {comments.filter((c) => !c.isReply).length}개의 댓글
+                  </div>
+                  <textarea
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    placeholder="댓글을 작성해주세요."
+                    className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={handleCreateComment}
+                  disabled={!commentInput.trim()}
+                  className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
+                    commentInput.trim() ? "bg-primary" : "bg-subColor1"
+                  }`}
+                >
+                  작성하기
+                </button>
               </div>
 
               {/* 댓글 목록 */}
@@ -569,12 +526,16 @@ export default function PreviewPage() {
   );
 }
 
-// 숫자 변환 - 별점
+// ---------- helpers ----------
+function ymd(d: Date) {
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yy}.${mm}.${dd}`;
+}
 const toInt = (s?: string) => (s == null ? 0 : Number.parseInt(s, 10) || 0);
-const ymd = (iso?: string) => (iso ? formatDate(new Date(iso)) : undefined);
 
-// 서버 PostContent[]
-function mapContentsToSections(contents: PostContent[] | undefined) {
+function mapContents(contents?: PostContent[]) {
   const questions: string[] = [];
   const blocks: (string | { type: "image"; src: string; alt?: string })[][] =
     [];
@@ -585,57 +546,44 @@ function mapContentsToSections(contents: PostContent[] | undefined) {
   return { questions, contents: blocks };
 }
 
-// PreviewState - 원본+요약
-function mapCombinedToPreviewState(data: ViewCombinedResponse): PreviewState {
-  const { questions, contents } = mapContentsToSections(data.contents);
-
+// 타입이 안 맞아도 안전하게 any로 읽어오도록 방어
+function mapCombinedToPreviewState(
+  d: ViewCombinedResponse | any
+): PreviewState {
+  const { questions, contents } = mapContents(d.contents);
   return {
     editorType: "FREEFORM",
-    title: data.title ?? "",
-    tags: data.postTags ?? [],
-    errorType: data.errorTag ?? "에러 유형",
-    date: ymd(data.createdAt),
-    importance: toInt(data.starRating),
+    title: d.title ?? "",
+    tags: d.postTags ?? [],
+    errorType: d.errorTag ?? "에러 유형",
+    date: d.createdAt,
+    importance: toInt(d.starRating),
     isMine: true,
     authorName: "작성자",
-    authorProfile: undefined,
-    authorBio: "",
-    likeCounts: data.likeCount ?? 0,
-    commentCounts: data.commentCount ?? 0,
+    likeCounts: d.likeCount ?? 0,
+    commentCounts: d.commentCount ?? 0,
     isLiked: false,
-    questions: questions.length ? questions : [data.title ?? "내용"],
-    contents: questions.length ? contents : [[data.introduction ?? ""]],
+    questions: questions.length ? questions : [d.title ?? "내용"],
+    contents: questions.length ? contents : [[d.introduction ?? ""]],
     comments: [],
   };
 }
-
-// PreviewState
-function mapPostToPreviewState(data: ViewPostResponse): PreviewState {
-  const { questions, contents } = mapContentsToSections(data.contents);
-
+function mapPostToPreviewState(d: ViewPostResponse | any): PreviewState {
+  const { questions, contents } = mapContents(d.contents);
   return {
     editorType: "FREEFORM",
-    title: data.title ?? "",
-    tags: data.postTags ?? [],
-    errorType: data.errorTag ?? "에러 유형",
-    date: ymd(data.createdAt),
-    importance: toInt(data.starRating),
+    title: d.title ?? "",
+    tags: d.postTags ?? [],
+    errorType: d.errorTag ?? "에러 유형",
+    date: d.createdAt,
+    importance: toInt(d.starRating),
     isMine: true,
     authorName: "작성자",
-    authorProfile: undefined,
-    authorBio: "",
-    likeCounts: data.likeCount ?? 0,
-    commentCounts: data.commentCount ?? 0,
+    likeCounts: d.likeCount ?? 0,
+    commentCounts: d.commentCount ?? 0,
     isLiked: false,
-    questions: questions.length ? questions : [data.title ?? "내용"],
-    contents: questions.length ? contents : [[data.introduction ?? ""]],
+    questions: questions.length ? questions : [d.title ?? "내용"],
+    contents: questions.length ? contents : [[d.introduction ?? ""]],
     comments: [],
   };
-}
-
-function formatDate(date: Date) {
-  const yy = String(date.getFullYear()).slice(2);
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  return `${yy}.${mm}.${dd}`;
 }

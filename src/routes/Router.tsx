@@ -21,7 +21,7 @@ import CommunityPage from "@/pages/Community/CommunityPage";
 import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
 import PostSummaryDetail from "@/pages/TempWrite/PostSummaryDetail";
-
+import PreviewPage from "@/pages/TempWrite/PreviewPage";
 export const router = createBrowserRouter(
   [
     // 로그인/회원가입
@@ -84,6 +84,14 @@ export const router = createBrowserRouter(
       element: (
         <ProtectedRoute>
           <FreeFormWritePage />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: PATH.PREVIEW_ROUTE, // "/troubles/:postId"
+      element: (
+        <ProtectedRoute>
+          <PreviewPage />
         </ProtectedRoute>
       ),
     },

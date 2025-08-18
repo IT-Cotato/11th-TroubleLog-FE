@@ -289,8 +289,19 @@ export default function FreeFormWritePage() {
       return;
     }
 
-    // 요약 플로우
-    setIsTemplateSelectModalOpen(true);
+    try {
+      const canonicalTags = await canonicalizeTags(selectedTags);
+      const req = buildCreateForm("WRITING", payload, canonicalTags);
+      const created = await createPost(req as any);
+      const postId = Number((created as any).id);
+      setCreatedPostId(postId);
+
+      // 그 다음에 템플릿 선택 모달 오픈
+      setIsTemplateSelectModalOpen(true);
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("문서 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   };
 
   // 템플릿 확정 → 초안 생성 → 요약 시작
@@ -301,7 +312,7 @@ export default function FreeFormWritePage() {
     if (isStartingSummary) return;
     setIsStartingSummary(true);
     try {
-      if (!previewMeta) throw new Error("저장 메타가 없습니다.");
+      if (!createdPostId) throw new Error("Post가 아직 생성되지 않았어요.");
 
       setIsTemplateSelectModalOpen(false);
       setIsLoadingModalOpen(true);
@@ -310,13 +321,8 @@ export default function FreeFormWritePage() {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const canonicalTags = await canonicalizeTags(selectedTags);
-      const req = buildCreateForm("WRITING", previewMeta, canonicalTags);
-      const created = await createPost(req as any);
-      const postId = Number((created as any).id);
-      setCreatedPostId(postId);
-
-      const start = await startSummary(postId, type);
+      // 요약 시작
+      const start = await startSummary(createdPostId, type);
       setSummaryTaskId(start.taskId);
     } catch (e) {
       console.error(e);
@@ -332,7 +338,7 @@ export default function FreeFormWritePage() {
     }
   };
 
-  // 폴링 (TempWrite와 동일)
+  // 폴링
   useEffect(() => {
     if (!isLoadingModalOpen || !createdPostId || !summaryTaskId) return;
 
@@ -386,28 +392,29 @@ export default function FreeFormWritePage() {
   }, [isLoadingModalOpen, createdPostId, summaryTaskId]);
 
   // 나중에 하기(요약 건너뛰고 원본 저장)
-  const handleLater = async () => {
-    if (
-      !title.trim() ||
-      !selectedErrorType ||
-      !blocks[0]?.content.trim() ||
-      !previewMeta?.projectId
-    ) {
+  const handleLater = () => {
+    if (!previewMeta?.projectId) {
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       return;
     }
 
-    try {
-      const canonicalTags = await canonicalizeTags(selectedTags);
-      const req = buildCreateForm("COMPLETED", previewMeta, canonicalTags);
-      await createPost(req as any);
+    const previewState = {
+      editorType: "FREEFORM" as const,
+      title,
+      tags: selectedTags,
+      errorType: selectedErrorType,
+      savePrefill: previewMeta,
+      questions: blocks.map((b) => (b.title || "").trim() || "Section"),
+      contents: blocks.map((b) => [b.content]),
+    };
+
+    if (createdPostId) {
+      navigate(PATH.PREVIEW(createdPostId), { state: previewState });
+    } else {
       navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
         state: { projectName: previewMeta.projectName },
       });
-    } catch (e) {
-      console.error(e);
-      setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
     }
   };
 

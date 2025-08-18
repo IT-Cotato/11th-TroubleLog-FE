@@ -98,8 +98,6 @@ const TempWritePage = () => {
     "Third-Party Library Error",
   ] as const;
 
-  // ✅ 서버에서 정의한 "체크리스트 문항 → 정수 ID"를 여기에 채워 넣으세요.
-  //   (아래 숫자는 예시입니다. 반드시 실제 ID로 교체!)
   const CHECKLIST_ERROR_ID_MAP: Record<string, number> = {
     "오류 메시지를 정확히 읽고 이해했나요?": 1,
     "로컬과 배포 환경의 차이를 점검해봤나요?": 2,
@@ -115,8 +113,7 @@ const TempWritePage = () => {
     "StackOverflow, OKKY 등 질문 커뮤니티": 4,
     "GitHub Issue 또는 블로그 참고": 5,
   };
-  // "오류를 정확히 인식하셨나요?" 섹션 → checklistError
-  // 나머지 섹션(원인/Tip/회고) → checklistReason
+
   const buildChecklistIdsFromBlocks = (bs: BlockData[]) => {
     const errorIds = new Set<number>();
     const reasonIds = new Set<number>();
@@ -142,6 +139,21 @@ const TempWritePage = () => {
     return {
       checklistErrorIds: Array.from(errorIds),
       checklistReasonIds: Array.from(reasonIds),
+    };
+  };
+
+  const buildPreviewState = () => {
+    return {
+      editorType: "TEMPLATE" as const,
+      title,
+      tags: selectedTags,
+      errorType: selectedErrorType,
+      date: new Date().toISOString(),
+      isMine: true,
+      importance: Number(previewMeta?.importance ?? 0),
+      savePrefill: previewMeta ?? undefined,
+      questions: blocks.map((b) => b.question),
+      contents: blocks.map((b) => [b.content]),
     };
   };
 
@@ -397,7 +409,10 @@ const TempWritePage = () => {
   // ---------- later / cancel ----------
   const handleLater = async () => {
     if (createdPostId) {
-      navigate(PATH.PREVIEW(createdPostId), { replace: true });
+      navigate(PATH.PREVIEW(createdPostId), {
+        replace: true,
+        state: buildPreviewState(),
+      });
       return;
     }
     if (previewMeta?.projectId) {

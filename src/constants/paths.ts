@@ -20,7 +20,13 @@ export const PATH = {
 
   TEMP_WRITING: "/tempwriting",
   FREEFORM_WRITING: "/freeformwriting",
-  PREVIEW: (postId: number) => `/troubles/${postId}`,
-  POST_SUMMARY: (summaryId: string | number) => `/post/summary/${summaryId}`,
+  PREVIEW: (postId: number, summaryId?: number | string) =>
+    summaryId != null
+      ? `/troubles/${postId}?summaryId=${summaryId}`
+      : `/troubles/${postId}`,
+  PREVIEW_ROUTE: "/troubles/:postId",
+
+  POST_SUMMARY: (summaryId: string | number) => `/post/summary/${summaryId}`, // ← 슬래시 두 개였던거 fix
+
   POST_SUMMARY_ROUTE: "/post/summary/:summaryId",
 };
