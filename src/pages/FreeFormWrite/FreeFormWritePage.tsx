@@ -8,6 +8,7 @@ import PostSaveModal, {
 } from "@/pages/TempWrite/PostSaveModal";
 import PostLoadingModal from "@/pages/TempWrite/PostLoadingModal";
 import TemplateSelectModal from "@/pages/TempWrite/TemplateSelectModal";
+import PostSuccessModal from "@/pages/TempWrite/PostSuccessModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import { useProjectList } from "@/hooks/useProjectList";
@@ -17,12 +18,14 @@ import {
   toEditPostRequest,
   type PostForm,
 } from "@/mappers/postMapper";
+
 import {
   createPost,
   startSummary,
   getSummaryStatus,
   cancelSummary,
   editPost,
+  getTagsByKeyword,
 } from "@/api/post.api";
 
 export type BlockData = {
@@ -47,8 +50,6 @@ type IncomingFreeformState = {
     thumbnail?: string | null;
   };
   projectId?: number;
-
-  // 수정 식별용
   postId?: number;
   mode?: "edit" | "create";
 };
@@ -81,6 +82,14 @@ const ERROR_CODE_TO_LABEL: Record<string, string> = {
 const toErrorLabel = (code?: string | null) =>
   code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
 
+type SummaryStatus =
+  | "PENDING"
+  | "STARTED"
+  | "PREPROCESSING"
+  | "ANALYZING"
+  | "POSTPROCESSING"
+  | "COMPLETED";
+
 export default function FreeFormWritePage() {
   const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -92,90 +101,94 @@ export default function FreeFormWritePage() {
     { id: Date.now(), title: "", content: "", isSaved: false },
   ]);
 
+  // 모달/알림
   const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
   const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
     useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
   const [showAlert, setShowAlert] = useState(false);
   const [showBlockAlert, setShowBlockAlert] = useState(false);
   const [showSaveAlert, setShowSaveAlert] = useState(false);
   const [showCancelAlert, setShowCancelAlert] = useState(false);
+  const [showSubtitleAlert, setShowSubtitleAlert] = useState(false);
 
+  // 요약/상태
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
   const [createdPostId, setCreatedPostId] = useState<number | null>(null);
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
   const [summaryProgress, setSummaryProgress] = useState(0);
-  const [templateLabel, setTemplateLabel] = useState("");
-
-  type SummaryStatus =
-    | "PENDING"
-    | "STARTED"
-    | "PREPROCESSING"
-    | "ANALYZING"
-    | "POSTPROCESSING"
-    | "COMPLETED";
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus | null>(
     null
   );
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const [templateLabel, setTemplateLabel] = useState("");
+  const [completedSummaryId, setCompletedSummaryId] = useState<number | null>(
+    null
+  );
 
   const [nextAction, setNextAction] = useState<"SUMMARY" | "SAVE" | null>(null);
+  const [isStartingSummary, setIsStartingSummary] = useState(false); // 더블클릭가드
 
   const closingRef = useRef(false);
-  const navigate = useNavigate();
-  const location = useLocation() as { state?: IncomingFreeformState };
-  const initialProjectId = location.state?.projectId;
-  const { data: projectList, loading: projectsLoading } = useProjectList();
-
   const titleInputRef = useRef<HTMLInputElement | null>(null);
 
-  // 수정여부 판단
+  const navigate = useNavigate();
+  const location = useLocation() as { state?: IncomingFreeformState };
+  const initialProjectId =
+    location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null;
+
+  const { data: projectList = [], loading: projectsLoading } = useProjectList();
+
+  // 이어쓰기(수정) 여부
   const resumePostId = useMemo(() => {
     const pid = location.state?.postId;
     return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
   }, [location.state]);
   const isResume = resumePostId != null;
 
-  // 프리필 반영
+  // 프리필 + 포커스
   useEffect(() => {
-    if (
-      location.state?.editorType === "FREEFORM" &&
-      location.state.blocks?.length
-    ) {
+    if (location.state?.editorType === "FREEFORM") {
       setTitle(location.state.title ?? "");
       setSelectedTags(location.state.tags ?? []);
-      setSelectedErrorType(toErrorLabel(location.state.errorType) ?? null);
-      setBlocks(location.state.blocks);
-
-      // 프리필 후 최상단으로 포커스
+      // 서버 코드가 올 수도 있으므로 라벨로 치환
+      setSelectedErrorType(
+        toErrorLabel(location.state.errorType) ??
+          location.state.errorType ??
+          null
+      );
+      if (location.state.blocks?.length) setBlocks(location.state.blocks);
       setTimeout(() => titleInputRef.current?.focus(), 0);
     }
   }, [location.state]);
 
-  // 초기 진입 시에도 한 번 보장
   useEffect(() => {
     setTimeout(() => titleInputRef.current?.focus(), 0);
   }, []);
 
+  // 콘텐츠 변환
   const toContentDtoList = (items: BlockData[]): PostContentDto[] =>
     items
       .filter((b) => (b.content ?? "").trim().length > 0)
-      .map((b, i) => ({
-        subTitle: (b.title ?? "").trim() || `Section ${i + 1}`,
-        body: b.content,
-        sequence: i + 1,
-        authorType: "USER_WRITTEN",
-        summaryType: "NONE",
-      }));
+      .map(
+        (b, i) =>
+          ({
+            subTitle: (b.title ?? "").trim() || `Section ${i + 1}`,
+            body: b.content,
+            sequence: i + 1,
+          } as any)
+      );
 
+  // 블록 조작
   const handleAddBlock = () => {
-    if (blocks.length >= 10) return;
+    if (blocks.length >= 20) return;
     setBlocks((prev) => [
       ...prev,
       { id: Date.now(), title: "", content: "", isSaved: false },
     ]);
   };
-
   const handleChangeBlock = (
     id: number,
     key: "title" | "content",
@@ -186,13 +199,46 @@ export default function FreeFormWritePage() {
     );
   };
 
-  const buildCreateForm = (
+  // 태그 정규화(백 사전 태그 매칭)
+  const canonicalizeTags = async (rawTags: string[]) => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of rawTags) {
+      const q = String(raw).replace(/^#\s*/, "").trim();
+      if (!q) continue;
+
+      const res: any = await getTagsByKeyword({ tagName: q });
+      const list: any[] = Array.isArray(res)
+        ? res
+        : res?.data ?? res?.content ?? res?.results ?? [];
+
+      const exact = list.find((t: any) => {
+        const n = typeof t === "string" ? t : t?.name ?? t;
+        return typeof n === "string" && n.toLowerCase() === q.toLowerCase();
+      });
+      const pickRaw = exact ?? list[0];
+      const pick =
+        typeof pickRaw === "string" ? pickRaw : pickRaw?.name ?? pickRaw;
+
+      // 사전 매칭 실패 시: 사용자가 입력한 원본을 사용(throw 대신 graceful fallback)
+      const normalized = String(pick ?? q).trim();
+      if (!seen.has(normalized.toLowerCase())) {
+        seen.add(normalized.toLowerCase());
+        out.push(normalized);
+      }
+    }
+    return out;
+  };
+
+  // 서버로 보낼 폼
+  const buildForm = (
     postStatus: "COMPLETED" | "WRITING",
-    meta: PostSavePayload | null = previewMeta
+    meta: PostSavePayload,
+    postTags: string[]
   ): PostForm => ({
     title,
     introduction: meta?.description ?? "",
-    postTags: selectedTags?.filter(Boolean) ?? [],
+    postTags,
     isVisible: (meta?.visibility ?? "public") === "public",
     isSummaryCreated: false,
     postStatus,
@@ -205,26 +251,37 @@ export default function FreeFormWritePage() {
     contents: toContentDtoList(blocks),
   });
 
-  // (원본 저장 함수) create ↔ edit 분기
-  const saveOriginalOnly = async (
-    meta: PostSavePayload | null = previewMeta
-  ) => {
-    if (!meta?.projectId) {
-      setIsPostSaveModalOpen(true);
-      return;
+  // 기본 검증
+  const validateBasic = () => {
+    if (!title.trim() || !selectedErrorType) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      return false;
     }
-    try {
-      const req = toCreatePostRequest(buildCreateForm("COMPLETED", meta));
-      console.debug(
-        isResume ? "[editPost] payload" : "[createPost] payload",
-        req
-      );
+    if (!blocks[0]?.content.trim()) {
+      setShowBlockAlert(true);
+      setTimeout(() => setShowBlockAlert(false), 3000);
+      return false;
+    }
+    return true;
+  };
 
+  // 상단 Save : 원본만 저장 (create ↔ edit 공통 처리)
+  const saveOriginal = async (meta: PostSavePayload) => {
+    const tags = await canonicalizeTags(selectedTags);
+    const form = buildForm("COMPLETED", meta, tags);
+
+    try {
       if (isResume && resumePostId) {
+        const req = toEditPostRequest(form);
         await editPost(resumePostId, req as any);
       } else {
-        await createPost(req);
+        const req = toCreatePostRequest(form);
+        await createPost(req as any);
       }
+
+      setShowSaveAlert(true);
+      setTimeout(() => setShowSaveAlert(false), 3000);
 
       navigate(PATH.PROJECT_DETAIL(String(meta.projectId)), {
         state: { projectName: meta.projectName },
@@ -232,19 +289,13 @@ export default function FreeFormWritePage() {
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
-      console.error(
-        isResume ? "editPost error" : "createPost error",
-        status,
-        data,
-        err
-      );
+      console.error("saveOriginal error", status, data, err);
 
       if (status === 401) {
         setStatusMessage("로그인이 만료되었어요. 다시 로그인해주세요.");
         navigate(PATH.LOGIN);
         return;
       }
-
       const msg =
         (typeof data === "string" && data) ||
         data?.message ||
@@ -254,75 +305,99 @@ export default function FreeFormWritePage() {
     }
   };
 
-  const handleEnd = () => {
-    if (!title.trim() || !selectedErrorType) {
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
+  const handleGlobalSave = async () => {
+    if (!validateBasic()) return;
+    setBlocks((prev) => prev.map((b) => ({ ...b, isSaved: true })));
+    setNextAction("SAVE");
+
+    if (!previewMeta?.projectId) {
+      setIsTemplateSelectModalOpen(false);
+      setIsPostSaveModalOpen(true);
+      setStatusMessage("프로젝트를 먼저 선택해주세요.");
       return;
     }
-    if (!blocks[0]?.content.trim()) {
-      setShowBlockAlert(true);
-      setTimeout(() => setShowBlockAlert(false), 3000);
-      return;
+
+    await saveOriginal(previewMeta);
+  };
+
+  // End → 템플릿 선택 → 요약
+  const handleEnd = () => {
+    if (!validateBasic()) return;
+    for (const block of blocks) {
+      if (!(block.title ?? "").trim()) {
+        setShowSubtitleAlert(true);
+        setTimeout(() => setShowSubtitleAlert(false), 3000);
+        return;
+      }
     }
     setNextAction("SUMMARY");
     setIsPostSaveModalOpen(true);
   };
 
-  const handleGlobalSave = async () => {
-    if (!title.trim() || !selectedErrorType) {
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
-      return;
-    }
-    if (!blocks[0]?.content.trim()) {
-      setShowBlockAlert(true);
-      setTimeout(() => setShowBlockAlert(false), 3000);
-      return;
-    }
-
-    setBlocks((prev) => prev.map((b) => ({ ...b, isSaved: true })));
-    setShowSaveAlert(true);
-    setTimeout(() => setShowSaveAlert(false), 3000);
-
-    setNextAction("SAVE");
-
-    if (!previewMeta?.projectId) {
-      setIsPostSaveModalOpen(true);
-      return;
-    }
-
-    try {
-      await saveOriginalOnly(previewMeta);
-    } catch (e) {
-      console.error(e);
-      setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-    }
-  };
-
+  // 저장 모달 → Next
   const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
     setPreviewMeta(payload);
     setIsPostSaveModalOpen(false);
 
     if (nextAction === "SAVE") {
-      try {
-        await saveOriginalOnly(payload);
-      } catch (e) {
-        console.error(e);
-        setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-      }
+      await saveOriginal(payload);
       return;
     }
-    setIsTemplateSelectModalOpen(true);
+
+    // SUMMARY 경로: WRITING으로 초안 저장(create 또는 edit) → 템플릿 선택
+    try {
+      const tags = await canonicalizeTags(selectedTags);
+      const form = buildForm("WRITING", payload, tags);
+
+      let targetId: number;
+      if (isResume && resumePostId) {
+        const editReq = toEditPostRequest(form);
+        await editPost(resumePostId, editReq as any);
+        targetId = resumePostId;
+      } else {
+        const createReq = toCreatePostRequest(form);
+        const created: any = await createPost(createReq as any);
+        // 다양한 래핑 케이스 대응
+        targetId = Number(
+          created?.id ?? created?.data?.id ?? created?.content?.id
+        );
+      }
+
+      setCreatedPostId(targetId);
+      setIsTemplateSelectModalOpen(true);
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("문서 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   };
 
-  // (요약 시작 분기) 기존: 생성 → 요약 시작
-  // 이어쓰기면 수정(WRITING) → 기존 postId로 요약 시작
+  // startSummary API 시그니처 호환 (develop: (id, {type}), feat: (id, type))
+  const startSummaryCompat = async (postId: number, type: SummaryTypeParam) => {
+    try {
+      const res: any = await startSummary(postId, { type } as any);
+      const taskId = res?.taskId ?? res?.data?.taskId ?? res?.content?.taskId;
+      if (!taskId) throw new Error("No taskId (object signature)");
+      return taskId as string;
+    } catch {
+      const res2: any = await startSummary(postId, type as any);
+      const taskId2 =
+        res2?.taskId ?? res2?.data?.taskId ?? res2?.content?.taskId;
+      if (!taskId2) throw new Error("No taskId (positional signature)");
+      return taskId2 as string;
+    }
+  };
+
+  // 템플릿 확정 → 요약 시작
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
   ) => {
+    if (isStartingSummary) return;
+    setIsStartingSummary(true);
     try {
+      const postId = createdPostId ?? resumePostId;
+      if (!postId) throw new Error("Post가 아직 생성되지 않았어요.");
+
       setIsTemplateSelectModalOpen(false);
       setIsLoadingModalOpen(true);
       setSummaryProgress(0);
@@ -330,23 +405,8 @@ export default function FreeFormWritePage() {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const form = buildCreateForm("WRITING");
-
-      let targetPostId: number;
-      if (isResume && resumePostId) {
-        const editReq = toEditPostRequest(form);
-        await editPost(resumePostId, editReq);
-        targetPostId = resumePostId;
-      } else {
-        const createReq = toCreatePostRequest(form);
-        const created = await createPost(createReq);
-        targetPostId = created.id;
-      }
-
-      setCreatedPostId(targetPostId);
-
-      const start = await startSummary(targetPostId, { type });
-      setSummaryTaskId(start.taskId);
+      const taskId = await startSummaryCompat(postId, type);
+      setSummaryTaskId(taskId);
     } catch (e) {
       console.error(e);
       setIsLoadingModalOpen(false);
@@ -356,9 +416,12 @@ export default function FreeFormWritePage() {
       setSummaryProgress(0);
       setSummaryStatus(null);
       setStatusMessage("요약 시작에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsStartingSummary(false);
     }
   };
 
+  // 폴링 (feat의 상세 메시지/완료처리 + develop의 status 병행)
   useEffect(() => {
     if (!isLoadingModalOpen || !createdPostId || !summaryTaskId) return;
 
@@ -367,14 +430,38 @@ export default function FreeFormWritePage() {
 
     const tick = async () => {
       try {
-        const data = await getSummaryStatus(createdPostId, summaryTaskId);
+        const targetId = createdPostId ?? resumePostId!;
+        const data: any = await getSummaryStatus(targetId, summaryTaskId);
         if (stopped) return;
-        const p = Math.max(0, Math.min(100, data.progress ?? 0));
+
+        const p = Math.max(0, Math.min(100, data?.progress ?? 0));
         setSummaryProgress(p);
-        if (data.status) setSummaryStatus(data.status as any);
-        if (data.message) setStatusMessage(data.message);
-        if (data.status === "COMPLETED" || p >= 100) {
+        if (data?.status) setSummaryStatus(data.status as SummaryStatus);
+
+        // 메시지 케이스 다양화
+        if (data?.currentStep) setStatusMessage(data.currentStep);
+        else if (data?.message) setStatusMessage(data.message);
+        else if (
+          data?.result &&
+          typeof data.result === "object" &&
+          "message" in (data.result as any)
+        ) {
+          setStatusMessage((data.result as any).message ?? "");
+        }
+
+        if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
+
+          // feat: postSummaryId를 성공 모달로 연결
+          if (typeof data?.postSummaryId === "number") {
+            setCompletedSummaryId(data.postSummaryId);
+            setIsLoadingModalOpen(false);
+            setIsSuccessModalOpen(true);
+          } else {
+            // 없더라도 로딩은 닫음
+            setIsLoadingModalOpen(false);
+          }
+
           if (timer !== null) {
             clearInterval(timer);
             timer = null;
@@ -395,46 +482,33 @@ export default function FreeFormWritePage() {
         timer = null;
       }
     };
-  }, [isLoadingModalOpen, createdPostId, summaryTaskId]);
+  }, [isLoadingModalOpen, createdPostId, resumePostId, summaryTaskId]);
 
-  // (나중에 완료 저장) create ↔ edit 분기
+  // 나중에 하기(요약 건너뛰고 원본 저장)
   const handleLater = async () => {
-    if (
-      !title.trim() ||
-      !selectedErrorType ||
-      !blocks[0]?.content.trim() ||
-      !previewMeta?.projectId
-    ) {
+    if (!validateBasic() || !previewMeta?.projectId) {
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       return;
     }
-
-    try {
-      const form = buildCreateForm("COMPLETED");
-      if (isResume && resumePostId) {
-        const editReq = toEditPostRequest(form);
-        await editPost(resumePostId, editReq);
-      } else {
-        const createReq = toCreatePostRequest(form);
-        await createPost(createReq);
-      }
-      navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
-        state: { projectName: previewMeta.projectName },
-      });
-    } catch (e) {
-      console.error(e);
-      setStatusMessage("원본 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-    }
+    await saveOriginal(previewMeta);
   };
 
+  // 로딩 모달 닫기(요약 취소)
   const handleCloseLoading = async () => {
     if (closingRef.current) return;
     closingRef.current = true;
     try {
-      if (summaryProgress < 100 && createdPostId && summaryTaskId) {
+      if (
+        summaryProgress < 100 &&
+        (createdPostId ?? resumePostId) &&
+        summaryTaskId
+      ) {
         try {
-          await cancelSummary(createdPostId, summaryTaskId);
+          await cancelSummary(
+            createdPostId ?? (resumePostId as number),
+            summaryTaskId
+          );
         } catch (e) {
           console.error("요약 작업 취소 실패:", e);
         }
@@ -457,7 +531,7 @@ export default function FreeFormWritePage() {
           {/* Alerts */}
           {showAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
-              제목과 에러 종류를 모두 입력해주세요.
+              제목과 에러 종류, 첫 블록 내용을 모두 입력해주세요.
             </div>
           )}
           {showBlockAlert && (
@@ -473,6 +547,11 @@ export default function FreeFormWritePage() {
           {showCancelAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               요약 작업이 중단되었어요.
+            </div>
+          )}
+          {showSubtitleAlert && (
+            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+              소제목을 입력해주세요.
             </div>
           )}
 
@@ -543,10 +622,10 @@ export default function FreeFormWritePage() {
 
           <button
             onClick={handleAddBlock}
-            disabled={blocks.length >= 10}
+            disabled={blocks.length >= 20}
             className="border-2 border-dashed p-4 rounded-xl w-full h-[140px] mt-4 text-gray-500 text-[20px] hover:bg-gray-50 disabled:opacity-50"
           >
-            + 블록 추가하기 ({blocks.length}/10)
+            + 블록 추가하기 ({blocks.length}/20)
           </button>
 
           {/* 모달들 */}
@@ -556,8 +635,9 @@ export default function FreeFormWritePage() {
               onNext={handleNextInPostSaveModal}
               projects={projectList.map((p) => ({ id: p.id, name: p.name }))}
               loadingProjects={projectsLoading}
-              defaultProjectId={initialProjectId}
+              defaultProjectId={initialProjectId ?? undefined}
               selectedTags={selectedTags}
+              selectedErrorType={selectedErrorType}
               initialImportance={
                 previewMeta?.importance ??
                 location.state?.savePrefill?.importance
@@ -603,6 +683,13 @@ export default function FreeFormWritePage() {
               templateLabel={templateLabel}
               status={summaryStatus ?? undefined}
               serverMessage={statusMessage}
+            />
+          )}
+
+          {isSuccessModalOpen && completedSummaryId != null && (
+            <PostSuccessModal
+              onClose={() => setIsSuccessModalOpen(false)}
+              summaryId={completedSummaryId}
             />
           )}
         </div>
