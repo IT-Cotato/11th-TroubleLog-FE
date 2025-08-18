@@ -182,7 +182,10 @@ export default function ProjectDetailPage() {
           </span>
         </div>
       ) : (
-        <ProjectAccordion title={titleLoading ? "불러오는 중…" : projectName}>
+        <ProjectAccordion
+          title={titleLoading ? "불러오는 중…" : projectName}
+          persistKey={`project:${projectId}`}
+        >
           <div className="flex flex-col sm:flex-row justify-between gap-4 w-full">
             {/* 작성 상태 필터 버튼 */}
             <div className="flex items-center gap-[24px] self-stretch">

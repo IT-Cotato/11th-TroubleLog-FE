@@ -304,6 +304,7 @@ export default function HomePage() {
       {/* Project Folders 영역 */}
       <ProjectAccordion
         title="Project Folders"
+        persistKey="home:project-folders"
         headerExtra={
           <button
             type="button"
@@ -367,7 +368,7 @@ export default function HomePage() {
       </ProjectAccordion>
 
       {/* Recents 영역 */}
-      <ProjectAccordion title="Recents">
+      <ProjectAccordion title="Recents" persistKey="home:recents">
         {isLoadingRecents && recentCards.length === 0 ? (
           <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
             <span className="text-body-20-regular">불러오는 중…</span>
