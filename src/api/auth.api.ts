@@ -7,6 +7,7 @@ import type {
   LogoutResponse,
   LoginResponse,
   EmailCheckResponse,
+  OauthRegisterRequest,
 } from "@/models/auth.model";
 
 // 회원가입
@@ -41,6 +42,15 @@ export const postRefreshToken = () =>
   getAPIResponseData<RefreshResponse>({
     url: "/auth/refresh",
     method: "POST",
+  });
+
+// 카카오 로그인 후 입력란
+export const postOauthRegister = (payload: OauthRegisterRequest) =>
+  getAPIResponseData<OauthRegisterRequest>({
+    url: "/auth/oauth-register",
+    method: "POST",
+    data: payload,
+    headers: getAuthHeaders(),
   });
 
 export const postLogout = () => {

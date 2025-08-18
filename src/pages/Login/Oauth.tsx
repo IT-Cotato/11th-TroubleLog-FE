@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { PATH } from "@/constants/paths";
 import {
   KAKAO_REST_KEY,
   KAKAO_REDIRECT_URI,
@@ -55,8 +56,7 @@ const Oauth = () => {
         // 필요하면 사용자 정보 저장..?
         localStorage.setItem("kakao_user", JSON.stringify(profile));
 
-        // 홈으로 이동
-        navigate("/signup/detail");
+        navigate(PATH.SIGNUP_OAUTH);
       } catch (error) {
         console.error("카카오 로그인 오류:", error);
         navigate("/");

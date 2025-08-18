@@ -22,6 +22,7 @@ import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
 import PostSummaryDetail from "@/pages/TempWrite/PostSummaryDetail";
 import PreviewPage from "@/pages/TempWrite/PreviewPage";
+import SignPageOauth from "@/pages/Login/SignPageOauth";
 export const router = createBrowserRouter(
   [
     // 로그인/회원가입
@@ -29,6 +30,7 @@ export const router = createBrowserRouter(
     { path: PATH.OAUTH, element: <Oauth /> },
     { path: PATH.SIGNUP, element: <SignPageOne /> },
     { path: PATH.SIGNUP_DETAIL, element: <SignPageTwo /> },
+    { path: PATH.SIGNUP_OAUTH, element: <SignPageOauth /> },
 
     // 보호 구역 (메인 레이아웃)
     {
