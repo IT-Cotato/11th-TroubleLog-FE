@@ -9,7 +9,10 @@ const SummaryTypeBarChart = ({ summaryData }: SummaryTypeBarChartProps) => {
   return (
     <div className="flex flex-col p-[36px] w-[462px] h-[412px] rounded-[16px] bg-white shadow-card">
       <span className="text-head-24-bold">내 요약본 종류</span>
-      <span className="text-body-18-regular">{`{${mostUsed.label}}을(를) 가장 많이 사용했어요.`}</span>
+      <span className="text-body-18-regular">
+        <span className="text-primary">{mostUsed.label}</span>을(를) 가장 많이
+        사용했어요.
+      </span>
 
       {/* 막대 그래프 */}
       <div className="flex justify-center items-end gap-[28px] mt-[36px] h-[245px]">

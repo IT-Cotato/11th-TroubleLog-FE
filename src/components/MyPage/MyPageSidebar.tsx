@@ -9,8 +9,14 @@ import userIcon from "@/assets/icons/user.svg";
 import circleYIcon from "@/assets/icons/circle_y.svg";
 import circleGIcon from "@/assets/icons/circle_g.svg";
 import circleBIcon from "@/assets/icons/circle_b.svg";
-import { getUserInfo, postFollow, postUnfollow } from "@/api/user.api";
-import type { UserInfoData } from "@/models/user.model";
+import {
+  getUserInfo,
+  postFollow,
+  postUnfollow,
+  getMyProfile,
+} from "@/api/user.api";
+import type { ProfileData, UserInfoData } from "@/models/user.model";
+import githubIcon from "@/assets/icons/githubIcon.svg";
 
 type MyPageSideBarProps =
   | {
@@ -29,6 +35,20 @@ type MyPageSideBarProps =
       onSelectTag: (tag: string | null) => void;
     };
 
+// 화면 표시용 통합 상태
+type DisplayUser = {
+  userId?: number;
+  nickname?: string;
+  bio?: string;
+  // 내 페이지: githubUrl 사용
+  githubUrl?: string;
+  // 타인 페이지: 프로필 이미지로만 사용
+  profileUrl?: string;
+  followerNum?: number;
+  followingNum?: number;
+  isFollowed?: boolean;
+};
+
 const MyPageSideBar = (props: MyPageSideBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,25 +62,43 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     resetViewedUser,
   } = useMyPageStore();
 
-  const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
+  const [userInfo, setUserInfo] = useState<DisplayUser | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
 
   const basePath = PATH.MYPAGE(id!);
   const isOnMainPage = location.pathname === basePath;
 
   const refetch = useCallback(async () => {
-    if (!id) return;
     try {
-      const data = await getUserInfo(Number(id));
-      setUserInfo(data);
-      setViewedUser({
-        id: Number(id),
-        nickname: data?.nickname ?? null,
-      });
+      if (props.isMyPage) {
+        // 내 마이페이지: getMyProfile
+        const me: ProfileData = await getMyProfile();
+        setUserInfo({
+          userId: me.userId,
+          nickname: me.nickname,
+          bio: me.bio,
+          githubUrl: me.githubUrl, // 텍스트로만 표시
+        });
+        setViewedUser({ id: me.userId, nickname: me.nickname ?? null });
+      } else {
+        // 타 사용자: getUserInfo
+        if (!id) return;
+        const other: UserInfoData = await getUserInfo(Number(id));
+        setUserInfo({
+          userId: other.userId,
+          nickname: other.nickname,
+          bio: other.bio,
+          profileUrl: other.profileUrl, // 아바타 이미지로만 사용
+          followerNum: other.followerNum,
+          followingNum: other.followingNum,
+          isFollowed: other.isFollowed,
+        });
+        setViewedUser({ id: other.userId, nickname: other.nickname ?? null });
+      }
     } catch (error) {
       console.error("사용자 정보 불러오기 실패:", error);
     }
-  }, [id, setViewedUser]);
+  }, [id, props.isMyPage, setViewedUser]);
 
   useEffect(() => {
     refetch();
@@ -72,10 +110,9 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     };
   }, [resetViewedUser]);
 
-  // 현재 경로가 메인 페이지가 아니면 태그 탭 자동 초기화
+  // 현재 경로가 메인 페이지가 아니면 선택 상태 초기화
   useEffect(() => {
-    const basePath = PATH.MYPAGE(id!);
-    const onMain = location.pathname === basePath;
+    const onMain = location.pathname === PATH.MYPAGE(id!);
     if (!onMain) {
       resetSelectedStatus();
       resetSelectedTag();
@@ -110,7 +147,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
         ? {
             ...prev,
             isFollowed: true,
-            followerNum: (prev.followerNum ?? 0) + 1, // 상대방의 팔로워 수 증가
+            followerNum: (prev.followerNum ?? 0) + 1,
           }
         : prev
     );
@@ -153,7 +190,6 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       await refetch();
     } catch (e) {
       console.error("언팔로우 실패", e);
-      // 롤백
       setUserInfo((prev) =>
         prev
           ? {
@@ -173,7 +209,10 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       {/* 상단 프로필 영역 */}
       <div className="flex flex-col items-center gap-3 self-stretch">
         <img
-          src={userInfo?.profileUrl || userIcon}
+          src={
+            // 타인 페이지면 프로필 이미지, 내 페이지는 스펙상 없으니 기본 아이콘
+            props.isMyPage ? userIcon : userInfo?.profileUrl || userIcon
+          }
           alt="user"
           className="w-[288px] h-[288px]"
         />
@@ -183,15 +222,28 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
 
             <div className="flex gap-1 text-body-20-regular text-gray4">
               <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWING, true)}>
-                팔로잉 {userInfo?.followingNum}
+                팔로잉 {userInfo?.followingNum ?? 0}
               </button>
               <span>·</span>
               <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWER, true)}>
-                팔로워 {userInfo?.followerNum}
+                팔로워 {userInfo?.followerNum ?? 0}
               </button>
             </div>
 
             <p className="text-body-20-regular pt-4 pb-1">{userInfo?.bio}</p>
+
+            {/* 내 페이지일 때만 githubUrl 텍스트 표시(링크/호버 효과 X) */}
+            {props.isMyPage && userInfo?.githubUrl && (
+              <div className="inline-flex items-center gap-2 text-body-20-regular text-gray3 break-all">
+                <img
+                  src={githubIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-8 h-8"
+                />
+                <span>{userInfo.githubUrl}</span>
+              </div>
+            )}
 
             {props.isMyPage ? (
               <FollowButton

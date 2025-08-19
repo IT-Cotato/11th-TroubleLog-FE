@@ -45,6 +45,7 @@ export interface CommunityPostDetailServer {
   postTags: string[];
   contents: TroubleContentBlock[];
   thumbnailUrl?: string | null;
+  starRating?: number | null;
 }
 
 // 댓글

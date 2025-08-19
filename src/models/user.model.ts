@@ -23,6 +23,7 @@ export interface UserInfoData {
   followerNum: number;
   followingNum: number;
   isFollowed: boolean;
+  githubUrl?: string;
 }
 
 export interface FollowingData {
