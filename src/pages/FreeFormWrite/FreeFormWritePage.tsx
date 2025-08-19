@@ -243,8 +243,7 @@ export default function FreeFormWritePage() {
     isSummaryCreated: false,
     postStatus,
     starRating: meta?.importance ?? 0,
-    templateType:
-      location.state?.editorType === "FREEFORM" ? "FREE_FORM" : "GUIDELINE",
+    templateType: "FREE_FORM",
     thumbnailImageUrl: meta?.thumbnail ?? undefined,
     projectId: Number(meta?.projectId ?? 0),
     errorTag: selectedErrorType ?? "",
@@ -271,7 +270,7 @@ export default function FreeFormWritePage() {
   // 상단 Save : 원본만 저장 (create ↔ edit 공통 처리)
   const saveOriginal = async (meta: PostSavePayload) => {
     const tags = await canonicalizeTags(selectedTags);
-    const form = buildForm("COMPLETED", meta, tags);
+    const form = buildForm("WRITING", meta, tags);
 
     try {
       if (isResume && resumePostId) {
@@ -346,10 +345,9 @@ export default function FreeFormWritePage() {
       return;
     }
 
-    // SUMMARY 경로: WRITING으로 초안 저장(create 또는 edit) → 템플릿 선택
     try {
       const tags = await canonicalizeTags(selectedTags);
-      const form = buildForm("WRITING", payload, tags);
+      const form = buildForm("COMPLETED", payload, tags);
 
       let targetId: number;
       if (isResume && resumePostId) {
