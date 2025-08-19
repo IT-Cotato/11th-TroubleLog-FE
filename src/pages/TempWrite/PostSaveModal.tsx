@@ -458,7 +458,7 @@ export default function PostSaveModal({
                     placeholder={
                       loadingProjects
                         ? "프로젝트 불러오는 중..."
-                        : "프로젝트를 선택해주세요."
+                        : projectName || "프로젝트를 선택해주세요."
                     }
                     width="w-full"
                     onSelect={(selectedName) =>

@@ -3,6 +3,7 @@ import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
 import { useLayoutEffect, useRef, useState, useEffect } from "react";
+
 export interface BlockData {
   id: number;
   content: string;
@@ -13,7 +14,7 @@ export interface BlockData {
   checklistTitle: string;
 }
 
-type EditorBlockProps = {
+export type EditorBlockProps = {
   title: string;
   selectedErrorType: string | null;
   block: BlockData;
@@ -24,7 +25,11 @@ type EditorBlockProps = {
   isActive: boolean;
   isLast: boolean;
   onEnd?: () => void;
+  onShowAlert?: () => void;
   onShowSaveAlert?: () => void;
+  onSave?: () => Promise<boolean>;
+  isSaving?: boolean;
+  canSave?: boolean;
   onActivate: (index: number) => void;
 };
 
@@ -44,6 +49,10 @@ const EditorBlock = ({
   title,
   selectedErrorType,
   onShowSaveAlert,
+  onShowAlert,
+  onSave,
+  isSaving,
+  canSave,
 }: EditorBlockProps) => {
   const [editorHeight, setEditorHeight] = useState<number>(MIN_H);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -93,15 +102,39 @@ const EditorBlock = ({
           <span className="font-bold text-black text-[24px]">
             {block.question}
           </span>
+
           {isActive && (
             <div className="flex flex-col items-end gap-2 min-w-[160px]">
               <div className="flex gap-2">
+                {/* Save */}
                 <button
-                  onClick={() => onShowSaveAlert?.()}
-                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100"
+                  disabled={!!isSaving || !canSave}
+                  onClick={async () => {
+                    try {
+                      if (!canSave) {
+                        onShowAlert?.();
+                        return;
+                      }
+                      if (!onSave) {
+                        onShowAlert?.();
+                        return;
+                      }
+                      const ok = await onSave();
+                      if (ok) onShowSaveAlert?.();
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                  className={`px-4 py-2 border rounded-xl text-sm ${
+                    isSaving || !canSave
+                      ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                      : "border-gray-200 text-purple-500 hover:bg-gray-100"
+                  }`}
                 >
-                  Save
+                  {isSaving ? "Saving..." : "Save"}
                 </button>
+
+                {/* Next/End */}
                 <button
                   onClick={() => {
                     if (isLast) onEnd?.();
@@ -181,4 +214,3 @@ const EditorBlock = ({
 };
 
 export default EditorBlock;
-export type { EditorBlockProps };

@@ -27,9 +27,13 @@ export const PATH = {
       : `/troubles/${postId}`,
   PREVIEW_ROUTE: "/troubles/:postId",
 
-  POST_SUMMARY: (summaryId: string | number) => `/post/summary/${summaryId}`, // ← 슬래시 두 개였던거 fix
-
+  POST_SUMMARY: (summaryId: string | number) => `/post/summary/${summaryId}`,
   POST_SUMMARY_ROUTE: "/post/summary/:summaryId",
-     NOT_FOUND: "/404",
+  NOT_FOUND: "/404",
   AUTH_GUARD: "/auth-required",
+
+  COMBINED_DETAIL: (postId?: string | number, summaryId?: string | number) =>
+    postId && summaryId
+      ? `/troubles/${postId}/combine/${summaryId}`
+      : "/troubles/:postId/combine/:summaryId",
 };

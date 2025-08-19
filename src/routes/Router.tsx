@@ -25,6 +25,7 @@ import PreviewPage from "@/pages/TempWrite/PreviewPage";
 import NotFoundPage from "@/pages/Error/NotFoundPage";
 import AuthGuardPage from "@/pages/Error/AuthGuardPage";
 import SignPageOauth from "@/pages/Login/SignPageOauth";
+import CombinedDetailPage from "@/pages/MyPage/CombinedDetailPage";
 export const router = createBrowserRouter(
   [
     // 로그인/회원가입
@@ -116,6 +117,10 @@ export const router = createBrowserRouter(
           <PostSummaryDetail />
         </ProtectedRoute>
       ),
+    },
+    {
+      path: PATH.COMBINED_DETAIL(),
+      element: <CombinedDetailPage />,
     },
   ],
   {

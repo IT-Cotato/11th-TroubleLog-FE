@@ -18,7 +18,6 @@ import {
   toEditPostRequest,
   type PostForm,
 } from "@/mappers/postMapper";
-
 import {
   createPost,
   startSummary,
@@ -29,6 +28,7 @@ import {
   getPostDetail,
 } from "@/api/post.api";
 
+// ---------- 타입 ----------
 export type BlockData = {
   id: number;
   title: string;
@@ -36,6 +36,7 @@ export type BlockData = {
   isSaved: boolean;
 };
 
+// 라우터에서 주입되는 상태
 type IncomingFreeformState = {
   editorType?: "FREEFORM";
   title?: string;
@@ -83,7 +84,8 @@ const ERROR_CODE_TO_LABEL: Record<string, string> = {
 const toErrorLabel = (code?: string | null) =>
   code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
 
-type SummaryStatus =
+// 서버가 내려줄 수 있는 요약 상태들
+export type SummaryStatus =
   | "PENDING"
   | "STARTED"
   | "PREPROCESSING"
@@ -92,18 +94,78 @@ type SummaryStatus =
   | "COMPLETED";
 
 export default function FreeFormWritePage() {
+  // ------------ 기본 상태 ------------
+  const navigate = useNavigate();
+  const location = useLocation() as { state?: IncomingFreeformState };
+
   const [wasCompleted, setWasCompleted] = useState(false);
   const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedErrorType, setSelectedErrorType] = useState<string | null>(
     null
   );
-
   const [blocks, setBlocks] = useState<BlockData[]>([
     { id: Date.now(), title: "", content: "", isSaved: false },
   ]);
 
-  // 모달/알림
+  // 프로젝트 목록
+  const { data: projectList = [], loading: projectsLoading } = useProjectList();
+  const projectNames = useMemo(
+    () => projectList.map((p) => p.name),
+    [projectList]
+  );
+  const nameToId = useMemo(
+    () => new Map(projectList.map((p) => [p.name, p.id])),
+    [projectList]
+  );
+  const projectNameById = (id?: number | null) =>
+    projectList.find((p) => p.id === id)?.name ?? "";
+
+  // 최초 진입 시 선택된 프로젝트 추론
+  const initialProjectId = useMemo(() => {
+    return (
+      location.state?.projectId ??
+      location.state?.savePrefill?.projectId ??
+      null
+    );
+  }, [location.state]);
+
+  const [selectedProjectIdPage, setSelectedProjectIdPage] = useState<
+    number | null
+  >(null);
+  useEffect(() => {
+    if (initialProjectId != null)
+      setSelectedProjectIdPage(Number(initialProjectId));
+  }, [initialProjectId]);
+
+  // 이어쓰기(수정) 여부 + 대상 포스트
+  const resumePostId = useMemo(() => {
+    const pid = location.state?.postId;
+    return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
+  }, [location.state]);
+  const isResume = resumePostId != null;
+
+  // 초안 ID (새로 작성 시 create 결과, 이어쓰기 시 기존 id)
+  const [draftPostId, setDraftPostId] = useState<number | null>(resumePostId);
+  useEffect(() => {
+    if (resumePostId) setDraftPostId(resumePostId);
+  }, [resumePostId]);
+
+  // 최초 1회 완료 여부 (completedAt 존재)
+  useEffect(() => {
+    (async () => {
+      if (!isResume || !resumePostId) return;
+      try {
+        const detail: any = await getPostDetail(resumePostId);
+        const completedAt = detail?.completedAt ?? null;
+        setWasCompleted(Boolean(completedAt));
+      } catch {
+        // ignore
+      }
+    })();
+  }, [isResume, resumePostId]);
+
+  // ------------ 모달/알림 ------------
   const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
   const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
     useState(false);
@@ -116,7 +178,7 @@ export default function FreeFormWritePage() {
   const [showCancelAlert, setShowCancelAlert] = useState(false);
   const [showSubtitleAlert, setShowSubtitleAlert] = useState(false);
 
-  // 요약/상태
+  // ------------ 요약/상태 ------------
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
   const [createdPostId, setCreatedPostId] = useState<number | null>(null);
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
@@ -131,51 +193,16 @@ export default function FreeFormWritePage() {
   );
 
   const [nextAction, setNextAction] = useState<"SUMMARY" | "SAVE" | null>(null);
-  const [isStartingSummary, setIsStartingSummary] = useState(false); // 더블클릭가드
-
+  const [isSaving, setIsSaving] = useState(false);
+  const [isStartingSummary, setIsStartingSummary] = useState(false);
   const closingRef = useRef(false);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
-
-  const navigate = useNavigate();
-  const location = useLocation() as { state?: IncomingFreeformState };
-  const initialProjectId =
-    location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null;
-
-  const { data: projectList = [], loading: projectsLoading } = useProjectList();
-
-  // 이어쓰기(수정) 여부
-  const resumePostId = useMemo(() => {
-    const pid = location.state?.postId;
-    return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
-  }, [location.state]);
-
-  const isResume = resumePostId != null;
-
-  // 이어쓰기 시 최초 1회 완료 여부 가져오기 (completedAt 존재 = 완료된 적 있음)
-  useEffect(() => {
-    (async () => {
-      if (!isResume || !resumePostId) return;
-      try {
-        const detail: any = await getPostDetail(resumePostId);
-        const completedAt = detail?.completedAt ?? null;
-        setWasCompleted(Boolean(completedAt));
-      } catch {
-        // 실패해도 기본값(false) 사용
-      }
-    })();
-  }, [isResume, resumePostId]);
-
-  const [draftPostId, setDraftPostId] = useState<number | null>(resumePostId);
-  useEffect(() => {
-    if (resumePostId) setDraftPostId(resumePostId);
-  }, [resumePostId]);
 
   // 프리필 + 포커스
   useEffect(() => {
     if (location.state?.editorType === "FREEFORM") {
       setTitle(location.state.title ?? "");
       setSelectedTags(location.state.tags ?? []);
-      // 서버 코드가 올 수도 있으므로 라벨로 치환
       setSelectedErrorType(
         toErrorLabel(location.state.errorType) ??
           location.state.errorType ??
@@ -185,12 +212,11 @@ export default function FreeFormWritePage() {
       setTimeout(() => titleInputRef.current?.focus(), 0);
     }
   }, [location.state]);
-
   useEffect(() => {
-    setTimeout(() => titleInputRef.current?.focus(), 0);
+    titleInputRef.current?.focus();
   }, []);
 
-  // 콘텐츠 변환
+  // ------------ DTO 변환 ------------
   const toContentDtoList = (items: BlockData[]): PostContentDto[] =>
     items
       .filter((b) => (b.content ?? "").trim().length > 0)
@@ -200,28 +226,12 @@ export default function FreeFormWritePage() {
             subTitle: (b.title ?? "").trim() || `Section ${i + 1}`,
             body: b.content,
             sequence: i + 1,
+            authorType: "USER_WRITTEN",
+            summaryType: "NONE",
           } as any)
       );
 
-  // 블록 조작
-  const handleAddBlock = () => {
-    if (blocks.length >= 20) return;
-    setBlocks((prev) => [
-      ...prev,
-      { id: Date.now(), title: "", content: "", isSaved: false },
-    ]);
-  };
-  const handleChangeBlock = (
-    id: number,
-    key: "title" | "content",
-    value: string
-  ) => {
-    setBlocks((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, [key]: value } : b))
-    );
-  };
-
-  // 태그 정규화(백 사전 태그 매칭)
+  // ------------ 태그 정규화 ------------
   const canonicalizeTags = async (rawTags: string[]) => {
     const out: string[] = [];
     const seen = new Set<string>();
@@ -234,15 +244,13 @@ export default function FreeFormWritePage() {
         ? res
         : res?.data ?? res?.content ?? res?.results ?? [];
 
-      const exact = list.find((t: any) => {
-        const n = typeof t === "string" ? t : t?.name ?? t;
-        return typeof n === "string" && n.toLowerCase() === q.toLowerCase();
-      });
-      const pickRaw = exact ?? list[0];
-      const pick =
-        typeof pickRaw === "string" ? pickRaw : pickRaw?.name ?? pickRaw;
+      const names = list
+        .map((t) => (typeof t === "string" ? t : t?.name ?? t))
+        .filter(Boolean) as string[];
 
-      // 사전 매칭 실패 시: 사용자가 입력한 원본을 사용(throw 대신 graceful fallback)
+      const exact = names.find((n) => n.toLowerCase() === q.toLowerCase());
+      const pick = (exact ?? names[0]) as string | undefined;
+
       const normalized = String(pick ?? q).trim();
       if (!seen.has(normalized.toLowerCase())) {
         seen.add(normalized.toLowerCase());
@@ -252,7 +260,7 @@ export default function FreeFormWritePage() {
     return out;
   };
 
-  // 서버로 보낼 폼
+  // ------------ 서버 폼 빌드 ------------
   const buildForm = (
     postStatus: "COMPLETED" | "WRITING" | "SUMMARIZED",
     meta: PostSavePayload,
@@ -264,7 +272,7 @@ export default function FreeFormWritePage() {
     isVisible: (meta?.visibility ?? "public") === "public",
     isSummaryCreated: false,
     postStatus,
-    starRating: meta?.importance ?? 0,
+    starRating: Number(meta?.importance ?? 0),
     templateType: "FREE_FORM",
     thumbnailImageUrl: meta?.thumbnail ?? undefined,
     projectId: Number(meta?.projectId ?? 0),
@@ -274,46 +282,108 @@ export default function FreeFormWritePage() {
     checklistReason: [],
   });
 
-  // 기본 검증
+  // ------------ 검증 ------------
   const validateBasic = () => {
     if (!title.trim() || !selectedErrorType) {
       setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
+      setTimeout(() => setShowAlert(false), 1000);
       return false;
     }
     if (!blocks[0]?.content.trim()) {
       setShowBlockAlert(true);
-      setTimeout(() => setShowBlockAlert(false), 3000);
+      setTimeout(() => setShowBlockAlert(false), 1000);
       return false;
     }
     return true;
   };
 
-  // 상단 Save : 원본만 저장 (create ↔ edit 공통 처리)
+  // ------------ upsert 유틸 ------------
+  const upsertPost = async (maybeId: number | null, form: PostForm) => {
+    if (maybeId) {
+      await editPost(maybeId, toEditPostRequest(form) as any);
+      return maybeId;
+    }
+    const created: any = await createPost(toCreatePostRequest(form) as any);
+    const newId = Number(
+      created?.id ?? created?.data?.id ?? created?.content?.id
+    );
+    if (!Number.isFinite(newId)) throw new Error("생성된 포스트 ID 누락");
+    return newId;
+  };
+
+  // ------------ 임시 저장 (WRITING) ------------
+  const handleClickTempSave = async (): Promise<boolean> => {
+    if (isSaving) return false;
+    setIsSaving(true);
+    try {
+      if (!validateBasic()) return false;
+
+      const projectId =
+        selectedProjectIdPage ??
+        previewMeta?.projectId ??
+        location.state?.savePrefill?.projectId ??
+        initialProjectId ??
+        null;
+
+      if (!projectId) {
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 1000);
+        return false;
+      }
+
+      const canonicalTags = await canonicalizeTags(selectedTags);
+      const meta: PostSavePayload = {
+        importance: previewMeta?.importance ?? 0,
+        description: previewMeta?.description ?? "",
+        visibility: previewMeta?.visibility ?? "public",
+        projectId: Number(projectId),
+        projectName:
+          projectNameById(selectedProjectIdPage) ||
+          previewMeta?.projectName ||
+          location.state?.savePrefill?.projectName ||
+          projectNameById(initialProjectId),
+        thumbnail: previewMeta?.thumbnail ?? null,
+      };
+
+      const form = buildForm("WRITING", meta, canonicalTags);
+      const id = await upsertPost(draftPostId, form);
+
+      setDraftPostId(id);
+      setCreatedPostId(id);
+      setBlocks((prev) => prev.map((b) => ({ ...b, isSaved: true })));
+
+      setShowSaveAlert(true);
+      setTimeout(() => setShowSaveAlert(false), 1000);
+      return true;
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("임시 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ------------ 최종 저장 (원본 COMPLETED 저장) ------------
   const saveOriginal = async (meta: PostSavePayload) => {
     const tags = await canonicalizeTags(selectedTags);
-    // 이미 완료된 포스트라면, 수정 저장 시에도 항상 COMPLETED 유지
+    // 이미 완료된 포스트라면 수정 시에도 COMPLETED 유지
     const nextStatus: "WRITING" | "COMPLETED" = wasCompleted
       ? "COMPLETED"
       : "WRITING";
     const form = buildForm(nextStatus, meta, tags);
 
     try {
-      const targetId = draftPostId ?? resumePostId ?? null;
-      if (targetId) {
-        const req = toEditPostRequest(form);
-        await editPost(targetId, req as any);
-      } else {
-        const req = toCreatePostRequest(form);
-        const created: any = await createPost(req as any);
-        const newId = Number(
-          created?.id ?? created?.data?.id ?? created?.content?.id
-        );
-        setDraftPostId(newId);
-      }
+      const id = await upsertPost(draftPostId, form);
+      setDraftPostId(id);
+      setCreatedPostId(id);
 
       setShowSaveAlert(true);
-      setTimeout(() => setShowSaveAlert(false), 3000);
+      setTimeout(() => setShowSaveAlert(false), 1000);
+
+      navigate(PATH.PROJECT_DETAIL(String(meta.projectId)), {
+        state: { projectName: meta.projectName },
+      });
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
@@ -333,6 +403,7 @@ export default function FreeFormWritePage() {
     }
   };
 
+  // 상단 Save 버튼: 원본 저장 + 임시저장 보조
   const handleGlobalSave = async () => {
     if (!validateBasic()) return;
     setBlocks((prev) => prev.map((b) => ({ ...b, isSaved: true })));
@@ -344,6 +415,7 @@ export default function FreeFormWritePage() {
       return;
     }
     await saveOriginal(quickMeta);
+    await handleClickTempSave();
   };
 
   // End → 템플릿 선택 → 요약
@@ -352,7 +424,7 @@ export default function FreeFormWritePage() {
     for (const block of blocks) {
       if (!(block.title ?? "").trim()) {
         setShowSubtitleAlert(true);
-        setTimeout(() => setShowSubtitleAlert(false), 3000);
+        setTimeout(() => setShowSubtitleAlert(false), 1000);
         return;
       }
     }
@@ -365,7 +437,7 @@ export default function FreeFormWritePage() {
     const pid =
       previewMeta?.projectId ?? initialProjectId ?? projectList[0]?.id ?? null;
 
-    if (pid == null) return null; // 프로젝트 없으면 임시저장 불가(토스트로 안내)
+    if (pid == null) return null; // 프로젝트 없으면 임시저장 불가
 
     const pname =
       previewMeta?.projectName ??
@@ -392,25 +464,14 @@ export default function FreeFormWritePage() {
       return;
     }
 
+    // SUMMARY 경로: 우선 원본을 COMPLETED 로 저장 → 템플릿 선택 열기
     try {
       const tags = await canonicalizeTags(selectedTags);
       const form = buildForm("COMPLETED", payload, tags);
-      const target = draftPostId ?? resumePostId ?? null;
-      let targetId: number;
-      if (target) {
-        const editReq = toEditPostRequest(form);
-        await editPost(target, editReq as any);
-        targetId = target;
-      } else {
-        const createReq = toCreatePostRequest(form);
-        const created: any = await createPost(createReq as any);
-        targetId = Number(
-          created?.id ?? created?.data?.id ?? created?.content?.id
-        );
-        setDraftPostId(targetId);
-      }
+      const id = await upsertPost(draftPostId, form);
+      setDraftPostId(id);
+      setCreatedPostId(id);
 
-      setCreatedPostId(targetId);
       setIsTemplateSelectModalOpen(true);
     } catch (e) {
       console.error(e);
@@ -418,7 +479,7 @@ export default function FreeFormWritePage() {
     }
   };
 
-  // startSummary API 시그니처 호환 (develop: (id, {type}), feat: (id, type))
+  // startSummary 파라미터 호환
   const startSummaryCompat = async (postId: number, type: SummaryTypeParam) => {
     try {
       const res: any = await startSummary(postId, { type } as any);
@@ -468,16 +529,21 @@ export default function FreeFormWritePage() {
     }
   };
 
-  // 폴링 (feat의 상세 메시지/완료처리 + develop의 status 병행)
+  // 폴링
   useEffect(() => {
-    if (!isLoadingModalOpen || !createdPostId || !summaryTaskId) return;
+    if (
+      !isLoadingModalOpen ||
+      !(createdPostId ?? resumePostId) ||
+      !summaryTaskId
+    )
+      return;
 
     let stopped = false;
     let timer: number | null = null;
 
     const tick = async () => {
       try {
-        const targetId = createdPostId ?? resumePostId!;
+        const targetId = (createdPostId ?? resumePostId) as number;
         const data: any = await getSummaryStatus(targetId, summaryTaskId);
         if (stopped) return;
 
@@ -485,7 +551,6 @@ export default function FreeFormWritePage() {
         setSummaryProgress(p);
         if (data?.status) setSummaryStatus(data.status as SummaryStatus);
 
-        // 메시지 케이스 다양화
         if (data?.currentStep) setStatusMessage(data.currentStep);
         else if (data?.message) setStatusMessage(data.message);
         else if (
@@ -499,7 +564,7 @@ export default function FreeFormWritePage() {
         if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
 
-          // 요약 성공 → postStatus = SUMMARIZED 로 반영 (부분 업데이트만)
+          // 요약 성공 → postStatus = SUMMARIZED 로 반영
           try {
             const targetIdNum = createdPostId ?? resumePostId!;
             await editPost(targetIdNum, { postStatus: "SUMMARIZED" } as any);
@@ -512,10 +577,8 @@ export default function FreeFormWritePage() {
             setIsLoadingModalOpen(false);
             setIsSuccessModalOpen(true);
           } else {
-            // 없더라도 로딩은 닫음
             setIsLoadingModalOpen(false);
           }
-
           if (timer !== null) {
             clearInterval(timer);
             timer = null;
@@ -538,9 +601,8 @@ export default function FreeFormWritePage() {
     };
   }, [isLoadingModalOpen, createdPostId, resumePostId, summaryTaskId]);
 
-  // 나중에 하기(요약 건너뛰고 원본 저장)
+  // 나중에 하기(요약 건너뛰고 미리보기/프로젝트로 이동)
   const handleLater = async () => {
-    // 그냥 이동만 (프로젝트/미리보기 등)
     if (createdPostId) {
       navigate(PATH.PREVIEW(createdPostId), { replace: true });
       return;
@@ -552,8 +614,15 @@ export default function FreeFormWritePage() {
       });
       return;
     }
-    setShowAlert(true);
-    setTimeout(() => setShowAlert(false), 3000);
+    if (!validateBasic()) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 1000);
+      return;
+    }
+    // 프로젝트 정보가 없다면 저장 모달로 유도
+    setIsTemplateSelectModalOpen(false);
+    setIsPostSaveModalOpen(true);
+    setStatusMessage("프로젝트를 먼저 선택해주세요.");
   };
 
   // 로딩 모달 닫기(요약 취소)
@@ -561,16 +630,10 @@ export default function FreeFormWritePage() {
     if (closingRef.current) return;
     closingRef.current = true;
     try {
-      if (
-        summaryProgress < 100 &&
-        (createdPostId ?? resumePostId) &&
-        summaryTaskId
-      ) {
+      const targetId = createdPostId ?? resumePostId;
+      if (summaryProgress < 100 && targetId && summaryTaskId) {
         try {
-          await cancelSummary(
-            createdPostId ?? (resumePostId as number),
-            summaryTaskId
-          );
+          await cancelSummary(targetId, summaryTaskId);
         } catch (e) {
           console.error("요약 작업 취소 실패:", e);
         }
@@ -579,12 +642,56 @@ export default function FreeFormWritePage() {
       setSummaryTaskId(null);
       setSummaryProgress(0);
       setShowCancelAlert(true);
-      setTimeout(() => setShowCancelAlert(false), 3000);
+      setTimeout(() => setShowCancelAlert(false), 1000);
     } finally {
       closingRef.current = false;
     }
   };
 
+  // 저장 가능 여부(버튼 비활성화용)
+  const canSave = useMemo(() => {
+    const hasTitle = !!title.trim();
+    const hasError = !!selectedErrorType;
+    const hasFirstContent = !!blocks[0]?.content?.trim();
+
+    const projectId =
+      selectedProjectIdPage ??
+      previewMeta?.projectId ??
+      location.state?.savePrefill?.projectId ??
+      initialProjectId ??
+      null;
+
+    const hasProject = !!projectId;
+    return hasTitle && hasError && hasFirstContent && hasProject;
+  }, [
+    title,
+    selectedErrorType,
+    blocks,
+    previewMeta?.projectId,
+    location.state?.savePrefill?.projectId,
+    initialProjectId,
+    selectedProjectIdPage,
+  ]);
+
+  // ------------ 블록 조작 ------------
+  const handleAddBlock = () => {
+    if (blocks.length >= 20) return;
+    setBlocks((prev) => [
+      ...prev,
+      { id: Date.now(), title: "", content: "", isSaved: false },
+    ]);
+  };
+  const handleChangeBlock = (
+    id: number,
+    key: "title" | "content",
+    value: string
+  ) => {
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, [key]: value } : b))
+    );
+  };
+
+  // ------------ UI ------------
   return (
     <div>
       <HeaderWoSearch />
@@ -593,7 +700,7 @@ export default function FreeFormWritePage() {
           {/* Alerts */}
           {showAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
-              제목과 에러 종류, 첫 블록 내용을 모두 입력해주세요.
+              제목, 프로젝트, 에러 종류, 첫 블록 내용을 모두 입력해주세요.
             </div>
           )}
           {showBlockAlert && (
@@ -629,6 +736,22 @@ export default function FreeFormWritePage() {
             />
             <div className="flex w-[1200px] justify-between">
               <div className="flex gap-[36px] items-center">
+                {/* 프로젝트 선택 */}
+                <DropDownButton
+                  options={projectNames}
+                  placeholder={
+                    projectsLoading
+                      ? "프로젝트 불러오는 중..."
+                      : projectNameById(selectedProjectIdPage) ||
+                        "프로젝트를 선택하세요"
+                  }
+                  width="w-[340px]"
+                  onSelect={(name) =>
+                    setSelectedProjectIdPage(nameToId.get(name) ?? null)
+                  }
+                />
+
+                {/* 에러 종류 */}
                 <DropDownButton
                   options={errorOptions}
                   placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
@@ -637,15 +760,27 @@ export default function FreeFormWritePage() {
                     setSelectedErrorType(selectedError)
                   }
                 />
+
+                {/* 태그 */}
                 <CategoryTag value={selectedTags} onChange={setSelectedTags} />
               </div>
+
               <div className="flex gap-2">
                 <button
-                  onClick={handleGlobalSave}
-                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100"
+                  onClick={async () => {
+                    if (!canSave) {
+                      setShowAlert(true);
+                      setTimeout(() => setShowAlert(false), 1000);
+                      return;
+                    }
+                    await handleGlobalSave();
+                  }}
+                  disabled={isSaving}
+                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100 disabled:opacity-50"
                 >
                   Save
                 </button>
+
                 <button
                   onClick={handleEnd}
                   className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600"
@@ -713,6 +848,7 @@ export default function FreeFormWritePage() {
                 location.state?.savePrefill?.visibility
               }
               initialProjectId={
+                selectedProjectIdPage ??
                 previewMeta?.projectId ??
                 location.state?.savePrefill?.projectId ??
                 initialProjectId ??
