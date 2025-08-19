@@ -6,7 +6,7 @@ import TagList from "./TagList";
 import type { StatusType, VisibilityType } from "@/types/project";
 import { PATH } from "@/constants/paths";
 import { useCallback, useState } from "react";
-import { deletePost } from "@/api/post.api";
+import { hardDeletePost } from "@/api/post.api";
 
 export interface TroublogCardProps {
   id: number;
@@ -76,7 +76,7 @@ export default function TroublogCard({
 
     try {
       setDeleting(true);
-      await deletePost(id);
+      await hardDeletePost(id);
       onDeleted?.(id); // 부모에 알림(목록 갱신)
     } catch (err: any) {
       console.error(err);
