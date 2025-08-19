@@ -7,7 +7,7 @@ import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
@@ -104,6 +104,7 @@ export default function CommunityPostDetail() {
     | "mypage"
     | "project"
     | undefined;
+  type SearchScope = "my" | "community" | undefined;
 
   type DetailContentItem = {
     id?: number;
@@ -125,33 +126,14 @@ export default function CommunityPostDetail() {
     const ownerId = stateOwnerId ?? (qsOwnerId ? Number(qsOwnerId) : undefined);
     const from = stateFrom ?? qsFrom;
 
-    return { from, ownerId, viewerId: viewerIdInStore };
-  }
+    // 검색 범위: location.state.searchScope 또는 ?scope=my|community 로 전달
+    const stateScope = (location.state as any)?.searchScope as
+      | SearchScope
+      | undefined;
+    const qsScope = (qs.get("scope") as SearchScope) || undefined;
+    const searchScope = stateScope ?? qsScope;
 
-  function shouldTryMyDetailFirst(params: {
-    from?: FromSource;
-    ownerId?: number;
-    viewerId?: number | null;
-  }) {
-    const { from, ownerId, viewerId } = params;
-    const isMine =
-      viewerId != null &&
-      ownerId != null &&
-      String(ownerId) === String(viewerId);
-
-    // 포스트 상세를 먼저 시도해야 하는 경우
-    if (from === "home" || from === "project") return true;
-    if (from === "mypage" && isMine) return true;
-    if (from === "search" && isMine) return true;
-    if (from === "community" && isMine) return true;
-
-    // 커뮤니티 상세를 먼저 시도해야 하는 경우
-    if (from === "community" && !isMine) return false;
-    if (from === "search" && !isMine) return false;
-    if (from === "mypage" && !isMine) return false;
-
-    // 기본은 커뮤니티 우선
-    return false;
+    return { from, ownerId, viewerId: viewerIdInStore, searchScope };
   }
 
   // 별점 enum/문자 → 숫자
@@ -342,10 +324,6 @@ export default function CommunityPostDetail() {
 
   // 상세 로드
   const detailCtx = useDetailContext();
-  const preferMyFirst = useMemo(
-    () => shouldTryMyDetailFirst(detailCtx),
-    [detailCtx.from, detailCtx.ownerId, detailCtx.viewerId]
-  );
   const [isCommunitySource, setIsCommunitySource] = useState(true); // 좋아요/댓글 표시 가드
 
   useEffect(() => {
@@ -433,23 +411,54 @@ export default function CommunityPostDetail() {
 
     (async () => {
       try {
-        if (preferMyFirst) {
+        const viewerId = detailCtx.viewerId ?? null;
+        const isMine =
+          viewerId != null &&
+          detailCtx.ownerId != null &&
+          String(detailCtx.ownerId) === String(viewerId);
+
+        if (isMine) {
+          // 1) 내 글이면 먼저 post detail로 상태 판별
+          let myDetail: any;
           try {
-            await loadMine(numId);
+            myDetail = await getPostDetail(numId);
           } catch {
+            // 권한/미존재 시엔 커뮤니티로 폴백
+            await loadCommunity();
+            return;
+          }
+
+          const isCompleted = !!(myDetail?.completedAt ?? null);
+          if (!isCompleted) {
+            // (A) 내 글 + 작성중 → 포스트 상세
+            await loadMine(numId);
+            return;
+          }
+
+          // (B) 내 글 + 작성완료 → 출처/검색범위 규칙으로 분기
+          const from = detailCtx.from;
+          const scope = detailCtx.searchScope; // "my" | "community" | undefined
+
+          const shouldUsePostDetail =
+            from === "home" ||
+            from === "project" ||
+            from === "mypage" ||
+            (from === "search" && scope === "my");
+
+          if (shouldUsePostDetail) {
+            // post detail 그대로 세팅 (댓글/좋아요 숨김)
+            const vmMine = toPostDetailVM(myDetail as any, viewerId);
+            setPost(vmMine);
+            setIsLiked(vmMine.isLiked);
+            setLikeCounts(vmMine.likeCounts);
+            setIsCommunitySource(false);
+          } else {
+            // 커뮤니티 상세
             await loadCommunity();
           }
         } else {
-          try {
-            await loadCommunity();
-          } catch (err: any) {
-            const status = err?.response?.status ?? err?.status;
-            if (status === 401 || status === 403 || status === 404) {
-              await loadMine(numId);
-            } else {
-              throw err;
-            }
-          }
+          // 2) 내 글이 아니면 커뮤니티 상세
+          await loadCommunity();
         }
       } catch (err: any) {
         if (!cancelled)
@@ -471,7 +480,7 @@ export default function CommunityPostDetail() {
     detailCtx.viewerId,
     detailCtx.from,
     detailCtx.ownerId,
-    preferMyFirst,
+    detailCtx.searchScope,
     navigate,
   ]);
 
