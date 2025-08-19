@@ -296,12 +296,14 @@ const TempWritePage = () => {
     isVisible: (meta?.visibility ?? "public") === "public",
     isSummaryCreated: false,
     postStatus,
-    starRating: String(meta?.importance ?? 0),
+    starRating: meta?.importance ?? 0,
     templateType: "GUIDELINE",
     thumbnailImageUrl: meta?.thumbnail ?? undefined,
     projectId: Number(meta?.projectId ?? 0),
     errorTag: selectedErrorType ?? "",
     contents: toContentDtoList(blocks),
+    checklistError: [],
+    checklistReason: [],
   });
 
   type UiPostStatus = "WRITING" | "COMPLETED";
