@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import DropDownButton from "@/components/Button/DropDownButton";
 import CategoryTag from "@/components/TemplateWrite/CategoryTag";
@@ -13,11 +13,7 @@ import PostSuccessModal from "./PostSuccessModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 
-import {
-  toCreatePostRequest,
-  toEditPostRequest,
-  type PostForm,
-} from "@/mappers/postMapper";
+import { toCreatePostRequest, toEditPostRequest } from "@/mappers/postMapper";
 
 import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
 import { useProjectList } from "@/hooks/useProjectList";
@@ -35,7 +31,7 @@ type IncomingTemplateState = {
   editorType?: "TEMPLATE";
   title?: string;
   tags?: string[];
-  errorType?: string | null; // 서버 코드 or 라벨
+  errorType?: string | null;
   blocks?: BlockData[];
   savePrefill?: {
     importance?: number;
@@ -46,9 +42,7 @@ type IncomingTemplateState = {
     thumbnail?: string | null;
   };
   projectId?: number;
-
-  // 수정 식별용
-  postId?: number;
+  postId?: number; // 수정 식별용
   mode?: "edit" | "create";
 };
 
@@ -96,6 +90,15 @@ const enrichBlocksWithChecklist = (blocks: BlockData[]): BlockData[] => {
 
 // ---------- 페이지 ----------
 const TempWritePage = () => {
+  // 네비게이션 & 라우트 상태
+  const navigate = useNavigate();
+  const location = useLocation() as { state?: IncomingTemplateState };
+  const initialProjectId =
+    location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null;
+
+  // 프로젝트 목록
+  const { data: projectList = [], loading: projectsLoading } = useProjectList();
+
   // 기본 상태
   const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -104,6 +107,32 @@ const TempWritePage = () => {
   const [selectedErrorType, setSelectedErrorType] = useState<string | null>(
     null
   );
+
+  // 페이지 내 프로젝트 선택값
+  const [selectedProjectIdPage, setSelectedProjectIdPage] = useState<
+    number | null
+  >(null);
+  useEffect(() => {
+    if (initialProjectId != null)
+      setSelectedProjectIdPage(Number(initialProjectId));
+  }, [initialProjectId]);
+
+  // 파생값
+  const projectNames = useMemo(
+    () => projectList.map((p) => p.name),
+    [projectList]
+  );
+  const nameToId = useMemo(
+    () => new Map(projectList.map((p) => [p.name, p.id])),
+    [projectList]
+  );
+  const projectNameById = useCallback(
+    (id?: number | null) => projectList.find((p) => p.id === id)?.name ?? "",
+    [projectList]
+  );
+
+  const [draftPostId, setDraftPostId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // 모달/알림
   const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
@@ -143,19 +172,21 @@ const TempWritePage = () => {
   const [isStartingSummary, setIsStartingSummary] = useState(false);
   const closingRef = useRef(false);
 
-  const navigate = useNavigate();
-  const location = useLocation() as { state?: IncomingTemplateState };
-  const initialProjectId =
-    location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null;
-
-  const { data: projectList = [], loading: projectsLoading } = useProjectList();
-
   // 이어쓰기(수정) 판단
   const resumePostId = useMemo(() => {
     const pid = location.state?.postId;
     return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
   }, [location.state]);
   const isResume = resumePostId != null;
+
+  useEffect(() => {
+    if (isResume && resumePostId) setDraftPostId(resumePostId);
+  }, [isResume, resumePostId]);
+
+  const currentPostId = useMemo(
+    () => draftPostId ?? resumePostId ?? null,
+    [draftPostId, resumePostId]
+  );
 
   // ---------- 프리필 ----------
   useEffect(() => {
@@ -186,9 +217,9 @@ const TempWritePage = () => {
 
   // 프리필 없으면 첫 블록 생성
   useEffect(() => {
-    const hasPrefill = !!(
-      location.state?.editorType === "TEMPLATE" && location.state.blocks?.length
-    );
+    const hasPrefill =
+      location.state?.editorType === "TEMPLATE" &&
+      !!location.state.blocks?.length;
     if (!hasPrefill && blocks.length === 0 && questionData.length > 0) {
       const firstBlock: BlockData = {
         id: Date.now(),
@@ -218,44 +249,7 @@ const TempWritePage = () => {
           } as any)
       );
 
-  // ---------- 체크리스트 → ID 맵 ----------
-  const CHECKLIST_ERROR_ID_MAP: Record<string, number> = {
-    "오류 메시지를 정확히 읽고 이해했나요?": 1,
-    "로컬과 배포 환경의 차이를 점검해봤나요?": 2,
-    "문제가 발생한 모듈/기능 범위를 파악했나요?": 3,
-    "디버깅 툴이나 로그 추적을 활용해보셨나요?": 4,
-    "개발 환경 (IDE, OS, 실행 조건 등)을 확인했나요?": 5,
-  };
-  const CHECKLIST_REASON_ID_MAP: Record<string, number> = {
-    "공식 문서 또는 라이브러리 문서 확인": 1,
-    "구글 검색": 2,
-    "GPT / 오픈 AI 사용": 3,
-    "StackOverflow, OKKY 등 질문 커뮤니티": 4,
-    "GitHub Issue 또는 블로그 참고": 5,
-  };
-  const buildChecklistIdsFromBlocks = (bs: BlockData[]) => {
-    const errorIds = new Set<number>();
-    const reasonIds = new Set<number>();
-    bs.forEach((b) => {
-      const items: string[] = ((b as any).checklist ?? []) as string[];
-      if (!items.length) return;
-      const isErrorSection =
-        (b as any).checklistTitle === "오류를 정확히 인식하셨나요?";
-      const map = isErrorSection
-        ? CHECKLIST_ERROR_ID_MAP
-        : CHECKLIST_REASON_ID_MAP;
-      for (const label of items) {
-        const id = map[label];
-        if (typeof id === "number")
-          (isErrorSection ? errorIds : reasonIds).add(id);
-      }
-    });
-    return {
-      checklistErrorIds: Array.from(errorIds),
-      checklistReasonIds: Array.from(reasonIds),
-    };
-  };
-
+  // ---------- 태그 정규화 ----------
   const canonicalizeTags = async (rawTags: string[]) => {
     const out: string[] = [];
     const seen = new Set<string>();
@@ -267,7 +261,6 @@ const TempWritePage = () => {
       const list: any[] = Array.isArray(res)
         ? res
         : res?.data ?? res?.content ?? res?.results ?? [];
-
       const names = list
         .map((t) => (typeof t === "string" ? t : t?.name ?? t))
         .filter(Boolean);
@@ -285,168 +278,39 @@ const TempWritePage = () => {
     return out;
   };
 
-  const buildFormDevelop = (
-    postStatus: "COMPLETED" | "WRITING",
-    meta: PostSavePayload,
-    postTags: string[]
-  ): PostForm => ({
-    title,
-    introduction: meta?.description ?? "",
-    postTags,
-    isVisible: (meta?.visibility ?? "public") === "public",
-    isSummaryCreated: false,
-    postStatus,
-    starRating: meta?.importance ?? 0,
-    templateType: "GUIDELINE",
-    thumbnailImageUrl: meta?.thumbnail ?? undefined,
-    projectId: Number(meta?.projectId ?? 0),
-    errorTag: selectedErrorType ?? "",
-    contents: toContentDtoList(blocks),
-    checklistError: [],
-    checklistReason: [],
-  });
-
-  type UiPostStatus = "WRITING" | "COMPLETED";
-  type ServerPostStatus = "WRITING" | "COMPLETE";
-  const toServerPostStatus = (s: UiPostStatus): ServerPostStatus =>
-    s === "COMPLETED" ? "COMPLETE" : "WRITING";
-
-  const buildFormServer = (
-    postStatus: UiPostStatus,
-    meta: PostSavePayload,
-    postTags: string[]
-  ) => {
-    const { checklistErrorIds, checklistReasonIds } =
-      buildChecklistIdsFromBlocks(blocks);
-    return {
-      title,
-      introduction: meta.description ?? "",
-      isVisible: (meta.visibility ?? "public") === "public",
-      isSummaryCreated: false,
-      postStatus: toServerPostStatus(postStatus),
-      starRating: Number(meta.importance ?? 0),
-      templateType: "GUIDELINE",
-      projectId: Number(meta.projectId),
-      thumbnailImageUrl: meta.thumbnail ?? undefined,
-
-      errorTagName: selectedErrorType!,
-      contentDtoList: toContentDtoList(blocks),
-      postTags,
-
-      checklistError: checklistErrorIds,
-      checklistReason: checklistReasonIds,
-    };
-  };
-
-  // ---------- create/edit 호환 저장 ----------
-  const saveDraftCompat = async (
-    postStatus: UiPostStatus,
-    meta: PostSavePayload,
-    postTags: string[]
-  ): Promise<number> => {
-    try {
-      const form = buildFormDevelop(postStatus, meta, postTags);
-      if (isResume && resumePostId) {
-        await editPost(resumePostId, toEditPostRequest(form) as any);
-        return resumePostId;
-      } else {
-        const created: any = await createPost(toCreatePostRequest(form) as any);
-        return Number(created?.id ?? created?.data?.id ?? created?.content?.id);
-      }
-    } catch (e) {
-      console.warn(
-        "[saveDraftCompat] develop 경로 실패, feat 스키마로 폴백 시도",
-        e
-      );
+  // ---------- upsert 유틸 ----------
+  const upsertPost = async (maybeId: number | null, form: any) => {
+    if (maybeId) {
+      await editPost(maybeId, toEditPostRequest(form) as any);
+      return maybeId;
     }
-
-    const reqServer = buildFormServer(postStatus, meta, postTags);
-    if (isResume && resumePostId) {
-      await editPost(resumePostId, reqServer as any);
-      return resumePostId;
-    } else {
-      const created2: any = await createPost(reqServer as any);
-      return Number(
-        created2?.id ?? created2?.data?.id ?? created2?.content?.id
-      );
-    }
+    const created: any = await createPost(toCreatePostRequest(form) as any);
+    const newId = Number(
+      created?.id ?? created?.data?.id ?? created?.content?.id
+    );
+    if (!Number.isFinite(newId)) throw new Error("생성된 포스트 ID 누락");
+    return newId;
   };
 
-  // ---------- startSummary 호환 ----------
-  const startSummaryCompat = async (postId: number, type: SummaryTypeParam) => {
-    try {
-      const res: any = await startSummary(postId, { type } as any);
-      const taskId = res?.taskId ?? res?.data?.taskId ?? res?.content?.taskId;
-      if (!taskId) throw new Error("No taskId (object signature)");
-      return taskId as string;
-    } catch {
-      const res2: any = await startSummary(postId, type as any);
-      const taskId2 =
-        res2?.taskId ?? res2?.data?.taskId ?? res2?.content?.taskId;
-      if (!taskId2) throw new Error("No taskId (positional signature)");
-      return taskId2 as string;
-    }
-  };
-
-  // ---------- 변경 핸들러 ----------
-  const handleChangeBlockContent = (
-    index: number,
-    updated: Partial<BlockData>
-  ) => {
-    setBlocks((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], ...updated };
-      return next;
-    });
-  };
-  const handleToggleChecklist = (
-    index: number,
-    item: string,
-    checked: boolean
-  ) => {
-    setBlocks((prev) => {
-      const next = [...prev];
-      const checklist = new Set<string>((next[index] as any).checklist ?? []);
-      if (checked) checklist.add(item);
-      else checklist.delete(item);
-      (next[index] as any).checklist = Array.from(checklist);
-      return next;
-    });
-  };
-  const handleAddBlock = () => {
-    setBlocks((prev) => {
-      const nextStep = prev.length;
-      if (nextStep >= questionData.length) return prev;
-      const stepData = questionData[nextStep];
-      const newBlock: BlockData = {
-        id: Date.now(),
-        content: "",
-        checklist: [],
-        checklistItems: stepData.checklistItems ?? [],
-        checklistTitle: stepData.title ?? "",
-        question: stepData.question,
-        isSaved: false,
-      } as any;
-      const next = [...prev, newBlock];
-      setActiveIndex(next.length - 1);
-      return next;
-    });
-  };
-
+  // ---------- 종료 버튼 ----------
   const handleEnd = () => {
     if (!title.trim() || !selectedErrorType || !blocks[0]?.content?.trim()) {
       setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
+      setTimeout(() => setShowAlert(false), 1000);
       return;
     }
     setIsPostSaveModalOpen(true);
   };
   const handleShowSaveAlert = () => {
     setShowSaveAlert(true);
-    setTimeout(() => setShowSaveAlert(false), 3000);
+    setTimeout(() => setShowSaveAlert(false), 1000);
+  };
+  const handleShowAlert = () => {
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 1000);
   };
 
-  // ---------- 저장 모달 Next ----------
+  // ---------- 저장 모달 Next(최종 저장) ----------
   const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
     if (isCreating) return;
     setIsCreating(true);
@@ -468,18 +332,51 @@ const TempWritePage = () => {
 
     try {
       const canonicalTags = await canonicalizeTags(selectedTags);
-      const postId = await saveDraftCompat("WRITING", payload, canonicalTags);
-      setCreatedPostId(postId);
+      const form = {
+        title,
+        introduction: payload.description ?? "",
+        postTags: canonicalTags,
+        isVisible: (payload.visibility ?? "public") === "public",
+        isSummaryCreated: false,
+        postStatus: "COMPLETED",
+        starRating: Number(payload.importance ?? 0),
+        templateType: "GUIDELINE",
+        projectId: Number(payload.projectId),
+        thumbnailImageUrl: payload.thumbnail ?? undefined,
+        errorTag: selectedErrorType ?? "",
+        contents: toContentDtoList(blocks),
+        checklistError: [],
+        checklistReason: [],
+      };
+
+      const id = await upsertPost(currentPostId, form);
+      setDraftPostId(id);
+      setCreatedPostId(id);
       setIsTemplateSelectModalOpen(true);
     } catch (e) {
       console.error(e);
-      setStatusMessage("문서 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setStatusMessage("문서 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsCreating(false);
     }
   };
 
   // ---------- 템플릿 확정 → 요약 ----------
+  const startSummaryCompat = async (postId: number, type: SummaryTypeParam) => {
+    try {
+      const res: any = await startSummary(postId, { type } as any);
+      const taskId = res?.taskId ?? res?.data?.taskId ?? res?.content?.taskId;
+      if (!taskId) throw new Error("No taskId (object signature)");
+      return taskId as string;
+    } catch {
+      const res2: any = await startSummary(postId, type as any);
+      const taskId2 =
+        res2?.taskId ?? res2?.data?.taskId ?? res2?.content?.taskId;
+      if (!taskId2) throw new Error("No taskId (positional signature)");
+      return taskId2 as string;
+    }
+  };
+
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
@@ -550,7 +447,6 @@ const TempWritePage = () => {
 
         if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
-          // feat: postSummaryId 있으면 성공 모달
           if (typeof data?.postSummaryId === "number") {
             setCompletedSummaryId(data.postSummaryId);
             setIsLoadingModalOpen(false);
@@ -609,7 +505,7 @@ const TempWritePage = () => {
       return;
     }
     setShowAlert(true);
-    setTimeout(() => setShowAlert(false), 3000);
+    setTimeout(() => setShowAlert(false), 1000);
   };
 
   const handleCloseLoading = async () => {
@@ -634,6 +530,146 @@ const TempWritePage = () => {
     }
   };
 
+  // ---------- 임시 저장 ----------
+  const handleClickSave = async (): Promise<boolean> => {
+    if (isSaving) return false;
+    setIsSaving(true);
+
+    try {
+      // 최소 검증
+      if (!title.trim() || !selectedErrorType || !blocks[0]?.content?.trim()) {
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 1000);
+        return false;
+      }
+
+      const canonicalTags = await canonicalizeTags(selectedTags);
+
+      const meta: PostSavePayload = {
+        importance: previewMeta?.importance ?? 0,
+        description: previewMeta?.description ?? "",
+        visibility: previewMeta?.visibility ?? "public",
+        projectId:
+          selectedProjectIdPage ??
+          location.state?.savePrefill?.projectId ??
+          initialProjectId ??
+          null,
+        projectName:
+          projectNameById(selectedProjectIdPage) ||
+          previewMeta?.projectName ||
+          location.state?.savePrefill?.projectName ||
+          projectNameById(initialProjectId),
+        thumbnail: previewMeta?.thumbnail ?? null,
+      };
+
+      if (!meta.projectId) {
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 3000);
+        return false;
+      }
+
+      const form = {
+        title,
+        introduction: meta.description ?? "",
+        postTags: canonicalTags,
+        isVisible: (meta.visibility ?? "public") === "public",
+        isSummaryCreated: false,
+        postStatus: "WRITING",
+        starRating: Number(meta.importance ?? 0),
+        templateType: "GUIDELINE",
+        projectId: Number(meta.projectId),
+        thumbnailImageUrl: meta.thumbnail ?? undefined, // 빈문자 대신 undefined
+        errorTag: selectedErrorType ?? "",
+        contents: toContentDtoList(blocks),
+        checklistError: [],
+        checklistReason: [],
+      };
+
+      const id = await upsertPost(currentPostId, form);
+      setDraftPostId(id);
+      setCreatedPostId(id);
+
+      return true;
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("임시 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 저장 가능 여부
+  const canSave = useMemo(() => {
+    const hasTitle = !!title.trim();
+    const hasError = !!selectedErrorType;
+    const hasFirstContent = !!blocks[0]?.content?.trim();
+
+    const projectId =
+      selectedProjectIdPage ??
+      previewMeta?.projectId ??
+      location.state?.savePrefill?.projectId ??
+      initialProjectId ??
+      null;
+
+    const hasProject = !!projectId;
+    return hasTitle && hasError && hasFirstContent && hasProject;
+  }, [
+    title,
+    selectedErrorType,
+    blocks,
+    previewMeta?.projectId,
+    location.state?.savePrefill?.projectId,
+    initialProjectId,
+    selectedProjectIdPage,
+  ]);
+
+  // ---------- 블록 핸들러 ----------
+  const handleChangeBlockContent = useCallback(
+    (index: number, updated: Partial<BlockData>) => {
+      setBlocks((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], ...updated };
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleToggleChecklist = useCallback(
+    (index: number, item: string, checked: boolean) => {
+      setBlocks((prev) => {
+        const next = [...prev];
+        const checklist = new Set<string>((next[index] as any).checklist ?? []);
+        if (checked) checklist.add(item);
+        else checklist.delete(item);
+        (next[index] as any).checklist = Array.from(checklist);
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleAddBlock = useCallback(() => {
+    setBlocks((prev) => {
+      const nextStep = prev.length;
+      if (nextStep >= questionData.length) return prev;
+      const stepData = questionData[nextStep];
+      const newBlock: BlockData = {
+        id: Date.now(),
+        content: "",
+        checklist: [],
+        checklistItems: stepData.checklistItems ?? [],
+        checklistTitle: stepData.title ?? "",
+        question: stepData.question,
+        isSaved: false,
+      } as any;
+      const next = [...prev, newBlock];
+      setActiveIndex(next.length - 1);
+      return next;
+    });
+  }, []);
+
   // ---------- UI ----------
   return (
     <div>
@@ -642,7 +678,7 @@ const TempWritePage = () => {
         <div className="flex-1 flex w-[1500px] flex-col gap-[36px]">
           {showAlert && (
             <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
-              제목, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요.
+              제목, 프로젝트, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요.
             </div>
           )}
           {showSaveAlert && (
@@ -656,7 +692,7 @@ const TempWritePage = () => {
             </div>
           )}
 
-          {/* 제목/태그 */}
+          {/* 제목/태그/프로젝트 */}
           <div className="flex flex-col items-start gap-[40px]">
             <input
               type="text"
@@ -666,6 +702,22 @@ const TempWritePage = () => {
               className="text-[36px] md:text-[48px] font-bold text-black outline-none w-full leading-tight"
             />
             <div className="flex gap-[36px] items-center">
+              {/* 프로젝트 선택 */}
+              <DropDownButton
+                options={projectNames}
+                placeholder={
+                  projectsLoading
+                    ? "프로젝트 불러오는 중..."
+                    : projectNameById(selectedProjectIdPage) ||
+                      "프로젝트를 선택하세요"
+                }
+                width="w-[340px] h-[36px]"
+                onSelect={(name) =>
+                  setSelectedProjectIdPage(nameToId.get(name) ?? null)
+                }
+              />
+
+              {/* 에러 종류 */}
               <DropDownButton
                 options={[
                   "Build/Compile Error",
@@ -685,6 +737,8 @@ const TempWritePage = () => {
                   setSelectedErrorType(selectedError)
                 }
               />
+
+              {/* 태그 */}
               <CategoryTag value={selectedTags} onChange={setSelectedTags} />
             </div>
           </div>
@@ -707,6 +761,10 @@ const TempWritePage = () => {
                   title={title}
                   selectedErrorType={selectedErrorType}
                   onShowSaveAlert={handleShowSaveAlert}
+                  onSaveAlert={handleShowAlert}
+                  onSave={handleClickSave}
+                  isSaving={isSaving}
+                  canSave={canSave}
                   onActivate={(i) => setActiveIndex(i)}
                 />
               );
@@ -736,6 +794,7 @@ const TempWritePage = () => {
                 location.state?.savePrefill?.visibility
               }
               initialProjectId={
+                selectedProjectIdPage ??
                 previewMeta?.projectId ??
                 location.state?.savePrefill?.projectId ??
                 initialProjectId ??
