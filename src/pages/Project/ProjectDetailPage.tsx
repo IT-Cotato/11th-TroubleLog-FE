@@ -15,6 +15,7 @@ import type {
 } from "@/types/trouble.model";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
+import { useViewerId } from "@/store/auth";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "complete" | "created";
@@ -24,6 +25,12 @@ export default function ProjectDetailPage() {
   const { id: routeProjectId } = useParams<{ id: string }>();
   const projectId = Number(routeProjectId);
   const isInvalid = Number.isNaN(projectId);
+  const viewerId = useViewerId();
+
+  // 트러블슈팅 문서 삭제 상태
+  const [removedRecentIds, setRemovedRecentIds] = useState<Set<number>>(
+    new Set()
+  );
 
   // 라우팅 시 폴더 카드에서 넘겨준 이름 사용, 없으면 api로 조회
   const location = useLocation() as { state?: { projectName?: string } };
@@ -130,6 +137,15 @@ export default function ProjectDetailPage() {
     troubleOpts
   );
 
+  // 트러블슈팅 카드 삭제 후 목록 갱신
+  const handleRecentDeleted = useCallback((postId: number) => {
+    setRemovedRecentIds((prev) => {
+      const next = new Set(prev);
+      next.add(postId);
+      return next;
+    });
+  }, []);
+
   return (
     <div className="flex w-full px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[36px]">
       {/* 상단 나의 프로젝트 텍스트 및 글쓰기 버튼 */}
@@ -166,7 +182,10 @@ export default function ProjectDetailPage() {
           </span>
         </div>
       ) : (
-        <ProjectAccordion title={titleLoading ? "불러오는 중…" : projectName}>
+        <ProjectAccordion
+          title={titleLoading ? "불러오는 중…" : projectName}
+          persistKey={`project:${projectId}`}
+        >
           <div className="flex flex-col sm:flex-row justify-between gap-4 w-full">
             {/* 작성 상태 필터 버튼 */}
             <div className="flex items-center gap-[24px] self-stretch">
@@ -226,9 +245,23 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             <div className="flex flex-wrap justify-center sm:justify-start gap-[24px] w-full">
-              {cards.map((card) => (
-                <TroublogCard key={card.id} {...card} />
-              ))}
+              {cards
+                .filter((c) => !removedRecentIds.has(c.id))
+                .map((card) => (
+                  <TroublogCard
+                    key={card.id}
+                    {...card}
+                    onDeleted={handleRecentDeleted}
+                    onClick={() => {
+                      const ownerId = card.authorId ?? viewerId;
+                      const qs = new URLSearchParams({ from: "project" });
+                      if (ownerId != null) qs.set("ownerId", String(ownerId));
+                      navigate(
+                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+                      );
+                    }}
+                  />
+                ))}
             </div>
           )}
         </ProjectAccordion>

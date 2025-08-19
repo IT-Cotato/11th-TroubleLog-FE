@@ -12,6 +12,7 @@ import { PATH } from "@/constants/paths";
 import logo from "@/assets/icons/logo.svg";
 import { useViewerId } from "@/store/auth";
 import { useNotificationStore } from "@/store/notification";
+import { useMyPageStore } from "@/store/useMyPageStore";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -27,6 +28,8 @@ const Header = () => {
   // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
   const viewerId = useViewerId();
   const myUserIdStr = viewerId != null ? String(viewerId) : null;
+  // (다른 사용자의 페이지인 경우)
+  const viewedUser = useMyPageStore((s) => s.viewedUser);
 
   const hasNew = useNotificationStore((s) => s.hasNew);
   const clearNew = useNotificationStore((s) => s.clearNew);
@@ -59,8 +62,12 @@ const Header = () => {
           "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
         );
       } else if (scope === "user" && pageUserId) {
+        const displayName =
+          viewedUser?.id === Number(pageUserId) && viewedUser?.nickname
+            ? viewedUser.nickname
+            : pageUserId;
         setPlaceholder(
-          `키워드나 태그 등의 검색어를 통해 ${pageUserId}님의 트러블슈팅을 검색해보세요!`
+          `키워드나 태그 등의 검색어를 통해 ${displayName}님의 트러블슈팅을 검색해보세요!`
         );
       } else {
         setPlaceholder(
@@ -79,8 +86,12 @@ const Header = () => {
           "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
         );
       } else {
+        const displayName =
+          viewedUser?.id === Number(pageUserId) && viewedUser?.nickname
+            ? viewedUser.nickname
+            : pageUserId ?? "사용자";
         setPlaceholder(
-          `키워드나 태그 등의 검색어를 통해 ${pageUserId}님의 트러블슈팅을 검색해보세요!`
+          `키워드나 태그 등의 검색어를 통해 ${displayName}님의 트러블슈팅을 검색해보세요!`
         );
       }
     } else if (
@@ -95,7 +106,14 @@ const Header = () => {
         "키워드나 태그 등의 검색어를 통해 다른 사람들의 트러블슈팅을 검색해보세요!"
       );
     }
-  }, [location.pathname, setPlaceholder, myUserIdStr]);
+  }, [
+    location.pathname,
+    setPlaceholder,
+    myUserIdStr,
+    location.search,
+    viewedUser?.id,
+    viewedUser?.nickname,
+  ]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);

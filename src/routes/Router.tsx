@@ -22,6 +22,8 @@ import TroubleShootingList from "@/components/MyPage/TroubleShootingList";
 import CommunityPostDetail from "@/pages/Community/CommunityPostDetail";
 import PostSummaryDetail from "@/pages/TempWrite/PostSummaryDetail";
 import PreviewPage from "@/pages/TempWrite/PreviewPage";
+import NotFoundPage from "@/pages/Error/NotFoundPage";
+import AuthGuardPage from "@/pages/Error/AuthGuardPage";
 import SignPageOauth from "@/pages/Login/SignPageOauth";
 export const router = createBrowserRouter(
   [
@@ -96,6 +98,16 @@ export const router = createBrowserRouter(
           <PreviewPage />
         </ProtectedRoute>
       ),
+    },
+    // 에러 페이지
+    { path: PATH.AUTH_GUARD, element: <AuthGuardPage /> },
+    {
+      path: PATH.NOT_FOUND,
+      element: <NotFoundPage />,
+    },
+    {
+      path: "*",
+      element: <NotFoundPage />,
     },
     {
       path: PATH.POST_SUMMARY_ROUTE,

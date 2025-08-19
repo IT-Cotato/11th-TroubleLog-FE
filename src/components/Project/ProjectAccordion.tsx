@@ -1,11 +1,13 @@
-import { useId, useState } from "react";
+import { useEffect, useState } from "react";
 import arrowForwardIcon from "@/assets/icons/arrow-forward.svg";
+import { useViewerId } from "@/store/auth";
 
 interface ProjectAccordionProps {
   title: React.ReactNode;
   headerExtra?: React.ReactNode;
   defaultOpen?: boolean;
   children: React.ReactNode;
+  persistKey?: string;
 }
 
 export default function ProjectAccordion({
@@ -13,9 +15,43 @@ export default function ProjectAccordion({
   headerExtra,
   defaultOpen = true,
   children,
+  persistKey,
 }: ProjectAccordionProps) {
+  const viewerId = useViewerId();
+  // 게스트/사용자별 네임스페이스 (로그아웃 전까지 유지)
+  const userScope = viewerId != null ? `u${viewerId}` : "guest";
+  const storageKey =
+    persistKey != null ? `accordion:${userScope}:${persistKey}` : null;
+
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const panelId = useId();
+
+  // 저장된 상태를 초기화에 반영
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw === "1") setIsOpen(true);
+      else if (raw === "0") setIsOpen(false);
+      else localStorage.setItem(storageKey, defaultOpen ? "1" : "0");
+    } catch {
+      /* no-op */
+    }
+    // storageKey 변경 시 해당 키의 상태를 로드
+  }, [storageKey, defaultOpen]);
+
+  const toggle = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (storageKey) {
+        try {
+          localStorage.setItem(storageKey, next ? "1" : "0");
+        } catch {
+          /* no-op */
+        }
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="flex flex-col w-full">
@@ -23,10 +59,9 @@ export default function ProjectAccordion({
       <div className="flex items-stretch gap-[8px] sm:gap-[12px] mb-[24px] sm:mb-[36px] h-9 sm:h-[36px]">
         <button
           type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
+          onClick={toggle}
           className="flex items-center gap-[8px] sm:gap-[12px]"
           aria-expanded={isOpen}
-          aria-controls={panelId}
         >
           <img
             src={arrowForwardIcon}
@@ -49,8 +84,6 @@ export default function ProjectAccordion({
 
       {/* 펼쳐진 내용 */}
       <div
-        id={panelId}
-        aria-hidden={!isOpen}
         className={
           (isOpen ? "flex" : "hidden") + " flex-col gap-[36px] sm:gap-[60px]"
         }

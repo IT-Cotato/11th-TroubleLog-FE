@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import SortButtonGroup from "../Project/SortButtonGroup";
 import TroubleShootingCard from "./TroubleShootingCard";
 import { mapToTroubleShootingCard } from "@/mappers/cardMapper";
@@ -37,6 +37,16 @@ const TroubleShootingList = () => {
   const selectedStatus = useMyPageStore((state) => state.selectedStatus);
   const selectedTag = useMyPageStore((state) => state.selectedTag);
 
+  // 작성 중일 땐 정렬 옵션 숨김
+  const shouldShowSort = isMyPage && selectedStatus !== "inProgress";
+
+  // 작성 중으로 전환되면 정렬을 최신순으로 강제 맞춤(혼란 방지)
+  useEffect(() => {
+    if (isMyPage && selectedStatus === "inProgress" && sortBy !== "latest") {
+      setSortBy("latest");
+    }
+  }, [isMyPage, selectedStatus, sortBy, setSortBy]);
+
   // 내 마이페이지면 내 카드만, 아니면 다른 사람 카드만
   const base = useMemo(
     () =>
@@ -64,6 +74,40 @@ const TroubleShootingList = () => {
 
   const sortedCards = statusFiltered;
 
+  // 빈 상태 메시지
+  const emptyMessage = useMemo(() => {
+    if (isLoading) return null;
+    if (sortedCards.length > 0) return null;
+
+    const sortLabel = sortBy === "latest" ? "최신순" : "중요도순";
+
+    if (isMyPage) {
+      if (selectedStatus === "inProgress") {
+        return "작성 중인 트러블슈팅이 없어요.";
+      }
+      if (selectedStatus === "complete") {
+        return `작성 완료된 트러블슈팅이 없어요. (${sortLabel})`;
+      }
+      if (selectedStatus === "created") {
+        return `작성+요약 완료된 트러블슈팅이 없어요. (${sortLabel})`;
+      }
+      return `조건에 맞는 트러블슈팅이 없어요. (${sortLabel})`;
+    } else {
+      // 다른 사용자 페이지
+      if (selectedTag) {
+        return `선택한 태그에 해당하는 트러블슈팅이 없어요.`;
+      }
+      return `아직 공개된 트러블슈팅이 없어요. (${sortLabel})`;
+    }
+  }, [
+    isLoading,
+    sortedCards.length,
+    isMyPage,
+    selectedStatus,
+    sortBy,
+    selectedTag,
+  ]);
+
   const handleDeleted = async () => {
     try {
       await reload();
@@ -75,13 +119,22 @@ const TroubleShootingList = () => {
   return (
     <div className="flex flex-col items-end gap-[40px] w-[948px] pb-[78px]">
       {/* 정렬 기준 선택 */}
-      {isMyPage && <SortButtonGroup selected={sortBy} onSelect={setSortBy} />}
+      {shouldShowSort && (
+        <SortButtonGroup selected={sortBy} onSelect={setSortBy} />
+      )}
 
       {/* 에러/로딩 */}
       {error && <div className="text-red-600 self-start">{error}</div>}
 
       {/* 트러블로그 목록 */}
       <div className="flex flex-col items-start self-stretch">
+        {/* 빈 상태 안내 */}
+        {!error && !isLoading && sortedCards.length === 0 && emptyMessage && (
+          <div className="w-full flex h-[220px] justify-center items-center rounded-[16px] bg-white mb-3">
+            <span className="text-body-20-regular">{emptyMessage}</span>
+          </div>
+        )}
+
         {sortedCards.map((card) => (
           <TroubleShootingCard
             key={card.id}

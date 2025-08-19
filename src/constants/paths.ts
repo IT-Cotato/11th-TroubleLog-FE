@@ -30,4 +30,6 @@ export const PATH = {
   POST_SUMMARY: (summaryId: string | number) => `/post/summary/${summaryId}`, // ← 슬래시 두 개였던거 fix
 
   POST_SUMMARY_ROUTE: "/post/summary/:summaryId",
+     NOT_FOUND: "/404",
+  AUTH_GUARD: "/auth-required",
 };
