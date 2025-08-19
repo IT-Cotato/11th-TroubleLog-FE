@@ -131,7 +131,7 @@ const EditorBlock = ({
                       : "border-gray-200 text-purple-500 hover:bg-gray-100"
                   }`}
                 >
-                  {isSaving ? "Saving..." : "임시 저장"}
+                  {isSaving ? "Saving..." : "Save"}
                 </button>
 
                 {/* Next/End */}
