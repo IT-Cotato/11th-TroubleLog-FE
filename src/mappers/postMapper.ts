@@ -74,6 +74,6 @@ export const toPostForm = (res: ViewPostResponse): PostForm => ({
     body,
     sequence,
   })),
-  checklistError: res.checkListError,
-  checklistReason: res.checkListReason,
+  checklistError: res.checkListError ?? [],
+  checklistReason: res.checkListReason ?? [],
 });

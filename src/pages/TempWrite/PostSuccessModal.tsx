@@ -34,7 +34,10 @@ export default function PostSuccessModal({
           </span>
           <button
             className="flex w-[184px] h-[46px] px-[25px] py-[14px] justify-center items-center rounded-[50px] bg-purple-500 border-purple-500 text-white text-semibold"
-            onClick={() => navigate(PATH.POST_SUMMARY(summaryId!))}
+            onClick={() => {
+              if (summaryId == null) return; // 혹은 alert("요약 ID를 찾을 수 없어요.")
+              navigate(PATH.POST_SUMMARY(summaryId));
+            }}
           >
             완성 페이지로 이동
           </button>
