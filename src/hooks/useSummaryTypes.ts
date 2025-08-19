@@ -8,6 +8,13 @@ import {
 
 type SummaryDatum = { label: string; value: number };
 
+const SUMMARY_LABEL_MAP: Record<string, string> = {
+  RESUME: "자기소개서",
+  INTERVIEW: "면접대비",
+  BLOG: "블로그",
+  ISSUE_MANAGEMENT: "이슈관리",
+};
+
 export function useSummaryTypes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +48,7 @@ export function useSummaryTypes() {
         merged.sort((a, b) => b.count - a.count);
 
         const chartData: SummaryDatum[] = merged.map(({ name, count }) => ({
-          label: name,
+          label: SUMMARY_LABEL_MAP[name] ?? name, // 매핑 없으면 원본 사용(안전)
           value: count,
         }));
 
