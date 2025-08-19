@@ -12,13 +12,14 @@ export default function OAuthPopupKakao() {
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
 
-    // 서버가 넘겨준 값
+    const idStr = sp.get("id");
+    const idNum = idStr !== null ? Number(idStr) : undefined;
     const payloadFromQuery: SocialPayload = {
       email: sp.get("email") ?? undefined,
       status: sp.get("status") ?? undefined,
       nickname: sp.get("nickname") ?? undefined,
       loginType: sp.get("loginType") ?? undefined,
-      id: sp.get("id") ? Number(sp.get("id")) : undefined,
+      id: typeof idNum === "number" && !Number.isNaN(idNum) ? idNum : undefined,
     };
 
     const error = sp.get("error");
