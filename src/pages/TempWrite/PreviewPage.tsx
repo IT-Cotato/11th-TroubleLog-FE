@@ -112,8 +112,11 @@ export default function PreviewPage() {
     };
   }, [postId, summaryId]);
 
-  // state 우선 → fetched → 기본
-  const data: PreviewState = (state as PreviewState) ?? fetched ?? {};
+  // fetched(서버 응답) 우선 → state(보조) → 기본
+  const data: PreviewState = useMemo(() => {
+    const s = (state as PreviewState) ?? {};
+    return fetched ? { ...s, ...fetched } : s;
+  }, [state, fetched]);
   const questions: string[] = useMemo(
     () => data.questions ?? [],
     [data.questions]
@@ -549,25 +552,30 @@ function mapContents(contents?: PostContent[]) {
 function mapCombinedToPreviewState(
   d: ViewCombinedResponse | any
 ): PreviewState {
+  const u = d.userInfoResDto ?? {};
   const { questions, contents } = mapContents(d.contents);
   return {
     editorType: "FREEFORM",
     title: d.title ?? "",
     tags: d.postTags ?? [],
     errorType: d.errorTag ?? "에러 유형",
-    date: d.createdAt,
+    date: d.completedAt ?? d.createdAt,
     importance: toInt(d.starRating),
+    authorName: u.nickname ?? "작성자",
+    authorProfile: u.profileUrl ?? "",
+    authorFollowers: toInt(u.followerNum),
+    authorBio: u.bio ?? "",
     isMine: true,
-    authorName: "작성자",
+    isLiked: !!d.liked,
     likeCounts: d.likeCount ?? 0,
     commentCounts: d.commentCount ?? 0,
-    isLiked: false,
     questions: questions.length ? questions : [d.title ?? "내용"],
     contents: questions.length ? contents : [[d.introduction ?? ""]],
     comments: [],
   };
 }
 function mapPostToPreviewState(d: ViewPostResponse | any): PreviewState {
+  const u = d.userInfoResDto ?? {};
   const { questions, contents } = mapContents(d.contents);
   return {
     editorType: "FREEFORM",
@@ -576,11 +584,15 @@ function mapPostToPreviewState(d: ViewPostResponse | any): PreviewState {
     errorType: d.errorTag ?? "에러 유형",
     date: d.createdAt,
     importance: toInt(d.starRating),
+    authorName: u.nickname ?? "작성자",
+    authorProfile: u.profileUrl ?? "",
+    authorFollowers: toInt(u.followerNum),
+    authorBio: u.bio ?? "",
     isMine: true,
-    authorName: "작성자",
+    isLiked: !!d.liked,
     likeCounts: d.likeCount ?? 0,
     commentCounts: d.commentCount ?? 0,
-    isLiked: false,
+
     questions: questions.length ? questions : [d.title ?? "내용"],
     contents: questions.length ? contents : [[d.introduction ?? ""]],
     comments: [],
