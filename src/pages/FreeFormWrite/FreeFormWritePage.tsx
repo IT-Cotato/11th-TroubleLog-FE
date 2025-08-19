@@ -242,13 +242,15 @@ export default function FreeFormWritePage() {
     isVisible: (meta?.visibility ?? "public") === "public",
     isSummaryCreated: false,
     postStatus,
-    starRating: String(meta?.importance ?? 0),
+    starRating: meta?.importance ?? 0,
     templateType:
       location.state?.editorType === "FREEFORM" ? "FREE_FORM" : "GUIDELINE",
     thumbnailImageUrl: meta?.thumbnail ?? undefined,
     projectId: Number(meta?.projectId ?? 0),
     errorTag: selectedErrorType ?? "",
     contents: toContentDtoList(blocks),
+    checklistError: [],
+    checklistReason: [],
   });
 
   // 기본 검증

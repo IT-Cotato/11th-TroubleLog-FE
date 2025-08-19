@@ -1,11 +1,10 @@
 import kakaoLogoIcon from "@/assets/icons/kakaologo.svg";
-import { ensureKakaoReady } from "./kakaoLoader";
 import { KAKAO_REDIRECT_URI } from "../../config";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const KakaoLoginButton = () => {
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const redirectUri = KAKAO_REDIRECT_URI;
   const navigate = useNavigate();
 

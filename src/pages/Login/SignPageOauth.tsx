@@ -48,7 +48,7 @@ const SignPageOauth = () => {
 
     try {
       const payload: OauthRegisterRequest = {
-        userId,
+        userId: 0, // 수정 필요
         nickname,
         field,
         bio,

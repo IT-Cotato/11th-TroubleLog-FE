@@ -13,6 +13,8 @@ export const mockTroubleList: TroubleListItem[] = [
     techs: ["Java", "Gradle", "Network"],
     status: "작성 완료",
     summaryType: "에러 중심 요약",
+    likeCount: 0,
+    commentCount: 0,
   },
   {
     projectId: 1,
@@ -26,5 +28,7 @@ export const mockTroubleList: TroubleListItem[] = [
     techs: ["Nginx", "DevOps", "CI/CD"],
     status: "임시 저장",
     summaryType: "전체 흐름 요약",
+    likeCount: 0,
+    commentCount: 0,
   },
 ];
