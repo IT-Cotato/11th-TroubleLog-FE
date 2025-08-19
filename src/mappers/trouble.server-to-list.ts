@@ -16,4 +16,6 @@ export const serverToTroubleListItem = (
   techs: x.postTags ?? [],
   status: x.postStatus ?? "",
   summaryType: x.contents?.[0]?.summaryType ?? "NONE",
+  likeCount: x.likeCount ?? undefined,
+  commentCount: x.commentCount ?? undefined,
 });

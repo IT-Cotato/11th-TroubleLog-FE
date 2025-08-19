@@ -31,6 +31,25 @@ const COMPUTED_BASE_URL = RAW_BASE_URL || "/api";
 const API_ORIGIN = getOriginSafely(COMPUTED_BASE_URL);
 const ENVTYPE = import.meta.env.VITE_ENV_TYPE;
 
+// 타입 보강: 요청단위로 전역 404 스킵할 수 있게
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    __skipGlobal404?: boolean;
+    __skipGlobalAuthGuard?: boolean;
+    _retry?: boolean;
+  }
+}
+
+declare global {
+  interface Window {
+    __authRefreshPromise?: Promise<string | null> | null;
+  }
+}
+const getRefreshPromise = () => window.__authRefreshPromise ?? null;
+const setRefreshPromise = (p: Promise<string | null> | null) => {
+  window.__authRefreshPromise = p;
+};
+
 const api = axios.create({
   // baseURL: COMPUTED_BASE_URL,
   baseURL: API_BASE_URL || undefined,
@@ -43,6 +62,8 @@ const api = axios.create({
   },
 });
 
+let navigating404 = false;
+
 // 공통 유틸: 로그인 페이지로의 네비게이션을 1회만
 let authNavigationPromise: Promise<void> | null = null;
 const getCurrentSpaPath = () => {
@@ -52,14 +73,17 @@ const getCurrentSpaPath = () => {
   return `${loc.pathname}${loc.search}${loc.hash}`;
 };
 
-const navigateToAuthOnce = (rawNext?: string) => {
+// 401/403 공통: 안내 화면으로 1회만 이동
+const navigateToAuthGuardOnce = (status: 401 | 403, rawNext?: string) => {
   if (!authNavigationPromise) {
-    const nextPath = rawNext ?? getCurrentSpaPath(); // 미인코딩 경로
+    const nextPath = rawNext ?? getCurrentSpaPath();
     const params = new URLSearchParams();
-    params.set("next", nextPath); // 인코딩은 URLSearchParams가 처리
-    router.navigate(`${PATH.ROOT}?${params.toString()}`, { replace: true });
+    params.set("status", String(status));
+    params.set("next", nextPath);
+    router.navigate(`${PATH.AUTH_GUARD}?${params.toString()}`, {
+      replace: true,
+    });
     authNavigationPromise = new Promise<void>((resolve) => {
-      // 짧은 쿨다운 후 게이트 해제 (동시 발화 방지)
       setTimeout(() => {
         authNavigationPromise = null;
         resolve();
@@ -70,9 +94,8 @@ const navigateToAuthOnce = (rawNext?: string) => {
 };
 
 // 요청 인터셉터: 토큰 자동 첨부
-api.interceptors.request.use((config) => {
+const reqId = api.interceptors.request.use((config) => {
   const url = config.url ?? "";
-  const isRefresh = url.includes("/auth/refresh");
   config.headers = config.headers ?? {};
 
   // 외부 절대 URL은 내부 인증/EnvType 헤더 미부착
@@ -83,12 +106,10 @@ api.interceptors.request.use((config) => {
     return config;
   }
 
-  // /auth/refresh 에는 Authorization 미첨부
-  if (!isRefresh) {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      (config.headers as any).Authorization = `Bearer ${token}`;
-    }
+  // 모든 내부 요청(리프레시 포함)에 Authorization 부착
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    (config.headers as any).Authorization = `Bearer ${token}`;
   }
 
   // EnvType은 항상 강제(리프레시 포함)
@@ -99,10 +120,9 @@ api.interceptors.request.use((config) => {
 });
 
 // 리프레시 공용 Promise (동시 401 한 번만 처리)
-let refreshPromise: Promise<string | null> | null = null;
 const startRefresh = async (): Promise<string | null> => {
   try {
-    const r = await api.post("/auth/refresh", {});
+    const r = await api.post("/auth/refresh", undefined, {});
     const newToken: string | undefined = r.data?.data?.accessToken;
     if (!newToken) {
       console.error("[Auth] Refresh response missing accessToken:", r.data);
@@ -116,9 +136,8 @@ const startRefresh = async (): Promise<string | null> => {
 };
 
 // 응답 인터셉터
-api.interceptors.response.use(
+const resId = api.interceptors.response.use(
   (res) => {
-    // 토큰 없이 HTML(카카오 302 후 200) 수신 방어
     const ct = res.headers?.["content-type"] as string | undefined;
     const url: string | undefined = (res as any)?.request?.responseURL;
     const redirectedToKakao =
@@ -126,79 +145,106 @@ api.interceptors.response.use(
     const notJson = !!ct && !ct.includes("application/json");
     const tokenExists = !!localStorage.getItem("accessToken");
 
-    if (
-      (redirectedToKakao || notJson) &&
-      !tokenExists &&
-      location.pathname !== PATH.ROOT
-    ) {
-      void navigateToAuthOnce(); // 내부에서 안전하게 계산/인코딩
+    if ((redirectedToKakao || notJson) && !tokenExists) {
+      void navigateToAuthGuardOnce(401);
     }
     return res;
   },
   async (error: AxiosError) => {
     const status = error.response?.status;
-    const reqUrl = (error.config?.url ?? "") as string;
-    const isRefresh = reqUrl.includes("/auth/refresh");
-    const onLogin = location.pathname === PATH.ROOT;
+    const cfg = (error.config ?? {}) as import("axios").AxiosRequestConfig & {
+      _retry?: boolean;
+    };
+    const reqUrl = cfg.url ?? "";
 
-    // 외부 절대 URL만 제외 (상대 경로/동일 베이스 URL은 처리)
+    // 외부 절대 URL은 제외
     const isAbsolute = /^https?:\/\//i.test(reqUrl);
-    const reqOrigin = isAbsolute ? getOriginSafely(reqUrl) : API_ORIGIN;
+    const reqOrigin = isAbsolute ? getOriginSafely(String(reqUrl)) : API_ORIGIN;
     const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
     if (isExternalAbsolute) return Promise.reject(error);
 
-    // 리프레시 자체 실패 → 즉시 로그인 이동(단 1회)
-    if (isRefresh) {
-      localStorage.removeItem("accessToken");
-      if (!onLogin) {
-        await navigateToAuthOnce();
-      }
+    // 404 → /404 (기존)
+    const isGET = (cfg.method ?? "get").toUpperCase() === "GET";
+    const skip404 = cfg.__skipGlobal404 === true;
+    const alreadyOn404 =
+      router?.state?.location?.pathname === PATH.NOT_FOUND ||
+      router?.state?.location?.pathname === "/404";
+    const isSSE404 = /\/alert|\/connect|\/events/i.test(String(reqUrl));
+
+    if (
+      status === 404 &&
+      isGET &&
+      !skip404 &&
+      !alreadyOn404 &&
+      !isSSE404 &&
+      !navigating404
+    ) {
+      navigating404 = true;
+      router
+        .navigate(PATH.NOT_FOUND, { replace: true })
+        .finally(() => setTimeout(() => (navigating404 = false), 300));
       return Promise.reject(error);
     }
 
-    // 401 → 리프레시(동시성 제어)
-    if (status === 401) {
-      const cfg: any = error.config || {};
+    // 401/403 → /auth-required (새 정책)
+    const skipAuth = cfg.__skipGlobalAuthGuard === true;
+    const isSSEAuth = /\/alert|\/connect|\/events/i.test(String(reqUrl));
+    const isRefreshCall = /\/auth\/refresh\b/.test(String(reqUrl));
+
+    // 리프레시 자체가 실패하면 재귀 금지, 즉시 로그아웃 흐름
+    if ((status === 401 || status === 403) && isRefreshCall && !skipAuth) {
+      localStorage.removeItem("accessToken");
+      await navigateToAuthGuardOnce(status as 401 | 403);
+      return Promise.reject(error);
+    }
+
+    // 401 → 토큰 갱신 시도
+    if (status === 401 && !skipAuth && !isSSEAuth) {
       if (cfg._retry) {
-        // 이미 재시도 한 번 했는데도 401 → 토큰 정리 후 이동
+        // 이미 재시도했는데 또 401 → 토큰 정리 후 안내화면
         localStorage.removeItem("accessToken");
-        if (!onLogin) {
-          await navigateToAuthOnce();
-        }
+        await navigateToAuthGuardOnce(401);
         return Promise.reject(error);
       }
 
-      if (!refreshPromise) {
-        refreshPromise = startRefresh().finally(() => {
-          // 다음 401 대비 해제
-          setTimeout(() => (refreshPromise = null), 100);
-        });
+      let p = getRefreshPromise();
+      if (!p) {
+        p = startRefresh().finally(() =>
+          setTimeout(() => setRefreshPromise(null), 100)
+        );
+        setRefreshPromise(p);
       }
+      const newToken = await p;
 
-      const newToken = await refreshPromise;
       if (newToken) {
         cfg._retry = true;
         cfg.headers = cfg.headers ?? {};
-        cfg.headers.Authorization = `Bearer ${newToken}`;
-        return api(cfg); // 동일 인스턴스로 재시도
+        (cfg.headers as any).Authorization = `Bearer ${newToken}`;
+        return api(cfg); // 재시도
       }
 
-      // 리프레시 실패
+      // 리프레시 실패 → 안내화면
       localStorage.removeItem("accessToken");
-      if (!onLogin) {
-        await navigateToAuthOnce();
-      }
+      await navigateToAuthGuardOnce(401);
       return Promise.reject(error);
     }
 
-    // 403 → 권한 부족: 로그인 이동(단 1회)
-    if (status === 403 && !onLogin) {
-      await navigateToAuthOnce();
+    // 403 → 접근권한 없음 화면
+    if (status === 403 && !skipAuth && !isSSEAuth) {
+      await navigateToAuthGuardOnce(403);
+      return Promise.reject(error);
     }
 
     return Promise.reject(error);
   }
 );
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    api.interceptors.request.eject(reqId);
+    api.interceptors.response.eject(resId);
+  });
+}
 
 export default api;
 if (import.meta.env.DEV) {

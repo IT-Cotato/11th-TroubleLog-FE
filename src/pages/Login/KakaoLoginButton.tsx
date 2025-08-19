@@ -3,6 +3,7 @@ import { KAKAO_REDIRECT_URI } from "../../config";
 import { useNavigate } from "react-router-dom";
 
 const KakaoLoginButton = () => {
+
   const redirectUri = KAKAO_REDIRECT_URI; // 재현님 만드신 링크
   const navigate = useNavigate();
 

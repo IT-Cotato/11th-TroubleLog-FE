@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import escapeIcon from "@/assets/icons/escape.svg";
 import useNotifications from "@/hooks/useNotifications";
+import { toInternalSpaPath } from "@/utils/url";
 
 const tabs = ["전체", "트러블슈팅", "댓글", "좋아요"] as const;
 type TabType = (typeof tabs)[number];
@@ -63,33 +64,9 @@ export default function NotificationModal() {
               >
                 <div
                   onClick={() => {
-                    const link = item.link;
-                    if (!link) return;
-                    // 내부 상대 경로 우선 처리
-                    if (
-                      link.startsWith("/") ||
-                      link.startsWith("?") ||
-                      link.startsWith("#")
-                    ) {
-                      navigate(link);
-                      return;
-                    }
-                    try {
-                      const url = new URL(link);
-                      const protocol = url.protocol.toLowerCase();
-                      // http/https 만 허용
-                      if (protocol === "http:" || protocol === "https:") {
-                        if (url.origin === window.location.origin) {
-                          navigate(url.pathname + url.search + url.hash);
-                        } else {
-                          window.location.href = url.href; // 필요 시 새 탭: window.open(url.href, "_blank", "noopener")
-                        }
-                      }
-                      // 그 외 스킴은 무시
-                    } catch {
-                      // 절대 URL 파싱 실패 → 내부 경로로 간주
-                      navigate(link);
-                    }
+                    const internal = toInternalSpaPath(item.link);
+                    if (!internal) return; // 스킴이 이상하면 무시
+                    navigate(internal);
                   }}
                   className={clsx(
                     "text-body-20-regular cursor-pointer transition-all",

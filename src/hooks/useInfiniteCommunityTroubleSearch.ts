@@ -38,6 +38,7 @@ function toTroubleSearchCard(x: CommunityTroubleSearchItem): TroubleSearchCard {
     likeCount: x.likeCount,
     commentCount: x.commentCount,
     postCardUserInfoResDto: x.userInfo,
+    introduction: x.introduction,
   };
 }
 

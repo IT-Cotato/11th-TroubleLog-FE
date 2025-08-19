@@ -33,9 +33,14 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
-  const { selectedStatus, setSelectedStatus, resetSelectedStatus } =
-    useMyPageStore();
-  const { resetSelectedTag } = useMyPageStore();
+  const {
+    selectedStatus,
+    setSelectedStatus,
+    resetSelectedStatus,
+    resetSelectedTag,
+    setViewedUser,
+    resetViewedUser,
+  } = useMyPageStore();
 
   const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
@@ -48,14 +53,24 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     try {
       const data = await getUserInfo(Number(id));
       setUserInfo(data);
+      setViewedUser({
+        id: Number(id),
+        nickname: data?.nickname ?? null,
+      });
     } catch (error) {
       console.error("사용자 정보 불러오기 실패:", error);
     }
-  }, [id]);
+  }, [id, setViewedUser]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
+
+  useEffect(() => {
+    return () => {
+      resetViewedUser();
+    };
+  }, [resetViewedUser]);
 
   // 현재 경로가 메인 페이지가 아니면 태그 탭 자동 초기화
   useEffect(() => {

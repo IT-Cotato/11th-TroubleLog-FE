@@ -14,6 +14,8 @@ export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
       techs: ["Axios", "Auth"],
       status: "작성 완료",
       summaryType: "에러 중심 요약",
+      likeCount: 0,
+      commentCount: 0,
     },
     {
       projectId: 1,
@@ -27,6 +29,8 @@ export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
       techs: ["React", "Perf"],
       status: "임시 저장",
       summaryType: "전체 흐름 요약",
+      likeCount: 0,
+      commentCount: 0,
     },
   ],
   2: [
@@ -42,6 +46,8 @@ export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
       techs: ["S3", "CloudFront"],
       status: "작성 완료",
       summaryType: "전체 흐름 요약",
+      likeCount: 0,
+      commentCount: 0,
     },
   ],
 };

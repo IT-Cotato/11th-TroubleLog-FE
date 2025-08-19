@@ -562,6 +562,12 @@ export default function CommunityPostDetail() {
     }
   };
 
+  // 댓글 1페이지를 강제 새로고침(작성/삭제 직후 사용)
+  const reloadCommentsFirstPage = useCallback(async () => {
+    if (!postId) return;
+    await loadComments(Number(postId), 1, detailCtx.viewerId ?? null);
+  }, [postId, detailCtx.viewerId]);
+
   // 댓글 제출(커뮤니티 글에서만)
   const handleSubmitComment = async () => {
     if (!postId || !isCommunitySource) return;
@@ -591,6 +597,7 @@ export default function CommunityPostDetail() {
         next[i] = mapped;
         return next;
       });
+      await reloadCommentsFirstPage();
     } catch {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       setPost((p) =>
@@ -628,6 +635,7 @@ export default function CommunityPostDetail() {
         next[i] = mapped;
         return next;
       });
+      await reloadCommentsFirstPage();
     } catch {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       console.error("대댓글 작성 실패");
@@ -1068,9 +1076,6 @@ export default function CommunityPostDetail() {
                             handleEdit(reply.id, newContent)
                           }
                           onDelete={() => handleDelete(reply.id)}
-                          onReply={(replyContent) =>
-                            handleReply(reply.id, replyContent)
-                          }
                         />
                       ))}
                   </div>

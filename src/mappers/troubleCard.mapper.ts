@@ -24,6 +24,9 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => {
     importance: t.starRating ?? 0,
     summaryType: mapSummaryType(t.summaryType),
     // thumbnailUrl: t.imageUrl ?? undefined,
+    likeCount: t.likeCount ?? undefined,
+    commentCount: t.commentCount ?? undefined,
+    introduction: t.introduction ?? undefined,
   };
 };
 
