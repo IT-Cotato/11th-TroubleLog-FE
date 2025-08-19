@@ -289,27 +289,41 @@ const TempWritePage = () => {
     postStatus: "COMPLETED" | "WRITING",
     meta: PostSavePayload,
     postTags: string[]
-  ): PostForm => ({
-    title,
-    introduction: meta?.description ?? "",
-    postTags,
-    isVisible: (meta?.visibility ?? "public") === "public",
-    isSummaryCreated: false,
-    postStatus,
-    starRating: meta?.importance ?? 0,
-    templateType: "GUIDELINE",
-    thumbnailImageUrl: meta?.thumbnail ?? undefined,
-    projectId: Number(meta?.projectId ?? 0),
-    errorTag: selectedErrorType ?? "",
-    contents: toContentDtoList(blocks),
-    checklistError: [],
-    checklistReason: [],
-  });
+  ): PostForm => {
+    const { checklistErrorIds, checklistReasonIds } =
+      buildChecklistIdsFromBlocks(blocks);
+
+    return {
+      title,
+      introduction: meta?.description ?? "",
+      postTags,
+      isVisible: (meta?.visibility ?? "public") === "public",
+      isSummaryCreated: false,
+      postStatus,
+      starRating: meta?.importance ?? 0,
+      templateType: "GUIDELINE",
+      thumbnailImageUrl: meta?.thumbnail ?? undefined,
+      projectId: Number(meta?.projectId ?? 0),
+      errorTag: selectedErrorType ?? "",
+      contents: toContentDtoList(blocks),
+      checklistError: checklistErrorIds,
+      checklistReason: checklistReasonIds,
+    };
+  };
 
   type UiPostStatus = "WRITING" | "COMPLETED";
-  type ServerPostStatus = "WRITING" | "COMPLETE";
+  type ServerPostStatus = "WRITING" | "COMPLETED";
   const toServerPostStatus = (s: UiPostStatus): ServerPostStatus =>
-    s === "COMPLETED" ? "COMPLETE" : "WRITING";
+    s === "COMPLETED" ? "COMPLETED" : "WRITING";
+
+  const toServerContentDtoList = (bs: BlockData[]) =>
+    bs
+      .filter((b) => (b.content ?? "").trim().length > 0)
+      .map((b, i) => ({
+        subTitle: (b as any).question,
+        body: b.content,
+        sequence: i + 1,
+      }));
 
   const buildFormServer = (
     postStatus: UiPostStatus,
@@ -330,7 +344,7 @@ const TempWritePage = () => {
       thumbnailImageUrl: meta.thumbnail ?? undefined,
 
       errorTagName: selectedErrorType!,
-      contentDtoList: toContentDtoList(blocks),
+      contentDtoList: toServerContentDtoList(blocks),
       postTags,
 
       checklistError: checklistErrorIds,
@@ -345,30 +359,36 @@ const TempWritePage = () => {
     postTags: string[]
   ): Promise<number> => {
     try {
-      const form = buildFormDevelop(postStatus, meta, postTags);
+      const req = buildFormServer(postStatus, meta, postTags);
       if (isResume && resumePostId) {
-        await editPost(resumePostId, toEditPostRequest(form) as any);
-        return resumePostId;
+        const res: any = await editPost(resumePostId, req as any);
+        return Number(
+          res?.id ?? res?.data?.id ?? res?.content?.id ?? resumePostId
+        );
       } else {
-        const created: any = await createPost(toCreatePostRequest(form) as any);
-        return Number(created?.id ?? created?.data?.id ?? created?.content?.id);
+        const res: any = await createPost(req as any);
+        return Number(res?.id ?? res?.data?.id ?? res?.content?.id);
       }
     } catch (e) {
       console.warn(
-        "[saveDraftCompat] develop 경로 실패, feat 스키마로 폴백 시도",
+        "[saveDraftCompat] server 스키마 실패 → develop 스키마 폴백",
         e
       );
     }
 
-    const reqServer = buildFormServer(postStatus, meta, postTags);
+    // 2) 폴백: develop 스키마(여기도 ID 반영되도록 수정 1 적용되어야 함)
+    const form = buildFormDevelop(postStatus, meta, postTags);
     if (isResume && resumePostId) {
-      await editPost(resumePostId, reqServer as any);
-      return resumePostId;
-    } else {
-      const created2: any = await createPost(reqServer as any);
-      return Number(
-        created2?.id ?? created2?.data?.id ?? created2?.content?.id
+      const res: any = await editPost(
+        resumePostId,
+        toEditPostRequest(form) as any
       );
+      return Number(
+        res?.id ?? res?.data?.id ?? res?.content?.id ?? resumePostId
+      );
+    } else {
+      const res: any = await createPost(toCreatePostRequest(form) as any);
+      return Number(res?.id ?? res?.data?.id ?? res?.content?.id);
     }
   };
 
@@ -468,7 +488,7 @@ const TempWritePage = () => {
 
     try {
       const canonicalTags = await canonicalizeTags(selectedTags);
-      const postId = await saveDraftCompat("WRITING", payload, canonicalTags);
+      const postId = await saveDraftCompat("COMPLETED", payload, canonicalTags);
       setCreatedPostId(postId);
       setIsTemplateSelectModalOpen(true);
     } catch (e) {
