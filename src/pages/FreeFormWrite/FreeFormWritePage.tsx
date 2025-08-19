@@ -26,6 +26,7 @@ import {
   cancelSummary,
   editPost,
   getTagsByKeyword,
+  getPostDetail,
 } from "@/api/post.api";
 
 export type BlockData = {
@@ -91,6 +92,7 @@ type SummaryStatus =
   | "COMPLETED";
 
 export default function FreeFormWritePage() {
+  const [wasCompleted, setWasCompleted] = useState(false);
   const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedErrorType, setSelectedErrorType] = useState<string | null>(
@@ -146,6 +148,22 @@ export default function FreeFormWritePage() {
     const pid = location.state?.postId;
     return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
   }, [location.state]);
+
+  const isResume = resumePostId != null;
+
+  // 이어쓰기 시 최초 1회 완료 여부 가져오기 (completedAt 존재 = 완료된 적 있음)
+  useEffect(() => {
+    (async () => {
+      if (!isResume || !resumePostId) return;
+      try {
+        const detail: any = await getPostDetail(resumePostId);
+        const completedAt = detail?.completedAt ?? null;
+        setWasCompleted(Boolean(completedAt));
+      } catch {
+        // 실패해도 기본값(false) 사용
+      }
+    })();
+  }, [isResume, resumePostId]);
 
   const [draftPostId, setDraftPostId] = useState<number | null>(resumePostId);
   useEffect(() => {
@@ -236,7 +254,7 @@ export default function FreeFormWritePage() {
 
   // 서버로 보낼 폼
   const buildForm = (
-    postStatus: "COMPLETED" | "WRITING",
+    postStatus: "COMPLETED" | "WRITING" | "SUMMARIZED",
     meta: PostSavePayload,
     postTags: string[]
   ): PostForm => ({
@@ -274,7 +292,11 @@ export default function FreeFormWritePage() {
   // 상단 Save : 원본만 저장 (create ↔ edit 공통 처리)
   const saveOriginal = async (meta: PostSavePayload) => {
     const tags = await canonicalizeTags(selectedTags);
-    const form = buildForm("WRITING", meta, tags);
+    // 이미 완료된 포스트라면, 수정 저장 시에도 항상 COMPLETED 유지
+    const nextStatus: "WRITING" | "COMPLETED" = wasCompleted
+      ? "COMPLETED"
+      : "WRITING";
+    const form = buildForm(nextStatus, meta, tags);
 
     try {
       const targetId = draftPostId ?? resumePostId ?? null;
@@ -477,7 +499,14 @@ export default function FreeFormWritePage() {
         if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
 
-          // feat: postSummaryId를 성공 모달로 연결
+          // 요약 성공 → postStatus = SUMMARIZED 로 반영 (부분 업데이트만)
+          try {
+            const targetIdNum = createdPostId ?? resumePostId!;
+            await editPost(targetIdNum, { postStatus: "SUMMARIZED" } as any);
+          } catch (e) {
+            console.error("포스트 SUMMARIZED 반영 실패(FreeForm):", e);
+          }
+
           if (typeof data?.postSummaryId === "number") {
             setCompletedSummaryId(data.postSummaryId);
             setIsLoadingModalOpen(false);
@@ -511,12 +540,20 @@ export default function FreeFormWritePage() {
 
   // 나중에 하기(요약 건너뛰고 원본 저장)
   const handleLater = async () => {
-    if (!validateBasic() || !previewMeta?.projectId) {
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
+    // 그냥 이동만 (프로젝트/미리보기 등)
+    if (createdPostId) {
+      navigate(PATH.PREVIEW(createdPostId), { replace: true });
       return;
     }
-    await saveOriginal(previewMeta);
+    if (previewMeta?.projectId) {
+      navigate(PATH.PROJECT_DETAIL(String(previewMeta.projectId)), {
+        state: { projectName: previewMeta.projectName },
+        replace: true,
+      });
+      return;
+    }
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 3000);
   };
 
   // 로딩 모달 닫기(요약 취소)

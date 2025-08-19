@@ -28,6 +28,7 @@ import {
   cancelSummary,
   editPost,
   getTagsByKeyword,
+  getPostDetail,
 } from "@/api/post.api";
 
 // ---------- 상태 타입 ----------
@@ -99,6 +100,8 @@ const enrichBlocksWithChecklist = (blocks: BlockData[]): BlockData[] => {
 
 // ---------- 페이지 ----------
 const TempWritePage = () => {
+  const [wasCompleted, setWasCompleted] = useState(false);
+
   // 기본 상태
   const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -158,6 +161,19 @@ const TempWritePage = () => {
     const pid = location.state?.postId;
     return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
   }, [location.state]);
+
+  useEffect(() => {
+    (async () => {
+      if (!resumePostId) return;
+      try {
+        const detail: any = await getPostDetail(resumePostId);
+        const completedAt = detail?.completedAt ?? null;
+        setWasCompleted(Boolean(completedAt));
+      } catch {
+        // 실패해도 기본값(false)
+      }
+    })();
+  }, [resumePostId]);
 
   // 임시저장/수정 공통으로 쓸 현재 작업중인 포스트 ID
   const [draftPostId, setDraftPostId] = useState<number | null>(resumePostId);
@@ -339,7 +355,7 @@ const TempWritePage = () => {
   };
 
   const buildFormDevelop = (
-    postStatus: "COMPLETED" | "WRITING",
+    postStatus: UiPostStatus,
     meta: PostSavePayload,
     postTags: string[]
   ): PostForm => {
@@ -364,10 +380,14 @@ const TempWritePage = () => {
     };
   };
 
-  type UiPostStatus = "WRITING" | "COMPLETED";
-  type ServerPostStatus = "WRITING" | "COMPLETED";
+  type UiPostStatus = "WRITING" | "COMPLETED" | "SUMMARIZED";
+  type ServerPostStatus = "WRITING" | "COMPLETED" | "SUMMARIZED";
   const toServerPostStatus = (s: UiPostStatus): ServerPostStatus =>
-    s === "COMPLETED" ? "COMPLETED" : "WRITING";
+    s === "COMPLETED"
+      ? "COMPLETED"
+      : s === "SUMMARIZED"
+      ? "SUMMARIZED"
+      : "WRITING";
 
   const toServerContentDtoList = (bs: BlockData[]) =>
     bs
@@ -549,7 +569,9 @@ const TempWritePage = () => {
 
     try {
       const canonicalTags = await canonicalizeTags(selectedTags);
-      const id = await saveDraftCompat("WRITING", meta, canonicalTags);
+      // 이미 완료된 포스트면 COMPLETED 상태로 수정 저장
+      const nextStatus: UiPostStatus = wasCompleted ? "COMPLETED" : "WRITING";
+      const id = await saveDraftCompat(nextStatus, meta, canonicalTags);
       setCreatedPostId((prev) => prev ?? id);
       setShowSaveAlert(true);
       setTimeout(() => setShowSaveAlert(false), 3000);
@@ -663,6 +685,30 @@ const TempWritePage = () => {
 
         if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
+
+          // 요약 성공 → postStatus = SUMMARIZED 로 반영
+          const targetId = (createdPostId ?? resumePostId) as number;
+          try {
+            // 1) 부분 업데이트 시도
+            await editPost(targetId, { postStatus: "SUMMARIZED" } as any);
+          } catch {
+            // 2) 전체 폼 폴백
+            try {
+              const meta = resolveQuickMeta?.() ?? previewMeta; // 페이지에 있는 메타 사용
+              if (meta) {
+                const canonicalTags = await canonicalizeTags(selectedTags);
+                const req = buildFormServer
+                  ? buildFormServer("SUMMARIZED", meta, canonicalTags)
+                  : toEditPostRequest(
+                      buildFormDevelop("SUMMARIZED", meta as any, canonicalTags)
+                    );
+                await editPost(targetId, req as any);
+              }
+            } catch (e) {
+              console.error("포스트 SUMMARIZED 반영 실패:", e);
+            }
+          }
+
           // feat: postSummaryId 있으면 성공 모달
           if (typeof data?.postSummaryId === "number") {
             setCompletedSummaryId(data.postSummaryId);
