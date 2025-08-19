@@ -53,6 +53,8 @@ export interface CommunityPostDetailProps {
   likeCounts: number;
   commentCounts: number;
   comments: PostCommentProps[];
+  checklistError?: number[];
+  checklistReason?: number[];
 }
 
 export default function CommunityPostDetail() {
@@ -247,6 +249,13 @@ export default function CommunityPostDetail() {
         thumbnail: detail?.thumbnailUrl ?? null,
       },
       projectId: detail?.projectId ?? undefined,
+      // 서버에서 받은 체크리스트 ID 배열을 그대로 전달
+      initialChecklistErrorIds: Array.isArray(detail?.checklistError)
+        ? detail.checklistError
+        : [],
+      initialChecklistReasonIds: Array.isArray(detail?.checklistReason)
+        ? detail.checklistReason
+        : [],
     };
   }
 

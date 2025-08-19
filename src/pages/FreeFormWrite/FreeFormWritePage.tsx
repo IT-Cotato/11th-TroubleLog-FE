@@ -146,7 +146,11 @@ export default function FreeFormWritePage() {
     const pid = location.state?.postId;
     return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
   }, [location.state]);
-  const isResume = resumePostId != null;
+
+  const [draftPostId, setDraftPostId] = useState<number | null>(resumePostId);
+  useEffect(() => {
+    if (resumePostId) setDraftPostId(resumePostId);
+  }, [resumePostId]);
 
   // 프리필 + 포커스
   useEffect(() => {
@@ -273,20 +277,21 @@ export default function FreeFormWritePage() {
     const form = buildForm("WRITING", meta, tags);
 
     try {
-      if (isResume && resumePostId) {
+      const targetId = draftPostId ?? resumePostId ?? null;
+      if (targetId) {
         const req = toEditPostRequest(form);
-        await editPost(resumePostId, req as any);
+        await editPost(targetId, req as any);
       } else {
         const req = toCreatePostRequest(form);
-        await createPost(req as any);
+        const created: any = await createPost(req as any);
+        const newId = Number(
+          created?.id ?? created?.data?.id ?? created?.content?.id
+        );
+        setDraftPostId(newId);
       }
 
       setShowSaveAlert(true);
       setTimeout(() => setShowSaveAlert(false), 3000);
-
-      navigate(PATH.PROJECT_DETAIL(String(meta.projectId)), {
-        state: { projectName: meta.projectName },
-      });
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
@@ -309,16 +314,14 @@ export default function FreeFormWritePage() {
   const handleGlobalSave = async () => {
     if (!validateBasic()) return;
     setBlocks((prev) => prev.map((b) => ({ ...b, isSaved: true })));
-    setNextAction("SAVE");
-
-    if (!previewMeta?.projectId) {
-      setIsTemplateSelectModalOpen(false);
-      setIsPostSaveModalOpen(true);
+    const quickMeta = resolveQuickMeta();
+    if (!quickMeta) {
       setStatusMessage("프로젝트를 먼저 선택해주세요.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
       return;
     }
-
-    await saveOriginal(previewMeta);
+    await saveOriginal(quickMeta);
   };
 
   // End → 템플릿 선택 → 요약
@@ -335,6 +338,28 @@ export default function FreeFormWritePage() {
     setIsPostSaveModalOpen(true);
   };
 
+  // 임시저장용 메타값 자동 구성 (모달 없이)
+  const resolveQuickMeta = (): PostSavePayload | null => {
+    const pid =
+      previewMeta?.projectId ?? initialProjectId ?? projectList[0]?.id ?? null;
+
+    if (pid == null) return null; // 프로젝트 없으면 임시저장 불가(토스트로 안내)
+
+    const pname =
+      previewMeta?.projectName ??
+      projectList.find((p) => p.id === pid)?.name ??
+      "";
+
+    return {
+      importance: previewMeta?.importance ?? 0,
+      thumbnail: previewMeta?.thumbnail ?? null,
+      description: previewMeta?.description ?? "",
+      visibility: previewMeta?.visibility ?? "public",
+      projectId: pid,
+      projectName: pname,
+    };
+  };
+
   // 저장 모달 → Next
   const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
     setPreviewMeta(payload);
@@ -348,19 +373,19 @@ export default function FreeFormWritePage() {
     try {
       const tags = await canonicalizeTags(selectedTags);
       const form = buildForm("COMPLETED", payload, tags);
-
+      const target = draftPostId ?? resumePostId ?? null;
       let targetId: number;
-      if (isResume && resumePostId) {
+      if (target) {
         const editReq = toEditPostRequest(form);
-        await editPost(resumePostId, editReq as any);
-        targetId = resumePostId;
+        await editPost(target, editReq as any);
+        targetId = target;
       } else {
         const createReq = toCreatePostRequest(form);
         const created: any = await createPost(createReq as any);
-        // 다양한 래핑 케이스 대응
         targetId = Number(
           created?.id ?? created?.data?.id ?? created?.content?.id
         );
+        setDraftPostId(targetId);
       }
 
       setCreatedPostId(targetId);

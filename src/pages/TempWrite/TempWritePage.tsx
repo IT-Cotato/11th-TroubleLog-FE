@@ -50,6 +50,9 @@ type IncomingTemplateState = {
   // 수정 식별용
   postId?: number;
   mode?: "edit" | "create";
+
+  initialChecklistErrorIds?: number[];
+  initialChecklistReasonIds?: number[];
 };
 
 // ---------- 에러 라벨/코드 매핑 ----------
@@ -155,7 +158,13 @@ const TempWritePage = () => {
     const pid = location.state?.postId;
     return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
   }, [location.state]);
-  const isResume = resumePostId != null;
+
+  // 임시저장/수정 공통으로 쓸 현재 작업중인 포스트 ID
+  const [draftPostId, setDraftPostId] = useState<number | null>(resumePostId);
+  useEffect(() => {
+    // 라우팅으로 이어쓰기가 들어오면 동기화
+    if (resumePostId) setDraftPostId(resumePostId);
+  }, [resumePostId]);
 
   // ---------- 프리필 ----------
   useEffect(() => {
@@ -173,6 +182,44 @@ const TempWritePage = () => {
       }
     }
   }, [location.state]);
+
+  // 서버에서 넘어온 체크리스트 ID를 라벨로 변환하여 블록에 반영 (1회)
+  const appliedChecklistPrefillRef = useRef(false);
+  useEffect(() => {
+    if (appliedChecklistPrefillRef.current) return;
+    if (!blocks.length) return;
+
+    const errIds = location.state?.initialChecklistErrorIds ?? [];
+    const reasonIds = location.state?.initialChecklistReasonIds ?? [];
+    if (!errIds.length && !reasonIds.length) return;
+
+    const errLabels = errIds
+      .map((id) => ERROR_ID_TO_LABEL[id])
+      .filter(Boolean) as string[];
+    const reasonLabels = reasonIds
+      .map((id) => REASON_ID_TO_LABEL[id])
+      .filter(Boolean) as string[];
+
+    setBlocks((prev) =>
+      prev.map((b) => {
+        const items = ((b as any).checklistItems ?? []) as string[];
+        if (!items.length) return b;
+        // 이 블록이 가진 항목 중 서버에서 체크된 라벨만 선택
+        const picked = [
+          ...errLabels.filter((l) => items.includes(l)),
+          ...reasonLabels.filter((l) => items.includes(l)),
+        ];
+        if (!picked.length) return b;
+        return { ...b, checklist: Array.from(new Set(picked)) };
+      })
+    );
+
+    appliedChecklistPrefillRef.current = true;
+  }, [
+    blocks.length,
+    location.state?.initialChecklistErrorIds,
+    location.state?.initialChecklistReasonIds,
+  ]);
 
   // 초기 활성 블록
   const initialActiveSetRef = useRef(false);
@@ -233,26 +280,32 @@ const TempWritePage = () => {
     "StackOverflow, OKKY 등 질문 커뮤니티": 4,
     "GitHub Issue 또는 블로그 참고": 5,
   };
+
+  // 역매핑 (ID -> 라벨)
+  const ERROR_ID_TO_LABEL: Record<number, string> = Object.fromEntries(
+    Object.entries(CHECKLIST_ERROR_ID_MAP).map(([label, id]) => [id, label])
+  );
+  const REASON_ID_TO_LABEL: Record<number, string> = Object.fromEntries(
+    Object.entries(CHECKLIST_REASON_ID_MAP).map(([label, id]) => [id, label])
+  );
+
   const buildChecklistIdsFromBlocks = (bs: BlockData[]) => {
     const errorIds = new Set<number>();
     const reasonIds = new Set<number>();
-    bs.forEach((b) => {
-      const items: string[] = ((b as any).checklist ?? []) as string[];
-      if (!items.length) return;
-      const isErrorSection =
-        (b as any).checklistTitle === "오류를 정확히 인식하셨나요?";
-      const map = isErrorSection
-        ? CHECKLIST_ERROR_ID_MAP
-        : CHECKLIST_REASON_ID_MAP;
+    for (const b of bs) {
+      const items: string[] = Array.isArray((b as any).checklist)
+        ? ((b as any).checklist as string[])
+        : [];
       for (const label of items) {
-        const id = map[label];
-        if (typeof id === "number")
-          (isErrorSection ? errorIds : reasonIds).add(id);
+        const eId = CHECKLIST_ERROR_ID_MAP[label];
+        const rId = CHECKLIST_REASON_ID_MAP[label];
+        if (typeof eId === "number") errorIds.add(eId);
+        if (typeof rId === "number") reasonIds.add(rId);
       }
-    });
+    }
     return {
-      checklistErrorIds: Array.from(errorIds),
-      checklistReasonIds: Array.from(reasonIds),
+      checklistErrorIds: [...errorIds],
+      checklistReasonIds: [...reasonIds],
     };
   };
 
@@ -352,22 +405,44 @@ const TempWritePage = () => {
     };
   };
 
+  // 임시저장용 메타 생성
+  const resolveQuickMeta = (): PostSavePayload | null => {
+    const pid =
+      previewMeta?.projectId ?? initialProjectId ?? projectList[0]?.id ?? null;
+    if (pid == null) return null;
+
+    const pname =
+      previewMeta?.projectName ??
+      projectList.find((p) => p.id === pid)?.name ??
+      "";
+
+    return {
+      importance: previewMeta?.importance ?? 0,
+      thumbnail: previewMeta?.thumbnail ?? null,
+      description: previewMeta?.description ?? "",
+      visibility: previewMeta?.visibility ?? "public",
+      projectId: pid,
+      projectName: pname,
+    };
+  };
+
   // ---------- create/edit 호환 저장 ----------
   const saveDraftCompat = async (
     postStatus: UiPostStatus,
     meta: PostSavePayload,
     postTags: string[]
   ): Promise<number> => {
+    const targetId = draftPostId ?? resumePostId ?? null;
     try {
       const req = buildFormServer(postStatus, meta, postTags);
-      if (isResume && resumePostId) {
-        const res: any = await editPost(resumePostId, req as any);
-        return Number(
-          res?.id ?? res?.data?.id ?? res?.content?.id ?? resumePostId
-        );
+      if (targetId) {
+        const res: any = await editPost(targetId, req as any);
+        return Number(res?.id ?? res?.data?.id ?? res?.content?.id ?? targetId);
       } else {
         const res: any = await createPost(req as any);
-        return Number(res?.id ?? res?.data?.id ?? res?.content?.id);
+        const newId = Number(res?.id ?? res?.data?.id ?? res?.content?.id);
+        setDraftPostId(newId);
+        return newId;
       }
     } catch (e) {
       console.warn(
@@ -378,17 +453,14 @@ const TempWritePage = () => {
 
     // 2) 폴백: develop 스키마(여기도 ID 반영되도록 수정 1 적용되어야 함)
     const form = buildFormDevelop(postStatus, meta, postTags);
-    if (isResume && resumePostId) {
-      const res: any = await editPost(
-        resumePostId,
-        toEditPostRequest(form) as any
-      );
-      return Number(
-        res?.id ?? res?.data?.id ?? res?.content?.id ?? resumePostId
-      );
+    if (targetId) {
+      const res: any = await editPost(targetId, toEditPostRequest(form) as any);
+      return Number(res?.id ?? res?.data?.id ?? res?.content?.id ?? targetId);
     } else {
       const res: any = await createPost(toCreatePostRequest(form) as any);
-      return Number(res?.id ?? res?.data?.id ?? res?.content?.id);
+      const newId = Number(res?.id ?? res?.data?.id ?? res?.content?.id);
+      setDraftPostId(newId);
+      return newId;
     }
   };
 
@@ -461,9 +533,30 @@ const TempWritePage = () => {
     }
     setIsPostSaveModalOpen(true);
   };
-  const handleShowSaveAlert = () => {
-    setShowSaveAlert(true);
-    setTimeout(() => setShowSaveAlert(false), 3000);
+  const handleShowSaveAlert = async () => {
+    // 기본 검증 (제목/에러/첫 블록)
+    if (!title.trim() || !selectedErrorType || !blocks[0]?.content?.trim()) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      return;
+    }
+
+    const meta = resolveQuickMeta();
+    if (!meta) {
+      alert("프로젝트를 먼저 선택해주세요.");
+      return;
+    }
+
+    try {
+      const canonicalTags = await canonicalizeTags(selectedTags);
+      const id = await saveDraftCompat("WRITING", meta, canonicalTags);
+      setCreatedPostId((prev) => prev ?? id);
+      setShowSaveAlert(true);
+      setTimeout(() => setShowSaveAlert(false), 3000);
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("임시 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   };
 
   // ---------- 저장 모달 Next ----------

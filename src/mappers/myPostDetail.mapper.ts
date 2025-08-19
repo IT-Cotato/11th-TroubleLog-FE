@@ -122,5 +122,8 @@ export function toPostDetailVM(
     comments: [],
 
     isFollowed: author?.isFollowed ?? false,
+
+    checklistError: src.checklistError ?? [],
+    checklistReason: src.checklistReason ?? [],
   };
 }
