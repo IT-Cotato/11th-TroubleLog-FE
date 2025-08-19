@@ -12,10 +12,12 @@ export interface PostForm {
   isVisible: boolean;
   isSummaryCreated: boolean;
   postStatus: string;
-  starRating: string;
+  starRating: number;
   templateType: string;
   thumbnailImageUrl?: string;
   projectId: number;
+  checklistError: number[];
+  checklistReason: number[];
 
   errorTag: string;
   contents: PostContentDto[];
@@ -34,6 +36,8 @@ export const toCreatePostRequest = (form: PostForm): CreatePostRequest => ({
   projectId: form.projectId,
   errorTagName: form.errorTag,
   contentDtoList: form.contents,
+  checklistError: form.checklistError,
+  checklistReason: form.checklistReason,
 });
 
 export const toEditPostRequest = (form: PostForm): EditPostRequest => ({
@@ -49,6 +53,8 @@ export const toEditPostRequest = (form: PostForm): EditPostRequest => ({
   projectId: form.projectId,
   errorTagName: form.errorTag,
   contentDtoList: form.contents,
+  checklistError: form.checklistError,
+  checklistReason: form.checklistReason,
 });
 
 export const toPostForm = (res: ViewPostResponse): PostForm => ({
@@ -63,13 +69,11 @@ export const toPostForm = (res: ViewPostResponse): PostForm => ({
   thumbnailImageUrl: res.thumbnailImageUrl,
   projectId: res.projectId,
   errorTag: res.errorTag,
-  contents: (res.contents ?? []).map(
-    ({ subTitle, body, sequence, authorType, summaryType }) => ({
-      subTitle,
-      body,
-      sequence,
-      authorType,
-      summaryType,
-    })
-  ),
+  contents: (res.contents ?? []).map(({ subTitle, body, sequence }) => ({
+    subTitle,
+    body,
+    sequence,
+  })),
+  checklistError: res.checkListError ?? [],
+  checklistReason: res.checkListReason ?? [],
 });
