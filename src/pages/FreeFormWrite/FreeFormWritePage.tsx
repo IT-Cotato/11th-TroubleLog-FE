@@ -52,7 +52,7 @@ type IncomingFreeformState = {
     thumbnail?: string | null;
   };
   projectId?: number;
-  postId?: number; // 이어쓰기 시 대상 포스트 ID
+  postId?: number;
   mode?: "edit" | "create";
 };
 
