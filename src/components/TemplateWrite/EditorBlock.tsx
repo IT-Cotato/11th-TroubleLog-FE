@@ -108,9 +108,13 @@ const EditorBlock = ({
               <div className="flex gap-2">
                 {/* Save */}
                 <button
-                  disabled={!!isSaving}
+                  disabled={!!isSaving || !canSave}
                   onClick={async () => {
                     try {
+                      if (!canSave) {
+                        onShowAlert?.();
+                        return;
+                      }
                       if (!onSave) {
                         onShowAlert?.();
                         return;
@@ -127,7 +131,7 @@ const EditorBlock = ({
                       : "border-gray-200 text-purple-500 hover:bg-gray-100"
                   }`}
                 >
-                  {isSaving ? "Saving..." : "Save"}
+                  {isSaving ? "Saving..." : "임시 저장"}
                 </button>
 
                 {/* Next/End */}

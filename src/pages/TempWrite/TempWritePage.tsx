@@ -46,7 +46,7 @@ type IncomingTemplateState = {
   mode?: "edit" | "create";
 };
 
-// ---------- 에러 라벨/코드 매핑 ----------
+// ---------- 에러 라벨/코드  ----------
 const ERROR_CODE_TO_LABEL: Record<string, string> = {
   BUILD_COMPILE_ERROR: "Build/Compile Error",
   RUNTIME_ERROR: "Runtime Error",
@@ -62,7 +62,7 @@ const ERROR_CODE_TO_LABEL: Record<string, string> = {
 const toErrorLabel = (code?: string | null) =>
   code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
 
-// ---------- 체크리스트 보강(질문 템플릿 결합) ----------
+// ---------- 체크리스트 ----------
 const enrichBlocksWithChecklist = (blocks: BlockData[]): BlockData[] => {
   return blocks.map((b, i) => {
     const matched =
@@ -117,7 +117,6 @@ const TempWritePage = () => {
       setSelectedProjectIdPage(Number(initialProjectId));
   }, [initialProjectId]);
 
-  // 파생값
   const projectNames = useMemo(
     () => projectList.map((p) => p.name),
     [projectList]
@@ -278,7 +277,7 @@ const TempWritePage = () => {
     return out;
   };
 
-  // ---------- upsert 유틸 ----------
+  // ---------- upsert ----------
   const upsertPost = async (maybeId: number | null, form: any) => {
     if (maybeId) {
       await editPost(maybeId, toEditPostRequest(form) as any);
@@ -310,7 +309,7 @@ const TempWritePage = () => {
     setTimeout(() => setShowAlert(false), 1000);
   };
 
-  // ---------- 저장 모달 Next(최종 저장) ----------
+  // ---------- 저장 모달 Next (=최종 저장) ----------
   const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
     if (isCreating) return;
     setIsCreating(true);
@@ -361,7 +360,7 @@ const TempWritePage = () => {
     }
   };
 
-  // ---------- 템플릿 확정 → 요약 ----------
+  // ---------- 템플릿 확정 후 요약 ----------
   const startSummaryCompat = async (postId: number, type: SummaryTypeParam) => {
     try {
       const res: any = await startSummary(postId, { type } as any);
@@ -761,7 +760,7 @@ const TempWritePage = () => {
                   title={title}
                   selectedErrorType={selectedErrorType}
                   onShowSaveAlert={handleShowSaveAlert}
-                  onSaveAlert={handleShowAlert}
+                  onShowAlert={handleShowAlert}
                   onSave={handleClickSave}
                   isSaving={isSaving}
                   canSave={canSave}
