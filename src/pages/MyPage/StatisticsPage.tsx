@@ -29,7 +29,7 @@ const StatisticsPage = () => {
 
   return (
     <div className="flex w-[948px] flex-col items-start gap-[56px] pb-[349px]">
-      {/* 디버그 토글 (dev 전용) */}
+      {/* 디버그 토글 (dev 전용)
       {import.meta.env.DEV && (
         <div className="ml-auto flex items-center gap-3">
           <button
@@ -92,7 +92,7 @@ const StatisticsPage = () => {
             [dev] tech tags debug
           </button>
         </div>
-      )}
+      )} */}
 
       {/* 트러블로그 활동 */}
       {loading ? (

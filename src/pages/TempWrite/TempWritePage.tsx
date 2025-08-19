@@ -28,6 +28,7 @@ import {
   cancelSummary,
   editPost,
   getTagsByKeyword,
+  getPostDetail,
 } from "@/api/post.api";
 
 // ---------- 상태 타입 ----------
@@ -50,6 +51,9 @@ type IncomingTemplateState = {
   // 수정 식별용
   postId?: number;
   mode?: "edit" | "create";
+
+  initialChecklistErrorIds?: number[];
+  initialChecklistReasonIds?: number[];
 };
 
 // ---------- 에러 라벨/코드 매핑 ----------
@@ -96,6 +100,8 @@ const enrichBlocksWithChecklist = (blocks: BlockData[]): BlockData[] => {
 
 // ---------- 페이지 ----------
 const TempWritePage = () => {
+  const [wasCompleted, setWasCompleted] = useState(false);
+
   // 기본 상태
   const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -155,7 +161,26 @@ const TempWritePage = () => {
     const pid = location.state?.postId;
     return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
   }, [location.state]);
-  const isResume = resumePostId != null;
+
+  useEffect(() => {
+    (async () => {
+      if (!resumePostId) return;
+      try {
+        const detail: any = await getPostDetail(resumePostId);
+        const completedAt = detail?.completedAt ?? null;
+        setWasCompleted(Boolean(completedAt));
+      } catch {
+        // 실패해도 기본값(false)
+      }
+    })();
+  }, [resumePostId]);
+
+  // 임시저장/수정 공통으로 쓸 현재 작업중인 포스트 ID
+  const [draftPostId, setDraftPostId] = useState<number | null>(resumePostId);
+  useEffect(() => {
+    // 라우팅으로 이어쓰기가 들어오면 동기화
+    if (resumePostId) setDraftPostId(resumePostId);
+  }, [resumePostId]);
 
   // ---------- 프리필 ----------
   useEffect(() => {
@@ -173,6 +198,44 @@ const TempWritePage = () => {
       }
     }
   }, [location.state]);
+
+  // 서버에서 넘어온 체크리스트 ID를 라벨로 변환하여 블록에 반영 (1회)
+  const appliedChecklistPrefillRef = useRef(false);
+  useEffect(() => {
+    if (appliedChecklistPrefillRef.current) return;
+    if (!blocks.length) return;
+
+    const errIds = location.state?.initialChecklistErrorIds ?? [];
+    const reasonIds = location.state?.initialChecklistReasonIds ?? [];
+    if (!errIds.length && !reasonIds.length) return;
+
+    const errLabels = errIds
+      .map((id) => ERROR_ID_TO_LABEL[id])
+      .filter(Boolean) as string[];
+    const reasonLabels = reasonIds
+      .map((id) => REASON_ID_TO_LABEL[id])
+      .filter(Boolean) as string[];
+
+    setBlocks((prev) =>
+      prev.map((b) => {
+        const items = ((b as any).checklistItems ?? []) as string[];
+        if (!items.length) return b;
+        // 이 블록이 가진 항목 중 서버에서 체크된 라벨만 선택
+        const picked = [
+          ...errLabels.filter((l) => items.includes(l)),
+          ...reasonLabels.filter((l) => items.includes(l)),
+        ];
+        if (!picked.length) return b;
+        return { ...b, checklist: Array.from(new Set(picked)) };
+      })
+    );
+
+    appliedChecklistPrefillRef.current = true;
+  }, [
+    blocks.length,
+    location.state?.initialChecklistErrorIds,
+    location.state?.initialChecklistReasonIds,
+  ]);
 
   // 초기 활성 블록
   const initialActiveSetRef = useRef(false);
@@ -233,26 +296,32 @@ const TempWritePage = () => {
     "StackOverflow, OKKY 등 질문 커뮤니티": 4,
     "GitHub Issue 또는 블로그 참고": 5,
   };
+
+  // 역매핑 (ID -> 라벨)
+  const ERROR_ID_TO_LABEL: Record<number, string> = Object.fromEntries(
+    Object.entries(CHECKLIST_ERROR_ID_MAP).map(([label, id]) => [id, label])
+  );
+  const REASON_ID_TO_LABEL: Record<number, string> = Object.fromEntries(
+    Object.entries(CHECKLIST_REASON_ID_MAP).map(([label, id]) => [id, label])
+  );
+
   const buildChecklistIdsFromBlocks = (bs: BlockData[]) => {
     const errorIds = new Set<number>();
     const reasonIds = new Set<number>();
-    bs.forEach((b) => {
-      const items: string[] = ((b as any).checklist ?? []) as string[];
-      if (!items.length) return;
-      const isErrorSection =
-        (b as any).checklistTitle === "오류를 정확히 인식하셨나요?";
-      const map = isErrorSection
-        ? CHECKLIST_ERROR_ID_MAP
-        : CHECKLIST_REASON_ID_MAP;
+    for (const b of bs) {
+      const items: string[] = Array.isArray((b as any).checklist)
+        ? ((b as any).checklist as string[])
+        : [];
       for (const label of items) {
-        const id = map[label];
-        if (typeof id === "number")
-          (isErrorSection ? errorIds : reasonIds).add(id);
+        const eId = CHECKLIST_ERROR_ID_MAP[label];
+        const rId = CHECKLIST_REASON_ID_MAP[label];
+        if (typeof eId === "number") errorIds.add(eId);
+        if (typeof rId === "number") reasonIds.add(rId);
       }
-    });
+    }
     return {
-      checklistErrorIds: Array.from(errorIds),
-      checklistReasonIds: Array.from(reasonIds),
+      checklistErrorIds: [...errorIds],
+      checklistReasonIds: [...reasonIds],
     };
   };
 
@@ -286,30 +355,48 @@ const TempWritePage = () => {
   };
 
   const buildFormDevelop = (
-    postStatus: "COMPLETED" | "WRITING",
+    postStatus: UiPostStatus,
     meta: PostSavePayload,
     postTags: string[]
-  ): PostForm => ({
-    title,
-    introduction: meta?.description ?? "",
-    postTags,
-    isVisible: (meta?.visibility ?? "public") === "public",
-    isSummaryCreated: false,
-    postStatus,
-    starRating: meta?.importance ?? 0,
-    templateType: "GUIDELINE",
-    thumbnailImageUrl: meta?.thumbnail ?? undefined,
-    projectId: Number(meta?.projectId ?? 0),
-    errorTag: selectedErrorType ?? "",
-    contents: toContentDtoList(blocks),
-    checklistError: [],
-    checklistReason: [],
-  });
+  ): PostForm => {
+    const { checklistErrorIds, checklistReasonIds } =
+      buildChecklistIdsFromBlocks(blocks);
 
-  type UiPostStatus = "WRITING" | "COMPLETED";
-  type ServerPostStatus = "WRITING" | "COMPLETE";
+    return {
+      title,
+      introduction: meta?.description ?? "",
+      postTags,
+      isVisible: (meta?.visibility ?? "public") === "public",
+      isSummaryCreated: false,
+      postStatus,
+      starRating: meta?.importance ?? 0,
+      templateType: "GUIDELINE",
+      thumbnailImageUrl: meta?.thumbnail ?? undefined,
+      projectId: Number(meta?.projectId ?? 0),
+      errorTag: selectedErrorType ?? "",
+      contents: toContentDtoList(blocks),
+      checklistError: checklistErrorIds,
+      checklistReason: checklistReasonIds,
+    };
+  };
+
+  type UiPostStatus = "WRITING" | "COMPLETED" | "SUMMARIZED";
+  type ServerPostStatus = "WRITING" | "COMPLETED" | "SUMMARIZED";
   const toServerPostStatus = (s: UiPostStatus): ServerPostStatus =>
-    s === "COMPLETED" ? "COMPLETE" : "WRITING";
+    s === "COMPLETED"
+      ? "COMPLETED"
+      : s === "SUMMARIZED"
+      ? "SUMMARIZED"
+      : "WRITING";
+
+  const toServerContentDtoList = (bs: BlockData[]) =>
+    bs
+      .filter((b) => (b.content ?? "").trim().length > 0)
+      .map((b, i) => ({
+        subTitle: (b as any).question,
+        body: b.content,
+        sequence: i + 1,
+      }));
 
   const buildFormServer = (
     postStatus: UiPostStatus,
@@ -330,11 +417,32 @@ const TempWritePage = () => {
       thumbnailImageUrl: meta.thumbnail ?? undefined,
 
       errorTagName: selectedErrorType!,
-      contentDtoList: toContentDtoList(blocks),
+      contentDtoList: toServerContentDtoList(blocks),
       postTags,
 
       checklistError: checklistErrorIds,
       checklistReason: checklistReasonIds,
+    };
+  };
+
+  // 임시저장용 메타 생성
+  const resolveQuickMeta = (): PostSavePayload | null => {
+    const pid =
+      previewMeta?.projectId ?? initialProjectId ?? projectList[0]?.id ?? null;
+    if (pid == null) return null;
+
+    const pname =
+      previewMeta?.projectName ??
+      projectList.find((p) => p.id === pid)?.name ??
+      "";
+
+    return {
+      importance: previewMeta?.importance ?? 0,
+      thumbnail: previewMeta?.thumbnail ?? null,
+      description: previewMeta?.description ?? "",
+      visibility: previewMeta?.visibility ?? "public",
+      projectId: pid,
+      projectName: pname,
     };
   };
 
@@ -344,31 +452,35 @@ const TempWritePage = () => {
     meta: PostSavePayload,
     postTags: string[]
   ): Promise<number> => {
+    const targetId = draftPostId ?? resumePostId ?? null;
     try {
-      const form = buildFormDevelop(postStatus, meta, postTags);
-      if (isResume && resumePostId) {
-        await editPost(resumePostId, toEditPostRequest(form) as any);
-        return resumePostId;
+      const req = buildFormServer(postStatus, meta, postTags);
+      if (targetId) {
+        const res: any = await editPost(targetId, req as any);
+        return Number(res?.id ?? res?.data?.id ?? res?.content?.id ?? targetId);
       } else {
-        const created: any = await createPost(toCreatePostRequest(form) as any);
-        return Number(created?.id ?? created?.data?.id ?? created?.content?.id);
+        const res: any = await createPost(req as any);
+        const newId = Number(res?.id ?? res?.data?.id ?? res?.content?.id);
+        setDraftPostId(newId);
+        return newId;
       }
     } catch (e) {
       console.warn(
-        "[saveDraftCompat] develop 경로 실패, feat 스키마로 폴백 시도",
+        "[saveDraftCompat] server 스키마 실패 → develop 스키마 폴백",
         e
       );
     }
 
-    const reqServer = buildFormServer(postStatus, meta, postTags);
-    if (isResume && resumePostId) {
-      await editPost(resumePostId, reqServer as any);
-      return resumePostId;
+    // 2) 폴백: develop 스키마(여기도 ID 반영되도록 수정 1 적용되어야 함)
+    const form = buildFormDevelop(postStatus, meta, postTags);
+    if (targetId) {
+      const res: any = await editPost(targetId, toEditPostRequest(form) as any);
+      return Number(res?.id ?? res?.data?.id ?? res?.content?.id ?? targetId);
     } else {
-      const created2: any = await createPost(reqServer as any);
-      return Number(
-        created2?.id ?? created2?.data?.id ?? created2?.content?.id
-      );
+      const res: any = await createPost(toCreatePostRequest(form) as any);
+      const newId = Number(res?.id ?? res?.data?.id ?? res?.content?.id);
+      setDraftPostId(newId);
+      return newId;
     }
   };
 
@@ -441,9 +553,32 @@ const TempWritePage = () => {
     }
     setIsPostSaveModalOpen(true);
   };
-  const handleShowSaveAlert = () => {
-    setShowSaveAlert(true);
-    setTimeout(() => setShowSaveAlert(false), 3000);
+  const handleShowSaveAlert = async () => {
+    // 기본 검증 (제목/에러/첫 블록)
+    if (!title.trim() || !selectedErrorType || !blocks[0]?.content?.trim()) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      return;
+    }
+
+    const meta = resolveQuickMeta();
+    if (!meta) {
+      alert("프로젝트를 먼저 선택해주세요.");
+      return;
+    }
+
+    try {
+      const canonicalTags = await canonicalizeTags(selectedTags);
+      // 이미 완료된 포스트면 COMPLETED 상태로 수정 저장
+      const nextStatus: UiPostStatus = wasCompleted ? "COMPLETED" : "WRITING";
+      const id = await saveDraftCompat(nextStatus, meta, canonicalTags);
+      setCreatedPostId((prev) => prev ?? id);
+      setShowSaveAlert(true);
+      setTimeout(() => setShowSaveAlert(false), 3000);
+    } catch (e) {
+      console.error(e);
+      setStatusMessage("임시 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
   };
 
   // ---------- 저장 모달 Next ----------
@@ -468,7 +603,7 @@ const TempWritePage = () => {
 
     try {
       const canonicalTags = await canonicalizeTags(selectedTags);
-      const postId = await saveDraftCompat("WRITING", payload, canonicalTags);
+      const postId = await saveDraftCompat("COMPLETED", payload, canonicalTags);
       setCreatedPostId(postId);
       setIsTemplateSelectModalOpen(true);
     } catch (e) {
@@ -550,6 +685,30 @@ const TempWritePage = () => {
 
         if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
+
+          // 요약 성공 → postStatus = SUMMARIZED 로 반영
+          const targetId = (createdPostId ?? resumePostId) as number;
+          try {
+            // 1) 부분 업데이트 시도
+            await editPost(targetId, { postStatus: "SUMMARIZED" } as any);
+          } catch {
+            // 2) 전체 폼 폴백
+            try {
+              const meta = resolveQuickMeta?.() ?? previewMeta; // 페이지에 있는 메타 사용
+              if (meta) {
+                const canonicalTags = await canonicalizeTags(selectedTags);
+                const req = buildFormServer
+                  ? buildFormServer("SUMMARIZED", meta, canonicalTags)
+                  : toEditPostRequest(
+                      buildFormDevelop("SUMMARIZED", meta as any, canonicalTags)
+                    );
+                await editPost(targetId, req as any);
+              }
+            } catch (e) {
+              console.error("포스트 SUMMARIZED 반영 실패:", e);
+            }
+          }
+
           // feat: postSummaryId 있으면 성공 모달
           if (typeof data?.postSummaryId === "number") {
             setCompletedSummaryId(data.postSummaryId);

@@ -41,6 +41,11 @@ const SearchResultPage = () => {
   // 현재 로그인한 사용자
   const viewerId = useViewerId();
 
+  // 상세 페이지에서 사용할 검색범위 키로 변환
+  // - my / mypage  => "my"
+  // - user / community => "community"
+  const scopeForDetail: "my" | "community" = isMyScope ? "my" : "community";
+
   // 접근 제한 여부(표시만)
   const isBlocked = (card: any) => {
     const vis = String(card.visibility ?? "").toUpperCase(); // "PUBLIC" | "PRIVATE"
@@ -148,11 +153,6 @@ const SearchResultPage = () => {
                 : Number.parseInt(String(card.id), 10);
             const idValid = Number.isFinite(idNum);
 
-            // 본인 글 여부
-            const mine = !!card.isMine;
-            const ownerId =
-              mine && viewerId != null ? Number(viewerId) : undefined;
-
             return (
               <TroubleShootingCard
                 key={card.id}
@@ -161,9 +161,23 @@ const SearchResultPage = () => {
                   blocked || !idValid
                     ? undefined
                     : () => {
-                        // 상세 페이지로만 이동. 본인 글이면 ownerId 같이 전달
-                        navigate(PATH.COMMUNITY_POST(idNum), {
-                          state: { from: "search", ownerId },
+                        // 상세 페이지로 이동하면서 검색 범위/출처를 명시
+                        // - 쿼리로도 넘겨서 (새로고침/딥링크) 안전하게 유지
+                        const url = `${PATH.COMMUNITY_POST(
+                          idNum
+                        )}?from=search&scope=${scopeForDetail}`;
+
+                        const ownerIdForState =
+                          card.isMine && viewerId != null
+                            ? Number(viewerId)
+                            : undefined;
+
+                        navigate(url, {
+                          state: {
+                            from: "search",
+                            searchScope: scopeForDetail, // 상세에서 useDetailContext().searchScope 로 읽음
+                            ownerId: ownerIdForState,
+                          },
                         });
                       }
                 }

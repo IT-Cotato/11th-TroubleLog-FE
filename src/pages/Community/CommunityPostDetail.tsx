@@ -7,7 +7,7 @@ import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
@@ -53,6 +53,8 @@ export interface CommunityPostDetailProps {
   likeCounts: number;
   commentCounts: number;
   comments: PostCommentProps[];
+  checklistError?: number[];
+  checklistReason?: number[];
 }
 
 export default function CommunityPostDetail() {
@@ -102,6 +104,7 @@ export default function CommunityPostDetail() {
     | "mypage"
     | "project"
     | undefined;
+  type SearchScope = "my" | "community" | undefined;
 
   type DetailContentItem = {
     id?: number;
@@ -123,33 +126,14 @@ export default function CommunityPostDetail() {
     const ownerId = stateOwnerId ?? (qsOwnerId ? Number(qsOwnerId) : undefined);
     const from = stateFrom ?? qsFrom;
 
-    return { from, ownerId, viewerId: viewerIdInStore };
-  }
+    // 검색 범위: location.state.searchScope 또는 ?scope=my|community 로 전달
+    const stateScope = (location.state as any)?.searchScope as
+      | SearchScope
+      | undefined;
+    const qsScope = (qs.get("scope") as SearchScope) || undefined;
+    const searchScope = stateScope ?? qsScope;
 
-  function shouldTryMyDetailFirst(params: {
-    from?: FromSource;
-    ownerId?: number;
-    viewerId?: number | null;
-  }) {
-    const { from, ownerId, viewerId } = params;
-    const isMine =
-      viewerId != null &&
-      ownerId != null &&
-      String(ownerId) === String(viewerId);
-
-    // 포스트 상세를 먼저 시도해야 하는 경우
-    if (from === "home" || from === "project") return true;
-    if (from === "mypage" && isMine) return true;
-    if (from === "search" && isMine) return true;
-    if (from === "community" && isMine) return true;
-
-    // 커뮤니티 상세를 먼저 시도해야 하는 경우
-    if (from === "community" && !isMine) return false;
-    if (from === "search" && !isMine) return false;
-    if (from === "mypage" && !isMine) return false;
-
-    // 기본은 커뮤니티 우선
-    return false;
+    return { from, ownerId, viewerId: viewerIdInStore, searchScope };
   }
 
   // 별점 enum/문자 → 숫자
@@ -247,6 +231,13 @@ export default function CommunityPostDetail() {
         thumbnail: detail?.thumbnailUrl ?? null,
       },
       projectId: detail?.projectId ?? undefined,
+      // 서버에서 받은 체크리스트 ID 배열을 그대로 전달
+      initialChecklistErrorIds: Array.isArray(detail?.checklistError)
+        ? detail.checklistError
+        : [],
+      initialChecklistReasonIds: Array.isArray(detail?.checklistReason)
+        ? detail.checklistReason
+        : [],
     };
   }
 
@@ -333,10 +324,6 @@ export default function CommunityPostDetail() {
 
   // 상세 로드
   const detailCtx = useDetailContext();
-  const preferMyFirst = useMemo(
-    () => shouldTryMyDetailFirst(detailCtx),
-    [detailCtx.from, detailCtx.ownerId, detailCtx.viewerId]
-  );
   const [isCommunitySource, setIsCommunitySource] = useState(true); // 좋아요/댓글 표시 가드
 
   useEffect(() => {
@@ -357,7 +344,7 @@ export default function CommunityPostDetail() {
 
     const loadCommunity = async () => {
       const communityData = await getCommunityPostDetail(numId);
-      if (!communityData) throw new Error("빈 응답입니다."); // 널 가드
+      if (!communityData) throw new Error("빈 응답입니다.");
       const vm = toCommunityPostVM(communityData, detailCtx.viewerId);
       setPost(vm);
       setIsLiked(vm.isLiked);
@@ -366,26 +353,31 @@ export default function CommunityPostDetail() {
       void loadComments(numId, 1, detailCtx.viewerId ?? null);
     };
 
-    const loadMine = async (id: number) => {
+    const loadMineDraft = async (id: number) => {
       const myDetail = await getPostDetail(id);
 
-      // 화면용 VM 세팅
+      // 작성 중 여부
+      const completedAt = (myDetail as any)?.completedAt ?? null;
+      const isDraft = completedAt == null;
+
+      if (!isDraft) {
+        throw new Error("완료 문서입니다. 커뮤니티 상세로 이동해야 합니다.");
+      }
+
+      // 내 상세로 화면 세팅
       const vmMine = toPostDetailVM(myDetail as any, detailCtx.viewerId);
       setPost(vmMine);
       setIsLiked(vmMine.isLiked);
       setLikeCounts(vmMine.likeCounts);
       setIsCommunitySource(false);
 
-      // 초안 여부 판단 (completedAt이 null)
-      const completedAt = (myDetail as any)?.completedAt ?? null;
-      const templateTypeRaw =
-        (myDetail as any)?.templateType ?? (vmMine as any)?.templateType;
-      const tt = String(templateTypeRaw ?? "").toUpperCase(); // "FREE_FORM" | "GUIDELINE" | "FREEFORM"
-      const isDraft = completedAt == null;
-
-      // 이 postId에 대해 안내창을 이미 띄웠다면 다시 띄우지 않음
-      if (isDraft && !resumePromptShownRef.current[id]) {
+      // 이어쓰기 안내(한 번만)
+      if (!resumePromptShownRef.current[id]) {
         resumePromptShownRef.current[id] = true;
+
+        const ttRaw =
+          (myDetail as any)?.templateType ?? (vmMine as any)?.templateType;
+        const tt = String(ttRaw ?? "").toUpperCase(); // FREE_FORM | FREEFORM | GUIDELINE
 
         const ok = window.confirm(
           tt === "FREE_FORM" || tt === "FREEFORM"
@@ -408,14 +400,11 @@ export default function CommunityPostDetail() {
             replace: true,
             state: {
               ...baseState,
-              // 이어쓰기 식별자 (에디터에서 이 값이 있으면 editPost 분기)
               postId: id,
               mode: "edit",
               from: "community-detail",
               projectId: (myDetail as any)?.projectId ?? undefined,
-              savePrefill: {
-                ...(baseState as any).savePrefill,
-              },
+              savePrefill: { ...(baseState as any).savePrefill },
             },
           });
         }
@@ -424,31 +413,52 @@ export default function CommunityPostDetail() {
 
     (async () => {
       try {
-        if (preferMyFirst) {
+        const viewerId = detailCtx.viewerId ?? null;
+        const isMine =
+          viewerId != null &&
+          detailCtx.ownerId != null &&
+          String(detailCtx.ownerId) === String(viewerId);
+
+        if (isMine) {
+          // 내 글이면: 먼저 post detail로 상태 확인 → draft면 post detail, 완료면 community
           try {
-            await loadMine(numId);
+            const myDetail = await getPostDetail(numId);
+            const isDraft = (myDetail as any)?.completedAt == null;
+
+            if (isDraft) {
+              await loadMineDraft(numId);
+            } else {
+              await loadCommunity();
+            }
           } catch {
+            // 내 상세가 실패해도 커뮤니티로 최종 시도
             await loadCommunity();
           }
         } else {
+          // 내 글이 아니면: 바로 커뮤니티 상세
           try {
             await loadCommunity();
           } catch (err: any) {
             const status = err?.response?.status ?? err?.status;
             if (status === 401 || status === 403 || status === 404) {
-              await loadMine(numId);
-            } else {
-              throw err;
+              // 타인의 draft이거나 접근 권한이 없는 경우
+              alert(
+                "접근할 수 없는 페이지입니다. 작성 중인 문서이거나 권한이 없습니다."
+              );
+              navigate(-1);
+              return;
             }
+            throw err;
           }
         }
       } catch (err: any) {
-        if (!cancelled)
+        if (!cancelled) {
           setLoadError(
             err?.response?.data?.message ??
               err?.message ??
               "포스트 불러오기 실패"
           );
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -457,14 +467,7 @@ export default function CommunityPostDetail() {
     return () => {
       cancelled = true;
     };
-  }, [
-    postId,
-    detailCtx.viewerId,
-    detailCtx.from,
-    detailCtx.ownerId,
-    preferMyFirst,
-    navigate,
-  ]);
+  }, [postId, detailCtx.viewerId, detailCtx.ownerId, navigate]);
 
   const navigatingRef = useRef(false);
 
