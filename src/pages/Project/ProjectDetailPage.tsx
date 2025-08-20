@@ -16,6 +16,7 @@ import type {
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useViewerId } from "@/store/auth";
+import { decideCombined } from "@/utils/combinedRoute";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "complete" | "created";
@@ -256,9 +257,20 @@ export default function ProjectDetailPage() {
                       const ownerId = card.authorId ?? viewerId;
                       const qs = new URLSearchParams({ from: "project" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
-                      navigate(
-                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+
+                      const { goCombined, summaryId } = decideCombined(
+                        card,
+                        viewerId
                       );
+                      if (goCombined && summaryId != null) {
+                        navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                          state: { from: "project", ownerId },
+                        });
+                      } else {
+                        navigate(
+                          `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+                        );
+                      }
                     }}
                   />
                 ))}

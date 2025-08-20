@@ -32,6 +32,10 @@ export interface TroubleShootingCardProps {
   onDeleted?: (postId: number) => void;
   onClick?: (postId: number) => void;
   disabled?: boolean;
+
+  summaryId?: number | null;
+  postSummaryId?: number | null;
+  summaries?: any[];
 }
 
 const TroubleShootingCard = ({

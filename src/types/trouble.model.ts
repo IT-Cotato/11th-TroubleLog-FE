@@ -20,6 +20,10 @@ export interface TroubleListItem {
   likeCount: number | undefined;
   commentCount: number | undefined;
   introduction?: string;
+
+  summaryId?: number | null;
+  postSummaryId?: number | null;
+  summaries: object[] | null;
 }
 
 // 페이징 응답(서버가 ApiResponse로 감싸지 않는 케이스)

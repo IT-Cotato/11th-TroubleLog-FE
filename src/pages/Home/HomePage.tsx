@@ -16,6 +16,7 @@ import { PATH } from "@/constants/paths";
 import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
 import { useViewerId } from "@/store/auth";
+import { decideCombined } from "@/utils/combinedRoute";
 
 const PAGE_SIZE = 10;
 
@@ -412,9 +413,20 @@ export default function HomePage() {
                       const ownerId = card.authorId ?? viewerId;
                       const qs = new URLSearchParams({ from: "home" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
-                      navigate(
-                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+
+                      const { goCombined, summaryId } = decideCombined(
+                        card,
+                        viewerId
                       );
+                      if (goCombined && summaryId != null) {
+                        navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                          state: { from: "home", ownerId },
+                        });
+                      } else {
+                        navigate(
+                          `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+                        );
+                      }
                     }}
                     onAvatarClick={() => {
                       if (viewerId != null)

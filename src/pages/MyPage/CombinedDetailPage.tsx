@@ -6,6 +6,11 @@ import PostCombineMd from "./PostCombineMd";
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
+import imageIcon from "@/assets/icons/image.svg";
+import starIcon from "@/assets/icons/star.svg";
+import heartIcon from "@/assets/icons/heart.svg";
+import likeEmptyIcon from "@/assets/icons/like_empty.svg";
+import shareIcon from "@/assets/icons/share.svg";
 import { PATH } from "@/constants/paths";
 
 import {
@@ -16,6 +21,22 @@ import {
 import type { ViewCombinedResponse } from "@/models/post.model";
 import { toTwoPaneVM } from "@/mappers/combinedDetail.mapper";
 import { useViewerId } from "@/store/auth";
+import PostComment, {
+  type PostCommentProps,
+} from "@/components/Community/PostComment";
+import {
+  createCommunityComment,
+  getCommunityComments,
+  getCommunityPostDetail,
+  likeCommunityPost,
+  replyCommunityComment,
+  softDeleteCommunityComment,
+  updateCommunityComment,
+} from "@/api/community.api";
+import {
+  toPostComment,
+  toPostComments,
+} from "@/mappers/communityComment.mapper";
 
 export default function CombinedDetailPage() {
   const { postId, summaryId } = useParams<{
@@ -34,6 +55,130 @@ export default function CombinedDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
+  // 기존 state들 아래에 추가
+  const [isMine, setIsMine] = useState(false);
+  const [importance, setImportance] = useState(0);
+  const [authorId, setAuthorId] = useState<number | null>(null);
+  const [authorName, setAuthorName] = useState("");
+  const [authorProfile, setAuthorProfile] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCounts, setLikeCounts] = useState(0);
+  const [isLiking, setIsLiking] = useState(false);
+  const likeLockRef = useRef(false);
+
+  const [commentCounts, setCommentCounts] = useState(0);
+  const [comments, setComments] = useState<PostCommentProps[]>([]);
+  const [commentInput, setCommentInput] = useState("");
+  const [isCommentPosting, setIsCommentPosting] = useState(false);
+  const [cPage, setCPage] = useState(1);
+  const [cHasNext, setCHasNext] = useState(false);
+  const [cLoading, setCLoading] = useState(false);
+
+  // 뷰 모드 결정
+  const viewMode: "mine_public" | "mine_private" | "others" = isMine
+    ? isVisible
+      ? "mine_public"
+      : "mine_private"
+    : "others";
+
+  // 표시 게이트
+  const showCombined = viewMode !== "others";
+  const showAuthorCard = viewMode === "mine_public" || viewMode === "others";
+  const showSocial =
+    isVisible && (viewMode === "mine_public" || viewMode === "others");
+
+  // 공유 토스트
+  const [toast, setToast] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: "",
+  });
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+  const showToast = (message: string) => {
+    setToast({ open: true, message });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(
+      () => setToast({ open: false, message: "" }),
+      2000
+    );
+  };
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) {
+      // 일부 환경/권한에서 Clipboard API가 실패할 수 있음 — 폴백으로 진행
+      console.warn("Clipboard API failed, falling back.", e);
+    }
+    // textarea 폴백
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } finally {
+      document.body.removeChild(ta);
+    }
+    return ok;
+  };
+
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(window.location.href);
+    showToast(
+      ok
+        ? "링크가 복사되었어요!"
+        : "복사에 실패했어요. 주소창에서 복사해주세요."
+    );
+  };
+
+  // enum/문자 → 숫자 (중요도)
+  const parseStar = (raw: unknown) => {
+    if (typeof raw === "number") return raw;
+    if (typeof raw !== "string") return 0;
+    const k = raw.toUpperCase();
+    const map: Record<string, number> = {
+      ONE_STAR: 1,
+      TWO_STARS: 2,
+      THREE_STARS: 3,
+      FOUR_STARS: 4,
+      FIVE_STARS: 5,
+      ONE: 1,
+      TWO: 2,
+      THREE: 3,
+      FOUR: 4,
+      FIVE: 5,
+      NONE: 0,
+    };
+    return map[k] ?? 0;
+  };
+
+  // 요약 타입 한글 라벨
+  const SUMMARY_TYPE_LABELS: Record<string, string> = {
+    RESUME: "자기소개서",
+    INTERVIEW: "면접 대비",
+    BLOG: "블로그",
+    ISSUE_MANAGEMENT: "Issue 관리",
+    SHORT: "짧은 요약",
+    NONE: "없음",
+  };
+  const toKoSummaryType = (raw?: string | null) =>
+    raw ? SUMMARY_TYPE_LABELS[raw] ?? raw : null;
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -41,12 +186,59 @@ export default function CombinedDetailPage() {
         setLoading(true);
         const pid = Number(postId);
         const sid = Number(summaryId);
-        if (!Number.isFinite(pid) || !Number.isFinite(sid)) {
+        if (!Number.isFinite(pid) || !Number.isFinite(sid))
           throw new Error("잘못된 경로 파라미터");
-        }
+
         const data = await getCombinedDetail(pid, sid);
-        if (!cancelled)
-          setVm(toTwoPaneVM(data as ViewCombinedResponse, viewerId ?? null));
+
+        // 기존 vm 세팅
+        setVm(toTwoPaneVM(data as ViewCombinedResponse, viewerId ?? null));
+
+        // 합본 응답에서 상단/하단용 데이터 추출
+        const post = (data as any)?.postResDto;
+        const user = post?.userInfo ?? {};
+        const mine =
+          viewerId != null && String(user?.userId) === String(viewerId);
+
+        if (!cancelled) {
+          setIsMine(mine);
+          setImportance(parseStar(post?.starRating));
+          setAuthorId(user?.userId ?? null);
+          setAuthorName(user?.nickname ?? "");
+          setAuthorProfile(user?.profileImageUrl || null);
+          setIsVisible(!!post?.isVisible);
+          setLikeCounts(Number(post?.likeCount ?? 0));
+          setCommentCounts(Number(post?.commentCount ?? 0));
+        }
+
+        // 공개글이면 커뮤니티 상세/댓글 로딩 (좋아요 상태 가져오기 & 댓글 리스트)
+        if (post?.isVisible && Number.isFinite(pid)) {
+          try {
+            const community = await getCommunityPostDetail(pid);
+            const initLiked = !!community?.liked;
+            const initLikeCount = Number(community?.likeCount ?? likeCounts);
+            if (!cancelled) {
+              setIsLiked(initLiked);
+              setLikeCounts(initLikeCount);
+            }
+          } catch {
+            /* 커뮤 상세 실패해도 진행 */
+          }
+
+          // 1페이지 댓글
+          try {
+            const resp = await getCommunityComments(pid, 1, 10);
+            const mapped = toPostComments(resp.content, viewerId ?? null);
+            if (!cancelled) {
+              setComments(mapped);
+              setCPage((resp.page ?? 1) + 1);
+              setCHasNext(!!resp.hasNext);
+              setCommentCounts(resp.totalElements ?? commentCounts);
+            }
+          } catch {
+            /* ignore */
+          }
+        }
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "합본 상세 불러오기 실패");
       } finally {
@@ -57,6 +249,177 @@ export default function CombinedDetailPage() {
       cancelled = true;
     };
   }, [postId, summaryId, viewerId]);
+
+  // 댓글 페이징/갱신 핸들러
+  const loadComments = async (
+    id: number,
+    page1: number,
+    currentViewerId: number | null
+  ) => {
+    setCLoading(true);
+    try {
+      const resp = await getCommunityComments(id, page1, 10);
+      const mapped = toPostComments(resp.content, currentViewerId);
+      setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
+      setCPage((resp.page ?? page1) + 1);
+      setCHasNext(!!resp.hasNext);
+      setCommentCounts(resp.totalElements ?? commentCounts);
+    } finally {
+      setCLoading(false);
+    }
+  };
+  const reloadCommentsFirstPage = useCallback(async () => {
+    if (!postId) return;
+    await loadComments(Number(postId), 1, viewerId ?? null);
+  }, [postId, viewerId]);
+
+  // 좋아요/댓글 작성 핸들러
+  const handleToggleLike = async () => {
+    if (!postId || !isVisible) return;
+    if (likeLockRef.current) return;
+    likeLockRef.current = true;
+    setIsLiking(true);
+    const pid = Number(postId);
+    const wasLiked = isLiked;
+    const prev = likeCounts;
+
+    if (wasLiked) {
+      setIsLiked(false);
+      setLikeCounts(Math.max(0, prev - 1));
+      try {
+        await likeCommunityPost(pid);
+      } catch {
+        setIsLiked(true);
+        setLikeCounts(prev);
+      }
+    } else {
+      setIsLiked(true);
+      setLikeCounts(prev + 1);
+      try {
+        const res = await likeCommunityPost(pid);
+        setLikeCounts(res?.likeCount ?? prev + 1);
+      } catch {
+        setIsLiked(false);
+        setLikeCounts(prev);
+      }
+    }
+    likeLockRef.current = false;
+    setIsLiking(false);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!postId || !isVisible) return;
+    const contents = commentInput.trim();
+    if (!contents || isCommentPosting) return;
+    setIsCommentPosting(true);
+
+    // 낙관적
+    const optimistic: PostCommentProps = {
+      id: `tmp-${Date.now()}`,
+      profile: authorProfile ?? "",
+      name: "나",
+      date: new Date().toISOString(),
+      content: contents,
+      isMine: true,
+      isReply: false,
+    };
+
+    setComments((prev) => [optimistic, ...prev]);
+    setCommentCounts((cnt) => cnt + 1);
+    setCommentInput("");
+
+    try {
+      const created = await createCommunityComment(Number(postId), {
+        contents,
+      });
+      const mapped = toPostComment(created, viewerId ?? null, {
+        isReply: false,
+      });
+      setComments((prev) => {
+        const i = prev.findIndex((c) => c.id === optimistic.id);
+        if (i === -1) return [mapped, ...prev];
+        const next = [...prev];
+        next[i] = mapped;
+        return next;
+      });
+      await reloadCommentsFirstPage();
+    } catch {
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+      setCommentCounts((cnt) => Math.max(0, cnt - 1));
+      setCommentInput(contents);
+    } finally {
+      setIsCommentPosting(false);
+    }
+  };
+
+  const handleReply = async (parentId: string, replyContent: string) => {
+    if (!postId || !isVisible) return;
+    const contents = replyContent.trim();
+    if (!contents) return;
+    const optimistic: PostCommentProps = {
+      id: `tmp-${Date.now()}`,
+      profile: authorProfile ?? "",
+      name: "나",
+      date: new Date().toISOString(),
+      content: contents,
+      isMine: true,
+      isReply: true,
+      parentId,
+    };
+
+    setComments((prev) => [...prev, optimistic]);
+    try {
+      const created = await replyCommunityComment(
+        Number(postId),
+        Number(parentId),
+        { contents }
+      );
+      const mapped = toPostComment(created, viewerId ?? null, {
+        isReply: true,
+        parentId,
+      });
+      setComments((prev) => {
+        const i = prev.findIndex((c) => c.id === optimistic.id);
+        if (i === -1) return [...prev, mapped];
+        const next = [...prev];
+        next[i] = mapped;
+        return next;
+      });
+      await reloadCommentsFirstPage();
+    } catch {
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+    }
+  };
+
+  const handleEdit = async (id: string, newContent: string) => {
+    if (!postId || !isVisible) return;
+    try {
+      const updated = await updateCommunityComment({
+        postId: Number(postId),
+        commentId: Number(id),
+        contents: newContent,
+      });
+      const vm = toPostComment(updated, viewerId ?? null);
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, content: vm.content, date: vm.date } : c
+        )
+      );
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!isVisible) return;
+    try {
+      await softDeleteCommunityComment(Number(id));
+      setComments((prev) => prev.filter((c) => c.id !== id));
+      setCommentCounts((cnt) => Math.max(0, cnt - 1));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const goEditOriginal = useCallback(async () => {
     if (!postId) return;
@@ -151,11 +514,42 @@ export default function CombinedDetailPage() {
                 </div>
               </div>
             </div>
+
+            <div className="flex w-full items-center justify-between">
+              <div className="flex items-center gap-[20px]">
+                <img
+                  src={authorProfile || imageIcon}
+                  onError={(e) => {
+                    e.currentTarget.src = imageIcon;
+                  }}
+                  alt="profile"
+                  className="w-[66px] h-[66px] rounded-full object-cover"
+                />
+                <div className="text-head-24-bold">{authorName}</div>
+              </div>
+
+              {isMine && importance > 0 && (
+                <div className="flex items-center gap-[8px]">
+                  <img
+                    src={starIcon}
+                    alt="importance"
+                    className="w-[24px] h-[24px]"
+                  />
+                  <div className="text-body-20-regular text-gray3">
+                    {importance}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* 본문: 좌(원본) | 우(요약) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[32px] w-full">
+        <div
+          className={`grid gap-[32px] w-full ${
+            showCombined ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+          }`}
+        >
           {/* 왼쪽: 원본 */}
           <section className="flex flex-col gap-[24px]">
             <div className="text-head-24-bold">원본</div>
@@ -171,34 +565,190 @@ export default function CombinedDetailPage() {
           </section>
 
           {/* 오른쪽: 요약 */}
-          <section className="flex flex-col gap-[24px]">
-            <div className="flex items-center gap-[12px]">
-              <div className="text-head-24-bold">요약</div>
-              {vm.right.summaryType && (
-                <span className="text-body-16-regular text-gray3">
-                  ({vm.right.summaryType})
-                </span>
+          {showCombined && (
+            <section className="flex flex-col gap-[24px] lg:border-l lg:border-gray1 lg:pl-[32px]">
+              <div className="flex items-center gap-[12px]">
+                <div className="text-head-24-bold">요약</div>
+                {vm.right.summaryType && (
+                  <span className="text-body-16-regular text-gray3">
+                    ({toKoSummaryType(vm.right.summaryType)})
+                  </span>
+                )}
+              </div>
+
+              {vm.right.questions.length === 0 ? (
+                <div className="text-body-18-regular text-gray3">
+                  아직 생성된 요약이 없어요.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-[32px]">
+                  {vm.right.questions.map((q, i) => (
+                    <PostCombineMd
+                      key={`R-${i}`}
+                      question={q}
+                      content={vm.right.contents[i]}
+                    />
+                  ))}
+                </div>
               )}
+            </section>
+          )}
+        </div>
+
+        {/* ===== 본문 하단 영역 ===== */}
+        {/* 작성자 정보 카드 */}
+        {showAuthorCard && (
+          <div className="flex py-[32px] px-[40px] flex-col items-start gap-[10px] self-stretch rounded-[36px] bg-[#F2F2F2]">
+            <div className="flex justify-between items-center self-stretch">
+              <div
+                className="flex items-center gap-[28px] cursor-pointer"
+                onClick={() =>
+                  authorId && navigate(PATH.MYPAGE(String(authorId)))
+                }
+              >
+                <img
+                  src={authorProfile || imageIcon}
+                  onError={(e) => {
+                    e.currentTarget.src = imageIcon;
+                  }}
+                  alt="profile"
+                  className="w-[131px] h-[131px] rounded-full object-cover"
+                />
+                <div className="flex flex-col items-start gap-[13px]">
+                  <div className="text-head-24-bold">{authorName}</div>
+                  <div className="text-body-16-regular text-gray3">작성자</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 좋아요/공유 */}
+        {showSocial && (
+          <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
+            <div className="flex items-center gap-[20px]">
+              <button
+                type="button"
+                aria-pressed={isLiked}
+                aria-busy={isLiking}
+                disabled={isLiking}
+                onClick={handleToggleLike}
+                className={`flex items-center gap-[8px] ${
+                  isLiking ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                }`}
+              >
+                <img
+                  src={isLiked ? heartIcon : likeEmptyIcon}
+                  alt="like"
+                  className="w-[40px] h-[40px]"
+                />
+                <div className="text-body-20-regular text-gray3">
+                  {likeCounts}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="cursor-pointer"
+                aria-label="현재 페이지 링크 복사"
+              >
+                <img
+                  src={shareIcon}
+                  alt="share"
+                  className="w-[40px] h-[40px]"
+                />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 댓글 작성 */}
+        {showSocial && (
+          <>
+            {/* 작성 */}
+            <div className="flex flex-col items-end gap-[12px] self-stretch">
+              <div className="flex flex-col items-start gap-[36px] self-stretch">
+                <div className="text-head-32-semibold">
+                  {commentCounts}개의 댓글
+                </div>
+                <textarea
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  placeholder="댓글을 작성해주세요."
+                  className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
+                />
+              </div>
+
+              <button
+                disabled={!commentInput.trim() || isCommentPosting}
+                onClick={handleSubmitComment}
+                className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
+                  commentInput.trim() && !isCommentPosting
+                    ? "bg-primary"
+                    : "bg-subColor1"
+                }`}
+              >
+                {isCommentPosting ? "작성 중…" : "작성하기"}
+              </button>
             </div>
 
-            {vm.right.questions.length === 0 ? (
-              <div className="text-body-18-regular text-gray3">
-                아직 생성된 요약이 없어요.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-[32px]">
-                {vm.right.questions.map((q, i) => (
-                  <PostCombineMd
-                    key={`R-${i}`}
-                    question={q}
-                    content={vm.right.contents[i]}
-                  />
+            {/* 목록 */}
+            <div className="flex flex-col items-end self-stretch">
+              {comments
+                .filter((c) => !c.isReply)
+                .map((parent) => (
+                  <div key={parent.id} className="w-full">
+                    <PostComment
+                      {...parent}
+                      onEdit={(newContent) => handleEdit(parent.id, newContent)}
+                      onDelete={() => handleDelete(parent.id)}
+                      onReply={(replyContent) =>
+                        handleReply(parent.id, replyContent)
+                      }
+                    />
+                    {comments
+                      .filter((c) => c.parentId === parent.id)
+                      .map((reply) => (
+                        <PostComment
+                          key={reply.id}
+                          {...reply}
+                          onEdit={(newContent) =>
+                            handleEdit(reply.id, newContent)
+                          }
+                          onDelete={() => handleDelete(reply.id)}
+                        />
+                      ))}
+                  </div>
                 ))}
-              </div>
-            )}
-          </section>
-        </div>
+
+              {cHasNext && postId && (
+                <button
+                  disabled={cLoading}
+                  onClick={() =>
+                    loadComments(Number(postId), cPage, viewerId ?? null)
+                  }
+                  className={`mt-4 px-6 py-2 rounded-full text-white ${
+                    cLoading ? "bg-gray-300" : "bg-primary"
+                  }`}
+                >
+                  {cLoading ? "불러오는 중…" : "댓글 더 보기"}
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
+
+      {toast.open && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black text-white text-body-16-regular shadow-card z-50"
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
