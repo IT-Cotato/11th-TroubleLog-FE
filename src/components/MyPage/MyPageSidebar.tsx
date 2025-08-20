@@ -74,6 +74,9 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
           nickname: me.nickname,
           bio: me.bio,
           githubUrl: me.githubUrl,
+          profileUrl: (me as any).profileUrl, // ProfileData에 존재한다면 정확한 타입으로 교체
+          followerNum: (me as any).followerNum,
+          followingNum: (me as any).followingNum,
         });
         setViewedUser({ id: me.userId, nickname: me.nickname ?? null });
       } else {
