@@ -5,6 +5,7 @@ export const PATH = {
   SIGNUP_DETAIL: "/signup/detail",
   SIGNUP_OAUTH: "/signup/oauth",
   OAUTH: "/oauth",
+  OAUTH_POPUP: "/oauth/popup/kakao",
 
   USER: "/user",
   HOME: "/user/home",

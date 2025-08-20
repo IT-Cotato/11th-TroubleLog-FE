@@ -26,6 +26,7 @@ import NotFoundPage from "@/pages/Error/NotFoundPage";
 import AuthGuardPage from "@/pages/Error/AuthGuardPage";
 import SignPageOauth from "@/pages/Login/SignPageOauth";
 import CombinedDetailPage from "@/pages/MyPage/CombinedDetailPage";
+import OAuthPopupKakao from "@/pages/Login/OAuthPopupKakao";
 export const router = createBrowserRouter(
   [
     // 로그인/회원가입
@@ -34,6 +35,7 @@ export const router = createBrowserRouter(
     { path: PATH.SIGNUP, element: <SignPageOne /> },
     { path: PATH.SIGNUP_DETAIL, element: <SignPageTwo /> },
     { path: PATH.SIGNUP_OAUTH, element: <SignPageOauth /> },
+    { path: PATH.OAUTH_POPUP, element: <OAuthPopupKakao /> },
 
     // 보호 구역 (메인 레이아웃)
     {
