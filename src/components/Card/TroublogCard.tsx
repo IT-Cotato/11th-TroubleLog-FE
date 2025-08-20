@@ -27,6 +27,9 @@ export interface TroublogCardProps {
   onAvatarClick?: () => void;
   onDeleted?: (id: number) => void;
   introduction?: string;
+  summaryId?: number;
+  postSummaryId?: number;
+  summaries?: object[];
 }
 
 export default function TroublogCard({
