@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 interface DropdownOption {
   label: string;
   onClick: () => void;
@@ -23,7 +25,7 @@ export default function KebabDropdown({
     right: position?.right || "0",
     bottom: position?.bottom,
     left: position?.left,
-  } as React.CSSProperties;
+  } as CSSProperties;
 
   return (
     <div
