@@ -6,6 +6,7 @@ import type {
   TroubleSearchCard,
   UserBrief,
 } from "@/types/troubles.server";
+import { pickLatestSummaryId } from "@/utils/combinedRoute";
 import { formatYYMMDD } from "@/utils/troubleFormat";
 
 // 타입 가드
@@ -127,5 +128,9 @@ export const toTroubleShootingCard = (
     authorProfileImageUrl,
     authorUserId,
     isSearchResult,
+
+    summaryId: pickLatestSummaryId(item),
+    postSummaryId: (item as any).postSummaryId ?? null,
+    summaries: (item as any).summaries ?? [],
   } as TroubleShootingCardProps;
 };

@@ -6,6 +6,7 @@ import { useMyPageStore } from "@/store/useMyPageStore";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import { useViewerId } from "@/store/auth";
+import { decideCombined } from "@/utils/combinedRoute";
 
 interface OutletContextType {
   isMyPage: boolean;
@@ -141,10 +142,18 @@ const TroubleShootingList = () => {
             {...mapToTroubleShootingCard(card)}
             onDeleted={handleDeleted}
             onClick={() => {
-              const qs = new URLSearchParams({ from: "mypage" });
-              if (isMyPage) {
-                qs.set("ownerId", String(viewerId));
+              const { goCombined, summaryId } = decideCombined(card, viewerId);
+
+              if (goCombined && summaryId != null) {
+                navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                  state: { from: "mypage", ownerId: viewerId ?? undefined },
+                });
+                return;
               }
+
+              const qs = new URLSearchParams({ from: "mypage" });
+              if (isMyPage && viewerId != null)
+                qs.set("ownerId", String(viewerId));
               navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
                 state: { from: "mypage" },
               });

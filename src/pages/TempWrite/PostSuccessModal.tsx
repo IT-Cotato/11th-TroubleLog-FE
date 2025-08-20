@@ -7,11 +7,21 @@ import postSuccessIcon from "@/assets/icons/postsuccess.svg";
 export default function PostSuccessModal({
   onClose,
   summaryId,
+  postId,
 }: {
   onClose: () => void;
   summaryId?: number;
+  postId?: number;
 }) {
   const navigate = useNavigate();
+
+  const goCombined = () => {
+    if (summaryId == null || postId == null) {
+      alert("요약 상세로 이동할 수 없어요. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    navigate(PATH.COMBINED_DETAIL(postId, summaryId));
+  };
 
   return (
     <BaseModal
@@ -34,10 +44,7 @@ export default function PostSuccessModal({
           </span>
           <button
             className="flex w-[184px] h-[46px] px-[25px] py-[14px] justify-center items-center rounded-[50px] bg-purple-500 border-purple-500 text-white text-semibold"
-            onClick={() => {
-              if (summaryId == null) return; // 혹은 alert("요약 ID를 찾을 수 없어요.")
-              navigate(PATH.POST_SUMMARY(summaryId));
-            }}
+            onClick={goCombined}
           >
             완성 페이지로 이동
           </button>

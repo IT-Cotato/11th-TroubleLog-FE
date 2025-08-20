@@ -1,5 +1,6 @@
 import type { TroublogCardProps } from "@/components/Card/TroublogCard";
 import type { TroubleListItem } from "@/types/trouble.model";
+import { pickLatestSummaryId } from "@/utils/combinedRoute";
 import { formatYYMMDD } from "@/utils/troubleFormat";
 import {
   mapStatus,
@@ -27,6 +28,10 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => {
     likeCount: t.likeCount ?? undefined,
     commentCount: t.commentCount ?? undefined,
     introduction: t.introduction ?? undefined,
+
+    summaryId: pickLatestSummaryId(t),
+    postSummaryId: t.postSummaryId ?? null,
+    summaries: t.summaries ?? [],
   };
 };
 

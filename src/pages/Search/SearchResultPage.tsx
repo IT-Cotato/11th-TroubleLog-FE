@@ -6,6 +6,7 @@ import { useInfiniteUserTroubleSearch } from "@/hooks/useInfiniteUserTroubleSear
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useViewerId } from "@/store/auth";
+import { decideCombined } from "@/utils/combinedRoute";
 
 const SearchResultPage = () => {
   const location = useLocation();
@@ -161,24 +162,35 @@ const SearchResultPage = () => {
                   blocked || !idValid
                     ? undefined
                     : () => {
-                        // 상세 페이지로 이동하면서 검색 범위/출처를 명시
-                        // - 쿼리로도 넘겨서 (새로고침/딥링크) 안전하게 유지
-                        const url = `${PATH.COMMUNITY_POST(
-                          idNum
-                        )}?from=search&scope=${scopeForDetail}`;
-
+                        const { goCombined, summaryId } = decideCombined(
+                          card,
+                          viewerId
+                        );
                         const ownerIdForState =
                           card.isMine && viewerId != null
                             ? Number(viewerId)
                             : undefined;
 
-                        navigate(url, {
-                          state: {
-                            from: "search",
-                            searchScope: scopeForDetail, // 상세에서 useDetailContext().searchScope 로 읽음
-                            ownerId: ownerIdForState,
-                          },
-                        });
+                        if (goCombined && summaryId != null) {
+                          navigate(PATH.COMBINED_DETAIL(idNum, summaryId), {
+                            state: {
+                              from: "search",
+                              searchScope: scopeForDetail,
+                              ownerId: ownerIdForState,
+                            },
+                          });
+                        } else {
+                          const url = `${PATH.COMMUNITY_POST(
+                            idNum
+                          )}?from=search&scope=${scopeForDetail}`;
+                          navigate(url, {
+                            state: {
+                              from: "search",
+                              searchScope: scopeForDetail,
+                              ownerId: ownerIdForState,
+                            },
+                          });
+                        }
                       }
                 }
                 disabled={blocked || !idValid}

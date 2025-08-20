@@ -19,6 +19,10 @@ export interface TroubleSearchCard {
   likeCount: number;
   commentCount: number;
   introduction: string | null;
+
+  summaryId: number | null;
+  postSummaryId: number | null;
+  summaries: object[] | null;
 }
 
 export type MyTroubleSearchPage = PaginatedResponse<TroubleSearchCard>;

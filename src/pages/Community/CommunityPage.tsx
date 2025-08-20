@@ -6,6 +6,7 @@ import useCommunityCards, {
   type CommunityCardsFetcher,
 } from "@/hooks/useCommunityCards";
 import type { CommunitySort } from "@/types/community.model";
+import { decideCombined } from "@/utils/combinedRoute";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -123,9 +124,17 @@ export default function CommunityPage() {
                 const ownerId = card.authorId;
                 const qs = new URLSearchParams({ from: "community" });
                 if (ownerId != null) qs.set("ownerId", String(ownerId));
-                navigate(`${PATH.COMMUNITY_POST(id)}?${qs.toString()}`, {
-                  state: { from: "community", ownerId },
-                });
+
+                const { goCombined, summaryId } = decideCombined(card);
+                if (goCombined && summaryId != null) {
+                  navigate(PATH.COMBINED_DETAIL(id, summaryId), {
+                    state: { from: "community", ownerId },
+                  });
+                } else {
+                  navigate(`${PATH.COMMUNITY_POST(id)}?${qs.toString()}`, {
+                    state: { from: "community", ownerId },
+                  });
+                }
               }}
               onAvatarClick={() => {
                 if (card.authorId != null)
