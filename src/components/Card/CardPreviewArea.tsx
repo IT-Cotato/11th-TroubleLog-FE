@@ -21,13 +21,14 @@ export default function CardPreviewArea({
   deleting,
 }: CardPreviewAreaProps) {
   return (
-    <div
-      className="bg-gray1 rounded-2xl h-[180px] sm:h-[210px]
- flex flex-col p-3 sm:p-4
-"
-    >
-      <div className="flex justify-between items-start">
-        <span className="text-body-16-semibold">[{errorCategory}]</span>
+    <div className="bg-gray1 rounded-2xl h-[170px] sm:h-[200px] md:h-[210px] xl:h-[220px] flex flex-col p-3 sm:p-4">
+      <div className="flex justify-between items-start gap-2 min-w-0">
+        <span
+          className="text-body-16-semibold truncate max-w-[65%] sm:max-w-[70%]"
+          title={errorCategory}
+        >
+          [{errorCategory}]
+        </span>
         <CardHeaderRight
           isMine={isMine}
           status={status}

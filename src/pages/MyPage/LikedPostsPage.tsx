@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 const LikedPostsPage = () => {
   const { items, loading, error, hasNext, sentinelRef, removeById } =
     useLikedCommunityPosts(10);
-
   const navigate = useNavigate();
 
   const handleDeleted = (postId: number) => {
@@ -18,9 +17,13 @@ const LikedPostsPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-end gap-[40px] w-[948px] pb-[78px]">
+    <div className="w-full max-w-[948px] mx-auto px-4 sm:px-0 flex flex-col gap-6 sm:gap-10 pb-16 sm:pb-[78px]">
       {/* 에러/로딩 */}
-      {error && <div className="text-red-600 self-start">{error}</div>}
+      {error && (
+        <div className="text-red-600 self-start text-body-14-regular sm:text-body-16-regular">
+          {error}
+        </div>
+      )}
 
       <div className="flex flex-col items-start self-stretch">
         {items.map((card) => (
@@ -35,8 +38,8 @@ const LikedPostsPage = () => {
         {/* 로딩 스켈레톤 */}
         {loading && (
           <>
-            <div className="w-full h-[120px] bg-gray-100 rounded mb-3" />
-            <div className="w-full h-[120px] bg-gray-100 rounded mb-3" />
+            <div className="w-full h-[96px] sm:h-[120px] bg-gray-100 rounded mb-3" />
+            <div className="w-full h-[96px] sm:h-[120px] bg-gray-100 rounded mb-3" />
           </>
         )}
 

@@ -16,7 +16,7 @@ const SaveButton = ({
       onClick={onClick}
       type={type}
       disabled={disabled}
-      className="flex px-[57px] py-4 justify-center items-center rounded-xl bg-primary text-white text-head-20-semibold"
+      className="flex px-5 sm:px-10 py-3.5 sm:py-4 justify-center items-center rounded-xl bg-primary text-white text-head-18-semibold sm:text-head-20-semibold disabled:opacity-60 disabled:cursor-not-allowed"
     >
       {label}
     </button>

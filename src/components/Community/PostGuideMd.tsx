@@ -9,17 +9,33 @@ type GuideContent = string | ImageItem;
 export default function PostGuideMd({
   question,
   content,
+  widthClass = "w-full sm:w-[600px] md:w-[720px] lg:w-[920px] xl:w-[1200px]",
+  proseSize = "lg", // 기본은 살짝 키운 크기
 }: {
   question: string;
   content: GuideContent[];
+  widthClass?: string;
+  proseSize?: "base" | "lg" | "xl";
 }) {
-  return (
-    <section className="w-[1200px]">
-      <div className="text-head-24-bold mb-6">{question}</div>
+  const proseScale =
+    proseSize === "xl" ? "prose-xl" : proseSize === "lg" ? "prose-lg" : "prose";
 
-      {/* 마크다운 + 이미지 렌더 */}
+  return (
+    <section className={`${widthClass}`}>
+      <div className="text-head-24-bold mb-6 break-words">{question}</div>
+
+      {/* 마크다운 + 이미지 컨테이너: 내부는 항상 부모 고정 폭을 꽉 채움 */}
       <div
-        className="prose max-w-none w-[1200px] flex p-[32px] flex-col justify-center  gap-[10px] self-stretch rounded-[20px] bg-white shadow-card "
+        className={[
+          "prose",
+          proseScale,
+          "max-w-none",
+          widthClass,
+          "flex flex-col gap-[10px] rounded-[20px] bg-white shadow-card p-[32px]",
+          "prose-p:leading-relaxed md:prose-p:leading-loose",
+          "prose-li:leading-relaxed md:prose-li:leading-loose",
+          "prose-pre:text-sm md:prose-pre:text-base",
+        ].join(" ")}
         data-color-mode="light"
       >
         {content.map((item, i) => {
@@ -30,18 +46,16 @@ export default function PostGuideMd({
                 source={item}
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                style={{ width: "1150px" }}
               />
             );
           }
 
-          // 이미지
           return (
             <img
               key={i}
               src={item.src}
               alt={item.alt ?? ""}
-              className="rounded-lg my-4"
+              className="rounded-lg my-4 max-w-full h-auto"
               onError={(e) => {
                 const img = e.currentTarget as HTMLImageElement;
                 img.onerror = null;

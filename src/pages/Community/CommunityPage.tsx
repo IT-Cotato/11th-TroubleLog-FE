@@ -24,8 +24,7 @@ export default function CommunityPage() {
   // UI 라벨 -> API sort 파라미터 매핑
   const sortBy: CommunitySort = useMemo(() => {
     if (selectedSort === "최신순" || selectedSort === "전체") return "latest";
-    // "추천순" / "좋아요순" 모두 likes에 매핑
-    return "likes";
+    return "likes"; // "추천순" / "좋아요순" 모두 likes에 매핑
   }, [selectedSort]);
 
   // 커뮤니티 목록 불러오기 (기본 목록)
@@ -35,33 +34,32 @@ export default function CommunityPage() {
     pageSize: 12,
     infinite: true,
     rootMargin: "400px 0px",
-    sourceKey: "community", // 기본값이라 생략 가능
+    sourceKey: "community",
   });
 
   // 최근 읽은 포스트 목록
   const recentFetcher = useCallback<CommunityCardsFetcher>(
-    (page, size) => getCommunityRecentList(page, size), // sort 미사용
+    (page, size) => getCommunityRecentList(page, size),
     []
   );
 
   const recent = useCommunityCards({
     enabled: selectedTab === "recent",
-    sortBy: "latest", // 정렬 옵션 미사용이지만 시그니처 맞춤
+    sortBy: "latest",
     pageSize: 12,
     infinite: true,
     rootMargin: "400px 0px",
     fetcher: recentFetcher,
-    sourceKey: "community_recent", // 캐시/리셋 구분용
+    sourceKey: "community_recent",
   });
 
-  // 활성 데이터셋 선택
   const active = selectedTab === "trouble" ? trouble : recent;
 
   return (
-    <div className="flex flex-col mt-[79px] mb-[104px] max-w-[1600px] w-full mx-auto px-4 gap-[50px]">
-      <div className="flex w-full justify-between">
+    <div className="flex flex-col mt-10 sm:mt-[79px] mb-16 sm:mb-[104px] max-w-[1600px] w-full mx-auto px-4 gap-8 sm:gap-[50px]">
+      <div className="flex w-full flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         {/* 옵션 탭 */}
-        <div className="flex gap-[40px]">
+        <div className="flex gap-3 sm:gap-[40px] w-full sm:w-auto">
           {/* 트러블 슈팅 둘러보기 탭*/}
           <button onClick={() => setSelectedTab("trouble")}>
             <div className="flex flex-col items-start gap-[8px]">
@@ -101,21 +99,25 @@ export default function CommunityPage() {
 
         {/* 정렬 옵션 드롭다운 */}
         {selectedTab === "trouble" && (
-          <GenericDropdown<SortOption>
-            options={sortOptions}
-            selected={selectedSort}
-            onSelect={setSelectedSort}
-          />
+          <div className="self-start sm:self-auto mt-2 sm:mt-0">
+            <GenericDropdown<SortOption>
+              options={sortOptions}
+              selected={selectedSort}
+              onSelect={setSelectedSort}
+            />
+          </div>
         )}
       </div>
 
       {/* 에러 */}
       {active.error && (
-        <div className="text-red-600 text-body-16-regular">{active.error}</div>
+        <div className="text-red-600 text-body-14-regular sm:text-body-16-regular">
+          {active.error}
+        </div>
       )}
 
       {/* 트러블로그 카드 */}
-      <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-[24px] gap-y-[60px]">
+      <div className="w-full mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-8 sm:gap-y-[60px]">
         {active.cards.map((card) => (
           <div key={card.id} className="cursor-pointer">
             <TroublogCard
@@ -147,15 +149,19 @@ export default function CommunityPage() {
         {/* 로딩 스켈레톤 */}
         {active.isLoading && (
           <>
-            <div className="w-full h-[300px] bg-gray-100 rounded-2xl" />
-            <div className="w-full h-[300px] bg-gray-100 rounded-2xl" />
-            <div className="w-full h-[300px] bg-gray-100 rounded-2xl" />
+            <div className="w-full h-[220px] sm:h-[300px] bg-gray-100 rounded-2xl" />
+            <div className="w-full h-[220px] sm:h-[300px] bg-gray-100 rounded-2xl" />
+            <div className="w-full h-[220px] sm:h-[300px] bg-gray-100 rounded-2xl" />
           </>
         )}
 
         {/* 무한스크롤 센티널 */}
         {active.hasNext && (
-          <div ref={active.sentinelRef} style={{ height: 1 }} />
+          <div
+            ref={active.sentinelRef}
+            className="col-span-full"
+            style={{ height: 1 }}
+          />
         )}
       </div>
     </div>

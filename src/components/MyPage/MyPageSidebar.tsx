@@ -35,14 +35,11 @@ type MyPageSideBarProps =
       onSelectTag: (tag: string | null) => void;
     };
 
-// 화면 표시용 통합 상태
 type DisplayUser = {
   userId?: number;
   nickname?: string;
   bio?: string;
-  // 내 페이지: githubUrl 사용
   githubUrl?: string;
-  // 타인 페이지: 프로필 이미지로만 사용
   profileUrl?: string;
   followerNum?: number;
   followingNum?: number;
@@ -71,24 +68,22 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   const refetch = useCallback(async () => {
     try {
       if (props.isMyPage) {
-        // 내 마이페이지: getMyProfile
         const me: ProfileData = await getMyProfile();
         setUserInfo({
           userId: me.userId,
           nickname: me.nickname,
           bio: me.bio,
-          githubUrl: me.githubUrl, // 텍스트로만 표시
+          githubUrl: me.githubUrl,
         });
         setViewedUser({ id: me.userId, nickname: me.nickname ?? null });
       } else {
-        // 타 사용자: getUserInfo
         if (!id) return;
         const other: UserInfoData = await getUserInfo(Number(id));
         setUserInfo({
           userId: other.userId,
           nickname: other.nickname,
           bio: other.bio,
-          profileUrl: other.profileUrl, // 아바타 이미지로만 사용
+          profileUrl: other.profileUrl,
           followerNum: other.followerNum,
           followingNum: other.followingNum,
           isFollowed: other.isFollowed,
@@ -104,13 +99,8 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     refetch();
   }, [refetch]);
 
-  useEffect(() => {
-    return () => {
-      resetViewedUser();
-    };
-  }, [resetViewedUser]);
+  useEffect(() => () => resetViewedUser(), [resetViewedUser]);
 
-  // 현재 경로가 메인 페이지가 아니면 선택 상태 초기화
   useEffect(() => {
     const onMain = location.pathname === PATH.MYPAGE(id!);
     if (!onMain) {
@@ -130,18 +120,20 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     };
 
   const getFilterButtonClass = (status: StatusType | "all") =>
-    `flex items-center gap-[8px] self-stretch ${
-      selectedStatus === status ? "text-black text-body-16-semibold" : ""
+    `flex items-center gap-2 sm:gap-[8px] self-stretch ${
+      selectedStatus === status
+        ? "text-black text-body-16-semibold"
+        : "text-body-16-regular text-gray3"
     }`;
 
   const getMenuButtonClass = (match: boolean) =>
-    `${match ? "text-black" : "text-gray3"} text-head-20-semibold`;
+    `${
+      match ? "text-black" : "text-gray3"
+    } text-head-18-semibold sm:text-head-20-semibold`;
 
-  // 팔로우
   const handleFollow = async (targetId: number) => {
     if (!userInfo || followLoading) return;
     setFollowLoading(true);
-
     setUserInfo((prev) =>
       prev
         ? {
@@ -151,7 +143,6 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
           }
         : prev
     );
-
     try {
       await postFollow(targetId);
       await refetch();
@@ -171,7 +162,6 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     }
   };
 
-  // 언팔로우
   const handleUnfollow = async (targetId: number) => {
     if (!userInfo || followLoading) return;
     setFollowLoading(true);
@@ -184,7 +174,6 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
           }
         : prev
     );
-
     try {
       await postUnfollow(targetId);
       await refetch();
@@ -205,22 +194,21 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   };
 
   return (
-    <div className="flex w-[296px] flex-col items-start gap-[140px]">
+    <div className="flex w-full md:w-[296px] flex-col items-start gap-8 sm:gap-12 xl:gap-[140px] md:sticky md:top-24">
       {/* 상단 프로필 영역 */}
       <div className="flex flex-col items-center gap-3 self-stretch">
         <img
-          src={
-            // 타인 페이지면 프로필 이미지, 내 페이지는 스펙상 없으니 기본 아이콘
-            props.isMyPage ? userIcon : userInfo?.profileUrl || userIcon
-          }
+          src={props.isMyPage ? userIcon : userInfo?.profileUrl || userIcon}
           alt="user"
-          className="w-[288px] h-[288px]"
+          className="w-28 h-28 sm:w-36 sm:h-36 md:w-56 md:h-56 xl:w-[288px] xl:h-[288px] object-cover rounded-full md:rounded-none"
         />
-        <div className="flex flex-col items-start gap-3">
-          <div className="flex flex-col items-start gap-2">
-            <p className="text-head-32-semibold">{userInfo?.nickname}</p>
+        <div className="flex flex-col items-start gap-3 w-full">
+          <div className="flex flex-col items-start gap-2 w-full">
+            <p className="text-head-24-bold sm:text-head-32-semibold break-words">
+              {userInfo?.nickname}
+            </p>
 
-            <div className="flex gap-1 text-body-20-regular text-gray4">
+            <div className="flex gap-1 text-body-16-regular sm:text-body-20-regular text-gray4">
               <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWING, true)}>
                 팔로잉 {userInfo?.followingNum ?? 0}
               </button>
@@ -230,16 +218,17 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               </button>
             </div>
 
-            <p className="text-body-20-regular pt-4 pb-1">{userInfo?.bio}</p>
+            <p className="text-body-16-regular sm:text-body-20-regular pt-3 sm:pt-4 pb-1 break-words whitespace-pre-wrap">
+              {userInfo?.bio}
+            </p>
 
-            {/* 내 페이지일 때만 githubUrl 텍스트 표시(링크/호버 효과 X) */}
             {props.isMyPage && userInfo?.githubUrl && (
-              <div className="inline-flex items-center gap-2 text-body-20-regular text-gray3 break-all">
+              <div className="inline-flex items-center gap-2 text-body-16-regular sm:text-body-20-regular text-gray3 break-all">
                 <img
                   src={githubIcon}
                   alt=""
                   aria-hidden="true"
-                  className="w-8 h-8"
+                  className="w-5 h-5 sm:w-8 sm:h-8"
                 />
                 <span>{userInfo.githubUrl}</span>
               </div>
@@ -270,7 +259,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
 
       {/* 하단 메뉴*/}
       {props.isMyPage ? (
-        <div className="flex flex-col items-start gap-9 self-stretch text-gray3 text-head-20-semibold">
+        <div className="flex flex-col items-start gap-6 sm:gap-8 xl:gap-9 self-stretch text-gray3 text-head-20-semibold">
           <div className="w-full">
             <div
               className={`pb-2 border-b ${
@@ -281,7 +270,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
             >
               내 트러블 슈팅
             </div>
-            <div className="flex flex-col items-start gap-[13px] pt-2 text-body-16-regular text-gray3">
+            <div className="flex flex-col items-start gap-3 sm:gap-[13px] pt-2 text-body-16-regular text-gray3">
               <button
                 onClick={() => {
                   setSelectedStatus("all");
@@ -359,15 +348,14 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       ) : (
         <>
           {/* 태그 분석 (다른 사용자) */}
-          <div className="flex flex-col items-start gap-[12px] self-stretch">
+          <div className="flex flex-col items-start gap-3 sm:gap-[12px] self-stretch">
             <div className="w-full">
-              <div className="flex flex-col items-start gap-[12px]">
+              <div className="flex flex-col items-start gap-3 sm:gap-[12px]">
                 <span className="text-head-20-semibold">태그 분석</span>
-                <div className="w-full h-[1px] bg-[#939393]" />
+                <div className="w-full h-px bg-[#939393]" />
               </div>
 
-              <div className="flex flex-col items-start gap-[10px] pt-[12px]">
-                {/* 전체 보기 */}
+              <div className="flex flex-col items-start gap-2.5 sm:gap-[10px] pt-3 sm:pt-[12px]">
                 <button
                   type="button"
                   onClick={() => props.onSelectTag(null)}
@@ -380,7 +368,6 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                   전체 보기
                 </button>
 
-                {/* 태그 리스트 */}
                 {props.sortedTags.map(([tag, count]) => {
                   const isSelected = props.selectedTag === tag;
                   return (
@@ -388,7 +375,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                       key={tag}
                       type="button"
                       onClick={() => props.onSelectTag(isSelected ? null : tag)}
-                      className={`transition-colors ${
+                      className={`transition-colors break-words ${
                         isSelected
                           ? "text-body-16-semibold"
                           : "text-body-16-regular text-gray3"

@@ -45,7 +45,7 @@ export default function SummaryTypeDropdown({
       </button>
 
       {open && (
-        <div className="absolute top-[48px] sm:top-[52px] left-0 min-w-[100px] sm:min-w-[120px] py-[8px] bg-white border border-gray2 rounded-[4px] shadow-card z-10 overflow-hidden">
+        <div className="absolute top-[48px] sm:top-[52px] right-0 sm:left-0 sm:right-auto min-w-[120px] max-w-[92vw] max-h-[50vh] overflow-y-auto py-[8px] bg-white border border-gray2 rounded-[4px] shadow-card z-10">
           {OPTIONS.map((o, i) => (
             <div
               key={o.label}

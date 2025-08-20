@@ -39,23 +39,17 @@ const SearchResultPage = () => {
   const isUserScope = scope === "user" && !!userId;
   const isCommunityScope = scope === "community";
 
-  // 현재 로그인한 사용자
   const viewerId = useViewerId();
 
-  // 상세 페이지에서 사용할 검색범위 키로 변환
-  // - my / mypage  => "my"
-  // - user / community => "community"
   const scopeForDetail: "my" | "community" = isMyScope ? "my" : "community";
 
-  // 접근 제한 여부(표시만)
   const isBlocked = (card: any) => {
-    const vis = String(card.visibility ?? "").toUpperCase(); // "PUBLIC" | "PRIVATE"
-    const st = String(card.status ?? "").toUpperCase(); // "INPROGRESS" 등
+    const vis = String(card.visibility ?? "").toUpperCase();
+    const st = String(card.status ?? "").toUpperCase();
     const mine = !!card.isMine;
     return vis === "PRIVATE" || (st === "INPROGRESS" && !mine);
   };
 
-  // 내 검색
   const my = useInfiniteMyTroubleSearch(
     isMyScope ? query : "",
     size,
@@ -63,14 +57,12 @@ const SearchResultPage = () => {
     { enabled: isMyScope }
   );
 
-  // 특정 사용자 검색
   const other = useInfiniteUserTroubleSearch(
     isUserScope ? query : "",
     userId,
     size
   );
 
-  // 커뮤니티 검색
   const community = useInfiniteCommunityTroubleSearch(
     isCommunityScope ? query : "",
     size
@@ -124,84 +116,88 @@ const SearchResultPage = () => {
   }, [hasNext, activeKey, query, size]);
 
   return (
-    <div className="mt-[179px] mb-[68px] flex w-[1200px] flex-col items-start gap-[56px] mx-auto">
-      <span className="text-head-32-regular self-stretch">
+    <div className="mt-24 sm:mt-32 lg:mt-[179px] mb-10 sm:mb-14 lg:mb-[68px] w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-start gap-6 sm:gap-10">
+      <span className="text-head-28-regular sm:text-head-32-regular self-stretch">
         {loadingInitial
           ? "검색 중…"
           : `총 ${displayTotal}개의 포스트를 찾았어요.`}
       </span>
 
       {error && (
-        <div className="text-red-600 text-body-16-regular">{error}</div>
+        <div className="text-red-600 text-body-14-regular sm:text-body-16-regular">
+          {error}
+        </div>
       )}
 
       <div className="flex flex-col items-start self-stretch">
         {loadingInitial && items.length === 0 ? (
           <>
-            <div className="w-full h-[120px] bg-gray-100 rounded mb-3" />
-            <div className="w-full h-[120px] bg-gray-100 rounded mb-3" />
+            <div className="w-full h-[96px] sm:h-[120px] bg-gray-100 rounded mb-3" />
+            <div className="w-full h-[96px] sm:h-[120px] bg-gray-100 rounded mb-3" />
           </>
         ) : items.length === 0 ? (
-          <div className="text-gray-500 text-body-16-regular mt-4">
+          <div className="text-gray-500 text-body-14-regular sm:text-body-16-regular mt-4">
             검색 결과가 없습니다.
           </div>
         ) : (
-          items.map((card) => {
-            const blocked = isBlocked(card);
-            const idNum =
-              typeof card.id === "number"
-                ? card.id
-                : Number.parseInt(String(card.id), 10);
-            const idValid = Number.isFinite(idNum);
+          <div className="w-full flex flex-col gap-3 sm:gap-4">
+            {items.map((card) => {
+              const blocked = isBlocked(card);
+              const idNum =
+                typeof card.id === "number"
+                  ? card.id
+                  : Number.parseInt(String(card.id), 10);
+              const idValid = Number.isFinite(idNum);
 
-            return (
-              <TroubleShootingCard
-                key={card.id}
-                {...card}
-                onClick={
-                  blocked || !idValid
-                    ? undefined
-                    : () => {
-                        const { goCombined, summaryId } = decideCombined(
-                          card,
-                          viewerId
-                        );
-                        const ownerIdForState =
-                          card.isMine && viewerId != null
-                            ? Number(viewerId)
-                            : undefined;
+              return (
+                <TroubleShootingCard
+                  key={card.id}
+                  {...card}
+                  onClick={
+                    blocked || !idValid
+                      ? undefined
+                      : () => {
+                          const { goCombined, summaryId } = decideCombined(
+                            card,
+                            viewerId
+                          );
+                          const ownerIdForState =
+                            card.isMine && viewerId != null
+                              ? Number(viewerId)
+                              : undefined;
 
-                        if (goCombined && summaryId != null) {
-                          navigate(PATH.COMBINED_DETAIL(idNum, summaryId), {
-                            state: {
-                              from: "search",
-                              searchScope: scopeForDetail,
-                              ownerId: ownerIdForState,
-                            },
-                          });
-                        } else {
-                          const url = `${PATH.COMMUNITY_POST(
-                            idNum
-                          )}?from=search&scope=${scopeForDetail}`;
-                          navigate(url, {
-                            state: {
-                              from: "search",
-                              searchScope: scopeForDetail,
-                              ownerId: ownerIdForState,
-                            },
-                          });
+                          if (goCombined && summaryId != null) {
+                            navigate(PATH.COMBINED_DETAIL(idNum, summaryId), {
+                              state: {
+                                from: "search",
+                                searchScope: scopeForDetail,
+                                ownerId: ownerIdForState,
+                              },
+                            });
+                          } else {
+                            const url = `${PATH.COMMUNITY_POST(
+                              idNum
+                            )}?from=search&scope=${scopeForDetail}`;
+                            navigate(url, {
+                              state: {
+                                from: "search",
+                                searchScope: scopeForDetail,
+                                ownerId: ownerIdForState,
+                              },
+                            });
+                          }
                         }
-                      }
-                }
-                disabled={blocked || !idValid}
-              />
-            );
-          })
+                  }
+                  disabled={blocked || !idValid}
+                />
+              );
+            })}
+          </div>
         )}
 
         <div className="w-full flex flex-col items-center mt-4">
           {loadingMore && (
-            <div className="w-full h-[120px] bg-gray-100 rounded mb-3" />
+            <div className="w-full h-[96px] sm:h-[120px] bg-gray-100 rounded mb-3" />
           )}
           {hasNext && <div ref={sentinelRef} style={{ height: 1 }} />}
         </div>
