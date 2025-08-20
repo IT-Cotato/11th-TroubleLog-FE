@@ -671,37 +671,36 @@ const TempWritePage = () => {
 
   // ---------- UI ----------
   return (
-    <div>
+    <div className="min-h-screen">
       <HeaderWoSearch />
-      <div className="flex justify-center px-[225px] pt-[68px] items-start">
-        <div className="flex-1 flex w-[1500px] flex-col gap-[36px]">
+      <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-12 lg:px-28 pt-8 sm:pt-12">
+        <div className="mx-auto w-full max-w-[1500px] flex flex-col gap-8 sm:gap-9">
           {showAlert && (
-            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               제목, 프로젝트, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요.
             </div>
           )}
           {showSaveAlert && (
-            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               저장되었습니다.
             </div>
           )}
           {showCancelAlert && (
-            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               요약 작업이 중단되었어요.
             </div>
           )}
 
-          {/* 제목/태그/프로젝트 */}
-          <div className="flex flex-col items-start gap-[40px]">
+          <div className="flex flex-col gap-6 sm:gap-10">
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="제목을 입력하세요."
-              className="text-[36px] md:text-[48px] font-bold text-black outline-none w-full leading-tight"
+              className="w-full text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black outline-none leading-tight placeholder:text-neutral-400"
             />
-            <div className="flex gap-[36px] items-center">
-              {/* 프로젝트 선택 */}
+
+            <div className="flex gap-5 items-center flex-wrap w-full lg:w-auto ">
               <DropDownButton
                 options={projectNames}
                 placeholder={
@@ -710,13 +709,12 @@ const TempWritePage = () => {
                     : projectNameById(selectedProjectIdPage) ||
                       "프로젝트를 선택하세요"
                 }
-                width="w-[340px] h-[36px]"
-                onSelect={(name) =>
+                width="w-full sm:w-[160px] lg:w-[200px]"
+                onSelect={(name: string) =>
                   setSelectedProjectIdPage(nameToId.get(name) ?? null)
                 }
               />
 
-              {/* 에러 종류 */}
               <DropDownButton
                 options={[
                   "Build/Compile Error",
@@ -731,46 +729,44 @@ const TempWritePage = () => {
                   "Third-Party Library Error",
                 ]}
                 placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
-                width="w-[340px] h-[36px]"
-                onSelect={(selectedError) =>
-                  setSelectedErrorType(selectedError)
-                }
+                width="w-full sm:w-[200px] lg:w-[240px]"
+                onSelect={(v: string) => setSelectedErrorType(v)}
               />
 
-              {/* 태그 */}
-              <CategoryTag value={selectedTags} onChange={setSelectedTags} />
+              <div className="w-full sm:w-auto min-w-[200px]">
+                <CategoryTag value={selectedTags} onChange={setSelectedTags} />
+              </div>
             </div>
           </div>
 
-          {/* 블록들(최신이 위) */}
-          <div>
+          <div className="flex flex-col gap-6 sm:gap-8">
             {[...blocks].reverse().map((block, index) => {
               const originalIndex = blocks.length - 1 - index;
               return (
-                <EditorBlock
-                  key={(block as any).id}
-                  block={block}
-                  index={originalIndex}
-                  isActive={originalIndex === activeIndex}
-                  isLast={originalIndex === questionData.length - 1}
-                  onChange={handleChangeBlockContent}
-                  onToggleChecklist={handleToggleChecklist}
-                  onAddBlock={handleAddBlock}
-                  onEnd={handleEnd}
-                  title={title}
-                  selectedErrorType={selectedErrorType}
-                  onShowSaveAlert={handleShowSaveAlert}
-                  onShowAlert={handleShowAlert}
-                  onSave={handleClickSave}
-                  isSaving={isSaving}
-                  canSave={canSave}
-                  onActivate={(i) => setActiveIndex(i)}
-                />
+                <div key={(block as any).id} className="w-full">
+                  <EditorBlock
+                    block={block}
+                    index={originalIndex}
+                    isActive={originalIndex === activeIndex}
+                    isLast={originalIndex === questionData.length - 1}
+                    onChange={handleChangeBlockContent}
+                    onToggleChecklist={handleToggleChecklist}
+                    onAddBlock={handleAddBlock}
+                    onEnd={handleEnd}
+                    title={title}
+                    selectedErrorType={selectedErrorType}
+                    onShowSaveAlert={handleShowSaveAlert}
+                    onShowAlert={handleShowAlert}
+                    onSave={handleClickSave}
+                    isSaving={isSaving}
+                    canSave={canSave}
+                    onActivate={(i: number) => setActiveIndex(i)}
+                  />
+                </div>
               );
             })}
           </div>
 
-          {/* 모달들 */}
           {isPostSaveModalOpen && (
             <PostSaveModal
               onClose={() => setIsPostSaveModalOpen(false)}
@@ -840,5 +836,4 @@ const TempWritePage = () => {
     </div>
   );
 };
-
 export default TempWritePage;

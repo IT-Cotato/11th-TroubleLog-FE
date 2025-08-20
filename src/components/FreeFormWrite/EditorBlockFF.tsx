@@ -38,7 +38,7 @@ const EditorBlock = ({
             type="text"
             value={block.title}
             onChange={(e) => onChange(index, { title: e.target.value })}
-            placeholder="소제목을 입력해주세요"
+            placeholder="소제목을 입력해주세요."
             className="w-full p-2 border-none rounded font-bold text-black text-[24px]"
           />
 

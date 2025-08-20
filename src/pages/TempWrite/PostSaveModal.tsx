@@ -200,284 +200,238 @@ export default function PostSaveModal({
   return (
     <BaseModal
       onClose={onClose}
-      width="w-[800px]"
-      className="bg-white rounded-[12px] px-[36px]"
+      width="w-full max-w-[800px]"
+      className="bg-white rounded-[12px] px-4 sm:px-6 md:px-8"
     >
-      {/* 헤더 */}
-      <div className="flex w-full justify-between gap-[500px] mt-[36px] mb-[24px]">
+      <div className="flex w-full items-center justify-between mt-6 md:mt-8 mb-4 md:mb-10">
         <span className="text-head-24-bold">포스트 미리 보기</span>
         <button onClick={onClose} className="w-6 h-6">
           <img src={exitIcon} alt="닫기" className="w-full h-full" />
         </button>
       </div>
 
-      <div className="flex flex-col gap-[10px]">
-        <div className="items-center gap-[40px]">
-          {/* 썸네일 + 별점 */}
-          <div className="inline-flex items-center pt-[33px] pr-[65px] gap-[108px]">
-            {/* 썸네일 */}
-            <div className="relative flex w-[351px] h-[154px] overflow-hidden justify-center items-center border-dashed border-[2px] border-gray1 bg-[#FCFCFC] rounded-[16px]">
-              {tempPreview || thumbnail ? (
-                <img
-                  src={tempPreview ?? thumbnail!}
-                  alt="썸네일"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex w-[111px] flex-col items-center gap-[23px]">
-                  <img src={addImageIcon} className="w-[52px] h-[52px]" />
-                  <button
-                    onClick={handleUploadClick}
-                    className="flex w-[111px] h-[38px] self-stretch justify-center items-center bg-white border-[1.5px] border-gray1 rounded-[8px]"
-                  >
-                    <span className="text-sm font-normal text-black">
-                      썸네일 업로드
-                    </span>
-                  </button>
-                </div>
-              )}
-
-              {/* 진행률 오버레이 */}
-              {isUploading && (
-                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
-                  <div className="w-[70%] h-2 bg-white/40 rounded">
-                    <div
-                      className="h-2 bg-white rounded"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                  <span className="text-white text-sm">{uploadProgress}%</span>
-                </div>
-              )}
-
-              {/* 삭제 버튼 */}
-              {!isUploading && (thumbnail || tempPreview) && (
-                <button
-                  onClick={handleRemoveImage}
-                  className="absolute bottom-[18px] z-10 px-[23px] pt-[10px] pb-[11px] bg-white border-[1.5px] border-gray1 rounded-[8px]"
-                >
-                  썸네일 삭제
-                </button>
-              )}
-
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                onChange={handleImageSelect}
-                className="hidden"
+      <div className="flex w-full xl: px-4 flex-col gap-6 md:gap-8">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-6 md:gap-16">
+          <div className="relative flex w-full lg:w-[300px] xl:w-[330px] h-40 sm:w-48 md:w-[150px] md:h-[150px] overflow-hidden justify-center items-center border-dashed border-2 border-gray1 bg-[#FCFCFC] rounded-[16px]">
+            {tempPreview || thumbnail ? (
+              <img
+                src={tempPreview ?? thumbnail!}
+                alt="썸네일"
+                className="absolute inset-0 w-full h-full object-cover"
               />
-            </div>
-
-            {/* 별점 */}
-            <div className="flex flex-col w-[208px] gap-[28px]">
-              <span
-                className={`text-xl font-semibold transition ${
-                  hasTriedSubmit && importance === 0
-                    ? "text-purple-500"
-                    : "text-black"
-                }`}
-              >
-                중요도를 표시해주세요!
-              </span>
-              <div className="flex gap-[4px]">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <button
-                    key={i}
-                    onClick={() => setImportance(i)}
-                    onMouseEnter={() => {}}
-                    onMouseLeave={() => {}}
-                  >
-                    <img
-                      src={i <= importance ? starFilledIcon : starUnfilledIcon}
-                      className="w-[32px] h-[32px]"
-                    />
-                  </button>
-                ))}
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <img src={addImageIcon} className="w-12 h-12" />
+                <button
+                  onClick={handleUploadClick}
+                  className="flex px-4 py-2 justify-center items-center bg-white border border-gray1 rounded-[8px]"
+                >
+                  <span className="text-sm text-black">썸네일 업로드</span>
+                </button>
               </div>
-            </div>
+            )}
+
+            {isUploading && (
+              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
+                <div className="w-3/4 h-2 bg-white/40 rounded">
+                  <div
+                    className="h-2 bg-white rounded"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <span className="text-white text-sm">{uploadProgress}%</span>
+              </div>
+            )}
+
+            {!isUploading && (thumbnail || tempPreview) && (
+              <button
+                onClick={handleRemoveImage}
+                className="absolute bottom-3 right-3 px-4 py-2 bg-white border border-gray1 rounded-[8px]"
+              >
+                썸네일 삭제
+              </button>
+            )}
+
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleImageSelect}
+              className="hidden"
+            />
           </div>
 
-          {/* 아래 영역 */}
-          <div className="flex flex-col items-center gap-[16px] w-[728px] pt-[40px] ">
-            {/* (에러타입+tag) + 소개 */}
-            <div className="flex flex-row gap-[26px]">
-              {/* 에러 + 태그 (프리뷰용) */}
-              <div className="flex flex-col items-start gap-[16px]">
-                <div className="flex flex-col w-[351px] justify-center items-start h-[78px] gap-[8px] pr-[26px] shrink-0">
-                  <span className="text-head-20-semibold text-black ">
-                    에러타입
-                  </span>
-                  <div className="grid w/[345px] w-[345px] h-[46px] px-[15px] py-[14px] border rounded border-purple-300 bg-white ">
-                    <span className="flex flex-1 self-stretch font-normal text-sm text-purple-700">
-                      {selectedErrorType}
-                    </span>
-                  </div>
-                </div>
-                {/* 태그 */}
-                <div className="flex w-[351px] flex-col pt-[26px] ">
-                  <span className="text-head-20-semibold text-black">
-                    카테고리 태그
-                  </span>
-                  <div className="grid gap-[8px] h-[46px] shrink-0">
-                    <div className="flex items-center gap-[12px] self-stretch shrink-0">
-                      {previewTags.length > 0 ? (
-                        <>
-                          {previewTags.map((tag, i) => (
-                            <div
-                              key={`${tag}-${i}`}
-                              className="flex h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-purple-100 text-purple-700 rounded-full text-sm"
-                            >
-                              #{tag}
-                            </div>
-                          ))}
-                          {extraCount > 0 && (
-                            <div className="flex h-[32px] py-[7px] px-[10px] justify-center items-center gap-[2px] bg-gray-100 text-gray-600 rounded-full text-sm">
-                              +{extraCount}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-sm text-gray-400">
-                          선택된 태그가 없어요.
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* 소개 */}
-              <div className="flex flex-col w-[351px] gap-[8px]">
-                <span className="text-head-20-semibold text-black">
-                  포스트 소개
-                </span>
-                <div
-                  className={`transition-all ${
-                    hasTriedSubmit && !description.trim()
-                      ? "border border-purple-500 rounded-[8px] p-[10px]"
-                      : ""
-                  }`}
-                >
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    maxLength={200}
-                    placeholder="포스트를 짧게 소개해주세요."
-                    className="w-[335px] h-[119px] resize-none pl-[14px] py-[8px] border border-gray1 rounded-[8px] text-body-14-regular"
+          <div className="flex flex-col w-full lg:w-1/3 xl:w-2/5 gap-4 md:gap-6">
+            <span
+              className={`text-lg sm:text-xl font-semibold transition ${
+                hasTriedSubmit && importance === 0
+                  ? "text-purple-500"
+                  : "text-black"
+              }`}
+            >
+              중요도를 표시해주세요!
+            </span>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <button key={i} onClick={() => setImportance(i)}>
+                  <img
+                    src={i <= importance ? starFilledIcon : starUnfilledIcon}
+                    className="w-7 h-7 sm:w-8 sm:h-8"
                   />
-                  <div className="text-right text-caption-12-regular text-gray2 mt-[4px]">
-                    {description.length}/200
-                  </div>
-                </div>
-                {hasTriedSubmit && !description.trim() && (
-                  <span className="text-sm text-purple-500 pl-[4px] pt-[2px]">
-                    소개글을 입력해주세요.
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* 공개 설정 + 프로젝트 */}
-            <div className="flex w-[728px] flex-row gap-[26px] ">
-              <div className="flex flex-col w-[351px] gap-[8px]">
-                <span className="text-head-20-semibold text-gray7">
-                  공개 설정
-                </span>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                      selectedVisibility === "public"
-                        ? "border-purple-500 text-purple-500 bg-opacity-10"
-                        : "border-gray2"
-                    }`}
-                    onClick={() => setSelectedVisibility("public")}
-                  >
-                    <img
-                      src={publicIcon}
-                      className={`w-5 h-5 transition ${
-                        selectedVisibility === "public" ? "" : "grayscale"
-                      }`}
-                      alt="공개 아이콘"
-                    />
-                    <span
-                      className={
-                        selectedVisibility === "public"
-                          ? "text-purple"
-                          : "text-gray2"
-                      }
-                    >
-                      전체 공개
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`flex w-[168px] h-[46px] items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                      selectedVisibility === "private"
-                        ? "border-purple-500 text-purple-500 bg-opacity-10"
-                        : "border-gray2"
-                    }`}
-                    onClick={() => setSelectedVisibility("private")}
-                  >
-                    <img
-                      src={
-                        selectedVisibility === "private"
-                          ? purplePrivateIcon
-                          : privateIcon
-                      }
-                      className="w-5 h-5 transition"
-                      alt="비공개 아이콘"
-                    />
-                    <span
-                      className={
-                        selectedVisibility === "private"
-                          ? "text-purple"
-                          : "text-gray2"
-                      }
-                    >
-                      비공개
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-col w-[351px] gap-[8px]">
-                <span className="text-head-20-semibold text-black">
-                  프로젝트
-                </span>
-                <div
-                  className={`transition-all ${
-                    !selectedProjectId && hasTriedSubmit
-                      ? "border border-purple-500 rounded-[8px] p-[4px]"
-                      : ""
-                  }`}
-                >
-                  <DropDownButton
-                    options={projectNames}
-                    placeholder={
-                      loadingProjects
-                        ? "프로젝트 불러오는 중..."
-                        : projectName || "프로젝트를 선택해주세요."
-                    }
-                    width="w-full"
-                    onSelect={(selectedName) =>
-                      setSelectedProjectId(nameToId.get(selectedName) ?? null)
-                    }
-                  />
-                </div>
-                {!selectedProjectId && hasTriedSubmit && (
-                  <span className="text-sm text-purple-500 pl-[4px] pt-[2px]">
-                    프로젝트를 선택해주세요.
-                  </span>
-                )}
-              </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* 버튼 */}
-        <div className="flex justify-end gap-[16px] pt-[12px] pb-[32px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 pt-4">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <span className="text-head-20-semibold text-black">에러타입</span>
+              <div className="w-full px-4 py-3 border rounded border-purple-300 bg-white">
+                <span className="text-sm text-purple-700">
+                  {selectedErrorType}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <span className="text-head-20-semibold text-black">
+                카테고리 태그
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {previewTags.length > 0 ? (
+                  <>
+                    {previewTags.map((tag, i) => (
+                      <div
+                        key={`${tag}-${i}`}
+                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                      >
+                        #{tag}
+                      </div>
+                    ))}
+                    {extraCount > 0 && (
+                      <div className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
+                        +{extraCount}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-400">
+                    선택된 태그가 없어요.
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-head-20-semibold text-black">
+              포스트 소개
+            </span>
+            <div
+              className={`transition-all ${
+                hasTriedSubmit && !description.trim()
+                  ? "border border-purple-500 rounded-[8px] p-2"
+                  : ""
+              }`}
+            >
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={200}
+                placeholder="포스트를 짧게 소개해주세요."
+                className="w-full h-28 resize-none p-3 border border-gray1 rounded-[8px] text-body-14-regular"
+              />
+              <div className="text-right text-caption-12-regular text-gray2 mt-1">
+                {description.length}/200
+              </div>
+            </div>
+            {hasTriedSubmit && !description.trim() && (
+              <span className="text-sm text-purple-500 pl-1 pt-0.5">
+                소개글을 입력해주세요.
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+          <div className="flex flex-col gap-2">
+            <span className="text-head-20-semibold text-gray7">공개 설정</span>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className={`flex flex-1 h-11 items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                  selectedVisibility === "public"
+                    ? "border-purple-500 text-purple-500 bg-purple-50"
+                    : "border-gray2 text-gray7"
+                }`}
+                onClick={() => setSelectedVisibility("public")}
+              >
+                <img
+                  src={publicIcon}
+                  className={`w-5 h-5 transition ${
+                    selectedVisibility === "public" ? "" : "grayscale"
+                  }`}
+                  alt="공개 아이콘"
+                />
+                <span>전체 공개</span>
+              </button>
+
+              <button
+                type="button"
+                className={`flex flex-1 h-11 items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                  selectedVisibility === "private"
+                    ? "border-purple-500 text-purple-500 bg-purple-50"
+                    : "border-gray2 text-gray7"
+                }`}
+                onClick={() => setSelectedVisibility("private")}
+              >
+                <img
+                  src={
+                    selectedVisibility === "private"
+                      ? purplePrivateIcon
+                      : privateIcon
+                  }
+                  className="w-5 h-5 transition"
+                  alt="비공개 아이콘"
+                />
+                <span>비공개</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-head-20-semibold text-black">프로젝트</span>
+            <div
+              className={`transition-all ${
+                !selectedProjectId && hasTriedSubmit
+                  ? "border border-purple-500 rounded-[8px] p-1"
+                  : ""
+              }`}
+            >
+              <DropDownButton
+                options={projectNames}
+                placeholder={
+                  loadingProjects
+                    ? "프로젝트 불러오는 중..."
+                    : projectName || "프로젝트를 선택해주세요."
+                }
+                width="w-full"
+                onSelect={(selectedName) =>
+                  setSelectedProjectId(nameToId.get(selectedName) ?? null)
+                }
+              />
+            </div>
+            {!selectedProjectId && hasTriedSubmit && (
+              <span className="text-sm text-purple-500 pl-1 pt-0.5">
+                프로젝트를 선택해주세요.
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 sm:gap-4 pt-2 pb-6">
           <CancelButton onClick={onClose} />
           <SaveButton onClick={handleNextClick} disabled={isUploading} />
         </div>

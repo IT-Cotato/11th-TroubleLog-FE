@@ -809,7 +809,7 @@ export default function FreeFormWritePage() {
                     onChange={(e) =>
                       handleChangeBlock(block.id, "title", e.target.value)
                     }
-                    placeholder="소제목을 입력하세요"
+                    placeholder="소제목을 입력하세요."
                     className="flex-1 px-0 py-2 border-none rounded font-bold text-black text-xl sm:text-2xl"
                   />
                 </div>
