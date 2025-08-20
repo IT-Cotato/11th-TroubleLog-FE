@@ -36,11 +36,16 @@ export default function NotificationToaster() {
   const handleClick = (link?: string) => {
     if (!link) return;
     try {
-      const url = new URL(link);
-      if (url.origin === window.location.origin)
+      const url = new URL(link, window.location.origin); // 상대경로도 파싱
+      const isHttp = url.protocol === "http:" || url.protocol === "https:";
+      if (!isHttp) return; // 위험 스킴 차단
+      if (url.origin === window.location.origin) {
         navigate(url.pathname + url.search + url.hash);
-      else window.location.href = link;
+      } else {
+        window.open(url.href, "_blank", "noopener,noreferrer"); // 외부는 새 탭
+      }
     } catch {
+      // SPA 상대 경로 등
       navigate(link);
     }
   };
