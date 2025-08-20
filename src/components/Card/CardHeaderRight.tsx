@@ -26,7 +26,6 @@ export default function CardHeaderRight({
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
-  // 카드 클릭으로 전파되지 않도록 막는 핸들러
   const stopCardClick = {
     onClick: (e: React.MouseEvent) => e.stopPropagation(),
     onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
@@ -37,7 +36,7 @@ export default function CardHeaderRight({
       <img
         src={authorProfileImageUrl || image}
         alt="작성자 프로필"
-        className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] rounded-full"
+        className="w-7 h-7 sm:w-9 sm:h-9 rounded-full ring-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/50"
         role="button"
         tabIndex={0}
         aria-label="작성자 프로필 보기"
@@ -62,18 +61,14 @@ export default function CardHeaderRight({
       {status !== "inProgress" && (
         <div className="relative" {...stopCardClick}>
           <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
-
           {showMenu && (
-            // 아이템 클릭 시 카드 onClick 방지
             <div {...stopCardClick}>
               <KebabDropdown
                 options={[
                   {
                     label: deleting ? "삭제 중..." : "삭제",
                     onClick: () => {
-                      if (!deleting) {
-                        onDelete?.();
-                      }
+                      if (!deleting) onDelete?.();
                     },
                   },
                 ]}

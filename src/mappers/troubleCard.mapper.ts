@@ -29,8 +29,8 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => {
     commentCount: t.commentCount ?? undefined,
     introduction: t.introduction ?? undefined,
 
-    summaryId: pickLatestSummaryId(t),
-    postSummaryId: t.postSummaryId ?? null,
+    summaryId: pickLatestSummaryId(t) ?? undefined,
+    postSummaryId: t.postSummaryId ?? undefined,
     summaries: t.summaries ?? [],
   };
 };

@@ -25,38 +25,32 @@ const Header = () => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
   const viewerId = useViewerId();
   const myUserIdStr = viewerId != null ? String(viewerId) : null;
-  // (다른 사용자의 페이지인 경우)
   const viewedUser = useMyPageStore((s) => s.viewedUser);
 
   const hasNew = useNotificationStore((s) => s.hasNew);
   const clearNew = useNotificationStore((s) => s.clearNew);
 
   const handleMouseEnter = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setIsNotificationModalOpen(true);
     if (hasNew) clearNew();
   };
 
   const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsNotificationModalOpen(false);
-    }, 200);
+    timeoutRef.current = setTimeout(
+      () => setIsNotificationModalOpen(false),
+      200
+    );
   };
 
   useEffect(() => {
     const path = location.pathname;
-
-    // 검색 페이지라면 URL의 scope/userId를 읽어서 placeholder 결정
     if (path.startsWith(PATH.SEARCH)) {
       const sp = new URLSearchParams(location.search);
       const scope = sp.get("scope");
       const pageUserId = sp.get("userId") ?? "";
-
       if (scope === "my" || scope === "mypage") {
         setPlaceholder(
           "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
@@ -115,16 +109,12 @@ const Header = () => {
     viewedUser?.nickname,
   ]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) =>
     setSearch(e.target.value);
-  };
 
   const handleSubmitSearch = () => {
     if (!search.trim()) return;
-
     const currentPath = location.pathname;
-
-    // 검색 페이지에 있다면, 기존 쿼리의 scope/userId를 우선 보존
     const existing = new URLSearchParams(location.search);
     const rawScope = existing.get("scope");
     let scope: "my" | "mypage" | "user" | "community" | "project" | null =
@@ -137,12 +127,10 @@ const Header = () => {
         : null;
     let pageUserId = existing.get("userId") ?? "";
 
-    // 검색 페이지가 아니면, 기존 규칙으로 계산
     if (!scope) {
       scope = "community";
       const mypageMatch = currentPath.match(/^\/user\/mypage\/([^/]+)/);
       pageUserId = mypageMatch?.[1] ?? "";
-
       if (currentPath.startsWith(PATH.MYPAGE(""))) {
         scope = pageUserId === myUserIdStr ? "mypage" : "user";
       } else if (
@@ -163,7 +151,6 @@ const Header = () => {
     navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
   };
 
-  // URL <-> 입력 동기화 (다른 페이지로 이동하면 검색창 비우기)
   useEffect(() => {
     if (location.pathname.startsWith(PATH.SEARCH)) {
       const sp = new URLSearchParams(location.search);
@@ -174,79 +161,69 @@ const Header = () => {
   }, [location.pathname, location.search]);
 
   return (
-    <div className="flex w-full py-[25px] px-[88px] gap-12 justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
+    <div className="flex w-full py-4 sm:py-5 lg:py-[25px] px-4 sm:px-6 lg:px-[88px] gap-4 sm:gap-8 lg:gap-12 justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
       <img
         src={logo}
         alt="logo"
-        className="w-[70px] h-[51px] cursor-pointer"
+        className="w-[56px] h-[40px] sm:w-[70px] sm:h-[51px] cursor-pointer"
         onClick={() => navigate(PATH.HOME)}
       />
-      <div className="flex w-full gap-12 items-center">
+      <div className="flex w-full gap-4 sm:gap-8 items-center">
+        {/* Search */}
         <div
           role="search"
           onClick={() => inputRef.current?.focus()}
-          className="
-    group flex w-full h-12 p-2 justify-between items-center gap-1
-    rounded-md border border-gray1 transition
-    focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40
-  "
+          className="group flex w-full h-10 sm:h-12 p-2 justify-between items-center gap-1 rounded-md border border-gray1 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40"
         >
           <input
             ref={inputRef}
-            className="text-body-16-regular w-full h-full focus:outline-none"
+            className="text-body-14-regular sm:text-body-16-regular w-full h-full focus:outline-none"
             placeholder={placeholder}
             value={search}
             onChange={handleSearch}
             onKeyDown={(e) => e.key === "Enter" && handleSubmitSearch()}
           />
           <MdSearch
-            size={24}
             onClick={handleSubmitSearch}
-            className="cursor-pointer"
+            className="cursor-pointer text-[20px] sm:text-[24px]"
           />
         </div>
-        <div className="flex gap-10 items-center relative">
+
+        {/* Icons */}
+        <div className="flex gap-4 sm:gap-6 lg:gap-10 items-center relative">
           <FaUserGroup
-            size={40}
-            color="#525252"
-            className="cursor-pointer"
+            className="cursor-pointer text-[#525252] text-[28px] sm:text-[32px] lg:text-[40px]"
             onClick={() => navigate(PATH.COMMUNITY)}
           />
-          {/* 알림 영역 (hover 시 열림 + 벗어나면 닫힘) */}
+          {/* Notifications */}
           <div
             className="relative"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
             <BsFillBellFill
-              size={40}
+              className="cursor-pointer transition-colors text-[28px] sm:text-[32px] lg:text-[40px]"
               color={hasNew ? "#7C3AED" : "#525252"}
-              className="cursor-pointer transition-colors"
             />
             {isNotificationModalOpen && (
-              <div className="absolute right-[-10px] top-full mt-[41.5px] z-10">
+              <div className="absolute right-0 top-full mt-3 sm:mt-[41.5px] z-10">
                 <NotificationModal />
               </div>
             )}
           </div>
-          <div ref={userDropdownRef}>
+          {/* User */}
+          <div ref={userDropdownRef} className="relative">
             <FaUserCircle
-              size={40}
-              color="#525252"
-              className="cursor-pointer"
+              className="cursor-pointer text-[#525252] text-[28px] sm:text-[32px] lg:text-[40px]"
               onClick={() => setIsUserDropdownOpen((prev) => !prev)}
             />
             {isUserDropdownOpen && (
-              <div className="absolute left-1/3 top-full mt-2 z-10">
+              <div className="absolute right-0 top-full mt-2 z-10">
                 <UserMenuDropdown
                   onClose={() => setIsUserDropdownOpen(false)}
                   onNavigateToMyPage={() => {
-                    if (myUserIdStr) {
-                      navigate(PATH.MYPAGE(myUserIdStr));
-                    } else {
-                      // 미로그인/정보없음: 루트(또는 로그인)로 유도
-                      navigate(PATH.ROOT);
-                    }
+                    if (myUserIdStr) navigate(PATH.MYPAGE(myUserIdStr));
+                    else navigate(PATH.ROOT);
                     setIsUserDropdownOpen(false);
                   }}
                 />

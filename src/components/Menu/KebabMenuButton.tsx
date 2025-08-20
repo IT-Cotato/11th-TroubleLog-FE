@@ -1,4 +1,3 @@
-// KebabMenuButton.tsx
 import kebabIcon from "@/assets/icons/menu-kebab.svg";
 
 type HitArea = "compact" | "comfortable" | "spacious";
@@ -30,7 +29,7 @@ export default function KebabMenuButton({
       aria-label={ariaLabel}
       className={[
         "inline-flex items-center justify-center rounded-full",
-        "hover:bg-gray-100",
+        "hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/50",
         hitAreaClass[hitArea],
         className,
       ].join(" ")}
