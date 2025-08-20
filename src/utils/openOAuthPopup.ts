@@ -4,18 +4,22 @@ export function openOAuthPopup(
   { eventType = "SOCIAL_LOGIN_DONE", timeoutMs = 120_000 } = {}
 ): Promise<any> {
   return new Promise((resolve, reject) => {
-    const w = 480,
-      h = 640;
+    const w = 520,
+      h = 700;
     const left = window.screenX + (window.outerWidth - w) / 2;
     const top = window.screenY + (window.outerHeight - h) / 2;
 
+    console.debug("[openOAuthPopup] opening:", authUrl);
     const opened = window.open(
       authUrl,
       "oauth_popup",
       `width=${w},height=${h},left=${left},top=${top}`
     );
+
     if (!opened) {
-      reject(new Error("팝업이 차단되었습니다."));
+      const err = new Error("팝업 차단");
+      console.error("[openOAuthPopup]", err);
+      reject(err);
       return;
     }
     const popup: Window = opened;
@@ -26,27 +30,33 @@ export function openOAuthPopup(
       window.removeEventListener("message", onMessage);
       clearInterval(closeWatch);
       clearTimeout(timeoutTimer);
+      console.debug("[openOAuthPopup] cleaned up");
     };
 
     function onMessage(e: MessageEvent) {
+      console.debug("[openOAuthPopup] message:", {
+        origin: e.origin,
+        data: e.data,
+      });
       if (done) return;
       if (e.origin !== targetOrigin) return;
-      const msg = e.data;
-      if (!msg || msg.type !== eventType) return;
+      if (!e.data || e.data.type !== eventType) return;
 
       cleanup();
       try {
         if (!popup.closed) popup.close();
-      } catch (err) {
-        console.debug("popup.close failed:", err);
+      } catch {
+        //
       }
-      resolve(msg.payload);
+      resolve(e.data.payload);
     }
 
     const closeWatch = setInterval(() => {
       if (popup.closed && !done) {
         cleanup();
-        reject(new Error("팝업이 닫혔습니다."));
+        const err = new Error("팝업이 닫힘");
+        console.warn("[openOAuthPopup]", err);
+        reject(err);
       }
     }, 400);
 
@@ -58,7 +68,9 @@ export function openOAuthPopup(
         } catch {
           //
         }
-        reject(new Error("로그인 시간이 초과되었습니다."));
+        const err = new Error("로그인 타임아웃");
+        console.error("[openOAuthPopup]", err);
+        reject(err);
       }
     }, timeoutMs);
 

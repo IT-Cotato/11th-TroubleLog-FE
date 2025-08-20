@@ -36,6 +36,7 @@ export const router = createBrowserRouter(
     { path: PATH.SIGNUP_DETAIL, element: <SignPageTwo /> },
     { path: PATH.SIGNUP_OAUTH, element: <SignPageOauth /> },
     { path: PATH.OAUTH_POPUP, element: <OAuthPopupKakao /> },
+    { path: PATH.OAUTH_REGISTER, element: <OAuthPopupKakao /> },
 
     // 보호 구역 (메인 레이아웃)
     {
