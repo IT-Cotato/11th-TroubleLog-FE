@@ -30,6 +30,7 @@ export interface TroublogCardProps {
   summaryId?: number;
   postSummaryId?: number;
   summaries?: object[];
+  imageUrl?: string;
 }
 
 export default function TroublogCard({
@@ -49,6 +50,7 @@ export default function TroublogCard({
   onClick,
   onAvatarClick,
   onDeleted,
+  imageUrl,
 }: TroublogCardProps) {
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
@@ -111,6 +113,7 @@ export default function TroublogCard({
         onAvatarClick={onAvatarClick}
         onRequestDelete={handleRequestDelete}
         deleting={deleting}
+        imageUrl={imageUrl}
       />
 
       {/* 제목, 날짜, 태그 영역 */}
