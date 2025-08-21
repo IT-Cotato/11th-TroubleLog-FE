@@ -26,10 +26,14 @@ import AuthGuardPage from "@/pages/Error/AuthGuardPage";
 import SignPageOauth from "@/pages/Login/SignPageOauth";
 import CombinedDetailPage from "@/pages/MyPage/CombinedDetailPage";
 import OAuthPopupKakao from "@/pages/Login/OAuthPopupKakao";
+import IntroLandingPage from "@/pages/Onboarding/IntroLandingPage";
 export const router = createBrowserRouter(
   [
+    { path: PATH.LANDING, element: <IntroLandingPage /> },
+
     // 로그인/회원가입
     { path: PATH.ROOT, element: <LoginPage /> },
+    { path: PATH.LOGIN, element: <LoginPage /> },
     { path: PATH.SIGNUP, element: <SignPageOne /> },
     { path: PATH.SIGNUP_DETAIL, element: <SignPageTwo /> },
     { path: PATH.SIGNUP_OAUTH, element: <SignPageOauth /> },
