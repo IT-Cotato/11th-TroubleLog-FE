@@ -264,7 +264,7 @@ const resId = api.interceptors.response.use(
       }
       const newToken = await p;
 
-      if (newToken) {
+      if (newToken && !cfg._retry) {
         cfg._retry = true;
         cfg.headers = cfg.headers ?? {};
         (cfg.headers as any).Authorization = `Bearer ${newToken}`;
