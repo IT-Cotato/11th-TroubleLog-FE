@@ -842,6 +842,13 @@ const TempWritePage = () => {
     },
   };
 
+  const reversedBlocks = useMemo(() => {
+    return [...blocks].reverse().map((block, index) => ({
+      block,
+      originalIndex: blocks.length - 1 - index,
+    }));
+  }, [blocks]);
+
   // ---------- UI ----------
   return (
     <div className="min-h-screen">
@@ -913,35 +920,32 @@ const TempWritePage = () => {
           </div>
 
           <div className="flex flex-col gap-6 sm:gap-8">
-            {[...blocks].reverse().map((block, index) => {
-              const originalIndex = blocks.length - 1 - index;
-              return (
-                <EditorBlock
-                  key={(block as any).id}
-                  block={block}
-                  index={originalIndex}
-                  isActive={originalIndex === activeIndex}
-                  isLast={originalIndex === questionData.length - 1}
-                  onChange={handleChangeBlockContent}
-                  onToggleChecklist={handleToggleChecklist}
-                  onAddBlock={handleAddBlock}
-                  onEnd={handleEnd}
-                  title={title}
-                  selectedErrorType={selectedErrorType}
-                  onShowSaveAlert={handleShowSaveAlert}
-                  onShowAlert={handleShowAlert}
-                  onSave={handleClickSave}
-                  isSaving={isSaving}
-                  canSave={canSave}
-                  onActivate={(i) => setActiveIndex(i)}
-                  onPasteImage={handlePasteImage}
-                  onDropImage={handleDropImage}
-                  commandsFilter={(cmd) =>
-                    cmd.keyCommand === "image" ? imageUploadCmd : cmd
-                  }
-                />
-              );
-            })}
+            {reversedBlocks.map(({ block, originalIndex }) => (
+              <EditorBlock
+                key={block.id}
+                block={block}
+                index={originalIndex}
+                isActive={originalIndex === activeIndex}
+                isLast={originalIndex === questionData.length - 1}
+                onChange={handleChangeBlockContent}
+                onToggleChecklist={handleToggleChecklist}
+                onAddBlock={handleAddBlock}
+                onEnd={handleEnd}
+                title={title}
+                selectedErrorType={selectedErrorType}
+                onShowSaveAlert={handleShowSaveAlert}
+                onShowAlert={handleShowAlert}
+                onSave={handleClickSave}
+                isSaving={isSaving}
+                canSave={canSave}
+                onActivate={(i) => setActiveIndex(i)}
+                onPasteImage={handlePasteImage}
+                onDropImage={handleDropImage}
+                commandsFilter={(cmd) =>
+                  cmd.keyCommand === "image" ? imageUploadCmd : cmd
+                }
+              />
+            ))}
           </div>
 
           {isPostSaveModalOpen && (

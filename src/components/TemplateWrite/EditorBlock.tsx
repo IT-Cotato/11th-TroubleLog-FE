@@ -2,7 +2,13 @@ import MDEditor, { type ICommand } from "@uiw/react-md-editor";
 import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
-import { useLayoutEffect, useRef, useState, useEffect } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 export interface BlockData {
   id: number;
@@ -46,6 +52,8 @@ export type EditorBlockProps = {
 
 const MIN_H = 200;
 const MAX_H = 2000;
+const clamp = (n: number, lo: number, hi: number) =>
+  Math.max(lo, Math.min(hi, n));
 
 const EditorBlock = ({
   block,
@@ -69,42 +77,30 @@ const EditorBlock = ({
   commandsFilter,
 }: EditorBlockProps) => {
   const [editorHeight, setEditorHeight] = useState<number>(MIN_H);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const taRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const autosizeToContent = () => {
-    const ta = wrapRef.current?.querySelector(
-      "textarea.w-md-editor-text-input"
-    ) as HTMLTextAreaElement | null;
+  // 콘텐츠 길이에 따라 자동 높이 조절 (textarea.style.height 직접 조작 X)
+  const autosize = useCallback(() => {
+    const ta = taRef.current;
     if (!ta) return;
-    ta.style.height = "auto";
-    const needed = ta.scrollHeight;
-    const next = Math.max(MIN_H, Math.min(MAX_H, needed + 24));
-    setEditorHeight(next);
-  };
+    const next = clamp(ta.scrollHeight + 2, MIN_H, MAX_H);
+    setEditorHeight((h) => (h !== next ? next : h));
+  }, []);
 
+  // 콘텐츠/활성 변경 시 한 프레임 뒤에 측정
   useLayoutEffect(() => {
-    autosizeToContent();
-    const t = setTimeout(autosizeToContent, 0);
-    return () => clearTimeout(t);
-  }, [block.content, isActive]);
+    const id = requestAnimationFrame(autosize);
+    return () => cancelAnimationFrame(id);
+  }, [block.content, isActive, autosize]);
 
-  const applyWrapperHeight = () => {
-    const h = wrapRef.current?.getBoundingClientRect().height;
-    if (!h) return;
-    setEditorHeight(Math.max(MIN_H, Math.min(MAX_H, Math.round(h))));
-  };
-
+  // 입력 중 높이 변동 감지 (선택적)
   useEffect(() => {
-    const ta = wrapRef.current?.querySelector(
-      "textarea.w-md-editor-text-input"
-    ) as HTMLTextAreaElement | null;
+    const ta = taRef.current;
     if (!ta || !("ResizeObserver" in window)) return;
-    const ro = new ResizeObserver(() => {
-      requestAnimationFrame(autosizeToContent);
-    });
+    const ro = new ResizeObserver(() => requestAnimationFrame(autosize));
     ro.observe(ta);
     return () => ro.disconnect();
-  }, []);
+  }, [autosize]);
 
   return (
     <div
@@ -112,6 +108,7 @@ const EditorBlock = ({
       onClick={() => onActivate(index)}
     >
       <div className="flex-1 min-w-0 flex flex-col gap-4 md:gap-5">
+        {/* 질문 + 액션 */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <span className="font-bold text-black text-lg sm:text-xl md:text-2xl">
             {block.question}
@@ -123,14 +120,7 @@ const EditorBlock = ({
                 disabled={!!isSaving || !canSave}
                 onClick={async () => {
                   try {
-                    if (!canSave) {
-                      onShowAlert?.();
-                      return;
-                    }
-                    if (!onSave) {
-                      onShowAlert?.();
-                      return;
-                    }
+                    if (!canSave || !onSave) return onShowAlert?.();
                     const ok = await onSave();
                     if (ok) onShowSaveAlert?.();
                   } catch (e) {
@@ -165,39 +155,56 @@ const EditorBlock = ({
           )}
         </div>
 
-        <div data-color-mode="light">
+        {/* 편집 / 프리뷰 분리 렌더 → caret/height 안정 */}
+        {isActive ? (
           <div
-            ref={wrapRef}
-            className="w-full resize-y overflow-visible rounded-md border border-gray-200"
+            className="w-full overflow-visible rounded-md border border-gray-200"
             style={{ minHeight: MIN_H, maxHeight: MAX_H, height: editorHeight }}
-            onMouseUp={applyWrapperHeight}
-            onTouchEnd={applyWrapperHeight}
           >
             <MDEditor
               value={block.content}
               onChange={(val) => {
                 onChange(index, { content: val || "" });
-                setTimeout(autosizeToContent, 0);
+                requestAnimationFrame(autosize);
               }}
               height={editorHeight}
-              preview={isActive ? "edit" : "preview"}
+              preview="edit"
+              visiableDragbar={false}
               style={{ width: "100%", border: "none" }}
-              autoFocus={isActive}
+              autoFocus
               commandsFilter={commandsFilter}
               textareaProps={{
-                onPaste: (e) => onPasteImage?.(block.id, e),
-                onDrop: (e) => onDropImage?.(block.id, e),
+                // v4.0.7: 타입에 ref 정의가 없어 단언 사용
+                ...({
+                  ref: (el: HTMLTextAreaElement | null) => {
+                    taRef.current = el;
+                    requestAnimationFrame(autosize); // 초기 한 번 계산
+                  },
+                } as any),
+                onInput: () => requestAnimationFrame(autosize),
+                onPaste: (e) => {
+                  onPasteImage?.(block.id, e);
+                  requestAnimationFrame(autosize);
+                },
+                onDrop: (e) => {
+                  onDropImage?.(block.id, e);
+                  requestAnimationFrame(autosize);
+                },
                 onDragOver: (e) => {
-                  // 드래그 파일 드롭 허용
                   if (e.dataTransfer?.types?.includes("Files"))
                     e.preventDefault();
                 },
               }}
             />
           </div>
-        </div>
+        ) : (
+          <div className="w-full rounded-md border border-gray-200 p-3">
+            <MDEditor.Markdown source={block.content || ""} />
+          </div>
+        )}
       </div>
 
+      {/* 체크리스트 */}
       <div className="w-full md:w-60 lg:w-72 mt-2 md:mt-10 flex-shrink-0">
         <div className="flex flex-col gap-2">
           {block.checklistItems.length > 0 && (
@@ -207,16 +214,10 @@ const EditorBlock = ({
             </h3>
           )}
           <div className="flex flex-col gap-2">
-            {block.checklistItems.map((item: string, idx: number) => (
+            {block.checklistItems.map((item) => (
               <label
                 key={item}
-                className={`flex items-start gap-2 cursor-pointer ${
-                  idx % 3 === 0
-                    ? "text-sm"
-                    : idx % 3 === 1
-                    ? "text-sm"
-                    : "text-sm"
-                } text-gray-700`}
+                className="flex items-start gap-2 cursor-pointer text-sm text-gray-700"
               >
                 <input
                   type="checkbox"
@@ -232,8 +233,8 @@ const EditorBlock = ({
                     ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
                   }}
                   className="inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-                           [background-image:var(--icon-unchecked)]
-                           peer-checked:[background-image:var(--icon-checked)]"
+                             [background-image:var(--icon-unchecked)]
+                             peer-checked:[background-image:var(--icon-checked)]"
                 />
                 <span className="leading-5">{item}</span>
               </label>
