@@ -50,12 +50,10 @@ export default function CombinedDetailPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // 케밥
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // 기존 state들 아래에 추가
   const [isMine, setIsMine] = useState(false);
   const [importance, setImportance] = useState(0);
   const [authorId, setAuthorId] = useState<number | null>(null);
@@ -76,32 +74,28 @@ export default function CombinedDetailPage() {
   const [cHasNext, setCHasNext] = useState(false);
   const [cLoading, setCLoading] = useState(false);
 
-  // 뷰 모드 결정
   const viewMode: "mine_public" | "mine_private" | "others" = isMine
     ? isVisible
       ? "mine_public"
       : "mine_private"
     : "others";
 
-  // 표시 게이트
   const showCombined = viewMode !== "others";
   const showAuthorCard = viewMode === "mine_public" || viewMode === "others";
   const showSocial =
     isVisible && (viewMode === "mine_public" || viewMode === "others");
 
-  // 공유 토스트
   const [toast, setToast] = useState<{ open: boolean; message: string }>({
     open: false,
     message: "",
   });
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-    };
-  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    []
+  );
   const showToast = (message: string) => {
     setToast({ open: true, message });
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -116,11 +110,9 @@ export default function CombinedDetailPage() {
         await navigator.clipboard.writeText(text);
         return true;
       }
-    } catch (e) {
-      // 일부 환경/권한에서 Clipboard API가 실패할 수 있음 — 폴백으로 진행
-      console.warn("Clipboard API failed, falling back.", e);
+    } catch {
+      //
     }
-    // textarea 폴백
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.style.position = "fixed";
@@ -136,7 +128,6 @@ export default function CombinedDetailPage() {
     }
     return ok;
   };
-
   const handleCopyLink = async () => {
     const ok = await copyToClipboard(window.location.href);
     showToast(
@@ -146,7 +137,6 @@ export default function CombinedDetailPage() {
     );
   };
 
-  // enum/문자 → 숫자 (중요도)
   const parseStar = (raw: unknown) => {
     if (typeof raw === "number") return raw;
     if (typeof raw !== "string") return 0;
@@ -167,7 +157,6 @@ export default function CombinedDetailPage() {
     return map[k] ?? 0;
   };
 
-  // 요약 타입 한글 라벨
   const SUMMARY_TYPE_LABELS: Record<string, string> = {
     RESUME: "자기소개서",
     INTERVIEW: "면접 대비",
@@ -190,11 +179,8 @@ export default function CombinedDetailPage() {
           throw new Error("잘못된 경로 파라미터");
 
         const data = await getCombinedDetail(pid, sid);
-
-        // 기존 vm 세팅
         setVm(toTwoPaneVM(data as ViewCombinedResponse, viewerId ?? null));
 
-        // 합본 응답에서 상단/하단용 데이터 추출
         const post = (data as any)?.postResDto;
         const user = post?.userInfo ?? {};
         const mine =
@@ -211,7 +197,6 @@ export default function CombinedDetailPage() {
           setCommentCounts(Number(post?.commentCount ?? 0));
         }
 
-        // 공개글이면 커뮤니티 상세/댓글 로딩 (좋아요 상태 가져오기 & 댓글 리스트)
         if (post?.isVisible && Number.isFinite(pid)) {
           try {
             const community = await getCommunityPostDetail(pid);
@@ -222,10 +207,9 @@ export default function CombinedDetailPage() {
               setLikeCounts(initLikeCount);
             }
           } catch {
-            /* 커뮤 상세 실패해도 진행 */
+            //
           }
 
-          // 1페이지 댓글
           try {
             const resp = await getCommunityComments(pid, 1, 10);
             const mapped = toPostComments(resp.content, viewerId ?? null);
@@ -236,7 +220,7 @@ export default function CombinedDetailPage() {
               setCommentCounts(resp.totalElements ?? commentCounts);
             }
           } catch {
-            /* ignore */
+            //
           }
         }
       } catch (e: any) {
@@ -250,7 +234,6 @@ export default function CombinedDetailPage() {
     };
   }, [postId, summaryId, viewerId]);
 
-  // 댓글 페이징/갱신 핸들러
   const loadComments = async (
     id: number,
     page1: number,
@@ -273,7 +256,6 @@ export default function CombinedDetailPage() {
     await loadComments(Number(postId), 1, viewerId ?? null);
   }, [postId, viewerId]);
 
-  // 좋아요/댓글 작성 핸들러
   const handleToggleLike = async () => {
     if (!postId || !isVisible) return;
     if (likeLockRef.current) return;
@@ -313,7 +295,6 @@ export default function CombinedDetailPage() {
     if (!contents || isCommentPosting) return;
     setIsCommentPosting(true);
 
-    // 낙관적
     const optimistic: PostCommentProps = {
       id: `tmp-${Date.now()}`,
       profile: authorProfile ?? "",
@@ -366,7 +347,6 @@ export default function CombinedDetailPage() {
       isReply: true,
       parentId,
     };
-
     setComments((prev) => [...prev, optimistic]);
     try {
       const created = await replyCommunityComment(
@@ -456,18 +436,20 @@ export default function CombinedDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center">
-        <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[24px] w-full pt-[180px]">
-          <div className="w-full h-[120px] bg-gray-100 rounded" />
-          <div className="w-full h-[400px] bg-gray-100 rounded" />
+      <div className="w-full px-4 sm:px-6 md:px-8">
+        <div className="mx-auto max-w-screen-2xl flex justify-center">
+          <div className="w-full max-w-[1200px] flex flex-col gap-6 pt-24 sm:pt-[180px]">
+            <div className="w-full h-[120px] bg-gray-100 rounded" />
+            <div className="w-full h-[400px] bg-gray-100 rounded" />
+          </div>
         </div>
       </div>
     );
   }
   if (err || !vm) {
     return (
-      <div className="flex justify-center">
-        <div className="max-w-[1200px] w-full pt-[180px] text-red-600">
+      <div className="w-full px-4 sm:px-6 md:px-8">
+        <div className="mx-auto max-w-screen-2xl pt-24 sm:pt-[180px] text-red-600">
           {err ?? "데이터가 없습니다."}
         </div>
       </div>
@@ -475,269 +457,278 @@ export default function CombinedDetailPage() {
   }
 
   return (
-    <div className="flex items-center flex-col">
+    <div className="w-full">
       <HeaderWoSearch />
-      <div
-        className="flex flex-col items-center max-w-[1600px] gap-[50px]
-       mb-[224px] w-full"
-      >
-        {/* 헤더 */}
-        <div className="flex w-full pt-[180px] pb-[18px] items-center border-b border-gray1">
-          <div className="flex flex-col items-start gap-[40px] w-full">
-            <div className="flex w-full justify-between items-start">
-              <span className="text-head-20-semibold">
-                {vm.header.errorType}
-              </span>
-              <div className="relative" ref={menuRef}>
-                <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
-                {showMenu && (
-                  <KebabDropdown
-                    options={[
-                      { label: "원본 수정", onClick: () => goEditOriginal() },
-                      {
-                        label: deleting ? "삭제 중..." : "원본 삭제",
-                        onClick: () => !deleting && handleDeletePost(),
-                      },
-                    ]}
-                  />
-                )}
-              </div>
-            </div>
 
-            <div className="flex flex-col items-start gap-[40px] w-full">
-              <div className="text-head-48">{vm.header.title}</div>
-              <div className="flex items-center gap-[16px]">
-                <TagList tags={vm.header.tags} variant="post" />
-                <div className="text-body-16-regular text-gray3">·</div>
-                <div className="text-body-20-regular text-gray3">
-                  {vm.header.date}
+      <div className="w-full px-4 sm:px-6 md:px-8">
+        <div className="mx-auto max-w-screen-2xl flex flex-col items-center gap-12 sm:gap-[50px] mb-24 sm:mb-[224px]">
+          {/* 상단 헤더 */}
+          <div className="w-full pt-20 sm:pt-[180px] pb-4 sm:pb-[18px] border-b border-gray1">
+            <div className="flex flex-col gap-6 sm:gap-[40px] w-full">
+              <div className="flex w-full justify-between items-start gap-3">
+                <span className="text-head-20-semibold break-words">
+                  {vm.header.errorType}
+                </span>
+                <div className="relative" ref={menuRef}>
+                  <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
+                  {showMenu && (
+                    <KebabDropdown
+                      options={[
+                        { label: "원본 수정", onClick: () => goEditOriginal() },
+                        {
+                          label: deleting ? "삭제 중..." : "원본 삭제",
+                          onClick: () => !deleting && handleDeletePost(),
+                        },
+                      ]}
+                    />
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-[20px]">
-                <img
-                  src={authorProfile || imageIcon}
-                  onError={(e) => {
-                    e.currentTarget.src = imageIcon;
-                  }}
-                  alt="profile"
-                  className="w-[66px] h-[66px] rounded-full object-cover"
-                />
-                <div className="text-head-24-bold">{authorName}</div>
-              </div>
-
-              {isMine && importance > 0 && (
-                <div className="flex items-center gap-[8px]">
-                  <img
-                    src={starIcon}
-                    alt="importance"
-                    className="w-[24px] h-[24px]"
-                  />
+              <div className="flex flex-col gap-4 sm:gap-[40px] w-full">
+                <div className="text-head-48 break-words">
+                  {vm.header.title}
+                </div>
+                <div className="flex flex-wrap items-center gap-3 sm:gap-[16px] min-w-0">
+                  <TagList tags={vm.header.tags} variant="post" />
+                  <div className="text-body-16-regular text-gray3">·</div>
                   <div className="text-body-20-regular text-gray3">
-                    {importance}
+                    {vm.header.date}
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+              </div>
 
-        {/* 본문: 좌(원본) | 우(요약) */}
-        <div
-          className={`grid gap-[32px] w-full ${
-            showCombined ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
-          }`}
-        >
-          {/* 왼쪽: 원본 */}
-          <section className="flex flex-col gap-[24px]">
-            <div className="text-head-24-bold">원본</div>
-            <div className="flex flex-col gap-[32px]">
-              {vm.left.questions.map((q, i) => (
-                <PostCombineMd
-                  key={`L-${i}`}
-                  question={q}
-                  content={vm.left.contents[i]}
-                />
-              ))}
-            </div>
-          </section>
+              <div className="flex w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4 sm:gap-[20px]">
+                  <img
+                    src={authorProfile || imageIcon}
+                    onError={(e) => {
+                      e.currentTarget.src = imageIcon;
+                    }}
+                    alt="profile"
+                    className="w-12 h-12 sm:w-[66px] sm:h-[66px] rounded-full object-cover"
+                  />
+                  <div className="text-head-24-bold break-words">
+                    {authorName}
+                  </div>
+                </div>
 
-          {/* 오른쪽: 요약 */}
-          {showCombined && (
-            <section className="flex flex-col gap-[24px] lg:border-l lg:border-gray1 lg:pl-[32px]">
-              <div className="flex items-center gap-[12px]">
-                <div className="text-head-24-bold">요약</div>
-                {vm.right.summaryType && (
-                  <span className="text-body-16-regular text-gray3">
-                    ({toKoSummaryType(vm.right.summaryType)})
-                  </span>
+                {isMine && importance > 0 && (
+                  <div className="flex items-center gap-2 sm:gap-[8px]">
+                    <img
+                      src={starIcon}
+                      alt="importance"
+                      className="w-5 h-5 sm:w-[24px] sm:h-[24px]"
+                    />
+                    <div className="text-body-20-regular text-gray3">
+                      {importance}
+                    </div>
+                  </div>
                 )}
               </div>
-
-              {vm.right.questions.length === 0 ? (
-                <div className="text-body-18-regular text-gray3">
-                  아직 생성된 요약이 없어요.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-[32px]">
-                  {vm.right.questions.map((q, i) => (
-                    <PostCombineMd
-                      key={`R-${i}`}
-                      question={q}
-                      content={vm.right.contents[i]}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-        </div>
-
-        {/* ===== 본문 하단 영역 ===== */}
-        {/* 작성자 정보 카드 */}
-        {showAuthorCard && (
-          <div className="flex py-[32px] px-[40px] flex-col items-start gap-[10px] self-stretch rounded-[36px] bg-[#F2F2F2]">
-            <div className="flex justify-between items-center self-stretch">
-              <div
-                className="flex items-center gap-[28px] cursor-pointer"
-                onClick={() =>
-                  authorId && navigate(PATH.MYPAGE(String(authorId)))
-                }
-              >
-                <img
-                  src={authorProfile || imageIcon}
-                  onError={(e) => {
-                    e.currentTarget.src = imageIcon;
-                  }}
-                  alt="profile"
-                  className="w-[131px] h-[131px] rounded-full object-cover"
-                />
-                <div className="flex flex-col items-start gap-[13px]">
-                  <div className="text-head-24-bold">{authorName}</div>
-                  <div className="text-body-16-regular text-gray3">작성자</div>
-                </div>
-              </div>
             </div>
           </div>
-        )}
 
-        {/* 좋아요/공유 */}
-        {showSocial && (
-          <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
-            <div className="flex items-center gap-[20px]">
-              <button
-                type="button"
-                aria-pressed={isLiked}
-                aria-busy={isLiking}
-                disabled={isLiking}
-                onClick={handleToggleLike}
-                className={`flex items-center gap-[8px] ${
-                  isLiking ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
-                }`}
-              >
-                <img
-                  src={isLiked ? heartIcon : likeEmptyIcon}
-                  alt="like"
-                  className="w-[40px] h-[40px]"
-                />
-                <div className="text-body-20-regular text-gray3">
-                  {likeCounts}
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="cursor-pointer"
-                aria-label="현재 페이지 링크 복사"
-              >
-                <img
-                  src={shareIcon}
-                  alt="share"
-                  className="w-[40px] h-[40px]"
-                />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 댓글 작성 */}
-        {showSocial && (
-          <>
-            {/* 작성 */}
-            <div className="flex flex-col items-end gap-[12px] self-stretch">
-              <div className="flex flex-col items-start gap-[36px] self-stretch">
-                <div className="text-head-32-semibold">
-                  {commentCounts}개의 댓글
-                </div>
-                <textarea
-                  value={commentInput}
-                  onChange={(e) => setCommentInput(e.target.value)}
-                  placeholder="댓글을 작성해주세요."
-                  className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
-                />
-              </div>
-
-              <button
-                disabled={!commentInput.trim() || isCommentPosting}
-                onClick={handleSubmitComment}
-                className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
-                  commentInput.trim() && !isCommentPosting
-                    ? "bg-primary"
-                    : "bg-subColor1"
-                }`}
-              >
-                {isCommentPosting ? "작성 중…" : "작성하기"}
-              </button>
-            </div>
-
-            {/* 목록 */}
-            <div className="flex flex-col items-end self-stretch">
-              {comments
-                .filter((c) => !c.isReply)
-                .map((parent) => (
-                  <div key={parent.id} className="w-full">
-                    <PostComment
-                      {...parent}
-                      onEdit={(newContent) => handleEdit(parent.id, newContent)}
-                      onDelete={() => handleDelete(parent.id)}
-                      onReply={(replyContent) =>
-                        handleReply(parent.id, replyContent)
-                      }
-                    />
-                    {comments
-                      .filter((c) => c.parentId === parent.id)
-                      .map((reply) => (
-                        <PostComment
-                          key={reply.id}
-                          {...reply}
-                          onEdit={(newContent) =>
-                            handleEdit(reply.id, newContent)
-                          }
-                          onDelete={() => handleDelete(reply.id)}
-                        />
-                      ))}
-                  </div>
+          {/* 본문: 좌(원본) | 우(요약) */}
+          <div
+            className={`grid gap-6 sm:gap-[32px] w-full ${
+              showCombined ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+            }`}
+          >
+            {/* 원본 */}
+            <section className="flex flex-col gap-4 sm:gap-[24px] min-w-0">
+              <div className="text-head-24-bold">원본</div>
+              <div className="flex flex-col gap-6 sm:gap-[32px]">
+                {vm.left.questions.map((q, i) => (
+                  <PostCombineMd
+                    key={`L-${i}`}
+                    question={q}
+                    content={vm.left.contents[i]}
+                  />
                 ))}
+              </div>
+            </section>
 
-              {cHasNext && postId && (
-                <button
-                  disabled={cLoading}
+            {/* 요약 */}
+            {showCombined && (
+              <section className="flex flex-col gap-4 sm:gap-[24px] lg:border-l lg:border-gray1 lg:pl-0 lg:pl-[32px] min-w-0">
+                <div className="flex items-center gap-3 sm:gap-[12px]">
+                  <div className="text-head-24-bold">요약</div>
+                  {vm.right.summaryType && (
+                    <span className="text-body-16-regular text-gray3">
+                      ({toKoSummaryType(vm.right.summaryType)})
+                    </span>
+                  )}
+                </div>
+
+                {vm.right.questions.length === 0 ? (
+                  <div className="text-body-18-regular text-gray3">
+                    아직 생성된 요약이 없어요.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-6 sm:gap-[32px]">
+                    {vm.right.questions.map((q, i) => (
+                      <PostCombineMd
+                        key={`R-${i}`}
+                        question={q}
+                        content={vm.right.contents[i]}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+
+          {/* 작성자 카드 */}
+          {showAuthorCard && (
+            <div className="flex py-6 sm:py-[32px] px-5 sm:px-[40px] flex-col items-start gap-[10px] self-stretch rounded-[24px] sm:rounded-[36px] bg-[#F2F2F2]">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center self-stretch gap-4">
+                <div
+                  className="flex items-center gap-4 sm:gap-[28px] cursor-pointer"
                   onClick={() =>
-                    loadComments(Number(postId), cPage, viewerId ?? null)
+                    authorId && navigate(PATH.MYPAGE(String(authorId)))
                   }
-                  className={`mt-4 px-6 py-2 rounded-full text-white ${
-                    cLoading ? "bg-gray-300" : "bg-primary"
+                >
+                  <img
+                    src={authorProfile || imageIcon}
+                    onError={(e) => {
+                      e.currentTarget.src = imageIcon;
+                    }}
+                    alt="profile"
+                    className="w-20 h-20 sm:w-[131px] sm:h-[131px] rounded-full object-cover"
+                  />
+                  <div className="flex flex-col items-start gap-2 sm:gap-[13px]">
+                    <div className="text-head-24-bold break-words">
+                      {authorName}
+                    </div>
+                    <div className="text-body-16-regular text-gray3">
+                      작성자
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 좋아요/공유 */}
+          {showSocial && (
+            <div className="flex pt-8 sm:pt-[52px] pb-5 sm:pb-[20px] items-center self-stretch border-b border-gray1">
+              <div className="flex items-center gap-4 sm:gap-[20px]">
+                <button
+                  type="button"
+                  aria-pressed={isLiked}
+                  aria-busy={isLiking}
+                  disabled={isLiking}
+                  onClick={handleToggleLike}
+                  className={`flex items-center gap-2 sm:gap-[8px] ${
+                    isLiking
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer"
                   }`}
                 >
-                  {cLoading ? "불러오는 중…" : "댓글 더 보기"}
+                  <img
+                    src={isLiked ? heartIcon : likeEmptyIcon}
+                    alt="like"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                  />
+                  <div className="text-body-20-regular text-gray3">
+                    {likeCounts}
+                  </div>
                 </button>
-              )}
+
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="cursor-pointer"
+                  aria-label="현재 페이지 링크 복사"
+                >
+                  <img
+                    src={shareIcon}
+                    alt="share"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                  />
+                </button>
+              </div>
             </div>
-          </>
-        )}
+          )}
+
+          {/* 댓글 */}
+          {showSocial && (
+            <>
+              <div className="flex flex-col items-end gap-3 sm:gap-[12px] self-stretch">
+                <div className="flex flex-col items-start gap-6 sm:gap-[36px] self-stretch">
+                  <div className="text-head-32-semibold">
+                    {commentCounts}개의 댓글
+                  </div>
+                  <textarea
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    placeholder="댓글을 작성해주세요."
+                    className="flex p-4 sm:pt-[28px] sm:pl-[32px] pb-24 sm:pb-[130px] w-full resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  disabled={!commentInput.trim() || isCommentPosting}
+                  onClick={handleSubmitComment}
+                  className={`flex px-6 sm:pl-[32px] sm:pr-[31px] py-2 sm:pt-[8px] sm:pb-[12px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
+                    commentInput.trim() && !isCommentPosting
+                      ? "bg-primary"
+                      : "bg-subColor1"
+                  }`}
+                >
+                  {isCommentPosting ? "작성 중…" : "작성하기"}
+                </button>
+              </div>
+
+              <div className="flex flex-col items-end self-stretch">
+                {comments
+                  .filter((c) => !c.isReply)
+                  .map((parent) => (
+                    <div key={parent.id} className="w-full">
+                      <PostComment
+                        {...parent}
+                        onEdit={(newContent) =>
+                          handleEdit(parent.id, newContent)
+                        }
+                        onDelete={() => handleDelete(parent.id)}
+                        onReply={(replyContent) =>
+                          handleReply(parent.id, replyContent)
+                        }
+                      />
+                      {comments
+                        .filter((c) => c.parentId === parent.id)
+                        .map((reply) => (
+                          <PostComment
+                            key={reply.id}
+                            {...reply}
+                            onEdit={(newContent) =>
+                              handleEdit(reply.id, newContent)
+                            }
+                            onDelete={() => handleDelete(reply.id)}
+                          />
+                        ))}
+                    </div>
+                  ))}
+
+                {cHasNext && postId && (
+                  <button
+                    disabled={cLoading}
+                    onClick={() =>
+                      loadComments(Number(postId), cPage, viewerId ?? null)
+                    }
+                    className={`mt-4 px-6 py-2 rounded-full text-white ${
+                      cLoading ? "bg-gray-300" : "bg-primary"
+                    }`}
+                  >
+                    {cLoading ? "불러오는 중…" : "댓글 더 보기"}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {toast.open && (

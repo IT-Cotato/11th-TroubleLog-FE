@@ -14,12 +14,14 @@ export default function PostCombineMd({
   content: GuideContent[];
 }) {
   return (
-    <section className="w-[600px]">
-      <div className="text-head-24-bold mb-6">{question}</div>
+    <section className="w-full">
+      <div className="text-head-24-bold mb-4 sm:mb-6 break-words">
+        {question}
+      </div>
 
       {/* 마크다운 + 이미지 렌더 */}
       <div
-        className="prose max-w-none w-[750px] flex p-[32px] flex-col justify-center  gap-[10px] self-stretch rounded-[20px] bg-white shadow-card "
+        className="prose max-w-none w-full flex flex-col gap-[10px] p-4 sm:p-[32px] rounded-[20px] bg-white shadow-card"
         data-color-mode="light"
       >
         {content.map((item, i) => {
@@ -30,18 +32,16 @@ export default function PostCombineMd({
                 source={item}
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                style={{ width: "700px" }}
               />
             );
           }
 
-          // 이미지
           return (
             <img
               key={i}
               src={item.src}
               alt={item.alt ?? ""}
-              className="rounded-lg my-4"
+              className="rounded-lg my-4 max-w-full h-auto"
               onError={(e) => {
                 const img = e.currentTarget as HTMLImageElement;
                 img.onerror = null;
