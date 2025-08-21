@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Input from "./Input";
 import mockimg from "../../assets/images/mockimg.jpg";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { postOauthRegister } from "@/api/auth.api";
 import type { OauthRegisterRequest } from "@/models/auth.model";
 import { PATH } from "@/constants/paths";
 
 const SignPageOauth = () => {
   const navigate = useNavigate();
+  const location = useLocation() as any;
+  const stateUserId = location?.state?.userId as number | undefined;
+  const stateNickname = location?.state?.nickname as string | undefined;
 
-  const [nickname, setNickname] = useState("");
+  const [userId, setUserId] = useState<number | null>(stateUserId ?? null);
+  const [nickname, setNickname] = useState(stateNickname ?? "");
   const [field, setField] = useState("");
   const [bio, setBio] = useState("");
   const [githubad, setGithubad] = useState("");
@@ -18,6 +22,21 @@ const SignPageOauth = () => {
   const [fieldError, setFieldError] = useState("");
   const [bioError, setBioError] = useState("");
   const [formError, setFormError] = useState("");
+
+  // 새로고침 폴백: 콜백에서 저장한 세션 값 복구
+  useEffect(() => {
+    if (userId != null && nickname) return;
+    try {
+      const raw = sessionStorage.getItem("oauth_payload");
+      if (raw) {
+        const p = JSON.parse(raw) as { userId?: number; nickname?: string };
+        if (p?.userId && !userId) setUserId(p.userId);
+        if (p?.nickname && !nickname) setNickname(p.nickname);
+      }
+    } catch (err) {
+      console.debug("oauth_payload sessionStorage get/parse failed:", err);
+    }
+  }, [userId, nickname]);
 
   const validateForm = () => {
     let valid = true;
@@ -48,7 +67,7 @@ const SignPageOauth = () => {
 
     try {
       const payload: OauthRegisterRequest = {
-        userId: 0, // 수정 필요
+        userId: userId!, // 🔹 서버가 URL로 준 userId 사용
         nickname,
         field,
         bio,
@@ -56,7 +75,7 @@ const SignPageOauth = () => {
       };
 
       await postOauthRegister(payload);
-      navigate(PATH.LOGIN);
+      navigate(PATH.HOME, { replace: true });
     } catch (error: any) {
       console.error("회원가입 실패:", error);
       if (error.response?.data?.message) {

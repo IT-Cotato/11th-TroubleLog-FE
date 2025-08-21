@@ -2,6 +2,9 @@ import axios, { AxiosError } from "axios";
 import { router } from "@/routes/Router";
 import { PATH } from "@/constants/paths";
 
+const isAuthCallbackPath = (p: string) =>
+  p.startsWith(PATH.OAUTH_REGISTER) || p.startsWith(PATH.OAUTH_POPUP);
+
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(
   /\/+$/,
   ""
@@ -145,6 +148,11 @@ const resId = api.interceptors.response.use(
     const notJson = !!ct && !ct.includes("application/json");
     const tokenExists = !!localStorage.getItem("accessToken");
 
+    // 콜백 라우트에서는 어떤 전역 네비게이션도 하지 않음
+    if (isAuthCallbackPath(window.location.pathname)) {
+      return res;
+    }
+
     if ((redirectedToKakao || notJson) && !tokenExists) {
       void navigateToAuthGuardOnce(401);
     }
@@ -162,6 +170,11 @@ const resId = api.interceptors.response.use(
     const reqOrigin = isAbsolute ? getOriginSafely(String(reqUrl)) : API_ORIGIN;
     const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
     if (isExternalAbsolute) return Promise.reject(error);
+
+    // 콜백 라우트에서는 전역 404/401/403 처리 및 리프레시 무시
+    if (isAuthCallbackPath(window.location.pathname)) {
+      return Promise.reject(error);
+    }
 
     // 404 → /404 (기존)
     const isGET = (cfg.method ?? "get").toUpperCase() === "GET";
