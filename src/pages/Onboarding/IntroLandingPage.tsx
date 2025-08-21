@@ -37,7 +37,7 @@ export default function IntroLandingPage() {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // ✅ 선택된 카드(i)를 뷰포트 "가운데"로 정확히 스크롤 (패딩/갭/뷰폭 무관)
+  // 선택된 카드(i)를 뷰포트 "가운데"로 정확히 스크롤 (패딩/갭/뷰폭 무관)
   const centerActive = useCallback((i: number) => {
     const vp = viewportRef.current;
     const el = itemRefs.current[i];
@@ -120,7 +120,6 @@ export default function IntroLandingPage() {
           </div>
         </section>
 
-        {/* ⬇︎ 여기부터 전체를 감싸는 그라데이션 */}
         <div className="bg-gradient-to-b from-white via-[#F4ECFF] to-[#E6D4FF]">
           {/* 작성 가이드 섹션 */}
           <section className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 py-16 sm:py-20 lg:py-28 grid lg:grid-cols-2 gap-12 items-center">
@@ -140,7 +139,7 @@ export default function IntroLandingPage() {
               />
             </div>
 
-            <div className="order-1 lg:order-2 text-left space-y-5 sm:space-y-6">
+            <div className="order-1 lg:order-2 text-left space-y-5 sm:space-y-6 lg:pl-16 xl:pl-24 2xl:pl-32">
               <h2 className="text-head-32-bold text-primary whitespace-pre-line leading-relaxed sm:leading-9">
                 {`쉽고 
 명확하게
