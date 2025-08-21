@@ -1,8 +1,17 @@
 import MDEditor, { type ICommand } from "@uiw/react-md-editor";
+import "@uiw/react-md-editor/markdown-editor.css";
+import "@uiw/react-markdown-preview/markdown.css";
+
 import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
-import { useLayoutEffect, useRef, useState, useEffect } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 export interface BlockData {
   id: number;
@@ -45,7 +54,9 @@ export type EditorBlockProps = {
 };
 
 const MIN_H = 200;
-const MAX_H = 2000;
+const MAX_H = 20000;
+const clamp = (n: number, lo: number, hi: number) =>
+  Math.max(lo, Math.min(hi, n));
 
 const EditorBlock = ({
   block,
@@ -69,42 +80,101 @@ const EditorBlock = ({
   commandsFilter,
 }: EditorBlockProps) => {
   const [editorHeight, setEditorHeight] = useState<number>(MIN_H);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  const autosizeToContent = () => {
-    const ta = wrapRef.current?.querySelector(
+  const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const editorWrapRef = useRef<HTMLDivElement | null>(null);
+
+  const autosize = useCallback(() => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const prevTaH = ta.style.height;
+    ta.style.height = "auto";
+
+    const taScrollH = ta.scrollHeight;
+
+    const editorRoot = ta.closest(".w-md-editor") as HTMLElement | null;
+    const toolbar = editorRoot?.querySelector(
+      ".w-md-editor-toolbar"
+    ) as HTMLElement | null;
+    const bottombar = editorRoot?.querySelector(
+      ".w-md-editor-bar"
+    ) as HTMLElement | null;
+
+    const toolbarH = toolbar?.offsetHeight ?? 0;
+    const bottombarH = bottombar?.offsetHeight ?? 0;
+
+    // textarea
+    const taCS = getComputedStyle(ta);
+    const taVPad =
+      (parseFloat(taCS.paddingTop || "0") || 0) +
+      (parseFloat(taCS.paddingBottom || "0") || 0);
+
+    // textarea 부모
+    const taWrap = ta.parentElement as HTMLElement | null;
+    const wrapCS = taWrap ? getComputedStyle(taWrap) : null;
+    const wrapVPad = wrapCS
+      ? (parseFloat(wrapCS.paddingTop || "0") || 0) +
+        (parseFloat(wrapCS.paddingBottom || "0") || 0)
+      : 0;
+
+    // 에디터 루트 보더/패딩
+    const rootCS = editorRoot ? getComputedStyle(editorRoot) : null;
+    const rootVPad =
+      (rootCS ? parseFloat(rootCS.paddingTop || "0") : 0) +
+      (rootCS ? parseFloat(rootCS.paddingBottom || "0") : 0);
+    const rootVBorder =
+      (rootCS ? parseFloat(rootCS.borderTopWidth || "0") : 0) +
+      (rootCS ? parseFloat(rootCS.borderBottomWidth || "0") : 0);
+
+    // 여유분(렌더 오차/간격용)
+    const fudge = 16;
+
+    const chrome =
+      toolbarH +
+      bottombarH +
+      taVPad +
+      wrapVPad +
+      rootVPad +
+      rootVBorder +
+      fudge;
+
+    const next = clamp(taScrollH + chrome, MIN_H, MAX_H);
+    setEditorHeight((h) => (h === next ? h : next));
+
+    ta.style.height = prevTaH;
+  }, []);
+
+  const attachTextareaRef = useCallback(() => {
+    if (taRef.current) return;
+    const root = editorWrapRef.current;
+    if (!root) return;
+
+    const ta = root.querySelector(
       "textarea.w-md-editor-text-input"
     ) as HTMLTextAreaElement | null;
-    if (!ta) return;
-    ta.style.height = "auto";
-    const needed = ta.scrollHeight;
-    const next = Math.max(MIN_H, Math.min(MAX_H, needed + 24));
-    setEditorHeight(next);
-  };
+
+    if (ta) {
+      taRef.current = ta;
+      requestAnimationFrame(autosize);
+    }
+  }, [autosize]);
 
   useLayoutEffect(() => {
-    autosizeToContent();
-    const t = setTimeout(autosizeToContent, 0);
-    return () => clearTimeout(t);
-  }, [block.content, isActive]);
-
-  const applyWrapperHeight = () => {
-    const h = wrapRef.current?.getBoundingClientRect().height;
-    if (!h) return;
-    setEditorHeight(Math.max(MIN_H, Math.min(MAX_H, Math.round(h))));
-  };
+    const id = requestAnimationFrame(() => {
+      attachTextareaRef();
+      autosize();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [attachTextareaRef, autosize, isActive, block.content]);
 
   useEffect(() => {
-    const ta = wrapRef.current?.querySelector(
-      "textarea.w-md-editor-text-input"
-    ) as HTMLTextAreaElement | null;
-    if (!ta || !("ResizeObserver" in window)) return;
-    const ro = new ResizeObserver(() => {
-      requestAnimationFrame(autosizeToContent);
-    });
-    ro.observe(ta);
+    const target = editorWrapRef.current;
+    if (!target || !("ResizeObserver" in window)) return;
+
+    const ro = new ResizeObserver(() => requestAnimationFrame(autosize));
+    ro.observe(target);
     return () => ro.disconnect();
-  }, []);
+  }, [autosize]);
 
   return (
     <div
@@ -112,6 +182,7 @@ const EditorBlock = ({
       onClick={() => onActivate(index)}
     >
       <div className="flex-1 min-w-0 flex flex-col gap-4 md:gap-5">
+        {/* 질문 + 액션 */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <span className="font-bold text-black text-lg sm:text-xl md:text-2xl">
             {block.question}
@@ -123,14 +194,7 @@ const EditorBlock = ({
                 disabled={!!isSaving || !canSave}
                 onClick={async () => {
                   try {
-                    if (!canSave) {
-                      onShowAlert?.();
-                      return;
-                    }
-                    if (!onSave) {
-                      onShowAlert?.();
-                      return;
-                    }
+                    if (!canSave || !onSave) return onShowAlert?.();
                     const ok = await onSave();
                     if (ok) onShowSaveAlert?.();
                   } catch (e) {
@@ -165,39 +229,49 @@ const EditorBlock = ({
           )}
         </div>
 
-        <div data-color-mode="light">
+        {/* 편집 / 프리뷰 분리 */}
+        {isActive ? (
           <div
-            ref={wrapRef}
-            className="w-full resize-y overflow-visible rounded-md border border-gray-200"
-            style={{ minHeight: MIN_H, maxHeight: MAX_H, height: editorHeight }}
-            onMouseUp={applyWrapperHeight}
-            onTouchEnd={applyWrapperHeight}
+            ref={editorWrapRef}
+            className="w-full overflow-visible rounded-md border border-gray-200"
           >
             <MDEditor
               value={block.content}
               onChange={(val) => {
                 onChange(index, { content: val || "" });
-                setTimeout(autosizeToContent, 0);
+                requestAnimationFrame(autosize);
               }}
               height={editorHeight}
-              preview={isActive ? "edit" : "preview"}
+              preview="edit"
+              visibleDragbar={false}
               style={{ width: "100%", border: "none" }}
-              autoFocus={isActive}
+              autoFocus
               commandsFilter={commandsFilter}
               textareaProps={{
-                onPaste: (e) => onPasteImage?.(block.id, e),
-                onDrop: (e) => onDropImage?.(block.id, e),
+                onInput: () => requestAnimationFrame(autosize),
+                onPaste: (e) => {
+                  onPasteImage?.(block.id, e);
+                  requestAnimationFrame(autosize);
+                },
+                onDrop: (e) => {
+                  onDropImage?.(block.id, e);
+                  requestAnimationFrame(autosize);
+                },
                 onDragOver: (e) => {
-                  // 드래그 파일 드롭 허용
                   if (e.dataTransfer?.types?.includes("Files"))
                     e.preventDefault();
                 },
               }}
             />
           </div>
-        </div>
+        ) : (
+          <div className="w-full rounded-md border border-gray-200 p-3">
+            <MDEditor.Markdown source={block.content || ""} />
+          </div>
+        )}
       </div>
 
+      {/* 체크리스트 */}
       <div className="w-full md:w-60 lg:w-72 mt-2 md:mt-10 flex-shrink-0">
         <div className="flex flex-col gap-2">
           {block.checklistItems.length > 0 && (
@@ -207,16 +281,10 @@ const EditorBlock = ({
             </h3>
           )}
           <div className="flex flex-col gap-2">
-            {block.checklistItems.map((item: string, idx: number) => (
+            {block.checklistItems.map((item) => (
               <label
                 key={item}
-                className={`flex items-start gap-2 cursor-pointer ${
-                  idx % 3 === 0
-                    ? "text-sm"
-                    : idx % 3 === 1
-                    ? "text-sm"
-                    : "text-sm"
-                } text-gray-700`}
+                className="flex items-start gap-2 cursor-pointer text-sm text-gray-700"
               >
                 <input
                   type="checkbox"
@@ -232,8 +300,8 @@ const EditorBlock = ({
                     ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
                   }}
                   className="inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-                           [background-image:var(--icon-unchecked)]
-                           peer-checked:[background-image:var(--icon-checked)]"
+                             [background-image:var(--icon-unchecked)]
+                             peer-checked:[background-image:var(--icon-checked)]"
                 />
                 <span className="leading-5">{item}</span>
               </label>

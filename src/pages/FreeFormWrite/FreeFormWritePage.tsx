@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import DropDownButton from "@/components/Button/DropDownButton";
 import CategoryTag from "@/components/TemplateWrite/CategoryTag";
@@ -447,7 +447,6 @@ export default function FreeFormWritePage() {
     try {
       if (isResume) {
         // --- 수정 모드 ---
-        // 요약은 서버가 수정까지 처리하므로 여기선 수정 API 호출 안함
         setCreatedPostId(resumePostId); // 이후 흐름에서 사용
         setIsTemplateSelectModalOpen(true);
       } else {
@@ -719,6 +718,85 @@ export default function FreeFormWritePage() {
     );
   };
 
+  // ---------- (추가) 오토사이즈 상태/로직 ----------
+  const [editorHeights, setEditorHeights] = useState<Record<number, number>>(
+    {}
+  );
+  const editorWrapRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  const autosizeFor = useCallback((blockId: number) => {
+    const root = editorWrapRefs.current.get(blockId);
+    if (!root) return;
+
+    const ta = root.querySelector(
+      "textarea.w-md-editor-text-input"
+    ) as HTMLTextAreaElement | null;
+    if (!ta) return;
+
+    // textarea 실제 내용 높이 측정
+    const prev = ta.style.height;
+    ta.style.height = "auto";
+    const taScrollH = ta.scrollHeight;
+
+    // 크롬(툴바/바텀바/패딩/보더) 높이 합산
+    const editorRoot = ta.closest(".w-md-editor") as HTMLElement | null;
+    const toolbar = editorRoot?.querySelector(
+      ".w-md-editor-toolbar"
+    ) as HTMLElement | null;
+    const bottombar = editorRoot?.querySelector(
+      ".w-md-editor-bar"
+    ) as HTMLElement | null;
+
+    const toolbarH = toolbar?.offsetHeight ?? 0;
+    const bottombarH = bottombar?.offsetHeight ?? 0;
+
+    const taCS = getComputedStyle(ta);
+    const taVPad =
+      (parseFloat(taCS.paddingTop || "0") || 0) +
+      (parseFloat(taCS.paddingBottom || "0") || 0);
+
+    const taWrap = ta.parentElement as HTMLElement | null;
+    const wrapCS = taWrap ? getComputedStyle(taWrap) : null;
+    const wrapVPad = wrapCS
+      ? (parseFloat(wrapCS.paddingTop || "0") || 0) +
+        (parseFloat(wrapCS.paddingBottom || "0") || 0)
+      : 0;
+
+    const rootCS = editorRoot ? getComputedStyle(editorRoot) : null;
+    const rootVPad =
+      (rootCS ? parseFloat(rootCS.paddingTop || "0") : 0) +
+      (rootCS ? parseFloat(rootCS.paddingBottom || "0") : 0);
+    const rootVBorder =
+      (rootCS ? parseFloat(rootCS.borderTopWidth || "0") : 0) +
+      (rootCS ? parseFloat(rootCS.borderBottomWidth || "0") : 0);
+
+    const chrome =
+      toolbarH + bottombarH + taVPad + wrapVPad + rootVPad + rootVBorder + 16;
+
+    const next = Math.max(200, Math.min(20000, taScrollH + chrome));
+    setEditorHeights((prevHeights) =>
+      prevHeights[blockId] === next
+        ? prevHeights
+        : { ...prevHeights, [blockId]: next }
+    );
+
+    ta.style.height = prev;
+  }, []);
+
+  useEffect(() => {
+    const recalcAll = () => {
+      for (const b of blocks) requestAnimationFrame(() => autosizeFor(b.id));
+    };
+    window.addEventListener("resize", recalcAll);
+    return () => window.removeEventListener("resize", recalcAll);
+  }, [blocks, autosizeFor]);
+
+  useEffect(() => {
+    // 블록 개수 변경 시 1프레임 뒤 초기 계산
+    for (const b of blocks) requestAnimationFrame(() => autosizeFor(b.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks.length]);
+
   // 이미지 업로드 - 드래그 앤 드롭
   const insertImageMarkdown = (blockId: number, url: string) => {
     setBlocks((prev) =>
@@ -743,6 +821,8 @@ export default function FreeFormWritePage() {
         insertImageMarkdown(blockId, url);
       } catch {
         setStatusMessage("이미지 업로드에 실패했어요.");
+      } finally {
+        requestAnimationFrame(() => autosizeFor(blockId));
       }
     }
   };
@@ -759,6 +839,8 @@ export default function FreeFormWritePage() {
         insertImageMarkdown(blockId, url);
       } catch {
         setStatusMessage("이미지 업로드에 실패했어요.");
+      } finally {
+        requestAnimationFrame(() => autosizeFor(blockId));
       }
     }
   };
@@ -796,7 +878,6 @@ export default function FreeFormWritePage() {
           insertImage(state, api, url);
         } catch {
           // 필요시 상태 메시지/토스트 처리
-          // setStatusMessage("이미지 업로드에 실패했어요.");
         }
       };
 
@@ -958,29 +1039,48 @@ export default function FreeFormWritePage() {
                   />
                 </div>
 
-                <MDEditor
-                  className="mt-2"
-                  value={block.content}
-                  onChange={(val?: string) =>
-                    handleChangeBlock(block.id, "content", val ?? "")
-                  }
-                  preview="edit"
-                  textareaProps={{
-                    onPaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) =>
-                      handlePasteImage(block.id, e),
-                    onDrop: (e: React.DragEvent<HTMLTextAreaElement>) =>
-                      handleDropImage(block.id, e),
-                    onDragOver: (e: React.DragEvent<HTMLTextAreaElement>) => {
-                      if (e.dataTransfer?.types?.includes("Files")) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }
-                    },
+                {/* 🔹 오토사이즈 래퍼 + height 주입 */}
+                <div
+                  ref={(el) => {
+                    if (el) editorWrapRefs.current.set(block.id, el);
+                    else editorWrapRefs.current.delete(block.id);
+                    requestAnimationFrame(() => autosizeFor(block.id));
                   }}
-                  commandsFilter={(cmd: ICommand): ICommand =>
-                    cmd.keyCommand === "image" ? imageUploadCmd : cmd
-                  }
-                />
+                  className="mt-2"
+                >
+                  <MDEditor
+                    value={block.content}
+                    onChange={(val?: string) => {
+                      handleChangeBlock(block.id, "content", val ?? "");
+                      requestAnimationFrame(() => autosizeFor(block.id));
+                    }}
+                    preview="edit"
+                    height={editorHeights[block.id] ?? 200}
+                    textareaProps={{
+                      onPaste: (
+                        e: React.ClipboardEvent<HTMLTextAreaElement>
+                      ) => {
+                        handlePasteImage(block.id, e);
+                        requestAnimationFrame(() => autosizeFor(block.id));
+                      },
+                      onDrop: (e: React.DragEvent<HTMLTextAreaElement>) => {
+                        handleDropImage(block.id, e);
+                        requestAnimationFrame(() => autosizeFor(block.id));
+                      },
+                      onInput: () =>
+                        requestAnimationFrame(() => autosizeFor(block.id)),
+                      onDragOver: (e: React.DragEvent<HTMLTextAreaElement>) => {
+                        if (e.dataTransfer?.types?.includes("Files")) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      },
+                    }}
+                    commandsFilter={(cmd: ICommand): ICommand =>
+                      cmd.keyCommand === "image" ? imageUploadCmd : cmd
+                    }
+                  />
+                </div>
               </div>
             ))}
 
