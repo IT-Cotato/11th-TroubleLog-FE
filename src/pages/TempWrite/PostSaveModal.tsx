@@ -211,9 +211,9 @@ export default function PostSaveModal({
       </div>
 
       <div className="flex w-full xl:px-4 flex-col gap-6 md:gap-4">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-6 md:gap-28">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-6 md:gap-24">
           {/* 썸네일 업로더: 모바일/태블릿은 w-full, 데스크탑부터 고정 폭 */}
-          <div className="relative flex w-full lg:w-[300px] xl:w-[360px] h-40 sm:h-48 md:h-[180px] overflow-hidden justify-center items-center border-dashed border-2 border-gray1 bg-[#FCFCFC] rounded-[16px]">
+          <div className="relative flex w-full  lg:w-[300px] xl:w-[360px] h-40 sm:h-48 md:h-[150px] overflow-hidden justify-center items-center border-dashed border-2 border-gray1 bg-[#FCFCFC] rounded-[16px]">
             {tempPreview || thumbnail ? (
               <img
                 src={tempPreview ?? thumbnail!}
