@@ -267,36 +267,26 @@ export default function PreviewPage() {
     );
   }
 
+  const CONTENT_MAX_PX = 900;
+  const CONTENT_HALF_PX = CONTENT_MAX_PX / 2;
+  const GUTTER_PX = 40; // 본문 오른쪽이랑 목차
+  const HEADER_OFFSET = 600; // 헤더랑 높이 사이 거리
+
   return (
     <div>
       <HeaderWoSearch />
 
-      {/* 오른쪽 목차 */}
-      <div className="fixed right-[89px] top-[520px] z-30 hidden xl:block">
-        <nav className="flex flex-col items-start gap-[16px] border-l border-gray3 pl-[12px] pr-[8px] py-[8px] rounded-lg bg-white/70 backdrop-blur-sm text-body-20-regular text-gray3">
-          {base.questions.map((q, idx) => (
-            <button
-              key={idx}
-              onClick={() => scrollToSection(idx)}
-              className={`text-left hover:text-black ${
-                currentSection === idx ? "text-black" : ""
-              }`}
-            >
-              {idx + 1}. {q}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* 본문 */}
-      <div className="flex flex-col">
-        <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
+      {/* 전체 패딩 컨테이너 */}
+      <div className="px-4 sm:px-6 lg:px-10">
+        {/* 본문: 가운데 정렬 */}
+        <main className="mx-auto max-w-[1200px] lg:w-[900px] flex flex-col gap-14 sm:gap-[56px] mb-20 sm:mb-[224px]">
           {/* 상단 */}
-          <div className="flex w-full pt-[180px] pb-[18px] items-center border-b border-gray1">
-            <div className="flex flex-col items-start gap-[44px]">
-              <div className="flex flex-col items-start gap-[53px]">
-                <div className="flex flex-col items-start gap-[10px]">
-                  <div className="flex w-[1200px] justify-between items-start">
+          <section className="w-full pt-16 sm:pt-24 lg:pt-20 pb-4 sm:pb-[18px] border-b border-gray1">
+            <div className="flex flex-col items-start gap-8 sm:gap-[44px] w-full">
+              <div className="flex flex-col items-start gap-8 sm:gap-[53px] w-full">
+                <div className="flex flex-col items-start gap-[10px] w-full">
+                  {/* 에러 유형 + 케밥 버튼 */}
+                  <div className="flex w-full justify-between items-start">
                     <span className="text-head-20-semibold">
                       {base.errorType}
                     </span>
@@ -374,11 +364,13 @@ export default function PreviewPage() {
                     )}
                   </div>
 
-                  <div className="text-head-48">{base.title}</div>
+                  {/* 제목 */}
+                  <h1 className="text-head-48 break-words">{base.title}</h1>
                 </div>
 
+                {/* 태그 + 작성일 */}
                 {(base.tags.length || base.date) && (
-                  <div className="flex items-center gap-[16px]">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-[16px]">
                     {base.tags.length ? (
                       <TagList tags={base.tags} variant="post" />
                     ) : null}
@@ -386,32 +378,35 @@ export default function PreviewPage() {
                       <div className="text-body-16-regular text-gray3">·</div>
                     ) : null}
                     {base.date && (
-                      <div className="text-body-20-regular text-gray3">
+                      <time className="text-body-20-regular text-gray3">
                         {base.date}
-                      </div>
+                      </time>
                     )}
                   </div>
                 )}
               </div>
 
-              <div className="flex w-full items-center justify-between">
-                <div
-                  className="flex items-center gap-[20px] cursor-pointer"
+              {/* 작성자 정보 + 중요도 */}
+              <div className="flex w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <button
+                  type="button"
+                  className="flex items-center gap-[14px] sm:gap-[20px] cursor-pointer"
                   onClick={handleProfileClick}
                 >
                   <img
                     src={base.authorProfile || imageIcon}
                     onError={(e) => (e.currentTarget.src = imageIcon)}
                     alt="profile"
-                    className="w-[66px] h-[66px] rounded-full object-cover"
+                    className="w-12 h-12 sm:w-[66px] sm:h-[66px] rounded-full object-cover"
                   />
                   <div className="text-head-24-bold">{base.authorName}</div>
-                </div>
+                </button>
+
                 <div className="flex items-center gap-[8px]">
                   <img
                     src={starIcon}
                     alt="star"
-                    className="w-[24px] h-[24px]"
+                    className="w-5 h-5 sm:w-[24px] sm:h-[24px]"
                   />
                   <div className="text-body-20-regular text-gray3">
                     {base.importance}
@@ -419,18 +414,18 @@ export default function PreviewPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* 섹션 */}
-          <div className="flex w-full flex-col items-start gap-[8px]">
-            <div className="flex flex-col items-start gap-[36px] self-stretch">
+          {/* 본문 섹션들 */}
+          <section className="flex w-full flex-col items-start gap-2">
+            <div className="flex flex-col items-start gap-9 self-stretch">
               <div className="flex flex-col items-start self-stretch">
-                <div className="flex flex-col items-start gap-[48px] self-stretch">
+                <div className="flex flex-col items-start gap-12 self-stretch">
                   {base.questions.map((q, idx) => (
                     <div
                       id={`section-${idx}`}
                       key={idx}
-                      className="scroll-mt-[200px]"
+                      className="scroll-mt-28 md:scroll-mt-[200px]"
                     >
                       <PostGuideMd question={q} content={base.contents[idx]} />
                     </div>
@@ -439,46 +434,54 @@ export default function PreviewPage() {
               </div>
 
               {/* 좋아요/공유 */}
-              <div className="flex pt+[52px] pb-[20px] items-center self-stretch border-b border-gray1">
-                <div className="flex items-center gap-[20px]">
+              <div className="flex pt-8 sm:pt-[52px] pb-5 sm:pb-[20px] items-center self-stretch border-b border-gray1">
+                <div className="flex items-center gap-4 sm:gap-[20px]">
                   <button
-                    className="flex items-center gap-[8px]"
+                    className="flex items-center gap-2 sm:gap-[8px]"
                     onClick={handleToggleLike}
+                    aria-pressed={isLiked}
                   >
                     <img
                       src={isLiked ? heartIcon : likeEmptyIcon}
                       alt="like"
-                      className="w-[40px] h-[40px]"
+                      className="w-8 h-8 sm:w-10 sm:h-10"
                     />
-                    <div className="text-body-20-regular text-gray3">
+                    <span className="text-body-20-regular text-gray3">
                       {likeCounts}
-                    </div>
+                    </span>
                   </button>
-                  <img
-                    src={shareIcon}
-                    alt="share"
-                    className="w-[40px] h-[40px]"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => navigator.share?.() ?? null}
+                    className="cursor-pointer"
+                    aria-label="공유"
+                  >
+                    <img
+                      src={shareIcon}
+                      alt="share"
+                      className="w-8 h-8 sm:w-10 sm:h-10"
+                    />
+                  </button>
                 </div>
               </div>
 
               {/* 댓글 입력 */}
-              <div className="flex flex-col items-end gap-[12px] self-stretch">
-                <div className="flex flex-col items-start gap-[36px] self-stretch">
-                  <div className="text-head-32-semibold">
+              <div className="flex flex-col items-end gap-3 sm:gap-[12px] self-stretch">
+                <div className="flex flex-col items-start gap-6 sm:gap-[36px] self-stretch">
+                  <h2 className="text-head-32-semibold">
                     {comments.filter((c) => !c.isReply).length}개의 댓글
-                  </div>
+                  </h2>
                   <textarea
                     value={commentInput}
                     onChange={(e) => setCommentInput(e.target.value)}
                     placeholder="댓글을 작성해주세요."
-                    className="flex pt-[28px] pl-[32px] pb-[130px] w-full items-start self-stretch resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
+                    className="flex p-4 sm:pt-[28px] sm:pl-[32px] pb-24 sm:pb-[130px] w-full resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
                   />
                 </div>
                 <button
                   onClick={handleCreateComment}
                   disabled={!commentInput.trim()}
-                  className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
+                  className={`flex px-6 sm:pl-[32px] sm:pr-[31px] py-2 justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
                     commentInput.trim() ? "bg-primary" : "bg-subColor1"
                   }`}
                 >
@@ -521,8 +524,34 @@ export default function PreviewPage() {
                   ))}
               </div>
             </div>
-          </div>
-        </div>
+          </section>
+        </main>
+
+        {/* 고정 TOC */}
+        <nav
+          className="hidden xl:block fixed z-30 w-[260px] 2xl:w-[320px]
+              flex-col items-stretch gap-4    
+             border-l border-gray3 pl-3 pr-2 py-2 rounded-lg
+             bg-white/70 backdrop-blur-sm
+             text-body-20-regular text-gray3"
+          style={{
+            top: HEADER_OFFSET,
+            left: `calc(50% + ${CONTENT_HALF_PX}px + ${GUTTER_PX}px)`,
+          }}
+        >
+          {base.questions.map((q, idx) => (
+            <button
+              key={idx}
+              onClick={() => scrollToSection(idx)}
+              className={`block w-full text-left 
+                  hover:text-black ${
+                    currentSection === idx ? "text-black" : ""
+                  }`}
+            >
+              {idx + 1}. {q}
+            </button>
+          ))}
+        </nav>
       </div>
     </div>
   );

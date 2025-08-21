@@ -9,8 +9,8 @@ type GuideContent = string | ImageItem;
 export default function PostGuideMd({
   question,
   content,
-  widthClass = "w-full sm:w-[600px] md:w-[720px] lg:w-[920px] xl:w-[1200px]",
-  proseSize = "lg", // 기본은 살짝 키운 크기
+  widthClass = "w-full sm:w-[600px] md:w-[720px] lg:w-[900px] ",
+  proseSize = "lg",
 }: {
   question: string;
   content: GuideContent[];
@@ -21,33 +21,39 @@ export default function PostGuideMd({
     proseSize === "xl" ? "prose-xl" : proseSize === "lg" ? "prose-lg" : "prose";
 
   return (
-    <section className={`${widthClass}`}>
+    <section className={widthClass}>
       <div className="text-head-24-bold mb-6 break-words">{question}</div>
 
-      {/* 마크다운 + 이미지 컨테이너: 내부는 항상 부모 고정 폭을 꽉 채움 */}
+      {/* 마크다운 + 이미지 컨테이너 */}
       <div
         className={[
           "prose",
           proseScale,
-          "max-w-none",
+          "max-w-none w-full",
           widthClass,
-          "flex flex-col gap-[10px] rounded-[20px] bg-white shadow-card p-[32px]",
+          "flex flex-col gap-2 sm:gap-3 rounded-[20px] bg-white shadow-card p-4 sm:p-6 md:p-8",
+
+          "prose-headings:break-words prose-p:break-words prose-li:break-words",
+          "prose-pre:overflow-x-auto prose-pre:text-sm md:prose-pre:text-base",
+          "prose-code:whitespace-pre-wrap",
+          "prose-img:rounded-lg prose-img:my-4 prose-img:max-w-full prose-img:h-auto",
+          "prose-table:overflow-x-auto",
+
           "prose-p:leading-relaxed md:prose-p:leading-loose",
           "prose-li:leading-relaxed md:prose-li:leading-loose",
-          "prose-pre:text-sm md:prose-pre:text-base",
         ].join(" ")}
         data-color-mode="light"
       >
         {content.map((item, i) => {
           if (typeof item === "string") {
             return (
-              <MDEditor.Markdown
-                key={i}
-                source={item}
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                style={{ width: "1150px" }}
-              />
+              <div key={i} className="w-full">
+                <MDEditor.Markdown
+                  source={item}
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                />
+              </div>
             );
           }
 

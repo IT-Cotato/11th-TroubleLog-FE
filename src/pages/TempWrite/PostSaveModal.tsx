@@ -210,9 +210,9 @@ export default function PostSaveModal({
         </button>
       </div>
 
-      <div className="flex w-full xl: px-4 flex-col gap-6 md:gap-8">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-6 md:gap-16">
-          <div className="relative flex w-full lg:w-[300px] xl:w-[330px] h-40 sm:w-48 md:w-[150px] md:h-[150px] overflow-hidden justify-center items-center border-dashed border-2 border-gray1 bg-[#FCFCFC] rounded-[16px]">
+      <div className="flex w-full xl: px-4 flex-col gap-6 md:gap-4">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-6 md:gap-28">
+          <div className="relative flex w-full lg:w-[300px] xl:w-[360px] h-40 sm:w-48 md:w-[160px] md:h-[150px] overflow-hidden justify-center items-center border-dashed border-2 border-gray1 bg-[#FCFCFC] rounded-[16px]">
             {tempPreview || thumbnail ? (
               <img
                 src={tempPreview ?? thumbnail!}
@@ -285,7 +285,7 @@ export default function PostSaveModal({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 pt-4">
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-10">
             <div className="flex flex-col gap-2">
               <span className="text-head-20-semibold text-black">에러타입</span>
               <div className="w-full px-4 py-3 border rounded border-purple-300 bg-white">
@@ -341,7 +341,7 @@ export default function PostSaveModal({
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={200}
                 placeholder="포스트를 짧게 소개해주세요."
-                className="w-full h-28 resize-none p-3 border border-gray1 rounded-[8px] text-body-14-regular"
+                className="w-full h-24 resize-none p-3 border border-gray1 rounded-[8px] text-body-14-regular"
               />
               <div className="text-right text-caption-12-regular text-gray2 mt-1">
                 {description.length}/200
