@@ -299,11 +299,11 @@ export default function CommunityPostDetail() {
         thumbnail: detail?.thumbnailUrl ?? null,
       },
       projectId: detail?.projectId ?? undefined,
-      // 서버에서 받은 체크리스트 ID 배열을 그대로 전달
-      initialChecklistErrorIds: Array.isArray(detail?.checklistError)
+      // TempWritePage에서 기대하는 키 이름으로 전달
+      checklistError: Array.isArray(detail?.checklistError)
         ? detail.checklistError
         : [],
-      initialChecklistReasonIds: Array.isArray(detail?.checklistReason)
+      checklistReason: Array.isArray(detail?.checklistReason)
         ? detail.checklistReason
         : [],
     };

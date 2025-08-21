@@ -33,6 +33,57 @@ import {
   type TextState,
 } from "@uiw/react-md-editor";
 
+// ---- 숫자 인덱스 변환 유틸 ----
+const QI = { ERROR: 0, REASON: 1 } as const;
+const OFFSET: 0 | 1 = 0; // 서버가 1-based면 1로 변경
+
+const Q_ERROR = questionData[QI.ERROR]?.question;
+const Q_REASON = questionData[QI.REASON]?.question;
+
+function encodeChecklistToNumbers(bs: BlockData[]) {
+  const errorItems = questionData[QI.ERROR]?.checklistItems ?? [];
+  const reasonItems = questionData[QI.REASON]?.checklistItems ?? [];
+
+  const err = new Set<number>();
+  const rea = new Set<number>();
+
+  for (const b of bs) {
+    const q = String((b as any).question ?? "");
+    const selected: string[] = Array.isArray((b as any).checklist)
+      ? (b as any).checklist
+      : [];
+    if (!selected.length) continue;
+
+    if (q === Q_ERROR) {
+      selected.forEach((s) => {
+        const i = errorItems.indexOf(s);
+        if (i >= 0) err.add(i + OFFSET);
+      });
+    } else if (q === Q_REASON) {
+      selected.forEach((s) => {
+        const i = reasonItems.indexOf(s);
+        if (i >= 0) rea.add(i + OFFSET);
+      });
+    }
+  }
+
+  return {
+    checklistError: [...err].sort((a, b) => a - b), // 순서대로(오름차순)
+    checklistReason: [...rea].sort((a, b) => a - b), // 순서대로(오름차순)
+  };
+}
+
+// 숫자 → 문자열 디코드 유틸
+function decodeChecklistNumbers(nums: number[], kind: "ERROR" | "REASON") {
+  const items =
+    kind === "ERROR"
+      ? questionData[QI.ERROR]?.checklistItems ?? []
+      : questionData[QI.REASON]?.checklistItems ?? [];
+  return (nums ?? [])
+    .map((n) => items[n - OFFSET])
+    .filter((v): v is string => typeof v === "string");
+}
+
 // ---------- 상태 타입 ----------
 type IncomingTemplateState = {
   editorType?: "TEMPLATE";
@@ -70,7 +121,17 @@ const toErrorLabel = (code?: string | null) =>
   code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
 
 // ---------- 체크리스트 ----------
-const enrichBlocksWithChecklist = (blocks: BlockData[]): BlockData[] => {
+const enrichBlocksWithChecklist = (
+  blocks: BlockData[],
+  nums?: { error?: number[]; reason?: number[] } // ← 추가
+): BlockData[] => {
+  const decodedError = nums?.error
+    ? decodeChecklistNumbers(nums.error, "ERROR")
+    : null;
+  const decodedReason = nums?.reason
+    ? decodeChecklistNumbers(nums.reason, "REASON")
+    : null;
+
   return blocks.map((b, i) => {
     const matched =
       questionData.find(
@@ -79,17 +140,25 @@ const enrichBlocksWithChecklist = (blocks: BlockData[]): BlockData[] => {
           q.question === (b as any).checklistTitle
       ) ?? questionData[i];
 
+    const q = (b as any).question ?? matched?.question ?? `질문 ${i + 1}`;
+
+    // 기본 체크리스트(문자열) 확보
+    let checklist: string[] = Array.isArray((b as any).checklist)
+      ? (b as any).checklist
+      : [];
+
+    // 숫자 프리필이 있으면 Q1/Q2에 주입
+    if (q === Q_ERROR && decodedError) checklist = decodedError;
+    if (q === Q_REASON && decodedReason) checklist = decodedReason;
+
     return {
       ...b,
-      question: (b as any).question ?? matched?.question ?? `질문 ${i + 1}`,
-      checklistItems:
-        (b as any).checklistItems && (b as any).checklistItems.length > 0
-          ? (b as any).checklistItems
-          : matched?.checklistItems ?? [],
+      question: q,
+      checklistItems: (b as any).checklistItems?.length
+        ? (b as any).checklistItems
+        : matched?.checklistItems ?? [],
       checklistTitle: (b as any).checklistTitle ?? matched?.title ?? "",
-      checklist: Array.isArray((b as any).checklist)
-        ? (b as any).checklist
-        : [],
+      checklist,
       isSaved: (b as any).isSaved ?? false,
     } as BlockData;
   });
@@ -206,7 +275,12 @@ const TempWritePage = () => {
             null
         );
       if (location.state.blocks?.length) {
-        setBlocks(enrichBlocksWithChecklist(location.state.blocks));
+        setBlocks(
+          enrichBlocksWithChecklist(location.state.blocks, {
+            error: (location.state as any)?.checklistError, // number[]
+            reason: (location.state as any)?.checklistReason, // number[]
+          })
+        );
       }
     }
   }, [location.state]);
@@ -338,6 +412,9 @@ const TempWritePage = () => {
 
     try {
       const canonicalTags = await canonicalizeTags(selectedTags);
+      const { checklistError, checklistReason } =
+        encodeChecklistToNumbers(blocks);
+
       const form = {
         title,
         introduction: payload.description ?? "",
@@ -351,8 +428,8 @@ const TempWritePage = () => {
         thumbnailImageUrl: payload.thumbnail ?? undefined,
         errorTag: selectedErrorType ?? "",
         contents: toContentDtoList(blocks),
-        checklistError: [],
-        checklistReason: [],
+        checklistError,
+        checklistReason,
       };
 
       const id = await upsertPost(currentPostId, form);
@@ -550,6 +627,8 @@ const TempWritePage = () => {
       }
 
       const canonicalTags = await canonicalizeTags(selectedTags);
+      const { checklistError, checklistReason } =
+        encodeChecklistToNumbers(blocks);
 
       const meta: PostSavePayload = {
         importance: previewMeta?.importance ?? 0,
@@ -587,8 +666,8 @@ const TempWritePage = () => {
         thumbnailImageUrl: meta.thumbnail ?? undefined, // 빈문자 대신 undefined
         errorTag: selectedErrorType ?? "",
         contents: toContentDtoList(blocks),
-        checklistError: [],
-        checklistReason: [],
+        checklistError,
+        checklistReason,
       };
 
       const id = await upsertPost(currentPostId, form);

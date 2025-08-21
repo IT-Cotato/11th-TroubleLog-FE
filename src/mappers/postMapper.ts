@@ -36,8 +36,8 @@ export const toCreatePostRequest = (form: PostForm): CreatePostRequest => ({
   projectId: form.projectId,
   errorTagName: form.errorTag,
   contentDtoList: form.contents,
-  checklistError: form.checklistError,
-  checklistReason: form.checklistReason,
+  checklistError: form.checklistError ?? [],
+  checklistReason: form.checklistReason ?? [],
 });
 
 export const toEditPostRequest = (form: PostForm): EditPostRequest => ({
@@ -53,8 +53,8 @@ export const toEditPostRequest = (form: PostForm): EditPostRequest => ({
   projectId: form.projectId,
   errorTagName: form.errorTag,
   contentDtoList: form.contents,
-  checklistError: form.checklistError,
-  checklistReason: form.checklistReason,
+  checklistError: form.checklistError ?? [],
+  checklistReason: form.checklistReason ?? [],
 });
 
 export const toPostForm = (res: ViewPostResponse): PostForm => ({
