@@ -78,7 +78,13 @@ export default function IntroLandingPage() {
   const onTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > SWIPE_THRESHOLD) dx > 0 ? prev() : next();
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+      if (dx > 0) {
+        prev();
+      } else {
+        next();
+      }
+    }
     touchStartX.current = null;
   };
 
