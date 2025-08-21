@@ -1,7 +1,13 @@
 import BaseModal from "../../components/Modal/BaseModal";
 import exitIcon from "@/assets/icons/exiticon.svg";
 
-export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
+type Props = {
+  onClose: () => void;
+  summaryId?: number;
+  postId?: number;
+};
+
+export default function PostSuccessModal({ onClose }: Props) {
   return (
     <BaseModal
       onClose={onClose}
