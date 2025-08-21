@@ -117,14 +117,10 @@ const SignPageOne = () => {
 
   return (
     <div className="flex w-screen h-screen overflow-hidden">
-      <img
-        src={mockimg}
-        alt="login visual"
-        className="w-1/2 h-full object-cover"
-      />
-      <div className="w-[960px] h-full px-[200px] py-[281px] flex flex-col justify-center items-center">
-        <div className="w-[560px] flex flex-col items-center gap-10">
-          <h2 className="text-black text-[48px] font-bold w-full font-pretendard">
+      <img src={mockimg} className="w-1/2 h-full object-fill" />
+      <div className="w-full lg:w-1/2 h-full px-6 sm:px-16 lg:px-[200px] py-12 sm:py-24 lg:py-[281px] flex flex-col justify-center items-center">
+        <div className="w-full max-w-[560px] flex flex-col items-center gap-10">
+          <h2 className="text-black text-3xl sm:text-4xl lg:text-[36px] font-bold w-full font-pretendard">
             회원가입
           </h2>
 

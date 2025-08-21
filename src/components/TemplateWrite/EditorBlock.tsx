@@ -108,63 +108,59 @@ const EditorBlock = ({
 
   return (
     <div
-      className="flex flex-row gap-[25px] pb-[25px]"
+      className="w-full flex flex-col md:flex-row gap-4 md:gap-6 pb-6"
       onClick={() => onActivate(index)}
     >
-      <div className="flex flex-col gap-[16px] w-[1200px]">
-        <div className="flex justify-between items-start">
-          <span className="font-bold text-black text-[24px]">
+      <div className="flex-1 min-w-0 flex flex-col gap-4 md:gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <span className="font-bold text-black text-lg sm:text-xl md:text-2xl">
             {block.question}
           </span>
 
           {isActive && (
-            <div className="flex flex-col items-end gap-2 min-w-[160px]">
-              <div className="flex gap-2">
-                {/* Save */}
-                <button
-                  disabled={!!isSaving || !canSave}
-                  onClick={async () => {
-                    try {
-                      if (!canSave) {
-                        onShowAlert?.();
-                        return;
-                      }
-                      if (!onSave) {
-                        onShowAlert?.();
-                        return;
-                      }
-                      const ok = await onSave();
-                      if (ok) onShowSaveAlert?.();
-                    } catch (e) {
-                      console.error(e);
+            <div className="flex sm:justify-end gap-2">
+              <button
+                disabled={!!isSaving || !canSave}
+                onClick={async () => {
+                  try {
+                    if (!canSave) {
+                      onShowAlert?.();
+                      return;
                     }
-                  }}
-                  className={`px-4 py-2 border rounded-xl text-sm ${
-                    isSaving || !canSave
-                      ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                      : "border-gray-200 text-purple-500 hover:bg-gray-100"
-                  }`}
-                >
-                  {isSaving ? "Saving..." : "Save"}
-                </button>
+                    if (!onSave) {
+                      onShowAlert?.();
+                      return;
+                    }
+                    const ok = await onSave();
+                    if (ok) onShowSaveAlert?.();
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className={`px-3 py-2 border rounded-xl text-sm ${
+                  isSaving || !canSave
+                    ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                    : "border-gray-200 text-purple-500 hover:bg-gray-100"
+                }`}
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </button>
 
-                {/* Next/End */}
-                <button
-                  onClick={() => {
-                    if (isLast) onEnd?.();
-                    else onAddBlock?.();
-                  }}
-                  className={`px-4 py-2 rounded-xl text-sm ${
-                    isLast
-                      ? title.trim() && selectedErrorType
-                        ? "bg-purple-500 text-white hover:bg-purple-600"
-                        : "bg-gray-300 text-white cursor-not-allowed"
-                      : "bg-purple-500 text-white hover:bg-purple-600"
-                  }`}
-                >
-                  {isLast ? "End" : "Next"}
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  if (isLast) onEnd?.();
+                  else onAddBlock?.();
+                }}
+                className={`px-3 py-2 rounded-xl text-sm ${
+                  isLast
+                    ? title.trim() && selectedErrorType
+                      ? "bg-purple-500 text-white hover:bg-purple-600"
+                      : "bg-gray-300 text-white cursor-not-allowed"
+                    : "bg-purple-500 text-white hover:bg-purple-600"
+                }`}
+              >
+                {isLast ? "End" : "Next"}
+              </button>
             </div>
           )}
         </div>
@@ -172,7 +168,7 @@ const EditorBlock = ({
         <div data-color-mode="light">
           <div
             ref={wrapRef}
-            className="resize-y overflow-visible rounded-[8px] border border-gray-200"
+            className="w-full resize-y overflow-visible rounded-md border border-gray-200"
             style={{ minHeight: MIN_H, maxHeight: MAX_H, height: editorHeight }}
             onMouseUp={applyWrapperHeight}
             onTouchEnd={applyWrapperHeight}
@@ -185,7 +181,7 @@ const EditorBlock = ({
               }}
               height={editorHeight}
               preview={isActive ? "edit" : "preview"}
-              style={{ width: "1200px", border: "none" }}
+              style={{ width: "100%", border: "none" }}
               autoFocus={isActive}
               commandsFilter={commandsFilter}
               textareaProps={{
@@ -202,36 +198,48 @@ const EditorBlock = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 mt-14">
-        {block.checklistItems.length > 0 && (
-          <h3 className="text-base font-semibold text-gray4 flex items-center gap-2">
-            <img src={alertIcon} alt="alert icon" className="w-5 h-5" />
-            {block.checklistTitle}
-          </h3>
-        )}
-        {block.checklistItems.map((item: string) => (
-          <label
-            key={item}
-            className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer"
-          >
-            <input
-              type="checkbox"
-              className="peer hidden"
-              checked={block.checklist.includes(item)}
-              onChange={(e) => onToggleChecklist(index, item, e.target.checked)}
-            />
-            <span
-              style={{
-                ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
-                ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
-              }}
-              className="inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
-                         [background-image:var(--icon-unchecked)]
-                         peer-checked:[background-image:var(--icon-checked)]"
-            />
-            <span>{item}</span>
-          </label>
-        ))}
+      <div className="w-full md:w-60 lg:w-72 mt-2 md:mt-10 flex-shrink-0">
+        <div className="flex flex-col gap-2">
+          {block.checklistItems.length > 0 && (
+            <h3 className="text-sm md:text-base font-semibold text-gray4 flex items-center gap-2">
+              <img src={alertIcon} alt="alert icon" className="w-5 h-5" />
+              {block.checklistTitle}
+            </h3>
+          )}
+          <div className="flex flex-col gap-2">
+            {block.checklistItems.map((item: string, idx: number) => (
+              <label
+                key={item}
+                className={`flex items-start gap-2 cursor-pointer ${
+                  idx % 3 === 0
+                    ? "text-sm"
+                    : idx % 3 === 1
+                    ? "text-sm"
+                    : "text-sm"
+                } text-gray-700`}
+              >
+                <input
+                  type="checkbox"
+                  className="peer hidden"
+                  checked={block.checklist.includes(item)}
+                  onChange={(e) =>
+                    onToggleChecklist(index, item, e.target.checked)
+                  }
+                />
+                <span
+                  style={{
+                    ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
+                    ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
+                  }}
+                  className="inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
+                           [background-image:var(--icon-unchecked)]
+                           peer-checked:[background-image:var(--icon-checked)]"
+                />
+                <span className="leading-5">{item}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

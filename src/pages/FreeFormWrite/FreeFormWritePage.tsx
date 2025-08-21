@@ -417,7 +417,7 @@ export default function FreeFormWritePage() {
     if (!quickMeta) {
       setStatusMessage("프로젝트를 먼저 선택해주세요.");
       setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
+      setTimeout(() => setShowAlert(false), 1000);
       return;
     }
     await saveOriginal(quickMeta);
@@ -788,122 +788,177 @@ export default function FreeFormWritePage() {
   return (
     <div>
       <HeaderWoSearch />
-      <div className="flex justify-center px-[360px] pt-[68px] items-start">
-        <div className="flex-1 flex w-[1200px] flex-col gap-3">
-          {/* Alerts */}
-          {showAlert && (
-            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
-              제목, 프로젝트, 에러 종류, 첫 블록 내용을 모두 입력해주세요.
-            </div>
-          )}
-          {showBlockAlert && (
-            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
-              첫 번째 블록의 내용이 비어있습니다.
-            </div>
-          )}
-          {showSaveAlert && (
-            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
-              저장되었습니다.
-            </div>
-          )}
-          {showCancelAlert && (
-            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
-              요약 작업이 중단되었어요.
-            </div>
-          )}
-          {showSubtitleAlert && (
-            <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
-              소제목을 입력해주세요.
-            </div>
-          )}
-
-          {/* 제목/태그 + 상단 액션바 */}
-          <div className="flex flex-col items-start gap-[40px]">
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="제목을 입력하세요."
-              className="text-[36px] md:text-[48px] font-bold text-black outline-none w-full leading-tight"
-            />
-            <div className="flex w-[1200px] justify-between">
-              <div className="flex gap-[36px] items-center">
-                {/* 프로젝트 선택 */}
-                <DropDownButton
-                  options={projectNames}
-                  placeholder={
-                    projectsLoading
-                      ? "프로젝트 불러오는 중..."
-                      : projectNameById(selectedProjectIdPage) ||
-                        "프로젝트를 선택하세요"
-                  }
-                  width="w-[340px]"
-                  onSelect={(name) =>
-                    setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                  }
-                />
-
-                {/* 에러 종류 */}
-                <DropDownButton
-                  options={errorOptions}
-                  placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
-                  width="w-[340px]"
-                  onSelect={(selectedError) =>
-                    setSelectedErrorType(selectedError)
-                  }
-                />
-
-                {/* 태그 */}
-                <CategoryTag value={selectedTags} onChange={setSelectedTags} />
+      <div className="pt-12 sm:pt-16">
+        <div className="container mx-auto px-8 sm:px-12 lg:px-16">
+          <div className="flex-1 flex w-full max-w-[1200px] mx-auto flex-col gap-3">
+            {/* Alerts */}
+            {showAlert && (
+              <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+                제목, 프로젝트, 에러 종류, 첫 블록 내용을 모두 입력해주세요.
               </div>
+            )}
+            {showBlockAlert && (
+              <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+                첫 번째 블록의 내용이 비어있습니다.
+              </div>
+            )}
+            {showSaveAlert && (
+              <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+                저장되었습니다.
+              </div>
+            )}
+            {showCancelAlert && (
+              <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+                요약 작업이 중단되었어요.
+              </div>
+            )}
+            {showSubtitleAlert && (
+              <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+                소제목을 입력해주세요.
+              </div>
+            )}
 
-              <div className="flex gap-2">
-                <button
-                  onClick={async () => {
-                    if (!canSave) {
-                      setShowAlert(true);
-                      setTimeout(() => setShowAlert(false), 1000);
-                      return;
+            {/* 제목/태그 + 상단 액션바 */}
+            <div className="flex flex-col items-start gap-[40px]">
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="제목을 입력하세요."
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-black outline-none w-full leading-tight"
+              />
+              <div className="flex w-full max-w-[1200px] justify-between gap-3 flex-wrap">
+                <div className="flex gap-3 items-center flex-wrap w-full lg:w-auto">
+                  {/* 프로젝트 선택 */}
+                  <DropDownButton
+                    options={projectNames}
+                    placeholder={
+                      projectsLoading
+                        ? "프로젝트 불러오는 중..."
+                        : projectNameById(selectedProjectIdPage) ||
+                          "프로젝트를 선택하세요"
                     }
-                    await handleGlobalSave();
-                  }}
-                  disabled={isSaving}
-                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100 disabled:opacity-50"
-                >
-                  Save
-                </button>
+                    width="w-full sm:w-[160px] lg:w-[200px]"
+                    onSelect={(name) =>
+                      setSelectedProjectIdPage(nameToId.get(name) ?? null)
+                    }
+                  />
 
-                <button
-                  onClick={handleEnd}
-                  className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600"
-                >
-                  End
-                </button>
+                  {/* 에러 종류 */}
+                  <DropDownButton
+                    options={errorOptions}
+                    placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
+                    width="w-full sm:w-[200px] lg:w-[240px]"
+                    onSelect={(selectedError) =>
+                      setSelectedErrorType(selectedError)
+                    }
+                  />
+
+                  {/* 태그 */}
+                  <div className="w-full sm:w-auto min-w-[200px]">
+                    <CategoryTag
+                      value={selectedTags}
+                      onChange={setSelectedTags}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 w-full lg:w-auto">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                    <button
+                      onClick={async () => {
+                        if (!canSave) {
+                          setShowAlert(true);
+                          setTimeout(() => setShowAlert(false), 1000);
+                          return;
+                        }
+                        await handleGlobalSave();
+                      }}
+                      disabled={isSaving}
+                      className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100 disabled:opacity-50 w-full sm:w-auto"
+                    >
+                      Save
+                    </button>
+
+                    <button
+                      onClick={handleEnd}
+                      className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600 w-full sm:w-auto"
+                    >
+                      End
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 블록 리스트 */}
-          {blocks.map((block) => (
-            <div key={block.id} className="max-w-[1200px]">
-              <div className="w-full flex items-end h-[60px] mb-2">
-                <input
-                  type="text"
-                  value={block.title}
-                  onChange={(e) =>
-                    handleChangeBlock(block.id, "title", e.target.value)
+            {/* 블록 리스트 */}
+            {blocks.map((block) => (
+              <div key={block.id} className="w-full">
+                <div className="w-full flex items-end h-[60px] mb-2">
+                  <input
+                    type="text"
+                    value={block.title}
+                    onChange={(e) =>
+                      handleChangeBlock(block.id, "title", e.target.value)
+                    }
+                    placeholder="소제목을 입력하세요."
+                    className="flex-1 px-0 py-2 border-none rounded font-bold text-black text-xl sm:text-2xl"
+                  />
+                </div>
+
+                <MDEditor
+                  className="mt-2"
+                  value={block.content}
+                  onChange={(val) =>
+                    handleChangeBlock(block.id, "content", val || "")
                   }
-                  placeholder="소제목을 입력하세요"
-                  className="flex-1 px-0 py-2 border-none rounded font-bold text-black text-[24px]"
+                  preview="edit"
                 />
               </div>
+            ))}
 
-              <MDEditor
-                className="mt-2"
-                value={block.content}
-                onChange={(val) =>
-                  handleChangeBlock(block.id, "content", val || "")
+            <button
+              onClick={handleAddBlock}
+              disabled={blocks.length >= 20}
+              className="border-2 border-dashed p-4 sm:p-6 rounded-xl w-full h-[120px] sm:h-[140px] mt-4 text-gray-500 text-lg sm:text-xl hover:bg-gray-50 disabled:opacity-50"
+            >
+              + 블록 추가하기 ({blocks.length}/20)
+            </button>
+
+            {/* 모달들 */}
+            {isPostSaveModalOpen && (
+              <PostSaveModal
+                onClose={() => setIsPostSaveModalOpen(false)}
+                onNext={handleNextInPostSaveModal}
+                projects={projectList.map((p) => ({ id: p.id, name: p.name }))}
+                loadingProjects={projectsLoading}
+                defaultProjectId={initialProjectId ?? undefined}
+                selectedTags={selectedTags}
+                selectedErrorType={selectedErrorType}
+                initialImportance={
+                  previewMeta?.importance ??
+                  location.state?.savePrefill?.importance
+                }
+                initialDescription={
+                  previewMeta?.description ??
+                  location.state?.savePrefill?.description
+                }
+                initialVisibility={
+                  previewMeta?.visibility ??
+                  location.state?.savePrefill?.visibility
+                }
+                initialProjectId={
+                  selectedProjectIdPage ??
+                  previewMeta?.projectId ??
+                  location.state?.savePrefill?.projectId ??
+                  initialProjectId ??
+                  null
+                }
+                initialThumbnail={
+                  previewMeta?.thumbnail ??
+                  location.state?.savePrefill?.thumbnail ??
+                  null
                 }
                 preview="edit"
                 textareaProps={{
@@ -919,83 +974,39 @@ export default function FreeFormWritePage() {
                 commandsFilter={(cmd) =>
                   cmd.keyCommand === "image" ? imageUploadCmd : cmd
                 }
+
               />
-            </div>
-          ))}
+            )}
 
-          <button
-            onClick={handleAddBlock}
-            disabled={blocks.length >= 20}
-            className="border-2 border-dashed p-4 rounded-xl w-full h-[140px] mt-4 text-gray-500 text-[20px] hover:bg-gray-50 disabled:opacity-50"
-          >
-            + 블록 추가하기 ({blocks.length}/20)
-          </button>
+            {isTemplateSelectModalOpen && (
+              <TemplateSelectModal
+                onConfirm={(type, label) => handleConfirmTemplate(type, label)}
+                onClose={() => setIsTemplateSelectModalOpen(false)}
+                onLater={handleLater}
+                onPrev={() => {
+                  setIsTemplateSelectModalOpen(false);
+                  setIsPostSaveModalOpen(true);
+                }}
+              />
+            )}
 
-          {/* 모달들 */}
-          {isPostSaveModalOpen && (
-            <PostSaveModal
-              onClose={() => setIsPostSaveModalOpen(false)}
-              onNext={handleNextInPostSaveModal}
-              projects={projectList.map((p) => ({ id: p.id, name: p.name }))}
-              loadingProjects={projectsLoading}
-              defaultProjectId={initialProjectId ?? undefined}
-              selectedTags={selectedTags}
-              selectedErrorType={selectedErrorType}
-              initialImportance={
-                previewMeta?.importance ??
-                location.state?.savePrefill?.importance
-              }
-              initialDescription={
-                previewMeta?.description ??
-                location.state?.savePrefill?.description
-              }
-              initialVisibility={
-                previewMeta?.visibility ??
-                location.state?.savePrefill?.visibility
-              }
-              initialProjectId={
-                selectedProjectIdPage ??
-                previewMeta?.projectId ??
-                location.state?.savePrefill?.projectId ??
-                initialProjectId ??
-                null
-              }
-              initialThumbnail={
-                previewMeta?.thumbnail ??
-                location.state?.savePrefill?.thumbnail ??
-                null
-              }
-            />
-          )}
+            {isLoadingModalOpen && (
+              <PostLoadingModal
+                onClose={handleCloseLoading}
+                progress={summaryProgress}
+                templateLabel={templateLabel}
+                status={summaryStatus ?? undefined}
+                serverMessage={statusMessage}
+              />
+            )}
 
-          {isTemplateSelectModalOpen && (
-            <TemplateSelectModal
-              onConfirm={(type, label) => handleConfirmTemplate(type, label)}
-              onClose={() => setIsTemplateSelectModalOpen(false)}
-              onLater={handleLater}
-              onPrev={() => {
-                setIsTemplateSelectModalOpen(false);
-                setIsPostSaveModalOpen(true);
-              }}
-            />
-          )}
-
-          {isLoadingModalOpen && (
-            <PostLoadingModal
-              onClose={handleCloseLoading}
-              progress={summaryProgress}
-              templateLabel={templateLabel}
-              status={summaryStatus ?? undefined}
-              serverMessage={statusMessage}
-            />
-          )}
-
-          {isSuccessModalOpen && completedSummaryId != null && (
-            <PostSuccessModal
-              onClose={() => setIsSuccessModalOpen(false)}
-              summaryId={completedSummaryId}
-            />
-          )}
+            {isSuccessModalOpen && completedSummaryId != null && (
+              <PostSuccessModal
+                onClose={() => setIsSuccessModalOpen(false)}
+                summaryId={completedSummaryId}
+              />
+            )}
+          </div>
         </div>
       </div>
 

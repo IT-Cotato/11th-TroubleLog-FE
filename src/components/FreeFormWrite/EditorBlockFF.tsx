@@ -31,23 +31,24 @@ const EditorBlock = ({
   isEndDisabled = false,
 }: Props) => {
   return (
-    <div className="flex flex-row gap-[25px] pb-[25px]">
-      <div className="flex flex-col gap-[16px] w-[1200px]">
-        <div className="flex justify-between items-start">
+    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pb-6">
+      <div className="flex flex-col gap-4 w-full max-w-screen-lg mx-auto">
+        {/* 타이틀 + 액션바 */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <input
             type="text"
             value={block.title}
             onChange={(e) => onChange(index, { title: e.target.value })}
-            placeholder="소제목을 입력해주세요"
-            className="w-full p-2 border-none rounded font-bold text-black text-[24px]"
+            placeholder="소제목을 입력해주세요."
+            className="w-full p-2 border-none rounded font-bold text-black text-xl sm:text-2xl"
           />
 
           {isActive && (
-            <div className="flex flex-col items-end gap-2 min-w-[160px]">
-              <div className="flex gap-2">
+            <div className="flex w-full sm:w-auto justify-end">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0 sm:min-w-[160px]">
                 <button
                   onClick={() => onSave?.(index)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 w-full sm:w-auto"
                 >
                   Save
                 </button>
@@ -57,7 +58,7 @@ const EditorBlock = ({
                     else onAddBlock?.();
                   }}
                   disabled={isLast && isEndDisabled}
-                  className={`px-4 py-2 rounded-lg text-sm ${
+                  className={`px-4 py-2 rounded-lg text-sm w-full sm:w-auto ${
                     isLast
                       ? isEndDisabled
                         ? "bg-gray-300 text-white cursor-not-allowed"
@@ -72,14 +73,15 @@ const EditorBlock = ({
           )}
         </div>
 
-        <div data-color-mode="light">
+        {/* 에디터 */}
+        <div data-color-mode="light" className="w-full">
           <MDEditor
             value={block.content}
             onChange={(val) => onChange(index, { content: val || "" })}
-            height={240}
             preview={isActive ? "edit" : "preview"}
-            style={{ width: "1200px" }}
+            height={isActive ? 300 : 220}
             autoFocus={isActive}
+            className="w-full"
           />
         </div>
       </div>
