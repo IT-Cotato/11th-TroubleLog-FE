@@ -1,44 +1,16 @@
 import kakaoLogoIcon from "@/assets/icons/kakaologo.svg";
-import { useNavigate } from "react-router-dom";
 import { PATH } from "@/constants/paths";
-import { openOAuthPopup } from "@/utils/openOAuthPopup";
-import { applyAuth } from "@/utils/applyAuth";
 
-const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, ""); // "" 또는 "/app"
+const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 const FRONT_CALLBACK = `${window.location.origin}${BASE}${PATH.OAUTH_REGISTER}`;
 const AUTH_START_URL = `https://troublog.shop/oauth2/authorization/kakao?return_to=${encodeURIComponent(
   FRONT_CALLBACK
 )}`;
 
 export default function KakaoLoginButton() {
-  const navigate = useNavigate();
-  const handleClick = async () => {
-    console.debug("[KakaoLoginButton] BASE_URL:", import.meta.env.BASE_URL);
-    console.debug("[KakaoLoginButton] ORIGIN:", window.location.origin);
-    console.debug("[KakaoLoginButton] FRONT_CALLBACK:", FRONT_CALLBACK);
-    console.debug("[KakaoLoginButton] AUTH_START_URL:", AUTH_START_URL);
-
-    try {
-      const p = await openOAuthPopup(AUTH_START_URL, window.location.origin);
-      console.debug("[KakaoLoginButton] payload:", p);
-
-      if (p?.accessToken) {
-        applyAuth(p.accessToken);
-        navigate(PATH.HOME, { replace: true });
-        return;
-      }
-      const status = p?.userStatus ?? p?.status;
-      if (status === "INCOMPLETE" && p?.userId) {
-        navigate(PATH.SIGNUP_OAUTH, {
-          replace: true,
-          state: { userId: p.userId, nickname: p.nickname ?? "" },
-        });
-        return;
-      }
-      console.warn("[KakaoLoginButton] Unexpected payload:", p);
-    } catch (e) {
-      console.error("[KakaoLoginButton] popup failed:", e);
-    }
+  const handleClick = () => {
+    // 팝업 없이 풀리다이렉트
+    window.location.href = AUTH_START_URL;
   };
 
   return (
