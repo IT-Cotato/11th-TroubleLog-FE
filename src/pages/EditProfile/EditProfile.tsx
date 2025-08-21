@@ -32,41 +32,26 @@ const EditProfile = () => {
     profileUrl: "",
   });
 
-  // 프로필 이미지 미리보기
   const [profileImage, setProfileImage] = useState<string>(userIcon);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 이미지 삭제 가능 여부 판단
   const canDeleteImage =
     !!profile.profileUrl || (profileImage && profileImage !== userIcon);
 
-  const handleImageUpload = () => {
-    fileInputRef.current?.click();
-  };
+  const handleImageUpload = () => fileInputRef.current?.click();
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-
     try {
-      // 서버 업로드
       const uploadedUrl = await upload(file);
-
-      // UI 미리보기
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          setProfileImage(reader.result);
-        }
+        if (typeof reader.result === "string") setProfileImage(reader.result);
       };
       reader.readAsDataURL(file);
-
-      // 프로필 state에 서버 URL 저장
-      setProfile((prev) => ({
-        ...prev,
-        profileUrl: uploadedUrl,
-      }));
+      setProfile((prev) => ({ ...prev, profileUrl: uploadedUrl }));
     } catch (err) {
       console.error("이미지 업로드 실패", err);
     }
@@ -74,24 +59,18 @@ const EditProfile = () => {
 
   const handleImageDelete = () => {
     setProfileImage(userIcon);
-    setProfile((prev) => ({
-      ...prev,
-      profileUrl: "",
-    }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setProfile((prev) => ({ ...prev, profileUrl: "" }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // 회원 탈퇴
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showWithdrawCompleteModal, setShowWithdrawCompleteModal] =
     useState(false);
 
-  const handleWithdrawClose = useCallback(() => {
-    setShowWithdrawModal(false);
-  }, []);
-
+  const handleWithdrawClose = useCallback(
+    () => setShowWithdrawModal(false),
+    []
+  );
   const handleWithdrawConfirm = useCallback(async () => {
     try {
       await deleteUser();
@@ -101,28 +80,21 @@ const EditProfile = () => {
       console.error("회원 탈퇴 실패:", error);
     }
   }, []);
-
   const handleWithdrawComplete = useCallback(() => {
     setShowWithdrawCompleteModal(false);
     navigate("/");
   }, [navigate]);
 
-  // 프로필 불러오기
   useEffect(() => {
     let alive = true;
-
     const fetchProfile = async () => {
       try {
         const [me, userInfo] = await Promise.all([
           getMyProfile(),
           id ? getUserInfo(Number(id)) : Promise.resolve(null as any),
         ]);
-
-        // 사용자 정보 API가 제공하는 profileUrl 우선 사용
         const serverProfileUrl =
-          (userInfo && userInfo.profileUrl) ||
-          (me as any)?.profileUrl || // 혹시 백엔드가 주는 경우
-          "";
+          (userInfo && userInfo.profileUrl) || (me as any)?.profileUrl || "";
 
         if (!alive) return;
 
@@ -134,14 +106,11 @@ const EditProfile = () => {
           githubUrl: me.githubUrl,
           profileUrl: serverProfileUrl,
         });
-
-        // 미리보기에도 반영
         setProfileImage(serverProfileUrl || userIcon);
       } catch (error) {
         console.error("정보를 불러오는 데 실패했습니다", error);
       }
     };
-
     fetchProfile();
     return () => {
       alive = false;
@@ -150,25 +119,18 @@ const EditProfile = () => {
 
   const handleChange =
     (field: keyof ProfileData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setProfile((prev) => ({
-        ...prev,
-        [field]: e.target.value,
-      }));
+      setProfile((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-  // 저장
   const handleSave = async () => {
     const nickname = profile.nickname?.trim() || "";
     const field = profile.field?.trim() || "";
     const bio = profile.bio?.trim() || "";
-
     if (!nickname || !field || !bio) {
       alert("닉네임, 분야, 한 줄 소개는 필수 입력 항목입니다.");
       return;
     }
-
     try {
-      console.log(profile);
       await patchProfile(profile);
       navigate(PATH.MYPAGE(id!));
     } catch (error) {
@@ -176,32 +138,29 @@ const EditProfile = () => {
     }
   };
 
-  // 취소
-  const handleCancel = () => {
-    navigate(-1);
-  };
+  const handleCancel = () => navigate(-1);
 
   return (
-    <div className="flex justify-center min-h-screen pb-6">
-      <div className="flex flex-col items-end gap-14 w-3/4">
-        <div className="flex items-start gap-16 pt-20 w-full">
+    <div className="flex justify-center min-h-screen px-4 pb-6">
+      <div className="w-full max-w-5xl mx-auto flex flex-col items-end gap-10 sm:gap-14">
+        <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16 pt-16 md:pt-20 w-full">
           {/* 왼쪽 */}
-          <div className="flex flex-col items-center gap-12 self-stretch">
+          <div className="flex flex-col items-center gap-8 md:gap-12 self-stretch md:w-[320px]">
             <img
               src={profileImage}
               alt="user"
-              className="w-72 h-72 object-cover rounded-full"
+              className="w-40 h-40 sm:w-56 sm:h-56 md:w-72 md:h-72 object-cover rounded-full"
             />
 
             <input
               type="file"
               accept="image/*"
               ref={fileInputRef}
-              style={{ display: "none" }}
+              className="hidden"
               onChange={handleImageChange}
             />
 
-            <div className="flex flex-col gap-[18px]">
+            <div className="flex flex-col gap-[14px] sm:gap-[18px] w-full max-w-xs">
               <FollowButton
                 label="이미지 업로드"
                 colorClass="bg-primary"
@@ -220,7 +179,7 @@ const EditProfile = () => {
           </div>
 
           {/* 오른쪽 */}
-          <div className="flex flex-col items-start gap-12 w-3/4">
+          <div className="flex flex-col items-start gap-8 sm:gap-12 w-full md:w-3/4">
             <p className="text-head-48 pb-2">프로필 수정</p>
             <MyInput
               label="닉네임"
@@ -250,7 +209,7 @@ const EditProfile = () => {
         </div>
 
         {/* 버튼 */}
-        <div className="flex gap-4">
+        <div className="flex gap-3 sm:gap-4">
           <CancelButton onClick={handleCancel} />
           <SaveButton onClick={handleSave} label="저장" />
         </div>
@@ -267,7 +226,6 @@ const EditProfile = () => {
           label="탈퇴"
         />
       )}
-
       {showWithdrawCompleteModal && (
         <WithdrawCompleteModal onClose={handleWithdrawComplete} />
       )}
