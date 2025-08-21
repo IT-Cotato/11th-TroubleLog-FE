@@ -8,6 +8,29 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useViewerId } from "@/store/auth";
 import { decideCombined } from "@/utils/combinedRoute";
 
+// 상태 정규화: API/한글/대소문자 뒤섞여도 'inProgress' | 'complete' | 'created'로 통일
+const normStatus = (raw: any): "inProgress" | "complete" | "created" => {
+  const t = String(raw ?? "").toUpperCase();
+  if (
+    t === "WRITING" ||
+    t === "IN_PROGRESS" ||
+    t === "DRAFT" ||
+    raw === "임시 저장" ||
+    raw === "작성 중"
+  )
+    return "inProgress";
+  if (t === "SUMMARIZED" || t === "CREATED" || raw === "요약 완료")
+    return "created";
+  // 기본 complete (작성 완료)
+  return "complete";
+};
+
+// 공개여부 정규화 → boolean
+const toVisibleBool = (raw: any): boolean => {
+  if (typeof raw === "boolean") return raw;
+  return String(raw ?? "").toUpperCase() === "PUBLIC";
+};
+
 const SearchResultPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -161,17 +184,37 @@ const SearchResultPage = () => {
                             card,
                             viewerId
                           );
+
                           const ownerIdForState =
                             card.isMine && viewerId != null
                               ? Number(viewerId)
                               : undefined;
 
+                          // 목록/검색 카드에서 힌트 뽑기
+                          const statusFromList = normStatus(card.status);
+                          const isVisibleFromList = toVisibleBool(
+                            card.visibility
+                          );
+                          const summaryIdFromList =
+                            (typeof card.summaryId === "number"
+                              ? card.summaryId
+                              : undefined) ??
+                            (typeof card.postSummaryId === "number"
+                              ? card.postSummaryId
+                              : undefined);
+                          const isMineFromList = !!card.isMine;
+
                           if (goCombined && summaryId != null) {
                             navigate(PATH.COMBINED_DETAIL(idNum, summaryId), {
                               state: {
                                 from: "search",
-                                searchScope: scopeForDetail,
+                                searchScope: scopeForDetail, // 기존 유지
                                 ownerId: ownerIdForState,
+                                // 힌트도 같이 (필수는 아니지만 일관성 유지)
+                                statusFromList,
+                                isVisibleFromList,
+                                summaryIdFromList,
+                                isMineFromList,
                               },
                             });
                           } else {
@@ -181,8 +224,13 @@ const SearchResultPage = () => {
                             navigate(url, {
                               state: {
                                 from: "search",
-                                searchScope: scopeForDetail,
+                                searchScope: scopeForDetail, // 기존 유지
                                 ownerId: ownerIdForState,
+                                // CPD 분기 힌트
+                                statusFromList,
+                                isVisibleFromList,
+                                summaryIdFromList,
+                                isMineFromList,
                               },
                             });
                           }

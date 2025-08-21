@@ -20,13 +20,22 @@ import type {
   GetSummaryResponse,
 } from "@/models/post.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
+import api from "./axios";
+
+const inflightMineDetail = new Map<number, Promise<any>>();
 
 // 상세
-export const getPostDetail = (postId: number) =>
-  getAPIResponseData<ViewPostResponse>({
-    url: `/troubles/${postId}`,
-    method: "GET",
-  });
+export function getPostDetail(postId: number) {
+  if (!inflightMineDetail.has(postId)) {
+    const p = getAPIResponseData<ViewPostResponse>(
+      api.get(`/troubles/${postId}`)
+    ).finally(() => {
+      setTimeout(() => inflightMineDetail.delete(postId), 800); // 짧은 TTL
+    });
+    inflightMineDetail.set(postId, p);
+  }
+  return inflightMineDetail.get(postId)!;
+}
 
 // 생성
 export const createPost = (body: CreatePostRequest) =>

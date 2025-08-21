@@ -132,28 +132,54 @@ const TroubleShootingList = () => {
           </div>
         )}
 
-        {sortedCards.map((card) => (
-          <TroubleShootingCard
-            key={card.id}
-            {...mapToTroubleShootingCard(card)}
-            onDeleted={handleDeleted}
-            onClick={() => {
-              const { goCombined, summaryId } = decideCombined(card, viewerId);
-              if (goCombined && summaryId != null) {
-                navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
-                  state: { from: "mypage", ownerId: viewerId ?? undefined },
+        {sortedCards.map((card) => {
+          const vm = mapToTroubleShootingCard(card); // 한 번만 만들고 아래에서 재사용
+
+          return (
+            <TroubleShootingCard
+              key={card.id}
+              {...vm}
+              onDeleted={handleDeleted}
+              onClick={() => {
+                // 1) 합본 분기(기존 유지)
+                const { goCombined, summaryId } = decideCombined(
+                  card,
+                  viewerId
+                );
+                const ownerIdForState =
+                  isMyPage && viewerId != null ? Number(viewerId) : undefined;
+
+                if (goCombined && summaryId != null) {
+                  navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                    state: { from: "mypage", ownerId: ownerIdForState },
+                  });
+                  return;
+                }
+
+                // 2) CPD 힌트(state)로 확정값 전달
+                const statusFromList = vm.status; // 'inProgress' | 'complete' | 'created'
+                const isVisibleFromList = vm.visibility === "public";
+                const summaryIdFromList = vm.summaryId ?? undefined;
+                const isMineFromList = !!vm.isMine || !!isMyPage;
+
+                const qs = new URLSearchParams({ from: "mypage" });
+                if (ownerIdForState != null)
+                  qs.set("ownerId", String(ownerIdForState));
+
+                navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
+                  state: {
+                    from: "mypage",
+                    ownerId: ownerIdForState,
+                    statusFromList,
+                    isVisibleFromList,
+                    summaryIdFromList,
+                    isMineFromList,
+                  },
                 });
-                return;
-              }
-              const qs = new URLSearchParams({ from: "mypage" });
-              if (isMyPage && viewerId != null)
-                qs.set("ownerId", String(viewerId));
-              navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
-                state: { from: "mypage" },
-              });
-            }}
-          />
-        ))}
+              }}
+            />
+          );
+        })}
 
         {/* 로딩 스켈레톤 */}
         {isLoading && (
