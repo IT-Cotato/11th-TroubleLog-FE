@@ -323,8 +323,8 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            {/* 1 / 2 / 3 / 4 컬럼 그리드 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+            {/* 유연한 컬럼: 화면에 맞춰 자동으로 1~N열, 각 셀 최소 320px */}
+            <div className="grid w-full gap-6 grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
               {projects.map((p) => (
                 <ProjectFolderCard
                   key={p.id}
