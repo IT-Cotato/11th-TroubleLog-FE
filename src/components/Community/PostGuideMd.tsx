@@ -14,12 +14,11 @@ export default function PostGuideMd({
   content: GuideContent[];
 }) {
   return (
-    <section className="w-[1200px]">
+    <section className="w-full max-w-[1200px] mx-auto">
       <div className="text-head-24-bold mb-6">{question}</div>
 
-      {/* 마크다운 + 이미지 렌더 */}
       <div
-        className="prose max-w-none w-[1200px] flex p-[32px] flex-col justify-center  gap-[10px] self-stretch rounded-[20px] bg-white shadow-card "
+        className="prose max-w-none w-full flex p-6 sm:p-8 flex-col justify-center gap-3 rounded-[20px] bg-white shadow-card"
         data-color-mode="light"
       >
         {content.map((item, i) => {
@@ -30,18 +29,17 @@ export default function PostGuideMd({
                 source={item}
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                style={{ width: "1150px" }}
+                className="w-full"
               />
             );
           }
 
-          // 이미지
           return (
             <img
               key={i}
               src={item.src}
               alt={item.alt ?? ""}
-              className="rounded-lg my-4"
+              className="rounded-lg my-4 max-w-full h-auto"
               onError={(e) => {
                 const img = e.currentTarget as HTMLImageElement;
                 img.onerror = null;
