@@ -1,28 +1,22 @@
 import { type PropsWithChildren, useEffect, useRef } from "react";
 import { connectAlertSSE } from "@/api/alert.api";
 import { useIsLoggedIn, useViewerId, useAuthStore } from "@/store/auth";
-import api from "@/api/axios";
+import { startRefresh } from "@/api/axios";
 import { useNotificationStore } from "@/store/notification";
 import type { AlertServerItem } from "@/types/alert.model";
 import { PATH } from "@/constants/paths";
 
-// 콜백 라우트 감지 (팝업/직접접속 모두)
-const isAuthCallbackPath = (p: string) =>
-  p.startsWith(PATH.OAUTH_REGISTER) || p.startsWith(PATH.OAUTH_POPUP);
+// 콜백 라우트 감지(풀 리다이렉트 방식: /auth/oauth-register 만 스킵)
+const isAuthCallbackPath = (p: string) => p.startsWith(PATH.OAUTH_REGISTER);
 
+// 1회 리프레시(전역 가드/404 네비 방지 플래그 부여)
 async function tryRefreshOnce() {
-  try {
-    await api.post(
-      "/auth/refresh",
-      undefined,
-      { __skipGlobalAuthGuard: true, __skipGlobal404: true } // 전역 가드/404 네비게이션 방지
-    );
-    return true;
-  } catch {
-    return false;
-  }
+  // startRefresh가 localStorage 저장 및 헤더 갱신을 처리합니다.
+  const newToken = await startRefresh();
+  return newToken != null;
 }
 
+// 타입 가드
 function isAlertPayload(x: any): x is AlertServerItem {
   return x && typeof x === "object" && "title" in x && "message" in x;
 }
@@ -31,7 +25,6 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
   const isLoggedIn = useIsLoggedIn();
   const viewerId = useViewerId();
   const hydrated = (useAuthStore as any).persist?.hasHydrated?.() ?? true;
-  // const { pathname } = useLocation();
 
   const esCloseRef = useRef<null | (() => void)>(null);
   const connectedRef = useRef(false);
@@ -46,10 +39,9 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!hydrated) return;
 
-    // OAuth 콜백 라우트에서는 SSE/리프레시 로직 전부 비활성화
+    // ✅ OAuth 콜백 라우트에서는 SSE/리프레시 전부 비활성화
     const pathname = window.location.pathname;
     if (isAuthCallbackPath(pathname)) {
-      // 정리만 하고 즉시 반환
       stopRef.current = true;
       esCloseRef.current?.();
       esCloseRef.current = null;
@@ -59,12 +51,12 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
         clearTimeout(connectTimerRef.current);
         connectTimerRef.current = null;
       }
-      if (import.meta.env.DEV) {
+      if (import.meta.env.DEV)
         console.debug("[SSE] skipped on auth callback:", pathname);
-      }
       return;
     }
 
+    // 로그인 전에는 연결 시도 안 함
     const token = localStorage.getItem("accessToken") ?? "";
     if (!isLoggedIn || !token) {
       stopRef.current = true;
@@ -79,6 +71,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       return;
     }
 
+    // 계정 전환 시 재연결
     if (connectedRef.current && prevViewerRef.current !== viewerId) {
       esCloseRef.current?.();
       esCloseRef.current = null;
@@ -129,6 +122,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       connectedRef.current = true;
     };
 
+    // StrictMode 중복 연결 방지: 0ms 지연으로 예약
     connectTimerRef.current = window.setTimeout(start, 0);
 
     const onFocusOrOnline = () => {

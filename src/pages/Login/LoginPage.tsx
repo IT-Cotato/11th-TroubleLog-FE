@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import mockimg from "../../assets/images/mockimg.jpg";
@@ -6,6 +6,7 @@ import KakaoLoginButton from "./KakaoLoginButton";
 import { postLogin } from "@/api/auth.api";
 import { PATH } from "@/constants/paths";
 import { useAuthStore } from "@/store/auth";
+import { applyAuth } from "@/utils/applyAuth";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,49 @@ const LoginPage = () => {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // 진입 시 ?next= 처리
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const next = sp.get("next");
+    const expectedState = sessionStorage.getItem("oauth_state");
+    if (next) {
+      try {
+        const decoded = decodeURIComponent(next);
+        const u = new URL(decoded, window.location.origin); // 상대 경로 대비
+        // 1) 외부 origin 차단
+        if (u.origin !== window.location.origin) return;
+        // 2) 콜백 전용 경로에서만 토큰 해석
+        if (u.pathname !== PATH.OAUTH_REGISTER) return;
+        // 3) state 일치 검증(없다면 즉시 중단)
+        const state = u.searchParams.get("state");
+        if (!state || !expectedState || state !== expectedState) return;
+        const accessToken = u.searchParams.get("accessToken");
+        const userIdStr = u.searchParams.get("userId");
+        if (accessToken && userIdStr) {
+          applyAuth(accessToken);
+          const { setUser } = useAuthStore.getState();
+          setUser({ userId: Number(userIdStr) });
+
+          // 주소 정리 후 홈으로
+          try {
+            window.history.replaceState(null, "", "/");
+          } catch {
+            //
+          }
+          navigate(PATH.HOME, { replace: true });
+          return;
+        }
+      } catch (err) {
+        console.debug("[LoginPage] next param parse failed:", err);
+      }
+    }
+
+    // 이미 로그인된 경우 홈으로
+    if (localStorage.getItem("accessToken")) {
+      navigate(PATH.HOME, { replace: true });
+    }
+  }, [navigate]);
 
   const handleEmailBlur = async () => {
     const trimmedEmail = email.trim();
