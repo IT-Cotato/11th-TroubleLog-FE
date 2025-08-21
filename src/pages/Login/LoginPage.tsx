@@ -22,36 +22,37 @@ const LoginPage = () => {
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     const next = sp.get("next");
-    const expectedState = sessionStorage.getItem("oauth_state");
+
     if (next) {
       try {
-        const decoded = decodeURIComponent(next);
-        const u = new URL(decoded, window.location.origin); // 상대 경로 대비
-        // 1) 외부 origin 차단
-        if (u.origin !== window.location.origin) return;
-        // 2) 콜백 전용 경로에서만 토큰 해석
-        if (u.pathname !== PATH.OAUTH_REGISTER) return;
-        // 3) state 일치 검증(없다면 즉시 중단)
-        const state = u.searchParams.get("state");
-        if (!state || !expectedState || state !== expectedState) return;
-        const accessToken = u.searchParams.get("accessToken");
-        const userIdStr = u.searchParams.get("userId");
-        if (accessToken && userIdStr) {
-          applyAuth(accessToken);
-          const { setUser } = useAuthStore.getState();
-          setUser({ userId: Number(userIdStr) });
+        // '/user/home?...' 또는 절대경로일 수 있으니 현재 오리진을 베이스로
+        const u = new URL(decodeURIComponent(next), window.location.origin);
 
-          // 주소 정리 후 홈으로
-          try {
-            window.history.replaceState(null, "", "/");
-          } catch {
-            //
+        // 보안: 다른 오리진은 무시
+        if (u.origin !== window.location.origin) {
+          console.debug("[LoginPage] next origin mismatch:", u.origin);
+        } else {
+          const accessToken = u.searchParams.get("accessToken");
+          const userIdStr = u.searchParams.get("userId");
+
+          if (accessToken && userIdStr) {
+            console.debug("[LoginPage] applying token from next");
+            applyAuth(accessToken);
+            const { setUser } = useAuthStore.getState();
+            setUser({ userId: Number(userIdStr) });
+
+            // 주소 정리 후 홈으로(무한루프 방지)
+            try {
+              window.history.replaceState(null, "", PATH.ROOT);
+            } catch {
+              //
+            }
+            navigate(PATH.HOME, { replace: true });
+            return;
           }
-          navigate(PATH.HOME, { replace: true });
-          return;
         }
       } catch (err) {
-        console.debug("[LoginPage] next param parse failed:", err);
+        console.debug("[LoginPage] next parse failed:", err);
       }
     }
 
