@@ -4,7 +4,6 @@ import { useIsLoggedIn, useViewerId, useAuthStore } from "@/store/auth";
 import api from "@/api/axios";
 import { useNotificationStore } from "@/store/notification";
 import type { AlertServerItem } from "@/types/alert.model";
-import { useLocation } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 
 // 콜백 라우트 감지 (팝업/직접접속 모두)
@@ -32,7 +31,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
   const isLoggedIn = useIsLoggedIn();
   const viewerId = useViewerId();
   const hydrated = (useAuthStore as any).persist?.hasHydrated?.() ?? true;
-  const { pathname } = useLocation();
+  // const { pathname } = useLocation();
 
   const esCloseRef = useRef<null | (() => void)>(null);
   const connectedRef = useRef(false);
@@ -48,6 +47,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
     if (!hydrated) return;
 
     // OAuth 콜백 라우트에서는 SSE/리프레시 로직 전부 비활성화
+    const pathname = window.location.pathname;
     if (isAuthCallbackPath(pathname)) {
       // 정리만 하고 즉시 반환
       stopRef.current = true;
@@ -158,7 +158,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       esCloseRef.current = null;
       connectedRef.current = false;
     };
-  }, [hydrated, isLoggedIn, viewerId, autoReconnect, retryMs, pathname]);
+  }, [hydrated, isLoggedIn, viewerId, autoReconnect, retryMs]);
 
   return <>{children}</>;
 }
