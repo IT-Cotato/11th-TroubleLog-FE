@@ -1,4 +1,4 @@
-import MDEditor from "@uiw/react-md-editor";
+import MDEditor, { type ICommand } from "@uiw/react-md-editor";
 import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
@@ -31,6 +31,17 @@ export type EditorBlockProps = {
   isSaving?: boolean;
   canSave?: boolean;
   onActivate: (index: number) => void;
+
+  onPasteImage?: (
+    blockId: number,
+    e: React.ClipboardEvent<HTMLTextAreaElement>
+  ) => void;
+  onDropImage?: (
+    blockId: number,
+    e: React.DragEvent<HTMLTextAreaElement>
+  ) => void;
+
+  commandsFilter?: (command: ICommand, isExtra: boolean) => false | ICommand;
 };
 
 const MIN_H = 200;
@@ -53,6 +64,9 @@ const EditorBlock = ({
   onSave,
   isSaving,
   canSave,
+  onPasteImage,
+  onDropImage,
+  commandsFilter,
 }: EditorBlockProps) => {
   const [editorHeight, setEditorHeight] = useState<number>(MIN_H);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -173,6 +187,16 @@ const EditorBlock = ({
               preview={isActive ? "edit" : "preview"}
               style={{ width: "1200px", border: "none" }}
               autoFocus={isActive}
+              commandsFilter={commandsFilter}
+              textareaProps={{
+                onPaste: (e) => onPasteImage?.(block.id, e),
+                onDrop: (e) => onDropImage?.(block.id, e),
+                onDragOver: (e) => {
+                  // 드래그 파일 드롭 허용
+                  if (e.dataTransfer?.types?.includes("Files"))
+                    e.preventDefault();
+                },
+              }}
             />
           </div>
         </div>

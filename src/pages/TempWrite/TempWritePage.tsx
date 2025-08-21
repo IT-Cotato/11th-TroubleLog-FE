@@ -25,6 +25,13 @@ import {
   editPost,
   getTagsByKeyword,
 } from "@/api/post.api";
+import { uploadImage } from "@/api/image.api";
+import {
+  commands,
+  TextAreaTextApi,
+  type ICommand,
+  type TextState,
+} from "@uiw/react-md-editor";
 
 // ---------- 상태 타입 ----------
 type IncomingTemplateState = {
@@ -669,6 +676,93 @@ const TempWritePage = () => {
     });
   }, []);
 
+  // 이미지 업로드 - 드래그 앤 드롭
+  const insertImageMarkdown = (blockId: number, url: string) => {
+    setBlocks((prev) =>
+      prev.map((b) =>
+        b.id === blockId
+          ? { ...b, content: `${b.content?.trim()}\n\n![image](${url})` }
+          : b
+      )
+    );
+  };
+
+  const handlePasteImage = async (
+    blockId: number,
+    e: React.ClipboardEvent<HTMLTextAreaElement>
+  ) => {
+    const files = e.clipboardData?.files;
+    const file = files && files[0];
+    if (file && file.type.startsWith("image/")) {
+      e.preventDefault();
+      try {
+        const url = await uploadImage(file); // onProgress 필요하면 2번째 인자 사용 가능
+        insertImageMarkdown(blockId, url);
+      } catch {
+        setStatusMessage("이미지 업로드에 실패했어요.");
+      }
+    }
+  };
+
+  const handleDropImage = async (
+    blockId: number,
+    e: React.DragEvent<HTMLTextAreaElement>
+  ) => {
+    const file = e.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      e.preventDefault();
+      try {
+        const url = await uploadImage(file);
+        insertImageMarkdown(blockId, url);
+      } catch {
+        setStatusMessage("이미지 업로드에 실패했어요.");
+      }
+    }
+  };
+
+  // 이미지 업로드 - 파일 선택
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // 선택 텍스트를 alt로 쓰고, 없으면 기본 "image" 사용
+  const insertImage = (state: TextState, api: TextAreaTextApi, url: string) => {
+    const alt = state.selectedText?.trim() || "image";
+    const md = `![${alt}](${url})`;
+    api.replaceSelection(md);
+
+    const pos = state.selection.start + md.length;
+    api.setSelectionRange({ start: pos, end: pos });
+  };
+
+  const imageUploadCmd: ICommand = {
+    name: "imageUpload",
+    keyCommand: "image",
+    icon: commands.image.icon, // 기본 이미지 아이콘 재사용
+    buttonProps: { "aria-label": "이미지 업로드" },
+    execute: (state, api) => {
+      const input = fileRef.current;
+      if (!input) return;
+
+      const onPick = async (e: Event) => {
+        input.removeEventListener("change", onPick);
+        const file = (e.target as HTMLInputElement).files?.[0];
+        (e.target as HTMLInputElement).value = ""; // 같은 파일 재선택 허용
+        if (!file) return;
+
+        try {
+          const url = await uploadImage(file);
+          insertImage(state, api, url);
+        } catch {
+          // 필요시 상태 메시지/토스트 처리
+          // setStatusMessage("이미지 업로드에 실패했어요.");
+        }
+      };
+
+      input.accept = "image/*";
+      input.addEventListener("change", onPick, { once: true });
+      input.click();
+    },
+  };
+
   // ---------- UI ----------
   return (
     <div>
@@ -765,6 +859,11 @@ const TempWritePage = () => {
                   isSaving={isSaving}
                   canSave={canSave}
                   onActivate={(i) => setActiveIndex(i)}
+                  onPasteImage={handlePasteImage}
+                  onDropImage={handleDropImage}
+                  commandsFilter={(cmd) =>
+                    cmd.keyCommand === "image" ? imageUploadCmd : cmd
+                  }
                 />
               );
             })}
@@ -838,6 +937,8 @@ const TempWritePage = () => {
           )}
         </div>
       </div>
+
+      <input ref={fileRef} type="file" accept="image/*" hidden />
     </div>
   );
 };
