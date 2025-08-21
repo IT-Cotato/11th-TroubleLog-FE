@@ -279,7 +279,7 @@ export default function FreeFormWritePage() {
     title,
     introduction: meta?.description ?? "",
     postTags,
-    isVisible: (meta?.visibility ?? "public") === "public",
+    isVisible: (meta?.visibility ?? "private") === "public",
     isSummaryCreated: false,
     postStatus,
     starRating: Number(meta?.importance ?? 0),
@@ -345,7 +345,7 @@ export default function FreeFormWritePage() {
       const meta: PostSavePayload = {
         importance: previewMeta?.importance ?? 0,
         description: previewMeta?.description ?? "",
-        visibility: previewMeta?.visibility ?? "public",
+        visibility: previewMeta?.visibility ?? "private",
         projectId: Number(projectId),
         projectName:
           projectNameById(selectedProjectIdPage) ||
@@ -1012,7 +1012,8 @@ export default function FreeFormWritePage() {
                 }
                 initialVisibility={
                   previewMeta?.visibility ??
-                  location.state?.savePrefill?.visibility
+                  location.state?.savePrefill?.visibility ??
+                  "private"
                 }
                 initialProjectId={
                   selectedProjectIdPage ??

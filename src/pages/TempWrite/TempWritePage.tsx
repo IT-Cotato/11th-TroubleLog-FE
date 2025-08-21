@@ -372,7 +372,7 @@ const TempWritePage = () => {
       title,
       introduction: meta.description ?? "",
       postTags: canonicalTags,
-      isVisible: (meta.visibility ?? "public") === "public",
+      isVisible: (meta.visibility ?? "private") === "public",
       isSummaryCreated: false,
       postStatus: "COMPLETED", // 저장(완료) 상태로 반영
       starRating: Number(meta.importance ?? 0),
@@ -461,7 +461,7 @@ const TempWritePage = () => {
           title,
           introduction: payload.description ?? "",
           postTags: canonicalTags,
-          isVisible: (payload.visibility ?? "public") === "public",
+          isVisible: (payload.visibility ?? "private") === "public",
           isSummaryCreated: false,
           postStatus: "COMPLETED",
           starRating: Number(payload.importance ?? 0),
@@ -716,7 +716,7 @@ const TempWritePage = () => {
       const meta: PostSavePayload = {
         importance: previewMeta?.importance ?? 0,
         description: previewMeta?.description ?? "",
-        visibility: previewMeta?.visibility ?? "public",
+        visibility: previewMeta?.visibility ?? "private",
         projectId:
           selectedProjectIdPage ??
           location.state?.savePrefill?.projectId ??
@@ -740,7 +740,7 @@ const TempWritePage = () => {
         title,
         introduction: meta.description ?? "",
         postTags: canonicalTags,
-        isVisible: (meta.visibility ?? "public") === "public",
+        isVisible: (meta.visibility ?? "private") === "public",
         isSummaryCreated: false,
         postStatus: "WRITING",
         starRating: Number(meta.importance ?? 0),
@@ -1046,7 +1046,8 @@ const TempWritePage = () => {
               }
               initialVisibility={
                 previewMeta?.visibility ??
-                location.state?.savePrefill?.visibility
+                location.state?.savePrefill?.visibility ??
+                "private"
               }
               initialProjectId={
                 selectedProjectIdPage ??

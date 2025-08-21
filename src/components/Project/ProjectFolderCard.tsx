@@ -116,7 +116,7 @@ export default function ProjectFolderCard({
 
       {/* 텍스트 영역: 고정 폭 제거 + 줄바꿈/잘림 안전 */}
       <div className="flex-1 min-w-0 flex flex-col items-start gap-3 sm:gap-[18px]">
-        <div className="flex flex-col items-start gap-1 self-stretch min-w-0">
+        <div className="flex flex-col items-start gap-1 self-stretch min-w-0 ">
           <span className="text-head-20-semibold block truncate" title={name}>
             {name}
           </span>
