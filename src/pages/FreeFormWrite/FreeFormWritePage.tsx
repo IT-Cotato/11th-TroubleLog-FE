@@ -1031,12 +1031,22 @@ export default function FreeFormWritePage() {
               <TemplateSelectModal
                 onConfirm={(type, label) => handleConfirmTemplate(type, label)}
                 onClose={async () => {
-                  await persistEditsIfEditMode(); // 요약 안 함 → 수정 저장
-                  setIsTemplateSelectModalOpen(false);
+                  try {
+                    await persistEditsIfEditMode(); // 요약 안 함 → 수정 저장
+                  } catch (e) {
+                    console.error("Failed to persist edits on close:", e);
+                  } finally {
+                    setIsTemplateSelectModalOpen(false);
+                  }
                 }}
                 onLater={async () => {
-                  await persistEditsIfEditMode(); // 요약 안 함 → 수정 저장
-                  await handleLater();
+                  try {
+                    await persistEditsIfEditMode(); // 요약 안 함 → 수정 저장
+                    await handleLater();
+                  } catch (e) {
+                    console.error("Failed to persist edits or navigate:", e);
+                    setStatusMessage("저장 중 오류가 발생했습니다.");
+                  }
                 }}
                 onPrev={() => {
                   setIsTemplateSelectModalOpen(false);
