@@ -914,6 +914,19 @@ export default function FreeFormWritePage() {
                     handleChangeBlock(block.id, "content", val || "")
                   }
                   preview="edit"
+                  textareaProps={{
+                    onPaste: (e) => handlePasteImage(block.id, e),
+                    onDrop: (e) => handleDropImage(block.id, e),
+                    onDragOver: (e) => {
+                      if (e.dataTransfer?.types?.includes("Files")) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    },
+                  }}
+                  commandsFilter={(cmd) =>
+                    cmd.keyCommand === "image" ? imageUploadCmd : cmd
+                  }
                 />
               </div>
             ))}
@@ -960,21 +973,6 @@ export default function FreeFormWritePage() {
                   location.state?.savePrefill?.thumbnail ??
                   null
                 }
-                preview="edit"
-                textareaProps={{
-                  onPaste: (e) => handlePasteImage(block.id, e),
-                  onDrop: (e) => handleDropImage(block.id, e),
-                  onDragOver: (e) => {
-                    if (e.dataTransfer?.types?.includes("Files")) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  },
-                }}
-                commandsFilter={(cmd) =>
-                  cmd.keyCommand === "image" ? imageUploadCmd : cmd
-                }
-
               />
             )}
 

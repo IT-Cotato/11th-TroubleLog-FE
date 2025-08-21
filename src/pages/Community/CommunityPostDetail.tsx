@@ -170,14 +170,38 @@ export default function CommunityPostDetail() {
     const ownerId = stateOwnerId ?? (qsOwnerId ? Number(qsOwnerId) : undefined);
     const from = stateFrom ?? qsFrom;
 
-    // 검색 범위: location.state.searchScope 또는 ?scope=my|community 로 전달
     const stateScope = (location.state as any)?.searchScope as
       | SearchScope
       | undefined;
     const qsScope = (qs.get("scope") as SearchScope) || undefined;
     const searchScope = stateScope ?? qsScope;
 
-    return { from, ownerId, viewerId: viewerIdInStore, searchScope };
+    // 목록에서 실어온 힌트
+    const statusFromList = (location.state as any)?.statusFromList as
+      | "inProgress"
+      | "complete"
+      | "created"
+      | undefined;
+    const isVisibleFromList = (location.state as any)?.isVisibleFromList as
+      | boolean
+      | undefined;
+    const summaryIdFromList = (location.state as any)?.summaryIdFromList as
+      | number
+      | undefined;
+    const isMineFromList = (location.state as any)?.isMineFromList as
+      | boolean
+      | undefined;
+
+    return {
+      from,
+      ownerId,
+      viewerId: viewerIdInStore,
+      searchScope,
+      statusFromList,
+      isVisibleFromList,
+      summaryIdFromList,
+      isMineFromList,
+    };
   }
 
   // 별점 enum/문자 → 숫자
@@ -275,11 +299,11 @@ export default function CommunityPostDetail() {
         thumbnail: detail?.thumbnailUrl ?? null,
       },
       projectId: detail?.projectId ?? undefined,
-      // 서버에서 받은 체크리스트 ID 배열을 그대로 전달
-      initialChecklistErrorIds: Array.isArray(detail?.checklistError)
+      // TempWritePage에서 기대하는 키 이름으로 전달
+      checklistError: Array.isArray(detail?.checklistError)
         ? detail.checklistError
         : [],
-      initialChecklistReasonIds: Array.isArray(detail?.checklistReason)
+      checklistReason: Array.isArray(detail?.checklistReason)
         ? detail.checklistReason
         : [],
     };
@@ -457,43 +481,98 @@ export default function CommunityPostDetail() {
 
     (async () => {
       try {
-        const viewerId = detailCtx.viewerId ?? null;
-        const isMine =
-          viewerId != null &&
-          detailCtx.ownerId != null &&
-          String(detailCtx.ownerId) === String(viewerId);
+        const {
+          viewerId,
+          ownerId,
+          statusFromList,
+          isVisibleFromList,
+          summaryIdFromList,
+          isMineFromList,
+        } = detailCtx;
 
+        // 내 글 여부 결정(힌트 우선)
+        const mineByIds =
+          viewerId != null &&
+          ownerId != null &&
+          String(ownerId) === String(viewerId);
+        const isMine = isMineFromList === true ? true : mineByIds;
+
+        // 1) 힌트가 있으면 즉시 분기 (중복 호출 차단)
+        if (isMine && statusFromList === "inProgress") {
+          // 작성 중 → 에디터(프리필 위해 1회 내 상세 호출)
+          await loadMineDraft(numId);
+          return;
+        }
+
+        if (isMine && statusFromList === "created") {
+          if (summaryIdFromList != null) {
+            navigate(PATH.COMBINED_DETAIL(numId, summaryIdFromList), {
+              replace: true,
+              state: {
+                from: "community-detail",
+                ownerId: viewerId ?? undefined,
+              },
+            });
+            return;
+          }
+          // 힌트에 summaryId가 없으면 한 번만 내 상세 조회로 보강
+          try {
+            const myDetail = await getPostDetail(numId);
+            const sid =
+              (typeof (myDetail as any)?.postSummaryId === "number" &&
+                (myDetail as any).postSummaryId) ||
+              (typeof (myDetail as any)?.summaryId === "number" &&
+                (myDetail as any).summaryId) ||
+              null;
+            if (sid != null) {
+              navigate(PATH.COMBINED_DETAIL(numId, sid), {
+                replace: true,
+                state: {
+                  from: "community-detail",
+                  ownerId: viewerId ?? undefined,
+                },
+              });
+              return;
+            }
+          } catch {
+            /* 무시하고 커뮤 상세로 폴백 */
+          }
+          await loadCommunity();
+          return;
+        }
+
+        if (
+          isMine &&
+          statusFromList === "complete" &&
+          typeof isVisibleFromList === "boolean"
+        ) {
+          if (isVisibleFromList) {
+            // 공개 완료 → 커뮤니티 상세만
+            await loadCommunity();
+          } else {
+            // 비공개 완료 → 내 상세만
+            const myDetail = await getPostDetail(numId);
+            const vmMine = toPostDetailVM(myDetail as any, viewerId);
+            setPost(vmMine);
+            setIsLiked(vmMine.isLiked);
+            setLikeCounts(vmMine.likeCounts);
+            setIsCommunitySource(false);
+          }
+          return;
+        }
+
+        // 2) 힌트가 부족하면 기존 로직(내 상세로 판정 → 필요 시 커뮤) 실행
         if (isMine) {
-          // 내 글이면: 먼저 post detail로 상태 확인 → draft면 post detail, 완료면 community
           try {
             const myDetail = await getPostDetail(numId);
             const isDraft = (myDetail as any)?.completedAt == null;
-
-            if (isDraft) {
-              await loadMineDraft(numId);
-            } else {
-              await loadCommunity();
-            }
+            if (isDraft) await loadMineDraft(numId);
+            else await loadCommunity();
           } catch {
-            // 내 상세가 실패해도 커뮤니티로 최종 시도
             await loadCommunity();
           }
         } else {
-          // 내 글이 아니면: 바로 커뮤니티 상세
-          try {
-            await loadCommunity();
-          } catch (err: any) {
-            const status = err?.response?.status ?? err?.status;
-            if (status === 401 || status === 403 || status === 404) {
-              // 타인의 draft이거나 접근 권한이 없는 경우
-              alert(
-                "접근할 수 없는 페이지입니다. 작성 중인 문서이거나 권한이 없습니다."
-              );
-              navigate(-1);
-              return;
-            }
-            throw err;
-          }
+          await loadCommunity();
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -511,7 +590,16 @@ export default function CommunityPostDetail() {
     return () => {
       cancelled = true;
     };
-  }, [postId, detailCtx.viewerId, detailCtx.ownerId, navigate]);
+  }, [
+    postId,
+    detailCtx.viewerId,
+    detailCtx.ownerId,
+    detailCtx.statusFromList,
+    detailCtx.isVisibleFromList,
+    detailCtx.summaryIdFromList,
+    detailCtx.isMineFromList,
+    navigate,
+  ]);
 
   const navigatingRef = useRef(false);
 

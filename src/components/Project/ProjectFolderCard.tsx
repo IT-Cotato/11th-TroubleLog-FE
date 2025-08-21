@@ -38,7 +38,6 @@ export default function ProjectFolderCard({
   const [loading, setLoading] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
-  // ESC로 드롭다운 닫기
   useEffect(() => {
     if (!showMenu) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -64,26 +63,18 @@ export default function ProjectFolderCard({
     []
   );
 
-  // 수정 api 호출
   const handleEditSubmit = useCallback(
     async (data: UpdateProjectRequest) => {
       try {
         setLoading(true);
-
         const body: UpdateProjectRequest = {
           name: data.name.trim(),
           description: data.description.trim(),
         };
-
-        // 썸네일이 넘어왔을 때만 판단
         if (data.thumbnailImageUrl !== undefined) {
           const v = data.thumbnailImageUrl.trim();
-          if (v !== "") {
-            // 교체: 값 포함
-            body.thumbnailImageUrl = v;
-          }
+          if (v !== "") body.thumbnailImageUrl = v;
         }
-
         await putUpdateProject(id, body);
         setShowEditModal(false);
         onUpdated?.();
@@ -96,12 +87,10 @@ export default function ProjectFolderCard({
     [id, onUpdated]
   );
 
-  // 삭제 api 호출
   const handleDeleteConfirm = useCallback(async () => {
     try {
       setLoading(true);
       await deleteProject(id);
-      console.log("프로젝트 삭제 완료");
       setShowDeleteModal(false);
       onDeleted?.();
     } catch (err) {
@@ -113,9 +102,9 @@ export default function ProjectFolderCard({
 
   // 카드 본문(링크 영역)
   const CardMain = (
-    <div className="flex items-center gap-[16px]">
-      {/* 썸네일 */}
-      <div className="flex w-[100px] h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden">
+    <div className="flex items-center gap-3 sm:gap-[16px] min-w-0">
+      {/* 썸네일: 모바일에서 작게, sm 이상 기존 크기 */}
+      <div className="flex w-16 h-16 sm:w-[100px] sm:h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden shrink-0">
         {thumbnail && (
           <img
             src={thumbnail}
@@ -124,12 +113,21 @@ export default function ProjectFolderCard({
           />
         )}
       </div>
-      <div className="flex w-[228px] flex-col items-start gap-[18px]">
-        <div className="flex flex-col items-start gap-[4px] self-stretch">
-          <span className="text-head-20-semibold">{name}</span>
-          <span>{description}</span>
+
+      {/* 텍스트 영역: 고정 폭 제거 + 줄바꿈/잘림 안전 */}
+      <div className="flex-1 min-w-0 flex flex-col items-start gap-3 sm:gap-[18px]">
+        <div className="flex flex-col items-start gap-1 self-stretch min-w-0">
+          <span className="text-head-20-semibold block truncate" title={name}>
+            {name}
+          </span>
+          <span className="text-body-14-regular text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap">
+            {description}
+          </span>
         </div>
-        <TagList tags={tags} />
+        {/* 태그: 래퍼로 overflow 보호 */}
+        <div className="w-full min-w-0 overflow-hidden">
+          <TagList tags={tags} />
+        </div>
       </div>
     </div>
   );
@@ -138,7 +136,7 @@ export default function ProjectFolderCard({
   const KebabArea = (
     <div
       ref={menuRef}
-      className="relative"
+      className="relative shrink-0 ml-2"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -161,23 +159,23 @@ export default function ProjectFolderCard({
   );
 
   const ContainerClasses =
-    "flex w-[384px] p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card";
+    "flex w-full max-w-[384px] p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card overflow-hidden";
 
   return (
     <>
       <div className={ContainerClasses}>
-        <div className="flex items-start self-stretch">
+        <div className="flex items-start self-stretch min-w-0">
           {to ? (
             <Link
               to={to}
               state={linkState}
-              className="flex-1"
+              className="flex-1 min-w-0"
               aria-label={`${name} 프로젝트로 이동`}
             >
               {CardMain}
             </Link>
           ) : (
-            <div className="flex-1">{CardMain}</div>
+            <div className="flex-1 min-w-0">{CardMain}</div>
           )}
           {KebabArea}
         </div>

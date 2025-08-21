@@ -19,10 +19,10 @@ export default function KakaoLoginButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="flex items-center justify-center gap-2 py-3 px-[208px] rounded-lg bg-[#FEE500]"
+      className="flex w-full h-12 items-center justify-center gap-2 rounded-lg bg-[#FEE500]"
     >
       <img src={kakaoLogoIcon} className="w-[18px] h-[18px]" alt="kakao" />
-      <span className="text-[20px] font-semibold leading-normal text-[rgba(0,0,0,0.85)] font-pretendard">
+      <span className="text-head-20-semibold leading-normal text-[rgba(0,0,0,0.85)]">
         카카오 로그인
       </span>
     </button>

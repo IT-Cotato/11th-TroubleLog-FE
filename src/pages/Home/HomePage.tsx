@@ -323,8 +323,8 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            {/* 1 / 2 / 3 / 4 컬럼 그리드 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+            {/* 유연한 컬럼: 화면에 맞춰 자동으로 1~N열, 각 셀 최소 320px */}
+            <div className="grid w-full gap-6 grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
               {projects.map((p) => (
                 <ProjectFolderCard
                   key={p.id}
@@ -387,10 +387,17 @@ export default function HomePage() {
                     {...card}
                     onDeleted={handleRecentDeleted}
                     onClick={() => {
-                      const ownerId = card.authorId ?? viewerId;
+                      const ownerId = viewerId; // 내 글 목록이라면 viewerId로 충분
                       const qs = new URLSearchParams({ from: "home" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
 
+                      // 목록 VM에서 확정값 추출
+                      const statusFromList = card.status; // 'inProgress' | 'complete' | 'created'
+                      const isVisibleFromList = card.visibility === "public"; // boolean
+                      const summaryIdFromList = card.summaryId ?? undefined;
+                      const isMineFromList = card.isMine === true;
+
+                      // 요약 완료는 합본으로 바로 라우팅(기존 로직 유지)
                       const { goCombined, summaryId } = decideCombined(
                         card,
                         viewerId
@@ -399,11 +406,23 @@ export default function HomePage() {
                         navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
                           state: { from: "home", ownerId },
                         });
-                      } else {
-                        navigate(
-                          `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
-                        );
+                        return;
                       }
+
+                      // CPD가 분기 판단에 쓸 힌트를 state로 전달
+                      navigate(
+                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`,
+                        {
+                          state: {
+                            from: "home",
+                            ownerId,
+                            statusFromList, // 작성 상태
+                            isVisibleFromList, // 공개/비공개 (boolean)
+                            summaryIdFromList, // 요약 id(있을 수도)
+                            isMineFromList, // 내 글 여부 힌트
+                          },
+                        }
+                      );
                     }}
                     onAvatarClick={() => {
                       if (viewerId != null)
