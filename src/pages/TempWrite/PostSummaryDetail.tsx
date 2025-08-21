@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
+import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import TagList from "@/components/Card/TagList";
 import PostGuideMd from "@/components/Community/PostGuideMd";
 import { getPostSummary } from "@/api/post.api";
 import type { GetSummaryResponse } from "@/models/post.model";
-import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 
 type GuideContent = string | { type: "image"; src: string; alt?: string };
+
+const HEADER_OFFSET = 500;
 
 export default function PostSummaryDetail() {
   const { summaryId } = useParams<{ summaryId: string }>();
@@ -64,101 +66,124 @@ export default function PostSummaryDetail() {
       });
       setCurrentSection(cur);
     };
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const scrollToSection = (idx: number) => {
     const t = sectionRefs.current[idx];
     if (t) {
-      window.scrollTo({ top: t.offsetTop - 180, behavior: "smooth" });
+      window.scrollTo({ top: t.offsetTop - HEADER_OFFSET, behavior: "smooth" });
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center">
-        <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[24px] w-full pt-[180px]">
-          <div className="w-full h-[120px] bg-gray-100 rounded" />
-          <div className="w-full h-[400px] bg-gray-100 rounded" />
+      <div>
+        <HeaderWoSearch />
+        <div className="w-full px-4 sm:px-6 md:px-8">
+          <div className="mx-auto max-w-[1200px] flex items-start justify-center gap-6">
+            <main className="flex-1 w-full max-w-[900px] pt-[180px]">
+              <div className="h-[120px] bg-gray-100 rounded mb-6" />
+              <div className="h-[400px] bg-gray-100 rounded" />
+            </main>
+          </div>
         </div>
       </div>
     );
   }
+
   if (err || !data) {
     return (
-      <div className="flex justify-center">
-        <div className="max-w-[1200px] w-full pt-[180px] text-red-600">
-          {err ?? "요약본을 찾을 수 없습니다."}
+      <div>
+        <HeaderWoSearch />
+        <div className="w-full px-4 sm:px-6 md:px-8">
+          <div className="mx-auto max-w-[1200px] pt-[180px] text-red-600">
+            {err ?? "요약본을 찾을 수 없습니다."}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative">
+    <div>
       <HeaderWoSearch />
 
-      {/* 오른쪽 목차  */}
-      {questions.length > 0 && (
-        <div className="fixed right-[89px] top-[520px] z-30 hidden xl:block">
-          <nav className="flex flex-col items-start gap-[16px] border-l border-gray3 pl-[12px] pr-[8px] py-[8px] rounded-lg bg-white/70 backdrop-blur-sm text-body-20-regular text-gray3">
-            {questions.map((q, idx) => (
-              <button
-                key={idx}
-                onClick={() => scrollToSection(idx)}
-                className={`text-left hover:text-black ${
-                  currentSection === idx ? "text-black" : ""
-                }`}
-              >
-                {idx + 1}. {q}
-              </button>
-            ))}
-          </nav>
-        </div>
-      )}
-
-      {/* 본문 */}
-      <div className="flex flex-col items-start max-w-[1200px] ml-[360px] mr-[36px] gap-[56px] mb-[224px]">
-        {/* 상단 */}
-        <div className="flex w-full pt-[180px] pb-[18px] items-center border-b border-gray1">
-          <div className="flex flex-col items-start gap-[44px]">
-            <div className="flex flex-col items-start gap-[53px]">
-              <div className="flex flex-col items-start gap-[10px]">
-                <div className="flex w-[1200px] justify-between items-start">
-                  <span className="text-head-20-semibold">{data.errorTag}</span>
-                </div>
-                <div className="text-head-48">{data.title}</div>
-              </div>
-
-              <div className="flex items-center gap-[16px]">
-                <TagList tags={data.postTags ?? []} variant="post" />
-                <div className="text-body-16-regular text-gray3">·</div>
-                <div className="text-body-20-regular text-gray3">
-                  {new Date(data.summaryCreatedAt).toLocaleDateString()}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 섹션 */}
-        <div className="flex w-full flex-col items-start gap-[8px]">
-          <div className="flex flex-col items-start gap-[36px] self-stretch">
-            <div className="flex flex-col items-start self-stretch">
-              <div className="flex flex-col items-start gap-[48px] self-stretch">
-                {questions.map((q, idx) => (
-                  <div
-                    id={`section-${idx}`}
-                    key={idx}
-                    className="scroll-mt-[200px]"
-                  >
-                    <PostGuideMd question={q} content={contents[idx] ?? []} />
+      <div className="w-full px-4 sm:px-6 md:px-8">
+        {/* 본문 + TOC 행 배치, 가운데 정렬 */}
+        <div className="mx-auto flex items-start justify-center gap-10 pl-16">
+          {/* 본문 컬럼 */}
+          <main className="flex-1 w-full max-w-[900px] flex flex-col items-start gap-8 sm:gap-[56px] mb-24 sm:mb-[224px]">
+            {/* 상단 영역 */}
+            <section className="w-full pt-20 sm:pt-[120px] pb-[18px] border-b border-gray1">
+              <div className="flex flex-col items-start gap-8 sm:gap-[44px] w-full">
+                <div className="flex flex-col items-start gap-8 sm:gap-[53px] w-full">
+                  <div className="flex flex-col items-start gap-[10px] w-full">
+                    <div className="flex w-full justify-between items-start">
+                      <span className="text-head-20-semibold">
+                        {data.errorTag}
+                      </span>
+                    </div>
+                    <h1 className="text-head-48 break-words">{data.title}</h1>
                   </div>
-                ))}
+
+                  <div className="flex flex-wrap items-center gap-[12px] sm:gap-[16px]">
+                    <TagList tags={data.postTags ?? []} variant="post" />
+                    <div className="text-body-16-regular text-gray3">·</div>
+                    <time className="text-body-20-regular text-gray3">
+                      {new Date(data.summaryCreatedAt).toLocaleDateString()}
+                    </time>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </section>
+
+            {/* 섹션들 */}
+            <section className="flex w-full flex-col items-start gap-[8px]">
+              <div className="flex flex-col items-start gap-[36px] self-stretch">
+                <div className="flex flex-col items-start self-stretch">
+                  <div className="flex flex-col items-start gap-[48px] self-stretch">
+                    {questions.map((q, idx) => (
+                      <div
+                        id={`section-${idx}`}
+                        key={idx}
+                        className="scroll-mt-28 md:scroll-mt-[200px]"
+                      >
+                        <PostGuideMd
+                          question={q}
+                          content={contents[idx] ?? []}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </main>
+
+          {/* TOC 사이드: xl 이상에서만 보이고 sticky */}
+          {questions.length > 0 && (
+            <aside
+              className="hidden xl:block h-fit w-[260px] 2xl:w-[320px] sticky self-start flex-shrink-0"
+              style={{ top: HEADER_OFFSET }}
+            >
+              <nav className="flex flex-col items-start gap-[16px] border-l border-gray3 pl-[12px] pr-[8px] py-[8px] rounded-lg bg-white/70 backdrop-blur-sm text-body-20-regular text-gray3 w-full">
+                {questions.map((q, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => scrollToSection(idx)}
+                    className={`block w-full text-left hover:text-black ${
+                      currentSection === idx ? "text-black" : ""
+                    }`}
+                    aria-current={currentSection === idx ? "true" : undefined}
+                  >
+                    {idx + 1}. {q}
+                  </button>
+                ))}
+              </nav>
+            </aside>
+          )}
         </div>
       </div>
     </div>
