@@ -22,17 +22,6 @@ interface FolderModalProps {
   loading?: boolean;
 }
 
-const detailInflight = new Map<number, Promise<ProjectDetail>>();
-function fetchProjectDetailOnce(id: number) {
-  if (!detailInflight.has(id)) {
-    detailInflight.set(
-      id,
-      getProjectDetail(id).finally(() => detailInflight.delete(id))
-    );
-  }
-  return detailInflight.get(id)!;
-}
-
 export default function FolderModal({
   mode,
   projectId,
@@ -51,8 +40,25 @@ export default function FolderModal({
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [syncing, setSyncing] = useState(false);
+  const [serverThumbUrl, setServerThumbUrl] = useState<string | null>(
+    initialThumbnail ?? null
+  );
 
   const { uploading, progress, upload, reset: resetUpload } = useImageUpload();
+
+  const detailInflightRef = useRef<Map<number, Promise<ProjectDetail>>>(
+    new Map()
+  );
+  const fetchProjectDetailOnce = (id: number) => {
+    const m = detailInflightRef.current;
+    if (!m.has(id)) {
+      m.set(
+        id,
+        getProjectDetail(id).finally(() => m.delete(id))
+      );
+    }
+    return m.get(id)!;
+  };
 
   useEffect(() => {
     if (mode !== "edit" || !projectId) return;
@@ -70,6 +76,7 @@ export default function FolderModal({
         setName(detail.name ?? "");
         setDescription(detail.description ?? "");
         setThumbnailPreview(detail.thumbnailImageUrl ?? null);
+        setServerThumbUrl(detail.thumbnailImageUrl ?? null); // ★ 추가
         setSelectedFile(null);
         setRemoved(false);
         resetUpload();
@@ -103,6 +110,7 @@ export default function FolderModal({
     setSelectedFile(file);
     setThumbnailPreview(URL.createObjectURL(file));
     setRemoved(false);
+    // serverThumbUrl는 유지 (사용자가 새로 업로드하면 serverThumbUrl는 결국 사용되지 않음)
     resetUpload();
   };
 
@@ -119,6 +127,7 @@ export default function FolderModal({
     setThumbnailPreview(null);
     setSelectedFile(null);
     setRemoved(true);
+    setServerThumbUrl(null);
     resetUpload();
   };
 
@@ -133,18 +142,31 @@ export default function FolderModal({
       if (selectedFile) {
         uploadedUrl = await upload(selectedFile);
       }
+
       const payload: CreateProjectRequest = {
         name: name.trim(),
         description: description.trim(),
       };
+
       if (mode === "new") {
-        if (uploadedUrl && uploadedUrl.trim() !== "")
+        if (uploadedUrl && uploadedUrl.trim() !== "") {
           payload.thumbnailImageUrl = uploadedUrl.trim();
+        }
+        // new에서는 기존 서버 URL이란 개념이 없으므로 추가 X
       } else {
-        if (uploadedUrl && uploadedUrl.trim() !== "")
+        // edit 모드
+        if (uploadedUrl && uploadedUrl.trim() !== "") {
+          // 새 업로드가 있으면 그걸 전송
           payload.thumbnailImageUrl = uploadedUrl.trim();
-        else if (removed) payload.thumbnailImageUrl = "";
+        } else if (removed) {
+          // 삭제를 눌렀다면 빈 문자열 전송
+          payload.thumbnailImageUrl = "";
+        } else if (serverThumbUrl) {
+          // ★ 변경/삭제 없이 저장 → 기존 서버 썸네일을 재전송
+          payload.thumbnailImageUrl = serverThumbUrl;
+        }
       }
+
       onSubmit?.(payload);
     } catch (err) {
       console.error("이미지 업로드/전송 실패:", err);

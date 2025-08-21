@@ -10,6 +10,17 @@ type GuideContent = string | { type: "image"; src: string; alt?: string };
 
 const HEADER_OFFSET = 500;
 
+const inflightSummary = new Map<number, Promise<GetSummaryResponse>>();
+function fetchSummaryOnce(id: number) {
+  if (!inflightSummary.has(id)) {
+    inflightSummary.set(
+      id,
+      getPostSummary(id).finally(() => inflightSummary.delete(id))
+    );
+  }
+  return inflightSummary.get(id)!;
+}
+
 export default function PostSummaryDetail() {
   const { summaryId } = useParams<{ summaryId: string }>();
 
@@ -21,9 +32,13 @@ export default function PostSummaryDetail() {
     let cancelled = false;
     (async () => {
       try {
-        if (!summaryId) throw new Error("잘못된 요약 ID");
+        const id = Number(summaryId);
+        if (!id || Number.isNaN(id)) throw new Error("잘못된 요약 ID");
         setLoading(true);
-        const res = await getPostSummary(Number(summaryId));
+        setErr(null);
+
+        // 동일 ID에 대해 요청 1회로 합치기
+        const res = await fetchSummaryOnce(id);
         if (!cancelled) setData(res);
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "요약본을 불러오지 못했어요.");

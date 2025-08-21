@@ -58,25 +58,23 @@ export default function CardHeaderRight({
   return (
     <div className="relative flex items-center gap-1 sm:gap-2" ref={menuRef}>
       <StatusDot status={status} />
-      {status !== "inProgress" && (
-        <div className="relative" {...stopCardClick}>
-          <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
-          {showMenu && (
-            <div {...stopCardClick}>
-              <KebabDropdown
-                options={[
-                  {
-                    label: deleting ? "삭제 중..." : "삭제",
-                    onClick: () => {
-                      if (!deleting) onDelete?.();
-                    },
+      <div className="relative" {...stopCardClick}>
+        <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
+        {showMenu && (
+          <div {...stopCardClick}>
+            <KebabDropdown
+              options={[
+                {
+                  label: deleting ? "삭제 중..." : "삭제",
+                  onClick: () => {
+                    if (!deleting) onDelete?.();
                   },
-                ]}
-              />
-            </div>
-          )}
-        </div>
-      )}
+                },
+              ]}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

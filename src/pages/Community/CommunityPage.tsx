@@ -13,17 +13,17 @@ import { useNavigate } from "react-router-dom";
 export default function CommunityPage() {
   const navigate = useNavigate();
 
-  const sortOptions = ["전체", "최신순", "추천순", "좋아요순"] as const;
+  const sortOptions = ["최신순", "좋아요순"] as const;
   type SortOption = (typeof sortOptions)[number];
 
-  const [selectedSort, setSelectedSort] = useState<SortOption>("전체");
+  const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
   const [selectedTab, setSelectedTab] = useState<"trouble" | "recent">(
     "trouble"
   );
 
   // UI 라벨 -> API sort 파라미터 매핑
   const sortBy: CommunitySort = useMemo(() => {
-    if (selectedSort === "최신순" || selectedSort === "전체") return "latest";
+    if (selectedSort === "최신순") return "latest";
     return "likes"; // "추천순" / "좋아요순" 모두 likes에 매핑
   }, [selectedSort]);
 
