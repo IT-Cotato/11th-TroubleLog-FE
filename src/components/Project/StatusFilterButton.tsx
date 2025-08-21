@@ -1,6 +1,6 @@
 interface StatusFilterButtonProps {
-  label: "작성 완료" | "요약 완료";
-  statusKey: "complete" | "created";
+  label: "작성 중" | "작성 완료" | "요약 완료";
+  statusKey: "inProgress" | "complete" | "created";
   isSelected: boolean;
   onClick: () => void;
 }
@@ -11,6 +11,13 @@ export default function StatusFilterButton({
   isSelected,
   onClick,
 }: StatusFilterButtonProps) {
+  const dotColorClass =
+    statusKey === "inProgress"
+      ? "bg-status-inProgress"
+      : statusKey === "complete"
+      ? "bg-status-complete"
+      : "bg-status-created";
+
   return (
     <button
       onClick={onClick}
@@ -20,11 +27,7 @@ export default function StatusFilterButton({
     >
       <div className="flex items-center gap-[6px] sm:gap-[8px]">
         <div
-          className={`w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] rounded-full ${
-            statusKey === "complete"
-              ? "bg-status-complete"
-              : "bg-status-created"
-          }`}
+          className={`w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] rounded-full ${dotColorClass}`}
         />
         <span className="text-body-20-regular">{label}</span>
       </div>

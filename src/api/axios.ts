@@ -85,6 +85,26 @@ const navigateToAuthGuardOnce = (status: 401 | 403, rawNext?: string) => {
   return authNavigationPromise;
 };
 
+const REFRESH_OK_KEY = "auth:lastRefreshOkAt";
+const setRecentRefreshOk = () => {
+  try {
+    localStorage.setItem(REFRESH_OK_KEY, String(Date.now()));
+  } catch {
+    //
+  }
+};
+const hasRecentRefreshOk = (ms = 10_000) => {
+  try {
+    const raw =
+      localStorage.getItem(REFRESH_OK_KEY) ??
+      sessionStorage.getItem(REFRESH_OK_KEY);
+    const ts = raw ? Number(raw) : NaN;
+    return Number.isFinite(ts) && Date.now() - ts < ms;
+  } catch {
+    return false;
+  }
+};
+
 // ----- 요청 인터셉터: 토큰/헤더 부착, 외부 절대 URL은 스킵 -----
 const reqId = api.interceptors.request.use((config) => {
   const url = config.url ?? "";
@@ -116,6 +136,8 @@ export const startRefresh = async (): Promise<string | null> => {
       return null;
     }
     localStorage.setItem("accessToken", newToken);
+
+    setRecentRefreshOk(); // NEW: 갱신 성공 신호
     return newToken;
   } catch {
     return null;
@@ -130,7 +152,30 @@ const resId = api.interceptors.response.use(
 
     // (안전망) 토큰 없이 HTML/리디렉트 비JSON 응답이면 로그인 요구
     const ct = res.headers?.["content-type"] as string | undefined;
-    const url: string | undefined = (res as any)?.request?.responseURL;
+    const url: string = (res as any)?.request?.responseURL || "";
+
+    // 서버가 302 → /login으로 돌린 뒤 브라우저가 따라가서 받은 HTML 응답
+    //    => 이 경우는 "인증 상실"로 보고 401 에러처럼 처리(에러 핸들러로 보냄)
+    const isLoginFollowed =
+      /\/login(\?|$)/.test(url) && (!ct || /text\/html/i.test(ct));
+
+    if (isLoginFollowed) {
+      const err = new AxiosError(
+        "Redirected to login",
+        "ERR_UNAUTHORIZED",
+        res.config,
+        (res as any).request,
+        {
+          status: 401,
+          statusText: "Unauthorized",
+          headers: res.headers,
+          config: res.config,
+          data: res.data,
+        } as any
+      );
+      return Promise.reject(err);
+    }
+
     const redirectedToKakao =
       !!url && url.includes("/oauth2/authorization/kakao");
     const notJson = !!ct && !ct.includes("application/json");
@@ -194,6 +239,16 @@ const resId = api.interceptors.response.use(
 
     // 401 → 리프레시 시도 (SSE/스킵 요청 제외)
     if (status === 401 && !skipAuth && !isSSEAuth) {
+      // NEW: 다른 요청/탭에서 이미 갱신 성공한 경우 → 현재 토큰으로 즉시 1회 재시도
+      const latestToken = localStorage.getItem("accessToken");
+      if (hasRecentRefreshOk() && latestToken && !cfg._retry) {
+        cfg._retry = true;
+        cfg.headers = cfg.headers ?? {};
+        (cfg.headers as any).Authorization = `Bearer ${latestToken}`;
+        return api(cfg);
+      }
+
+      // 기존 로직: 리프레시 시도 (중복 방지)
       if (cfg._retry) {
         localStorage.removeItem("accessToken");
         await navigateToAuthGuardOnce(401);
@@ -223,6 +278,28 @@ const resId = api.interceptors.response.use(
 
     // 403 → 접근권한 없음 화면
     if (status === 403 && !skipAuth && !isSSEAuth) {
+      // NEW 1) 리프레시가 "진행 중"이라면 완료까지 기다렸다가 성공 시 재시도
+      const inflight = getRefreshPromise();
+      if (inflight && !cfg._retry) {
+        const t = await inflight;
+        if (t) {
+          cfg._retry = true;
+          cfg.headers = cfg.headers ?? {};
+          (cfg.headers as any).Authorization = `Bearer ${t}`;
+          return api(cfg);
+        }
+      }
+
+      // NEW 2) 직전에 갱신 성공한 토큰이 있으면 1회 재시도
+      const latestToken = localStorage.getItem("accessToken");
+      if (hasRecentRefreshOk() && latestToken && !cfg._retry) {
+        cfg._retry = true;
+        cfg.headers = cfg.headers ?? {};
+        (cfg.headers as any).Authorization = `Bearer ${latestToken}`;
+        return api(cfg);
+      }
+
+      // 기존 동작: 접근 권한 없음 화면
       await navigateToAuthGuardOnce(403);
       return Promise.reject(error);
     }

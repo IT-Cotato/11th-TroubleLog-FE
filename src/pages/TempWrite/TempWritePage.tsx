@@ -32,10 +32,12 @@ import {
   type ICommand,
   type TextState,
 } from "@uiw/react-md-editor";
+import { isAxiosError } from "axios";
+import { startRefresh } from "@/api/axios";
 
 // ---- 숫자 인덱스 변환 유틸 ----
 const QI = { ERROR: 0, REASON: 1 } as const;
-const OFFSET: 0 | 1 = 0; // 서버가 1-based면 1로 변경
+const OFFSET = 1;
 
 const Q_ERROR = questionData[QI.ERROR]?.question;
 const Q_REASON = questionData[QI.REASON]?.question;
@@ -236,7 +238,9 @@ const TempWritePage = () => {
     | "PREPROCESSING"
     | "ANALYZING"
     | "POSTPROCESSING"
-    | "COMPLETED";
+    | "COMPLETED"
+    | "FAILED"
+    | "CANCELLED";
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus | null>(
     null
   );
@@ -358,6 +362,38 @@ const TempWritePage = () => {
     return out;
   };
 
+  // 현재 화면 상태 + PostSaveModal에서 받은 meta로 수정 페이로드 만들기
+  const buildEditFormFromMeta = async (meta: PostSavePayload) => {
+    const canonicalTags = await canonicalizeTags(selectedTags);
+    const { checklistError, checklistReason } =
+      encodeChecklistToNumbers(blocks);
+
+    return {
+      title,
+      introduction: meta.description ?? "",
+      postTags: canonicalTags,
+      isVisible: (meta.visibility ?? "public") === "public",
+      isSummaryCreated: false,
+      postStatus: "COMPLETED", // 저장(완료) 상태로 반영
+      starRating: Number(meta.importance ?? 0),
+      templateType: "GUIDELINE",
+      projectId: Number(meta.projectId),
+      thumbnailImageUrl: meta.thumbnail ?? undefined,
+      errorTag: selectedErrorType ?? "",
+      contents: toContentDtoList(blocks),
+      checklistError,
+      checklistReason,
+    };
+  };
+
+  // 수정 모드에서만 호출: 템플릿 선택 모달에서 요약을 시작하지 않는 경우에 저장
+  const persistEditsIfEditMode = async () => {
+    if (!isResume || !resumePostId || !previewMeta) return;
+    const form = await buildEditFormFromMeta(previewMeta);
+    await editPost(resumePostId, toEditPostRequest(form) as any);
+    setDraftPostId(resumePostId);
+  };
+
   // ---------- upsert ----------
   const upsertPost = async (maybeId: number | null, form: any) => {
     if (maybeId) {
@@ -411,31 +447,38 @@ const TempWritePage = () => {
     }
 
     try {
-      const canonicalTags = await canonicalizeTags(selectedTags);
-      const { checklistError, checklistReason } =
-        encodeChecklistToNumbers(blocks);
+      if (isResume) {
+        // --- 수정 모드 ---
+        // 여기서는 수정 API 호출하지 않음! (템플릿 모달에서 분기)
+        setIsTemplateSelectModalOpen(true);
+      } else {
+        // --- 생성 모드 (기존 동작 유지) ---
+        const canonicalTags = await canonicalizeTags(selectedTags);
+        const { checklistError, checklistReason } =
+          encodeChecklistToNumbers(blocks);
 
-      const form = {
-        title,
-        introduction: payload.description ?? "",
-        postTags: canonicalTags,
-        isVisible: (payload.visibility ?? "public") === "public",
-        isSummaryCreated: false,
-        postStatus: "COMPLETED",
-        starRating: Number(payload.importance ?? 0),
-        templateType: "GUIDELINE",
-        projectId: Number(payload.projectId),
-        thumbnailImageUrl: payload.thumbnail ?? undefined,
-        errorTag: selectedErrorType ?? "",
-        contents: toContentDtoList(blocks),
-        checklistError,
-        checklistReason,
-      };
+        const form = {
+          title,
+          introduction: payload.description ?? "",
+          postTags: canonicalTags,
+          isVisible: (payload.visibility ?? "public") === "public",
+          isSummaryCreated: false,
+          postStatus: "COMPLETED",
+          starRating: Number(payload.importance ?? 0),
+          templateType: "GUIDELINE",
+          projectId: Number(payload.projectId),
+          thumbnailImageUrl: payload.thumbnail ?? undefined,
+          errorTag: selectedErrorType ?? "",
+          contents: toContentDtoList(blocks),
+          checklistError,
+          checklistReason,
+        };
 
-      const id = await upsertPost(currentPostId, form);
-      setDraftPostId(id);
-      setCreatedPostId(id);
-      setIsTemplateSelectModalOpen(true);
+        const id = await upsertPost(currentPostId, form);
+        setDraftPostId(id);
+        setCreatedPostId(id);
+        setIsTemplateSelectModalOpen(true);
+      }
     } catch (e) {
       console.error(e);
       setStatusMessage("문서 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
@@ -509,9 +552,49 @@ const TempWritePage = () => {
     let timer: number | null = null;
 
     const tick = async () => {
+      const awaitRefreshIfAny = async () => {
+        const p = (window as any).__authRefreshPromise as Promise<
+          string | null
+        > | null;
+        if (p) {
+          try {
+            await p;
+          } catch {
+            /* ignore */
+          }
+        }
+      };
+
       try {
         const targetId = (createdPostId ?? resumePostId) as number;
-        const data: any = await getSummaryStatus(targetId, summaryTaskId);
+
+        await awaitRefreshIfAny();
+
+        const fetchOnce = () =>
+          getSummaryStatus(targetId, summaryTaskId, {
+            __skipGlobalAuthGuard: true,
+          });
+
+        let data: any;
+        try {
+          data = await fetchOnce();
+        } catch (e) {
+          if (isAxiosError(e) && e.response?.status === 401) {
+            const inflight = (window as any).__authRefreshPromise as Promise<
+              string | null
+            > | null;
+            const token = inflight ? await inflight : await startRefresh();
+            if (!token) throw e;
+
+            data = await getSummaryStatus(targetId, summaryTaskId, {
+              __skipGlobalAuthGuard: true,
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          } else {
+            throw e;
+          }
+        }
+
         const p = Math.max(0, Math.min(100, data?.progress ?? 0));
         if (stopped) return;
 
@@ -543,7 +626,7 @@ const TempWritePage = () => {
           }
         }
       } catch (err) {
-        console.error(err);
+        console.error("poll tick error:", err);
       }
     };
 
@@ -982,9 +1065,15 @@ const TempWritePage = () => {
 
           {isTemplateSelectModalOpen && (
             <TemplateSelectModal
-              onConfirm={(type, label) => handleConfirmTemplate(type, label)}
-              onClose={() => setIsTemplateSelectModalOpen(false)}
-              onLater={handleLater}
+              onConfirm={(type, label) => handleConfirmTemplate(type, label)} // 요약 시작: 수정 API 호출 X
+              onClose={async () => {
+                await persistEditsIfEditMode(); // 요약 안 함 → 수정 반영
+                setIsTemplateSelectModalOpen(false);
+              }}
+              onLater={async () => {
+                await persistEditsIfEditMode(); // 요약 안 함 → 수정 반영
+                await handleLater();
+              }}
               onPrev={() => {
                 setIsTemplateSelectModalOpen(false);
                 setIsPostSaveModalOpen(true);

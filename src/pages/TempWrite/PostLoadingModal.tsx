@@ -11,7 +11,9 @@ export type SummaryStatus =
   | "PREPROCESSING"
   | "ANALYZING"
   | "POSTPROCESSING"
-  | "COMPLETED";
+  | "COMPLETED"
+  | "FAILED"
+  | "CANCELLED";
 
 const STATUS_UI: Record<
   SummaryStatus,
@@ -53,6 +55,18 @@ const STATUS_UI: Record<
     color: "#16A34A",
     trail: "#E8F5EE",
   },
+  FAILED: {
+    label: "요약에 실패했어요",
+    desc: "잠시 후 다시 시도하거나, 네트워크 상태를 확인해주세요.",
+    color: "#EF4444",
+    trail: "#FEE2E2",
+  },
+  CANCELLED: {
+    label: "요약을 취소했어요",
+    desc: "요약본 생성이 취소되었어요",
+    color: "#EF4444",
+    trail: "#FEE2E2",
+  },
 };
 
 export const statusToPercent = (s: SummaryStatus) =>
@@ -63,6 +77,8 @@ export const statusToPercent = (s: SummaryStatus) =>
     ANALYZING: 50,
     POSTPROCESSING: 80,
     COMPLETED: 100,
+    FAILED: 0,
+    CANCELLED: 0,
   }[s]);
 
 function fallbackByProgress(p: number) {
@@ -148,6 +164,26 @@ export default function PostLoadingModal({
               : ui.desc}
           </span>
         </div>
+
+        {/* 실패 시 경고 안내 */}
+        {status === "FAILED" && (
+          <div
+            role="alert"
+            className="w-full max-w-[460px] mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-left"
+          >
+            <p className="text-body-16-regular text-red-700">
+              {serverMessage?.trim() ||
+                "요약 생성에 실패했습니다. 잠시 후 다시 시도해 주세요."}
+            </p>
+            {/* 필요하면 재시도 버튼을 노출하세요.
+          <div className="mt-2">
+            <button onClick={onClose} className="px-3 py-1.5 rounded-md bg-red-600 text-white">
+              닫기
+            </button>
+          </div>
+          */}
+          </div>
+        )}
       </div>
     </BaseModal>
   );

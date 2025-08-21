@@ -30,7 +30,7 @@ export interface TroubleListItem {
 export type GetTroubleListResponse = PaginatedResponse<TroubleListItem>;
 
 // 프로젝트 전용 쿼리 타입
-export type ProjectTroubleStatus = "COMPLETED" | "SUMMARIZED";
+export type ProjectTroubleStatus = "WRITING" | "COMPLETED" | "SUMMARIZED";
 export type ProjectTroubleSort = "LATEST" | "IMPORTANT" | "LIKES";
 export type ProjectTroubleVisibility = "ALL" | "PUBLIC" | "PRIVATE";
 export type ProjectTroubleSummaryType =

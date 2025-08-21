@@ -21,6 +21,7 @@ import type {
 } from "@/models/post.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "./axios";
+import type { AxiosRequestConfig } from "axios";
 
 const inflightMineDetail = new Map<number, Promise<any>>();
 
@@ -83,10 +84,16 @@ export const startSummary = (postId: number, summaryType: SummaryTypeParam) =>
   });
 
 // 요약 작업 상태
-export const getSummaryStatus = (postId: number, taskId: string) =>
+export const getSummaryStatus = (
+  postId: number,
+  taskId: string,
+  cfg?: AxiosRequestConfig
+) =>
   getAPIResponseData<WaitLoadingResponse>({
     url: `/troubles/${postId}/summary/${taskId}`,
     method: "GET",
+    __skipGlobalAuthGuard: true,
+    ...(cfg || {}),
   });
 
 // 요약 작업 취소

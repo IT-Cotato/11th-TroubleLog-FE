@@ -33,6 +33,8 @@ import {
   getPostDetail,
 } from "@/api/post.api";
 import { uploadImage } from "@/api/image.api";
+import { isAxiosError } from "axios";
+import { startRefresh } from "@/api/axios";
 
 // ---------- 타입 ----------
 export type BlockData = {
@@ -97,7 +99,9 @@ export type SummaryStatus =
   | "PREPROCESSING"
   | "ANALYZING"
   | "POSTPROCESSING"
-  | "COMPLETED";
+  | "COMPLETED"
+  | "FAILED"
+  | "CANCELLED";
 
 export default function FreeFormWritePage() {
   // ------------ 기본 상태 ------------
@@ -412,16 +416,7 @@ export default function FreeFormWritePage() {
   // 상단 Save 버튼: 원본 저장 + 임시저장 보조
   const handleGlobalSave = async () => {
     if (!validateBasic()) return;
-    setBlocks((prev) => prev.map((b) => ({ ...b, isSaved: true })));
-    const quickMeta = resolveQuickMeta();
-    if (!quickMeta) {
-      setStatusMessage("프로젝트를 먼저 선택해주세요.");
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 1000);
-      return;
-    }
-    await saveOriginal(quickMeta);
-    await handleClickTempSave();
+    await handleClickTempSave(); // 내부에서 저장 후 토스트만 띄움
   };
 
   // End → 템플릿 선택 → 요약
@@ -438,28 +433,6 @@ export default function FreeFormWritePage() {
     setIsPostSaveModalOpen(true);
   };
 
-  // 임시저장용 메타값 자동 구성 (모달 없이)
-  const resolveQuickMeta = (): PostSavePayload | null => {
-    const pid =
-      previewMeta?.projectId ?? initialProjectId ?? projectList[0]?.id ?? null;
-
-    if (pid == null) return null; // 프로젝트 없으면 임시저장 불가
-
-    const pname =
-      previewMeta?.projectName ??
-      projectList.find((p) => p.id === pid)?.name ??
-      "";
-
-    return {
-      importance: previewMeta?.importance ?? 0,
-      thumbnail: previewMeta?.thumbnail ?? null,
-      description: previewMeta?.description ?? "",
-      visibility: previewMeta?.visibility ?? "public",
-      projectId: pid,
-      projectName: pname,
-    };
-  };
-
   // 저장 모달 → Next
   const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
     setPreviewMeta(payload);
@@ -470,15 +443,22 @@ export default function FreeFormWritePage() {
       return;
     }
 
-    // SUMMARY 경로: 우선 원본을 COMPLETED 로 저장 → 템플릿 선택 열기
+    // SUMMARY 경로
     try {
-      const tags = await canonicalizeTags(selectedTags);
-      const form = buildForm("COMPLETED", payload, tags);
-      const id = await upsertPost(draftPostId, form);
-      setDraftPostId(id);
-      setCreatedPostId(id);
-
-      setIsTemplateSelectModalOpen(true);
+      if (isResume) {
+        // --- 수정 모드 ---
+        // 요약은 서버가 수정까지 처리하므로 여기선 수정 API 호출 안함
+        setCreatedPostId(resumePostId); // 이후 흐름에서 사용
+        setIsTemplateSelectModalOpen(true);
+      } else {
+        // --- 생성 모드(기존 동작) ---
+        const tags = await canonicalizeTags(selectedTags);
+        const form = buildForm("COMPLETED", payload, tags);
+        const id = await upsertPost(draftPostId, form); // create 또는 edit
+        setDraftPostId(id);
+        setCreatedPostId(id);
+        setIsTemplateSelectModalOpen(true);
+      }
     } catch (e) {
       console.error(e);
       setStatusMessage("문서 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
@@ -548,9 +528,51 @@ export default function FreeFormWritePage() {
     let timer: number | null = null;
 
     const tick = async () => {
+      // 리프레시 진행 중이면 먼저 대기
+      const awaitRefreshIfAny = async () => {
+        const p = (window as any).__authRefreshPromise as Promise<
+          string | null
+        > | null;
+        if (p) {
+          try {
+            await p;
+          } catch {
+            /* ignore */
+          }
+        }
+      };
+
       try {
         const targetId = (createdPostId ?? resumePostId) as number;
-        const data: any = await getSummaryStatus(targetId, summaryTaskId);
+
+        await awaitRefreshIfAny();
+
+        const fetchOnce = () =>
+          getSummaryStatus(targetId, summaryTaskId, {
+            __skipGlobalAuthGuard: true, // 전역 가드 스킵(자체 처리)
+          });
+
+        let data: any;
+        try {
+          data = await fetchOnce();
+        } catch (e) {
+          // 401이면 리프레시 후 1회 재시도
+          if (isAxiosError(e) && e.response?.status === 401) {
+            const inflight = (window as any).__authRefreshPromise as Promise<
+              string | null
+            > | null;
+            const token = inflight ? await inflight : await startRefresh();
+            if (!token) throw e; // 실패 → 상위에서 처리(모달 닫기 등)
+
+            data = await getSummaryStatus(targetId, summaryTaskId, {
+              __skipGlobalAuthGuard: true,
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          } else {
+            throw e;
+          }
+        }
+
         if (stopped) return;
 
         const p = Math.max(0, Math.min(100, data?.progress ?? 0));
@@ -570,7 +592,7 @@ export default function FreeFormWritePage() {
         if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
 
-          // 요약 성공 → postStatus = SUMMARIZED 로 반영
+          // 요약 성공 → postStatus = SUMMARIZED 반영 (기존 로직 유지)
           try {
             const targetIdNum = createdPostId ?? resumePostId!;
             await editPost(targetIdNum, { postStatus: "SUMMARIZED" } as any);
@@ -591,7 +613,7 @@ export default function FreeFormWritePage() {
           }
         }
       } catch (err) {
-        console.error(err);
+        console.error("poll tick error:", err);
       }
     };
 
@@ -782,6 +804,35 @@ export default function FreeFormWritePage() {
       input.addEventListener("change", onPick, { once: true });
       input.click();
     },
+  };
+
+  // (기존 함수들 아래에 추가)
+
+  const buildEditFormFromMeta = async (meta: PostSavePayload) => {
+    const tags = await canonicalizeTags(selectedTags);
+    // 이미 완료된 글이면 수정 후에도 COMPLETED 유지, 아니면 WRITING
+    const nextStatus: "WRITING" | "COMPLETED" = wasCompleted
+      ? "COMPLETED"
+      : "WRITING";
+    return buildForm(nextStatus, meta, tags);
+  };
+
+  // 템플릿 모달에서 '다음에/닫기' 등으로 요약을 시작하지 않을 때만 호출
+  const persistEditsIfEditMode = async () => {
+    if (!isResume || !resumePostId || !previewMeta) return;
+    try {
+      const form = await buildEditFormFromMeta(previewMeta);
+      await editPost(resumePostId, toEditPostRequest(form) as any);
+      setDraftPostId(resumePostId);
+      setCreatedPostId(resumePostId); // 이후 미리보기/네비에 활용
+      setShowSaveAlert(true);
+      setTimeout(() => setShowSaveAlert(false), 1000);
+    } catch (e) {
+      console.error("edit(save without summary) failed:", e);
+      setStatusMessage(
+        "수정 내용을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+      );
+    }
   };
 
   // ------------ UI ------------
@@ -979,8 +1030,14 @@ export default function FreeFormWritePage() {
             {isTemplateSelectModalOpen && (
               <TemplateSelectModal
                 onConfirm={(type, label) => handleConfirmTemplate(type, label)}
-                onClose={() => setIsTemplateSelectModalOpen(false)}
-                onLater={handleLater}
+                onClose={async () => {
+                  await persistEditsIfEditMode(); // 요약 안 함 → 수정 저장
+                  setIsTemplateSelectModalOpen(false);
+                }}
+                onLater={async () => {
+                  await persistEditsIfEditMode(); // 요약 안 함 → 수정 저장
+                  await handleLater();
+                }}
                 onPrev={() => {
                   setIsTemplateSelectModalOpen(false);
                   setIsPostSaveModalOpen(true);
