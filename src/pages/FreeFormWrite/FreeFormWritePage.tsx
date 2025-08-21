@@ -909,6 +909,12 @@ export default function FreeFormWritePage() {
                 textareaProps={{
                   onPaste: (e) => handlePasteImage(block.id, e),
                   onDrop: (e) => handleDropImage(block.id, e),
+                  onDragOver: (e) => {
+                    if (e.dataTransfer?.types?.includes("Files")) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  },
                 }}
                 commandsFilter={(cmd) =>
                   cmd.keyCommand === "image" ? imageUploadCmd : cmd
