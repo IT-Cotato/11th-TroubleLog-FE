@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
-import mockimg from "../../assets/images/mockimg.jpg";
+import onboarding_image from "../../assets/images/onboarding_image.png";
 import KakaoLoginButton from "./KakaoLoginButton";
 import { postLogin } from "@/api/auth.api";
 import { PATH } from "@/constants/paths";
@@ -137,7 +137,7 @@ const LoginPage = () => {
       {/* 좌측 비주얼: md 이상에서만 표시 */}
       <div className="hidden md:block md:w-1/2">
         <img
-          src={mockimg}
+          src={onboarding_image}
           alt="login visual"
           className="w-full h-full object-cover"
         />

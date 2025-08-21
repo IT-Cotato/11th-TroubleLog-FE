@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Input from "./Input";
-import mockimg from "../../assets/images/mockimg.jpg";
+import onboarding_image from "../../assets/images/onboarding_image.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import { postRegister } from "@/api/auth.api";
 import type { RegisterRequest } from "@/models/auth.model";
@@ -81,7 +81,7 @@ const SignPageTwo = () => {
     <div className="flex w-screen h-screen overflow-hidden">
       {/* 좌측 이미지 */}
       <img
-        src={mockimg}
+        src={onboarding_image}
         className="w-1/2 h-full object-fill"
         alt="signup visual"
       />

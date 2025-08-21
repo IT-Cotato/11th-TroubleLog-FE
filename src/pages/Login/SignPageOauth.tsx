@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Input from "./Input";
-import mockimg from "../../assets/images/mockimg.jpg";
+import onboarding_image from "../../assets/images/onboarding_image.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import { postOauthRegister } from "@/api/auth.api";
 import type { OauthRegisterRequest } from "@/models/auth.model";
@@ -124,7 +124,7 @@ const SignPageOauth = () => {
   return (
     <div className="flex w-screen h-screen overflow-hidden">
       <img
-        src={mockimg}
+        src={onboarding_image}
         className="w-[961.807px] h-full object-cover shrink-0"
         alt="signup visual"
       />
