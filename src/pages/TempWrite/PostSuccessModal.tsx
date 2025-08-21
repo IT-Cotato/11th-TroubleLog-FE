@@ -1,54 +1,24 @@
 import BaseModal from "../../components/Modal/BaseModal";
-import { useNavigate } from "react-router-dom";
-import { PATH } from "@/constants/paths";
 import exitIcon from "@/assets/icons/exiticon.svg";
-import postSuccessIcon from "@/assets/icons/postsuccess.svg";
 
-export default function PostSuccessModal({
-  onClose,
-  summaryId,
-  postId,
-}: {
-  onClose: () => void;
-  summaryId?: number;
-  postId?: number;
-}) {
-  const navigate = useNavigate();
-
-  const goCombined = () => {
-    if (summaryId == null || postId == null) {
-      alert("요약 상세로 이동할 수 없어요. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-    navigate(PATH.COMBINED_DETAIL(postId, summaryId));
-  };
-
+export default function PostSuccessModal({ onClose }: { onClose: () => void }) {
   return (
     <BaseModal
       onClose={onClose}
-      width="w-[580px]"
-      className="bg-white rounded-[12px] h-[355px] pr-[36px]"
+      width="w-full max-w-[520px]"
+      className="bg-white rounded-[12px] px-4 sm:px-6 py-6 sm:py-8"
     >
-      {/* 헤더 */}
-      <div className="flex flex-col justify-center mt-[39px] ml-[100px] ">
-        <div className="flex w-full pl-[420px] ">
-          <button onClick={onClose} className="w-6 h-6">
-            <img src={exitIcon} alt="닫기" className="" />
-          </button>
-        </div>
-        <div className="flex flex-col w-[381px] gap-[40px] items-center">
-          <img src={postSuccessIcon} className="w-[88px] h-[86px]" />
-          <span className="text-head-32-bold ">
-            {/* {$제목}을 {양식}으로 요약중입니다! */} 양식 요약이
-            완료되었습니다!
-          </span>
-          <button
-            className="flex w-[184px] h-[46px] px-[25px] py-[14px] justify-center items-center rounded-[50px] bg-purple-500 border-purple-500 text-white text-semibold"
-            onClick={goCombined}
-          >
-            완성 페이지로 이동
-          </button>
-        </div>
+      <div className="flex w-full justify-end">
+        <button onClick={onClose} className="w-6 h-6">
+          <img src={exitIcon} alt="닫기" className="w-full h-full" />
+        </button>
+      </div>
+
+      <div className="mx-auto max-w-[460px] text-center space-y-3">
+        <h2 className="text-head-24-bold">요약 준비가 완료됐어요!</h2>
+        <p className="text-body-18-regular text-gray-500">
+          저장 또는 공유 메뉴에서 다음 작업을 진행해 주세요.
+        </p>
       </div>
     </BaseModal>
   );

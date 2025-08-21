@@ -5,7 +5,6 @@ import PostSuccessModal from "./PostSuccessModal";
 import { useEffect, useMemo, useState } from "react";
 import exitIcon from "@/assets/icons/exiticon.svg";
 
-// 서버 status 타입
 export type SummaryStatus =
   | "PENDING"
   | "STARTED"
@@ -14,7 +13,6 @@ export type SummaryStatus =
   | "POSTPROCESSING"
   | "COMPLETED";
 
-// 서버 status -> UI 매핑
 const STATUS_UI: Record<
   SummaryStatus,
   { label: string; desc: string; color: string; trail: string }
@@ -67,7 +65,6 @@ export const statusToPercent = (s: SummaryStatus) =>
     COMPLETED: 100,
   }[s]);
 
-// progress만 왔을 때
 function fallbackByProgress(p: number) {
   if (p >= 100) return STATUS_UI.COMPLETED;
   if (p >= 80) return STATUS_UI.POSTPROCESSING;
@@ -99,7 +96,6 @@ export default function PostLoadingModal({
 
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // 완료 전환
   useEffect(() => {
     if (status === "COMPLETED" || safeProgress >= 100) {
       const t = setTimeout(() => setShowSuccess(true), 300);
@@ -107,56 +103,50 @@ export default function PostLoadingModal({
     }
   }, [status, safeProgress]);
 
-  if (showSuccess) {
-    return <PostSuccessModal onClose={onClose} />;
-  }
+  if (showSuccess) return <PostSuccessModal onClose={onClose} />;
 
   return (
     <BaseModal
       onClose={onClose}
-      width="w-[580px]"
-      className="bg-white rounded-[12px] h-[355px] pr-[36px]"
+      width="w-full max-w-[580px]"
+      className="bg-white rounded-[12px] px-4 sm:px-6 py-6 sm:py-8"
     >
-      <div className="flex flex-col justify-center mt-[39px] ml-[64px] ">
-        <div className="flex w-full pl-[452px] ">
-          <button onClick={onClose} className="w-6 h-6">
-            <img src={exitIcon} alt="닫기" />
-          </button>
+      {/* 상단 닫기 버튼 */}
+      <div className="flex w-full justify-end">
+        <button onClick={onClose} className="w-6 h-6">
+          <img src={exitIcon} alt="닫기" className="w-full h-full" />
+        </button>
+      </div>
+
+      {/* 본문 */}
+      <div className="mx-auto w-full max-w-[460px] flex flex-col items-center text-center gap-5 sm:gap-6">
+        <span className="text-head-24-bold">
+          트러블로그를 {templateLabel} 양식으로 요약합니다!
+        </span>
+
+        <div className="w-24 h-24 sm:w-[110px] sm:h-[110px]">
+          <CircularProgressbar
+            value={safeProgress}
+            text={`${safeProgress}%`}
+            styles={buildStyles({
+              textSize: "16px",
+              pathColor: ui.color,
+              textColor: "#111827",
+              trailColor: ui.trail,
+              pathTransition: "stroke-dashoffset 0.4s ease-in-out",
+              strokeLinecap: "round",
+            })}
+            strokeWidth={10}
+          />
         </div>
 
-        <div className="flex flex-col w-[452px] gap-[24px] items-center justify-center">
-          <span className="text-head-24-bold">
-            트러블로그를 {templateLabel} 양식으로 요약합니다!
+        <div className="flex flex-col items-center gap-1 text-center">
+          <span className="text-body-20-regular text-gray-700">{ui.label}</span>
+          <span className="text-body-20-regular text-gray-400">
+            {serverMessage && serverMessage.trim().length > 0
+              ? serverMessage
+              : ui.desc}
           </span>
-
-          {/* 진행 원형 */}
-          <div className="w-[110px] h-[110px]">
-            <CircularProgressbar
-              value={safeProgress}
-              text={`${safeProgress}%`}
-              styles={buildStyles({
-                textSize: "16px",
-                pathColor: ui.color,
-                textColor: "#111827",
-                trailColor: ui.trail,
-                pathTransition: "stroke-dashoffset 0.4s ease-in-out",
-                strokeLinecap: "round",
-              })}
-              strokeWidth={10}
-            />
-          </div>
-
-          {/* 단계 라벨 + 서버 메시지 */}
-          <div className="flex flex-col items-center gap-1 text-center">
-            <span className="text-body-20-regular text-gray-700">
-              {ui.label}
-            </span>
-            <span className="text-body-20-regular text-gray-400">
-              {serverMessage && serverMessage.trim().length > 0
-                ? serverMessage
-                : ui.desc}
-            </span>
-          </div>
         </div>
       </div>
     </BaseModal>
