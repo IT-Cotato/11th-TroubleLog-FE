@@ -1,11 +1,14 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { PATH } from "@/constants/paths";
+import { applyAuth } from "@/utils/applyAuth";
 
 type SocialPayload = {
   userId?: number;
   nickname?: string;
   loginType?: string;
   userStatus?: string; // 또는 status
-  accessToken?: string; // 바로 로그인 케이스에서만 존재
+  accessToken?: string; // 바로 로그인 케이스
 };
 
 const getParam = (name: string) => {
@@ -15,11 +18,15 @@ const getParam = (name: string) => {
 };
 
 export default function OAuthPopupKakao() {
-  useEffect(() => {
-    // 👉 이 로그가 팝업 콘솔에 안 찍히면 "라우트 미매칭"입니다.
-    console.debug("[OAuthPopupKakao] mounted:", window.location.href);
+  const navigate = useNavigate();
 
-    const uid = getParam("userId") ?? getParam("userid"); // 서버가 소문자 보낼 대비
+  useEffect(() => {
+    const href = window.location.href;
+    const isPopup = !!window.opener && !window.opener.closed;
+    console.debug("[OAuthPopupKakao] mounted @", href, "isPopup:", isPopup);
+
+    // payload 파싱
+    const uid = getParam("userId") ?? getParam("userid");
     const payload: SocialPayload = {
       userId: uid ? Number(uid) : undefined,
       nickname: getParam("nickname") ?? undefined,
@@ -29,42 +36,64 @@ export default function OAuthPopupKakao() {
     };
     console.debug("[OAuthPopupKakao] parsed payload:", payload);
 
+    // 임시 저장(새로고침 대비)
     try {
       sessionStorage.setItem("oauth_payload", JSON.stringify(payload));
-      console.debug("[OAuthPopupKakao] sessionStorage saved");
+      console.debug("[OAuthPopupKakao] session saved");
     } catch (err) {
-      console.debug("[OAuthPopupKakao] sessionStorage save failed:", err);
+      console.debug("[OAuthPopupKakao] session save failed:", err);
     }
 
-    try {
-      const TARGET = window.location.origin;
-      if (window.opener) {
-        window.opener.postMessage(
+    if (isPopup) {
+      // ✅ 팝업일 때만 postMessage/close/replaceState 수행
+      try {
+        const TARGET = window.location.origin;
+        window.opener?.postMessage(
           { type: "SOCIAL_LOGIN_DONE", payload },
           TARGET
         );
-        console.debug("[OAuthPopupKakao] postMessage sent to", TARGET);
-      } else {
-        console.debug(
-          "[OAuthPopupKakao] window.opener is null (opened directly?)"
-        );
+        console.debug("[OAuthPopupKakao] postMessage sent →", TARGET);
+      } catch (err) {
+        console.debug("[OAuthPopupKakao] postMessage failed:", err);
       }
-    } catch (err) {
-      console.debug("[OAuthPopupKakao] postMessage failed:", err);
-    }
 
-    try {
-      if ("replaceState" in window.history) {
-        window.history.replaceState(null, "", "/");
-        console.debug("[OAuthPopupKakao] URL cleaned");
+      try {
+        if ("replaceState" in window.history) {
+          window.history.replaceState(null, "", "/");
+          console.debug("[OAuthPopupKakao] URL cleaned");
+        }
+      } catch (err) {
+        console.debug("[OAuthPopupKakao] replaceState failed:", err);
       }
-    } catch (err) {
-      console.debug("[OAuthPopupKakao] replaceState failed:", err);
-    }
 
-    console.debug("[OAuthPopupKakao] closing popup");
-    window.close();
-  }, []);
+      try {
+        console.debug("[OAuthPopupKakao] closing popup");
+        window.close();
+      } catch (err) {
+        console.debug("[OAuthPopupKakao] window.close failed:", err);
+      }
+    } else {
+      // 🧩 직접 진입(새 탭/리다이렉트로 열림) 처리: SPA 내에서 마무리
+      console.debug("[OAuthPopupKakao] opened directly — handling in-page");
+
+      const status = payload.userStatus ?? getParam("status") ?? undefined;
+      if (payload.accessToken) {
+        // 이미 가입 → 바로 로그인 처리
+        applyAuth(payload.accessToken);
+        navigate(PATH.HOME, { replace: true });
+        return;
+      }
+      if (status === "INCOMPLETE" && payload.userId) {
+        navigate(PATH.SIGNUP_OAUTH, {
+          replace: true,
+          state: { userId: payload.userId, nickname: payload.nickname ?? "" },
+        });
+        return;
+      }
+      // 그래도 조건이 안 맞으면 루트로
+      navigate(PATH.LOGIN, { replace: true });
+    }
+  }, [navigate]);
 
   return null;
 }

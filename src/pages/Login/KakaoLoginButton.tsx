@@ -4,15 +4,17 @@ import { PATH } from "@/constants/paths";
 import { openOAuthPopup } from "@/utils/openOAuthPopup";
 import { applyAuth } from "@/utils/applyAuth";
 
-const FRONT_CALLBACK = `${window.location.origin}${PATH.OAUTH_REGISTER}`; // 👉 /auth/oauth-register
+const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, ""); // "" 또는 "/app"
+const FRONT_CALLBACK = `${window.location.origin}${BASE}${PATH.OAUTH_REGISTER}`;
 const AUTH_START_URL = `https://troublog.shop/oauth2/authorization/kakao?return_to=${encodeURIComponent(
   FRONT_CALLBACK
 )}`;
 
 export default function KakaoLoginButton() {
   const navigate = useNavigate();
-
   const handleClick = async () => {
+    console.debug("[KakaoLoginButton] BASE_URL:", import.meta.env.BASE_URL);
+    console.debug("[KakaoLoginButton] ORIGIN:", window.location.origin);
     console.debug("[KakaoLoginButton] FRONT_CALLBACK:", FRONT_CALLBACK);
     console.debug("[KakaoLoginButton] AUTH_START_URL:", AUTH_START_URL);
 
