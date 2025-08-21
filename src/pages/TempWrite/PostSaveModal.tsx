@@ -264,7 +264,7 @@ export default function PostSaveModal({
 
           <div className="flex flex-col w-full lg:flex-1 xl:flex-[0.6] gap-4 md:gap-6">
             <span
-              className={`text-lg sm:text-xl font-semibold transition ${
+              className={`whitespace-nowrap text-lg sm:text-xl font-semibold transition ${
                 hasTriedSubmit && importance === 0
                   ? "text-purple-500"
                   : "text-black"

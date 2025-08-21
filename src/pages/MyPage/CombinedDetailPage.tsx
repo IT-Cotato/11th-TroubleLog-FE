@@ -157,6 +157,89 @@ export default function CombinedDetailPage() {
     return map[k] ?? 0;
   };
 
+  type DetailContentItem = {
+    id?: number;
+    subTitle?: string | null;
+    body?: string | null;
+    sequence?: number;
+  };
+
+  function buildFreeformPrefill(detail: any) {
+    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
+      ? detail.contents
+      : [];
+
+    const blocks = contents
+      .slice()
+      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+      .map((c, i) => ({
+        id: c.id ?? i,
+        title: c.subTitle ?? "",
+        content: c.body ?? "",
+        isSaved: false,
+      }));
+
+    return {
+      editorType: "FREEFORM" as const,
+      title: detail?.title ?? "",
+      tags: detail?.postTags ?? [],
+      errorType: detail?.errorTag ?? null,
+      blocks,
+      savePrefill: {
+        importance: parseStar(detail?.starRating),
+        description: detail?.introduction ?? "",
+        visibility: detail?.isVisible ? "public" : "private",
+        projectId: detail?.projectId ?? null,
+        projectName: undefined,
+        thumbnail: detail?.thumbnailUrl ?? detail?.thumbnailImageUrl ?? null,
+      },
+      projectId: detail?.projectId ?? undefined,
+    };
+  }
+
+  function buildTemplatePrefill(detail: any) {
+    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
+      ? detail.contents
+      : [];
+
+    const blocks = contents
+      .slice()
+      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+      .map((c, i) => ({
+        id: c.id ?? i,
+        content: c.body ?? "",
+        checklist: [],
+        checklistItems: [],
+        checklistTitle: c.subTitle ? `${c.subTitle} 체크리스트` : "",
+        question: c.subTitle ?? `질문 ${i + 1}`,
+        isSaved: false,
+      }));
+
+    return {
+      editorType: "TEMPLATE" as const,
+      title: detail?.title ?? "",
+      tags: detail?.postTags ?? [],
+      errorType: detail?.errorTag ?? null,
+      blocks,
+      savePrefill: {
+        importance: parseStar(detail?.starRating),
+        description: detail?.introduction ?? "",
+        visibility: detail?.isVisible ? "public" : "private",
+        projectId: detail?.projectId ?? null,
+        projectName: undefined,
+        thumbnail: detail?.thumbnailUrl ?? detail?.thumbnailImageUrl ?? null,
+      },
+      projectId: detail?.projectId ?? undefined,
+      // TempWritePage가 그대로 받아 쓰는 키
+      checklistError: Array.isArray(detail?.checklistError)
+        ? detail.checklistError
+        : [],
+      checklistReason: Array.isArray(detail?.checklistReason)
+        ? detail.checklistReason
+        : [],
+    };
+  }
+
   const SUMMARY_TYPE_LABELS: Record<string, string> = {
     RESUME: "자기소개서",
     INTERVIEW: "면접 대비",
@@ -401,19 +484,42 @@ export default function CombinedDetailPage() {
     }
   };
 
+  // 원본 수정(프리필) 네비게이션
+  const navigatingRef = useRef(false);
+
   const goEditOriginal = useCallback(async () => {
-    if (!postId) return;
+    if (navigatingRef.current) return;
+    navigatingRef.current = true;
+    setShowMenu(false);
+
     try {
-      const detail = await getPostDetail(Number(postId));
+      const pid = Number(postId);
+      if (!Number.isFinite(pid)) throw new Error("잘못된 포스트 ID");
+
+      const detail = await getPostDetail(pid);
       const tt = String((detail as any)?.templateType ?? "").toUpperCase();
       const isFreeform = tt === "FREE_FORM" || tt === "FREEFORM";
+
+      const prefill = isFreeform
+        ? buildFreeformPrefill(detail)
+        : buildTemplatePrefill(detail);
+
       const editorPath = isFreeform ? PATH.FREEFORM_WRITING : PATH.TEMP_WRITING;
+
       navigate(editorPath, {
         replace: false,
-        state: { postId: Number(postId), mode: "edit" },
+        state: {
+          ...prefill,
+          postId: pid,
+          mode: "edit",
+          from: "combined-detail",
+        },
       });
-    } catch {
+    } catch (e) {
+      console.error(e);
       alert("수정 화면으로 이동할 수 없어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      navigatingRef.current = false;
     }
   }, [postId, navigate]);
 

@@ -19,7 +19,7 @@ import { useViewerId } from "@/store/auth";
 import { decideCombined } from "@/utils/combinedRoute";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
-type StatusType = "complete" | "created";
+type StatusType = "inProgress" | "complete" | "created";
 type SortUI = "latest" | "important";
 
 export default function ProjectDetailPage() {
@@ -82,7 +82,8 @@ export default function ProjectDetailPage() {
   }, [projectId, isInvalid, hasProjectName]);
 
   const visibilityOptions: VisibilityOption[] = ["전체", "공개", "비공개"];
-  const [selectedStatus, setSelectedStatus] = useState<StatusType>("complete");
+  const [selectedStatus, setSelectedStatus] =
+    useState<StatusType>("inProgress");
   const [selectedSort, setSelectedSort] = useState<SortUI>("latest");
   const [selectedVisibility, setSelectedVisibility] =
     useState<VisibilityOption>("전체");
@@ -90,7 +91,11 @@ export default function ProjectDetailPage() {
     useState<ProjectTroubleSummaryType | null>(null);
 
   const toApiStatus = (s: StatusType) =>
-    s === "complete" ? "COMPLETED" : ("SUMMARIZED" as const);
+    s === "complete"
+      ? "COMPLETED"
+      : s === "created"
+      ? "SUMMARIZED"
+      : ("WRITING" as const);
   const toApiSort = (s: SortUI) =>
     s === "latest" ? "LATEST" : ("LIKES" as const);
   const toApiVisibility = (v: VisibilityOption) =>
@@ -174,6 +179,12 @@ export default function ProjectDetailPage() {
             {/* 상태 필터 */}
             <div className="flex items-center gap-3 sm:gap-6 self-stretch">
               <StatusFilterButton
+                label="작성 중"
+                statusKey="inProgress"
+                isSelected={selectedStatus === "inProgress"}
+                onClick={() => setSelectedStatus("inProgress")}
+              />
+              <StatusFilterButton
                 label="작성 완료"
                 statusKey="complete"
                 isSelected={selectedStatus === "complete"}
@@ -239,6 +250,21 @@ export default function ProjectDetailPage() {
                       const qs = new URLSearchParams({ from: "project" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
 
+                      // '요약 완료'면 합본이 아니라 요약본 상세로 이동
+                      // - 현재 탭이 'created'이거나, 카드 자체 상태가 created인 경우
+                      // - summaryId 가 있을 때만 동작
+                      if (
+                        (selectedStatus === "created" ||
+                          card.status === "created") &&
+                        card.summaryId
+                      ) {
+                        navigate(PATH.POST_SUMMARY(card.summaryId), {
+                          state: { from: "project", ownerId },
+                        });
+                        return;
+                      }
+
+                      // 요약 완료가 아닌 경우에는 합본 분기/커뮤 상세/힌트 전달
                       const { goCombined, summaryId } = decideCombined(
                         card,
                         viewerId
@@ -247,11 +273,28 @@ export default function ProjectDetailPage() {
                         navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
                           state: { from: "project", ownerId },
                         });
-                      } else {
-                        navigate(
-                          `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
-                        );
+                        return;
                       }
+
+                      // 홈 화면과 동일한 힌트 전달 (비공개/작성중 분기용)
+                      const statusFromList = card.status; // 'inProgress' | 'complete' | 'created'
+                      const isVisibleFromList = card.visibility === "public"; // boolean
+                      const summaryIdFromList = card.summaryId ?? undefined; // number | undefined
+                      const isMineFromList = card.isMine === true; // boolean
+
+                      navigate(
+                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`,
+                        {
+                          state: {
+                            from: "project",
+                            ownerId,
+                            statusFromList,
+                            isVisibleFromList,
+                            summaryIdFromList,
+                            isMineFromList,
+                          },
+                        }
+                      );
                     }}
                   />
                 ))}

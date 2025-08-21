@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import { useViewerId } from "@/store/auth";
@@ -34,6 +35,62 @@ export default function AuthGuardPage() {
     if (viewerId != null) nav(PATH.MYPAGE(String(viewerId)));
     else goLogin();
   };
+
+  // ---- NEW: 토큰 갱신 성공 감지 → 자동 복귀 ----
+  const bouncedRef = useRef(false);
+  const RECENT_MS = 10_000; // 최근 10초 이내 갱신 성공만 유효
+
+  const hasRecentRefreshOk = () => {
+    try {
+      const raw =
+        localStorage.getItem("auth:lastRefreshOkAt") ??
+        sessionStorage.getItem("auth:lastRefreshOkAt");
+      const ts = raw ? Number(raw) : NaN;
+      return Number.isFinite(ts) && Date.now() - ts < RECENT_MS;
+    } catch {
+      return false;
+    }
+  };
+
+  // 1) 마운트/상태 변경 시 즉시 판단
+  useEffect(() => {
+    if (bouncedRef.current) return;
+
+    const recent = hasRecentRefreshOk();
+
+    // 401: viewerId가 생기거나 최근 갱신 신호가 있으면 복귀
+    // 403: 최근 갱신 신호가 "있을 때만" 복귀 (권한 이슈 루프 방지)
+    const shouldBounce =
+      (status === 401 && (viewerId != null || recent)) ||
+      (status === 403 && recent);
+
+    if (shouldBounce) {
+      bouncedRef.current = true;
+      goBack();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewerId, status]);
+
+  // 2) 갱신이 "뒤늦게" 성공하는 경우를 위해 짧게 폴링
+  useEffect(() => {
+    if (bouncedRef.current) return;
+
+    let elapsed = 0;
+    const interval = window.setInterval(() => {
+      if (bouncedRef.current) return;
+      if (hasRecentRefreshOk()) {
+        bouncedRef.current = true;
+        goBack();
+      }
+      elapsed += 500;
+      if (elapsed >= RECENT_MS) {
+        window.clearInterval(interval);
+      }
+    }, 500);
+
+    return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <section className="w-full flex items-center justify-center py-24 px-6">

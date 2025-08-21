@@ -30,18 +30,6 @@ type ProjectPageResp = {
   size?: number;
 };
 
-const inflight = new Map<string, Promise<ProjectPageResp>>();
-
-function fetchPageOnce(page: number, size: number) {
-  const key = `${page}:${size}`;
-  if (!inflight.has(key)) {
-    const p = getProjectList(page, size).finally(() => inflight.delete(key));
-    inflight.set(key, p);
-  }
-
-  return inflight.get(key)!;
-}
-
 export default function HomePage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -53,6 +41,18 @@ export default function HomePage() {
 
   const navigate = useNavigate();
   const viewerId = useViewerId();
+
+  const inflight = new Map<string, Promise<ProjectPageResp>>();
+
+  function fetchPageOnce(page: number, size: number) {
+    const key = `${page}:${size}`;
+    if (!inflight.has(key)) {
+      const p = getProjectList(page, size).finally(() => inflight.delete(key));
+      inflight.set(key, p);
+    }
+
+    return inflight.get(key)!;
+  }
 
   const goGuide = useCallback(
     (projectId?: number) => {
@@ -323,7 +323,8 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap gap-6">
+            {/* 유연한 컬럼: 화면에 맞춰 자동으로 1~N열, 각 셀 최소 320px */}
+            <div className="grid w-full gap-6 grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
               {projects.map((p) => (
                 <ProjectFolderCard
                   key={p.id}
