@@ -116,6 +116,7 @@ export default function TroublogCard({
           onAvatarClick={onAvatarClick}
           onRequestDelete={handleRequestDelete}
           deleting={deleting}
+          imageUrl={imageUrl}
         />
       </div>
 
