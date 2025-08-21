@@ -208,6 +208,22 @@ export default function FreeFormWritePage() {
   const closingRef = useRef(false);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
 
+  // 썸네일 상태
+  const [currentThumbnail, setCurrentThumbnail] = useState<string | null>(null);
+
+  // 수정 모드 초기 진입 시 상세 조회에서 가져오기
+  useEffect(() => {
+    (async () => {
+      if (!isResume || !resumePostId) return;
+      try {
+        const d: any = await getPostDetail(resumePostId);
+        setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [isResume, resumePostId]);
+
   // 프리필 + 포커스
   useEffect(() => {
     if (location.state?.editorType === "FREEFORM") {
@@ -1024,6 +1040,7 @@ export default function FreeFormWritePage() {
                 }
                 initialThumbnail={
                   previewMeta?.thumbnail ??
+                  currentThumbnail ??
                   location.state?.savePrefill?.thumbnail ??
                   null
                 }

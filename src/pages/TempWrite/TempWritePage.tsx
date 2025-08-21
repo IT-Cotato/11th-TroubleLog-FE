@@ -24,6 +24,7 @@ import {
   cancelSummary,
   editPost,
   getTagsByKeyword,
+  getPostDetail,
 } from "@/api/post.api";
 import { uploadImage } from "@/api/image.api";
 import {
@@ -266,6 +267,22 @@ const TempWritePage = () => {
     () => draftPostId ?? resumePostId ?? null,
     [draftPostId, resumePostId]
   );
+
+  // 썸네일 상태
+  const [currentThumbnail, setCurrentThumbnail] = useState<string | null>(null);
+
+  // 수정 모드 초기 진입 시 상세 조회에서 가져오기
+  useEffect(() => {
+    (async () => {
+      if (!isResume || !resumePostId) return;
+      try {
+        const d: any = await getPostDetail(resumePostId);
+        setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [isResume, resumePostId]);
 
   // ---------- 프리필 ----------
   useEffect(() => {
@@ -1058,6 +1075,7 @@ const TempWritePage = () => {
               }
               initialThumbnail={
                 previewMeta?.thumbnail ??
+                currentThumbnail ??
                 location.state?.savePrefill?.thumbnail ??
                 null
               }
