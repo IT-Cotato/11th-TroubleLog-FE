@@ -24,7 +24,7 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => {
     tags: Array.isArray(t.techs) ? t.techs : [],
     importance: t.starRating ?? 0,
     summaryType: mapSummaryType(t.summaryType),
-    imageUrl: t.imageUrl ?? undefined,
+    imageUrl: t.imageUrl ?? "",
     likeCount: t.likeCount ?? undefined,
     commentCount: t.commentCount ?? undefined,
     introduction: t.introduction ?? undefined,
