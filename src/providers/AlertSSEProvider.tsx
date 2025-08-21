@@ -1,7 +1,7 @@
 import { type PropsWithChildren, useEffect, useRef } from "react";
 import { connectAlertSSE } from "@/api/alert.api";
 import { useIsLoggedIn, useViewerId, useAuthStore } from "@/store/auth";
-import api from "@/api/axios";
+import { startRefresh } from "@/api/axios";
 import { useNotificationStore } from "@/store/notification";
 import type { AlertServerItem } from "@/types/alert.model";
 import { PATH } from "@/constants/paths";
@@ -11,15 +11,9 @@ const isAuthCallbackPath = (p: string) => p.startsWith(PATH.OAUTH_REGISTER);
 
 // 1회 리프레시(전역 가드/404 네비 방지 플래그 부여)
 async function tryRefreshOnce() {
-  try {
-    await api.post("/auth/refresh", undefined, {
-      __skipGlobalAuthGuard: true,
-      __skipGlobal404: true,
-    });
-    return true;
-  } catch {
-    return false;
-  }
+  // startRefresh가 localStorage 저장 및 헤더 갱신을 처리합니다.
+  const newToken = await startRefresh();
+  return newToken != null;
 }
 
 // 타입 가드

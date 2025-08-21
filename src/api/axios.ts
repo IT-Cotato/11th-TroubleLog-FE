@@ -104,7 +104,7 @@ const reqId = api.interceptors.request.use((config) => {
 });
 
 // ----- 리프레시: POST /auth/refresh, 전역 가드/404 스킵 -----
-const startRefresh = async (): Promise<string | null> => {
+export const startRefresh = async (): Promise<string | null> => {
   try {
     const r = await api.post("/auth/refresh", undefined, {
       __skipGlobalAuthGuard: true,
