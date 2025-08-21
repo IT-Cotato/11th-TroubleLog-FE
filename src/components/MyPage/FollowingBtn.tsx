@@ -19,40 +19,40 @@ const FollowingBtn = ({
   onFollowClick,
 }: FollowingProps) => {
   const nav = useNavigate();
+  const goProfile = () => nav(`/user/mypage/${userId}`);
+
   return (
-    <div className="flex justify-between w-[948px] items-center self-stretch py-[25px] border-b border-gray1">
-      <div
-        className="flex items-center gap-3"
-        onClick={() => nav(`/user/mypage/${userId}`)}
+    <div className="flex justify-between items-center self-stretch w-full py-4 sm:py-6 border-b border-gray1">
+      {/* 왼쪽: 프로필(클릭 시 이동) */}
+      <button
+        type="button"
+        onClick={goProfile}
+        className="flex items-center gap-3 sm:gap-4 min-w-0 focus:outline-none"
       >
         <img
           src={profileUrl || userIcon}
           alt="user"
-          className="w-[52px] h-[52px]"
+          className="w-10 h-10 sm:w-12 sm:h-12 md:w-[52px] md:h-[52px] rounded-full object-cover"
         />
-
-        <div className="flex w-[143px] flex-col items-start gap-0.5">
-          <p className="font-sans text-2xl font-bold leading-normal">
+        <div className="flex flex-col items-start gap-0.5 min-w-0">
+          <p className="font-sans font-bold leading-normal text-xl sm:text-2xl truncate max-w-[44vw] sm:max-w-[360px]">
             {nickname}
           </p>
-          <p className="text-body-16-regular">{email}</p>
+          <p className="text-body-14-regular sm:text-body-16-regular text-gray-600 truncate max-w-[44vw] sm:max-w-[360px]">
+            {email}
+          </p>
         </div>
-      </div>
-      {isFollowed ? (
-        <button
-          onClick={onFollowClick}
-          className="flex w-[68px] h-10 px-[13px] py-2.5 justify-center items-center rounded-[10px] bg-subColor1 text-white"
-        >
-          팔로잉
-        </button>
-      ) : (
-        <button
-          onClick={onFollowClick}
-          className="flex w-[68px] h-10 px-[13px] py-2.5 justify-center items-center rounded-[10px] bg-primary text-white"
-        >
-          팔로우
-        </button>
-      )}
+      </button>
+
+      {/* 오른쪽: 팔로우 버튼 */}
+      <button
+        onClick={onFollowClick}
+        className={`h-9 sm:h-10 px-3 sm:px-4 rounded-[10px] text-white text-sm sm:text-base ${
+          isFollowed ? "bg-subColor1" : "bg-primary"
+        }`}
+      >
+        {isFollowed ? "팔로잉" : "팔로우"}
+      </button>
     </div>
   );
 };
