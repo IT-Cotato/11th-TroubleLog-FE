@@ -32,6 +32,10 @@ export interface TroubleShootingCardProps {
   onDeleted?: (postId: number) => void;
   onClick?: (postId: number) => void;
   disabled?: boolean;
+
+  summaryId?: number | null;
+  postSummaryId?: number | null;
+  summaries?: any[];
 }
 
 const TroubleShootingCard = ({
@@ -75,7 +79,6 @@ const TroubleShootingCard = ({
     }
   };
 
-  // 문서 삭제
   const handleDelete = async () => {
     if (
       !window.confirm(
@@ -83,13 +86,10 @@ const TroubleShootingCard = ({
       )
     )
       return;
-
     try {
       setDeleting(true);
       const postId = Number(id);
-
       await hardDeletePost(postId);
-
       onDeleted?.(postId);
       console.log("문서가 영구 삭제되었습니다.");
     } catch (err: any) {
@@ -106,7 +106,7 @@ const TroubleShootingCard = ({
 
   return (
     <div
-      className={`w-full py-[30px] flex flex-col items-start gap-[10px] border-b border-gray3 bg-white ${
+      className={`w-full py-5 sm:py-7 flex flex-col items-start gap-2.5 border-b border-gray3 bg-white ${
         isClickable
           ? "cursor-pointer"
           : disabled
@@ -120,17 +120,31 @@ const TroubleShootingCard = ({
       aria-disabled={disabled || undefined}
     >
       <div className="w-full flex flex-col">
-        {/* 작성자 */}
+        {/* 작성자 (검색 결과에서만 표시) */}
         {isSearchResult && (
-          <div className="mb-[25px] flex items-center gap-[12px]">
-            <img src={imageIcon} alt="profile" className="w-[52px] h-[52px]" />
-            <span className="text-head-24-bold">{authorName}</span>
+          <div className="mb-4 sm:mb-6 flex items-center gap-3 sm:gap-[12px]">
+            <img
+              src={imageIcon}
+              alt="profile"
+              className="w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-full"
+            />
+            <span
+              className="text-head-20-semibold sm:text-head-24-bold truncate"
+              title={authorName}
+            >
+              {authorName}
+            </span>
           </div>
         )}
 
         {/* 에러 종류 + 케밥 메뉴 */}
-        <div className="flex justify-between items-start mb-[24px]">
-          <div className="text-body-16-regular">{errorCategory}</div>
+        <div className="flex justify-between items-start mb-4 sm:mb-6">
+          <div
+            className="text-body-14-regular sm:text-body-16-regular text-gray-800 truncate"
+            title={errorCategory}
+          >
+            {errorCategory}
+          </div>
           {!isSearchResult && isMine && (
             <div
               ref={menuRef}
@@ -154,89 +168,91 @@ const TroubleShootingCard = ({
             </div>
           )}
         </div>
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center self-stretch gap-[20px]">
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center self-stretch gap-4 md:gap-6">
           {/* 트러블로그 내용 영역 */}
-          <div className="w-full md:w-[680px] flex flex-col items-start gap-[34px]">
-            <div className="flex flex-col items-start gap-[24px] self-stretch">
+          <div className="w-full md:flex-1 md:min-w-0 flex flex-col items-start gap-6">
+            <div className="flex flex-col items-start gap-4 self-stretch min-w-0">
               {/* 제목 */}
-              <div className="flex flex-col items-start gap-[16px]">
-                <div className="flex items-center gap-[8px] self-stretch">
-                  <div className="text-head-24-bold break-words">{title}</div>
-                  {shouldShowSummaryType && summaryType && (
-                    <div className="text-gray3 text-body-16-regular">
-                      · {summaryType}
-                    </div>
-                  )}
-                  {shouldShowVisibilityIcon && visibility && (
-                    <img
-                      src={visibility === "public" ? publicIcon : privateIcon}
-                      alt={visibility}
-                      className="w-[24px] h-[24px]"
-                    />
-                  )}
+              <div className="flex flex-wrap items-center gap-2 self-stretch min-w-0">
+                <div className="text-head-24-bold break-words min-w-0">
+                  {title}
                 </div>
+                {shouldShowSummaryType && summaryType && (
+                  <div className="text-gray3 text-body-14-regular sm:text-body-16-regular">
+                    · {summaryType}
+                  </div>
+                )}
+                {shouldShowVisibilityIcon && visibility && (
+                  <img
+                    src={visibility === "public" ? publicIcon : privateIcon}
+                    alt={visibility}
+                    className="w-5 h-5 sm:w-6 sm:h-6"
+                  />
+                )}
               </div>
-              {/* 내용 프리뷰 */}
-              <div className="w-full text-gray3 text-ellipsis text-body-20-regular break-words">
+              {/* 내용 프리뷰 (모바일에서 라인 클램프) */}
+              <div className="w-full text-gray3 text-body-14-regular sm:text-body-16-regular md:text-body-20-regular break-words min-w-0 line-clamp-3 sm:line-clamp-2">
                 {content}
               </div>
             </div>
             {/* 태그 + 중요도 + 날짜 */}
-            <div className="flex flex-wrap items-center gap-[12px]">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
               <TagList tags={tags} variant="mypage" />
-              <div className="flex items-center gap-[12px]">
+              <div className="flex items-center gap-3">
                 {!isSearchResult && importance !== undefined && (
-                  <>
-                    <div className="flex items-center gap-[4px]">
-                      <img
-                        src={starIcon}
-                        alt="star"
-                        className="w-[20px] h-[20px]"
-                      />
-                      <span className="text-gray3 text-body-16-regular">
-                        {importance}
-                      </span>
-                    </div>
-                  </>
+                  <div className="flex items-center gap-1">
+                    <img
+                      src={starIcon}
+                      alt="star"
+                      className="w-4 h-4 sm:w-5 sm:h-5"
+                    />
+                    <span className="text-gray3 text-body-14-regular sm:text-body-16-regular tabular-nums">
+                      {importance}
+                    </span>
+                  </div>
                 )}
 
-                {/* 좋아요 + 댓글 수 */}
+                {/* 좋아요 + 댓글 수 (내 글이 아닐 때만) */}
                 {!isMine &&
                   (likeCount !== undefined || commentCount !== undefined) && (
-                    <div className="flex items-center gap-[12px]">
+                    <div className="flex items-center gap-3">
                       {likeCount !== undefined && (
-                        <div className="flex items-center gap-[4px]">
+                        <div className="flex items-center gap-1">
                           <img
                             src={heartIcon}
                             alt="likes"
-                            className="w-[20px] h-[20px]"
+                            className="w-4 h-4 sm:w-5 sm:h-5"
                           />
-                          <span className="text-gray3 text-body-16-regular">
+                          <span className="text-gray3 text-body-14-regular sm:text-body-16-regular tabular-nums">
                             {likeCount}
                           </span>
                         </div>
                       )}
                       {commentCount !== undefined && (
-                        <div className="flex items-center gap-[4px]">
+                        <div className="flex items-center gap-1">
                           <img
                             src={commentIcon}
                             alt="comments"
-                            className="w-[20px] h-[20px]"
+                            className="w-4 h-4 sm:w-5 sm:h-5"
                           />
-                          <span className="text-gray3 text-body-16-regular">
+                          <span className="text-gray3 text-body-14-regular sm:text-body-16-regular tabular-nums">
                             {commentCount}
                           </span>
                         </div>
                       )}
                     </div>
                   )}
-                <div className="text-gray3 text-body-16-regular">·</div>
-                <div className="text-gray3 text-body-16-regular">
+                <div className="text-gray3 text-body-14-regular sm:text-body-16-regular">
+                  ·
+                </div>
+                <div className="text-gray3 text-body-14-regular sm:text-body-16-regular tabular-nums">
                   {createdAt}
                 </div>
               </div>
             </div>
           </div>
+
           {/* 트러블로그 썸네일 */}
           <div className="w-full md:w-[240px] h-[144px] rounded-[16px] bg-[#ECECEC] overflow-hidden">
             {thumbnailUrl && (

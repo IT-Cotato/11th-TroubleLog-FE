@@ -1,6 +1,7 @@
 import BaseModal from "./BaseModal";
 import CancelButton from "../Button/CancelButton";
 import SaveButton from "../Button/SaveButton";
+
 interface ConfirmDeleteModalProps {
   onClose: () => void;
   onConfirm: () => void;
@@ -23,16 +24,18 @@ export default function ConfirmDeleteModal({
   return (
     <BaseModal
       onClose={onClose}
-      className="px-[64px] pt-[67px] pb-[66px] gap-[40px]"
+      className="px-6 sm:px-10 md:px-16 pt-10 sm:pt-14 pb-8 sm:pb-12 gap-6 sm:gap-10"
     >
-      <div className="flex flex-col items-center gap-[40px] self-stretch">
-        <span className="text-head-32-semibold">{title}</span>
-        <p className="text-center text-body-20-regular text-gray3 whitespace-pre-line">
+      <div className="flex flex-col items-center gap-6 sm:gap-10 self-stretch text-center">
+        <span className="text-head-24-bold sm:text-head-32-semibold">
+          {title}
+        </span>
+        <p className="text-body-16-regular sm:text-body-20-regular text-gray3 whitespace-pre-line">
           {description}
         </p>
       </div>
 
-      <div className="flex items-center gap-[17px]">
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 sm:gap-[17px] w-full justify-center">
         <CancelButton onClick={onClose} disabled={loading} />
         <SaveButton
           onClick={onConfirm}

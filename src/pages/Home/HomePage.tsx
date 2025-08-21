@@ -16,10 +16,10 @@ import { PATH } from "@/constants/paths";
 import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
 import { useViewerId } from "@/store/auth";
+import { decideCombined } from "@/utils/combinedRoute";
 
 const PAGE_SIZE = 10;
 
-// StrictMode 중복/동시 호출 방지: 페이지별 in-flight Promise 공유
 type ProjectPageResp = {
   content: ProjectListItem[];
   hasNext?: boolean;
@@ -52,7 +52,6 @@ export default function HomePage() {
   );
 
   const navigate = useNavigate();
-
   const viewerId = useViewerId();
 
   const goGuide = useCallback(
@@ -71,7 +70,6 @@ export default function HomePage() {
     [navigate]
   );
 
-  // 글쓰기 드롭다운 버튼 클릭 핸들러
   const handleGoGuideTemplate = () => goGuide();
   const handleGoFreeformTemplate = () => goFreeform();
 
@@ -82,11 +80,10 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<unknown>(null);
 
-  // 최신 상태를 콜백에서 안전히 읽기 위한 ref들
   const isLoadingRef = useRef(false);
   const hasNextRef = useRef(false);
   const pageRef = useRef(1);
-  const fetchingRef = useRef(false); // 중복 실행 락
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
     isLoadingRef.current = isLoading;
@@ -98,7 +95,6 @@ export default function HomePage() {
     pageRef.current = page;
   }, [page]);
 
-  // 트러블슈팅 목록 불러오기
   const {
     cards: recentCards,
     isLoading: isLoadingRecents,
@@ -111,17 +107,13 @@ export default function HomePage() {
     { infinite: true, pageSize: 10, sortBy: "latest" }
   );
 
-  // 센티널(관찰 대상) 참조
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-
-  // 중복 추가 방지용 id 집합(옵션)
   const idSetRef = useRef<Set<number>>(new Set());
 
-  // 페이지 로딩 함수(append)
   const loadPage = useCallback(
     async (nextPage: number, { append = true, useOnce = true } = {}) => {
-      if (isLoadingRef.current) return; // 직전 로딩 중이면 무시
-      if (!hasNextRef.current && nextPage !== 1) return; // 더 없는데 추가 요청이면 무시
+      if (isLoadingRef.current) return;
+      if (!hasNextRef.current && nextPage !== 1) return;
 
       setIsLoading(true);
       setLoadError(null);
@@ -138,11 +130,9 @@ export default function HomePage() {
         setPage(nextPage);
 
         if (!append || nextPage === 1) {
-          // 전체 초기화
           idSetRef.current = new Set(list.map((x) => x.id));
           setProjects(list);
         } else {
-          // 중복 방지하며 이어 붙이기
           const acc: ProjectListItem[] = [];
           for (const item of list) {
             if (!idSetRef.current.has(item.id)) {
@@ -161,13 +151,11 @@ export default function HomePage() {
     []
   );
 
-  // 최초 1페이지 로딩
   useEffect(() => {
     loadPage(1, { append: false, useOnce: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 의도적으로 초기 로드만 수행
+  }, []);
 
-  // IntersectionObserver로 다음 페이지 자동 로드
   useEffect(() => {
     if (!sentinelRef.current) return;
     const el = sentinelRef.current;
@@ -190,18 +178,16 @@ export default function HomePage() {
       },
       {
         root: null,
-        rootMargin: "300px 0px", // 너무 일찍 당기면 연속 호출됨 → 300px 정도 권장
+        rootMargin: "300px 0px",
         threshold: 0,
       }
     );
 
     io.observe(el);
     return () => io.disconnect();
-    // 의존성 없음: 최초 한 번만
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 새 프로젝트 생성 후 목록 리셋(1페이지부터 다시)
   const handleCreateProject = async (data: CreateProjectRequest) => {
     try {
       setCreating(true);
@@ -216,7 +202,6 @@ export default function HomePage() {
 
       await postCreateProject(payload);
 
-      // 목록 초기화 후 1페이지 재조회
       setProjects([]);
       idSetRef.current = new Set();
       setPage(1);
@@ -246,28 +231,22 @@ export default function HomePage() {
   const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
   const dropdownRef = useClickOutside(() => setShowDropdown(false));
 
-  // 프로젝트 폴더 카드 수정/삭제 후 현재 목록 갱신(1페이지부터 새로)
   const handleCardUpdated = useCallback(() => {
     void loadPage(1, { append: false, useOnce: false });
   }, [loadPage]);
 
-  // 프로젝트 폴더 삭제 후 목록 갱신
   const handleCardDeleted = useCallback(() => {
     (async () => {
-      // 프로젝트 목록 갱신
       await loadPage(1, { append: false, useOnce: false });
-      // Recents 갱신
       try {
         await recentsReload?.();
       } catch (e) {
         console.error("Recents reload failed", e);
       }
-      // 삭제 필터 상태 초기화
       setRemovedRecentIds(new Set());
     })();
   }, [loadPage, recentsReload]);
 
-  // 트러블슈팅 카드 삭제 후 목록 갱신
   const handleRecentDeleted = useCallback((postId: number) => {
     setRemovedRecentIds((prev) => {
       const next = new Set(prev);
@@ -277,35 +256,33 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="flex px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[40px]">
+    <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-8 lg:px-12 xl:px-20 2xl:px-28 pt-16 pb-40 flex flex-col gap-10">
       {/* 상단 영역 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">나의 프로젝트</span>
-        <div className="relative">
-          {/* 폴더가 없을 경우 */}
+        <div className="relative self-stretch sm:self-auto">
           {showSnackbar && (
-            <div className="absolute top-[-60px] right-0">
+            <div className="absolute -top-14 right-0">
               <Snackbar message="프로젝트 폴더를 먼저 생성해주세요." />
             </div>
           )}
           <PostButton onClick={handlePostClick} />
-          {/* 글쓰기 템플릿 선택 (폴더 있는 경우) */}
           {showDropdown && (
             <div
               ref={dropdownRef}
-              className="absolute top-full left-1/2 translate-x-[-50%] mt-[8px] w-[184px] rounded-[8px] shadow-card bg-subColor2"
+              className="absolute top-full right-0 mt-2 w-[184px] rounded-[8px] shadow-card bg-subColor2"
             >
               <button
                 type="button"
                 onClick={handleGoGuideTemplate}
-                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
+                className="flex w-full py-2.5 justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
               >
                 가이드 템플릿
               </button>
               <button
                 type="button"
                 onClick={handleGoFreeformTemplate}
-                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
+                className="flex w-full py-2.5 justify-center items-center text-body-16-regular"
               >
                 자유 템플릿
               </button>
@@ -324,11 +301,10 @@ export default function HomePage() {
             onClick={handleOpenModal}
             aria-label="새 폴더 추가"
           >
-            <img src={plusIcon} alt="plus" className="w-[36px] h-[36px]" />
+            <img src={plusIcon} alt="plus" className="w-9 h-9" />
           </button>
         }
       >
-        {/* 목록/로딩/에러 */}
         {isLoading && projects.length === 0 ? (
           <div className="w-full flex h-[132px] justify-center items-center rounded-[8px] bg-white shadow-card">
             <span className="text-body-20-regular">불러오는 중...</span>
@@ -347,7 +323,8 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap items-center gap-[24px] self-stretch">
+            {/* 1 / 2 / 3 / 4 컬럼 그리드 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
               {projects.map((p) => (
                 <ProjectFolderCard
                   key={p.id}
@@ -400,7 +377,8 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap gap-[24px]">
+            {/* 1 / 2 / 3 / 4 컬럼 그리드 (카드 4개 한 줄 기준) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
               {recentCards
                 .filter((c) => !removedRecentIds.has(c.id))
                 .map((card) => (
@@ -412,9 +390,20 @@ export default function HomePage() {
                       const ownerId = card.authorId ?? viewerId;
                       const qs = new URLSearchParams({ from: "home" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
-                      navigate(
-                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+
+                      const { goCombined, summaryId } = decideCombined(
+                        card,
+                        viewerId
                       );
+                      if (goCombined && summaryId != null) {
+                        navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                          state: { from: "home", ownerId },
+                        });
+                      } else {
+                        navigate(
+                          `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+                        );
+                      }
                     }}
                     onAvatarClick={() => {
                       if (viewerId != null)
@@ -436,7 +425,6 @@ export default function HomePage() {
         )}
       </ProjectAccordion>
 
-      {/* 모달 표시 */}
       {isModalOpen && (
         <FolderModal
           mode="new"

@@ -829,6 +829,7 @@ const TempWritePage = () => {
             <PostSuccessModal
               onClose={() => setIsSuccessModalOpen(false)}
               summaryId={completedSummaryId}
+              postId={createdPostId ?? resumePostId ?? undefined}
             />
           )}
         </div>

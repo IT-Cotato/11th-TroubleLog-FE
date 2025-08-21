@@ -17,34 +17,28 @@ const MyPageLayout = () => {
   const myUserId = typeof window !== "undefined" ? myUserIdStr : null;
   const isMyPage = !!myUserId && id === myUserId;
 
-  // 정렬 상태
   const [sortBy, setSortBy] = useState<"latest" | "important">("latest");
 
-  // userId 숫자 파싱 (없거나 잘못된 경우 NaN)
   const userIdNum = useMemo(() => {
     const n = Number(id);
     return Number.isFinite(n) ? n : NaN;
   }, [id]);
 
-  // URL에서 tag 쿼리 읽기 (없으면 null)
   const selectedTag = useMemo(() => {
     const sp = new URLSearchParams(location.search);
     const t = sp.get("tag");
     return t && t.trim() ? t : null;
   }, [location.search]);
 
-  // 서브메뉴(팔로잉/팔로워 등) 어디에서든 태그 클릭 시 메인 마이페이지로 이동
   const handleSelectTag = (tag: string | null) => {
     if (!id) return;
     const url = tag
       ? `${PATH.MYPAGE(id)}?tag=${encodeURIComponent(tag)}`
       : PATH.MYPAGE(id);
     navigate(url);
-    // 상단으로 스크롤
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 훅에 넘길 source를 미리 계산
   const source = useMemo(
     () =>
       isMyPage
@@ -57,7 +51,6 @@ const MyPageLayout = () => {
     [isMyPage, userIdNum, selectedTag]
   );
 
-  // user 페이지인데 id가 유효하지 않으면 로딩을 막아두기
   const enabled = isMyPage || Number.isFinite(userIdNum);
 
   const { cards, isLoading, error, hasNext, sentinelRef, reload } =
@@ -68,18 +61,15 @@ const MyPageLayout = () => {
       enabled,
     });
 
-  // 공개글 판정 (여러 형태 대비)
   const isPublicCard = (c: any) =>
     c?.isVisible === true ||
     c?.visibility === "public" ||
     c?.raw?.isVisible === true;
 
-  // 다른 사람 마이페이지면 공개글만 사용
   const cardsForView = useMemo(() => {
     return isMyPage ? cards : cards.filter(isPublicCard);
   }, [cards, isMyPage]);
 
-  // 클라이언트 필터 적용
   const visibleCards = useMemo(() => {
     if (!selectedTag) return cardsForView;
     return cardsForView.filter((c) =>
@@ -87,7 +77,6 @@ const MyPageLayout = () => {
     );
   }, [cardsForView, selectedTag]);
 
-  // 작성 상태별 트러블슈팅 개수 계산
   const counts = useMemo(() => {
     const mine = cards.filter((c) => c.isMine);
     return {
@@ -98,7 +87,6 @@ const MyPageLayout = () => {
     };
   }, [cards]);
 
-  // 다른 사용자의 마이페이지용 태그 분석
   const sortedTags = useMemo<[string, number][]>(() => {
     if (cardsForView.length === 0) return [];
     const counter = new Map<string, number>();
@@ -116,33 +104,37 @@ const MyPageLayout = () => {
   }, [cardsForView]);
 
   return (
-    <div className="flex items-start gap-[68px] pt-20 justify-center">
-      <MyPageSideBar
-        {...(isMyPage
-          ? { isMyPage: true as const, counts }
-          : {
-              isMyPage: false as const,
-              sortedTags,
-              selectedTag,
-              onSelectTag: handleSelectTag,
-            })}
-      />
+    <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20">
+      <div className="flex flex-col md:flex-row items-start gap-6 md:gap-10 xl:gap-[68px]">
+        <aside className="w-full md:w-[296px] flex-shrink-0">
+          <MyPageSideBar
+            {...(isMyPage
+              ? { isMyPage: true as const, counts }
+              : {
+                  isMyPage: false as const,
+                  sortedTags,
+                  selectedTag,
+                  onSelectTag: handleSelectTag,
+                })}
+          />
+        </aside>
 
-      <div className="flex flex-col items-start">
-        <Outlet
-          context={{
-            isMyPage,
-            cards: visibleCards,
-            isLoading,
-            error,
-            hasNext,
-            sentinelRef,
-            reload,
-            sortBy,
-            setSortBy,
-            selectedTag,
-          }}
-        />
+        <section className="flex-1 min-w-0 flex flex-col items-start">
+          <Outlet
+            context={{
+              isMyPage,
+              cards: visibleCards,
+              isLoading,
+              error,
+              hasNext,
+              sentinelRef,
+              reload,
+              sortBy,
+              setSortBy,
+              selectedTag,
+            }}
+          />
+        </section>
       </div>
     </div>
   );

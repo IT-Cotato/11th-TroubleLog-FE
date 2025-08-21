@@ -8,7 +8,7 @@ export default function SortButtonGroup({
   onSelect,
 }: SortButtonGroupProps) {
   return (
-    <div className="flex items-center gap-[24px] sm:gap-[40px]">
+    <div className="flex items-center gap-4 sm:gap-6 md:gap-10">
       <button onClick={() => onSelect("latest")}>
         <span
           className={

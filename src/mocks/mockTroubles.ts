@@ -15,6 +15,7 @@ export const mockTroubleList: TroubleListItem[] = [
     summaryType: "에러 중심 요약",
     likeCount: 0,
     commentCount: 0,
+    summaries: [],
   },
   {
     projectId: 1,
@@ -30,5 +31,6 @@ export const mockTroubleList: TroubleListItem[] = [
     summaryType: "전체 흐름 요약",
     likeCount: 0,
     commentCount: 0,
+    summaries: [],
   },
 ];

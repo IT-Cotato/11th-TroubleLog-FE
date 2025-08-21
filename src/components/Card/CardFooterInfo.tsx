@@ -23,7 +23,7 @@ export default function CardFooterInfo({
   if (isMine) {
     if (status === "complete" && visibility === "public") {
       return (
-        <div className="flex items-center gap-[6px]">
+        <div className="flex items-center gap-1.5 sm:gap-[6px]">
           <LikeCount count={likeCount} />
           <CommentCount count={commentCount} />
         </div>
@@ -32,13 +32,19 @@ export default function CardFooterInfo({
 
     if (status !== "inProgress" && importance !== undefined) {
       return (
-        <div className="flex items-center gap-1">
+        <div
+          className="flex items-center gap-1"
+          aria-label={`중요도 ${importance}`}
+        >
           <img
             src={star}
-            alt="중요도 아이콘"
-            className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
+            alt=""
+            aria-hidden
+            className="w-4 h-4 sm:w-5 sm:h-5"
           />
-          <span className="text-gray3 text-body-16-regular">{importance}</span>
+          <span className="text-gray3 text-body-14-regular sm:text-body-16-regular tabular-nums leading-none">
+            {importance}
+          </span>
         </div>
       );
     }
@@ -47,7 +53,7 @@ export default function CardFooterInfo({
   }
 
   return (
-    <div className="flex items-center gap-[6px]">
+    <div className="flex items-center gap-1.5 sm:gap-[6px]">
       <LikeCount count={likeCount} />
       <CommentCount count={commentCount} />
     </div>
@@ -56,26 +62,22 @@ export default function CardFooterInfo({
 
 function LikeCount({ count = 0 }: { count?: number }) {
   return (
-    <div className="flex items-center gap-1">
-      <img
-        src={heart}
-        className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
-        alt="좋아요"
-      />
-      <span className="text-gray3 text-body-16-regular">{count}</span>
+    <div className="flex items-center gap-1" aria-label={`좋아요 ${count}개`}>
+      <img src={heart} className="w-4 h-4 sm:w-5 sm:h-5" alt="" aria-hidden />
+      <span className="text-gray3 text-body-14-regular sm:text-body-16-regular tabular-nums leading-none">
+        {count}
+      </span>
     </div>
   );
 }
 
 function CommentCount({ count = 0 }: { count?: number }) {
   return (
-    <div className="flex items-center gap-1">
-      <img
-        src={comment}
-        className="w-4 h-4 sm:w-[20px] sm:h-[20px]"
-        alt="댓글"
-      />
-      <span className="text-gray3 text-body-16-regular">{count}</span>
+    <div className="flex items-center gap-1" aria-label={`댓글 ${count}개`}>
+      <img src={comment} className="w-4 h-4 sm:w-5 sm:h-5" alt="" aria-hidden />
+      <span className="text-gray3 text-body-14-regular sm:text-body-16-regular tabular-nums leading-none">
+        {count}
+      </span>
     </div>
   );
 }

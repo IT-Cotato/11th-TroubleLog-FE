@@ -16,6 +16,7 @@ export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
       summaryType: "에러 중심 요약",
       likeCount: 0,
       commentCount: 0,
+      summaries: [],
     },
     {
       projectId: 1,
@@ -31,6 +32,7 @@ export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
       summaryType: "전체 흐름 요약",
       likeCount: 0,
       commentCount: 0,
+      summaries: [],
     },
   ],
   2: [
@@ -48,6 +50,7 @@ export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
       summaryType: "전체 흐름 요약",
       likeCount: 0,
       commentCount: 0,
+      summaries: [],
     },
   ],
 };

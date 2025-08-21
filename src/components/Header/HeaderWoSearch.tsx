@@ -4,7 +4,7 @@ import { FaUserCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/icons/logo.svg";
 import { PATH } from "@/constants/paths";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
 import NotificationModal from "../Modal/NotificationModal";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
@@ -18,83 +18,81 @@ const HeaderWoSearch = () => {
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const closeUserDropdown = useCallback(() => setIsUserDropdownOpen(false), []);
   const userDropdownRef = useClickOutside(closeUserDropdown);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 중앙 상태에서 로그인 사용자 ID 읽기 (null | number)
+  // 로그인 사용자 ID
   const viewerId = useViewerId();
-  const myUserId = viewerId != null ? String(viewerId) : null;
+  const myUserIdStr = viewerId != null ? String(viewerId) : null;
 
   const hasNew = useNotificationStore((s) => s.hasNew);
   const clearNew = useNotificationStore((s) => s.clearNew);
 
   const handleMouseEnter = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setIsNotificationModalOpen(true);
     if (hasNew) clearNew();
   }, [hasNew, clearNew]);
 
   const handleMouseLeave = useCallback(() => {
-    timeoutRef.current = setTimeout(() => {
-      setIsNotificationModalOpen(false);
-    }, 200);
+    timeoutRef.current = setTimeout(
+      () => setIsNotificationModalOpen(false),
+      200
+    );
   }, []);
 
   // 타이머 정리
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
   return (
-    <div className="flex w-full py-[25px] px-[88px] gap-[10px] justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
+    <div className="flex w-full py-4 sm:py-5 lg:py-[25px] px-4 sm:px-6 lg:px-[88px] gap-4 sm:gap-8 lg:gap-12 justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
       <img
         src={logo}
         alt="logo"
-        className="w-[70px] h-[51px] cursor-pointer"
+        className="w-[56px] h-[40px] sm:w-[70px] sm:h-[51px] cursor-pointer"
         onClick={() => navigate(PATH.HOME)}
       />
-      <div className="flex gap-10 items-center relative">
+
+      {/* Icons */}
+      <div className="flex gap-4 sm:gap-6 lg:gap-10 items-center relative">
         <FaUserGroup
-          size={40}
-          color="#525252"
-          className="cursor-pointer"
+          className="cursor-pointer text-[#525252] text-[28px] sm:text-[32px] lg:text-[40px]"
           onClick={() => navigate(PATH.COMMUNITY)}
         />
-        {/* 알림 영역 (hover 시 열림 + 벗어나면 닫힘) */}
+
+        {/* 알림 (hover 시 열림) */}
         <div
           className="relative"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           <BsFillBellFill
-            size={40}
+            className="cursor-pointer transition-colors text-[28px] sm:text-[32px] lg:text-[40px]"
             color={hasNew ? "#7C3AED" : "#525252"}
-            className="cursor-pointer transition-colors"
           />
           {isNotificationModalOpen && (
-            <div className="absolute right-[-10px] top-full mt-[41.5px] z-10">
+            <div className="absolute right-0 top-full mt-3 sm:mt-[41.5px] z-10">
               <NotificationModal />
             </div>
           )}
         </div>
-        <div ref={userDropdownRef}>
+
+        {/* 유저 메뉴 */}
+        <div ref={userDropdownRef} className="relative">
           <FaUserCircle
-            size={40}
-            color="#525252"
-            className="cursor-pointer"
+            className="cursor-pointer text-[#525252] text-[28px] sm:text-[32px] lg:text-[40px]"
             onClick={() => setIsUserDropdownOpen((prev) => !prev)}
           />
           {isUserDropdownOpen && (
-            <div className="absolute left-1/3 top-full mt-2 z-10">
+            <div className="absolute right-0 top-full mt-2 z-10">
               <UserMenuDropdown
                 onClose={() => setIsUserDropdownOpen(false)}
                 onNavigateToMyPage={() => {
-                  navigate(PATH.MYPAGE(String(myUserId)));
+                  if (myUserIdStr) navigate(PATH.MYPAGE(myUserIdStr));
+                  else navigate(PATH.ROOT);
                   setIsUserDropdownOpen(false);
                 }}
               />

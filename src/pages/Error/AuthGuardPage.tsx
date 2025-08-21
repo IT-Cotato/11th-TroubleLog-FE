@@ -36,7 +36,7 @@ export default function AuthGuardPage() {
   };
 
   return (
-    <main className="w-full flex items-center justify-center py-24 px-6">
+    <section className="w-full flex items-center justify-center py-24 px-6">
       <section className="w-full max-w-3xl rounded-2xl border border-gray-200 bg-white p-10 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
         <div className="flex flex-col items-center text-center gap-6">
           <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gray-100">
@@ -78,6 +78,6 @@ export default function AuthGuardPage() {
           </div>
         </div>
       </section>
-    </main>
+    </section>
   );
 }

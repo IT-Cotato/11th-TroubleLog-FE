@@ -28,39 +28,36 @@ export default function PostComment({
   onDelete,
   onReply,
 }: PostCommentProps) {
-  // 댓글 수정 상태 관리
   const [editMode, setEditMode] = useState(false);
   const [editContent, setEditContent] = useState(content);
   const [editPosting, setEditPosting] = useState(false);
 
-  // 답글 달기 상태 관리
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyPosting, setReplyPosting] = useState(false);
   const [replyContent, setReplyContent] = useState("");
 
-  // 삭제 확인 모달
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [deletePosting, setDeletePosting] = useState(false);
 
   return (
-    <div className="flex w-[1200px]">
+    <div className="flex w-full max-w-[1200px]">
       {isReply && (
-        <div className="mt-[31px] ml-[38px] mr-[16px]">
+        <div className="mt-6 sm:mt-[31px] ml-6 sm:ml-[38px] mr-4 sm:mr-[16px]">
           <img
             src={replyIcon}
             alt=""
             aria-hidden="true"
-            className="w-[20px] h-[21px]"
+            className="w-4 h-4 sm:w-[20px] sm:h-[21px]"
           />
         </div>
       )}
-      <div className="flex w-full py-[24px] items-center border-b border-gray1 bg-white">
-        <div className="flex w-full flex-col items-start gap-[36px]">
+      <div className="flex w-full py-4 sm:py-[24px] items-center border-b border-gray1 bg-white">
+        <div className="flex w-full flex-col items-start gap-6 sm:gap-[36px]">
           {/* 댓글 정보 */}
-          <div className="flex flex-col items-start gap-[36px] self-stretch">
+          <div className="flex flex-col items-start gap-6 sm:gap-[36px] self-stretch">
             {/* 작성자 정보 & 작성일 & (수정, 삭제 버튼) */}
             <div className="flex w-full justify-between">
-              <div className="flex items-center gap-[11px]">
+              <div className="flex items-center gap-3 sm:gap-[11px]">
                 {/* 프로필 이미지 */}
                 <img
                   src={profile || image}
@@ -69,7 +66,7 @@ export default function PostComment({
                     e.currentTarget.src = image;
                   }}
                   alt="profile"
-                  className="w-[52px] h-[52px]"
+                  className="w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-full object-cover"
                 />
 
                 <div className="flex flex-col items-start gap-[2px]">
@@ -83,16 +80,13 @@ export default function PostComment({
               {/* 수정, 삭제 버튼 (작성자 본인일 경우) */}
               {isMine && (
                 <div className="flex items-center gap-[8px] text-body-16-regular text-gray3">
-                  {/* 수정 */}
                   <div
                     className="cursor-pointer"
                     onClick={() => setEditMode(true)}
                   >
                     수정
                   </div>
-                  {/* 구분점 */}
                   <div>·</div>
-                  {/* 삭제 */}
                   <div
                     className="cursor-pointer"
                     onClick={() => setShowDeleteModal(true)}
@@ -103,7 +97,7 @@ export default function PostComment({
               )}
             </div>
 
-            {/* 댓글 내용 (수정 옵션 포함 - 임시 디자인) */}
+            {/* 댓글 내용 (수정 옵션 포함) */}
             {editMode ? (
               <div className="w-full">
                 <textarea
@@ -133,8 +127,6 @@ export default function PostComment({
                         setEditPosting(true);
                         await onEdit?.(editContent);
                         setEditMode(false);
-                      } catch {
-                        // 실패 시 유지
                       } finally {
                         setEditPosting(false);
                       }
@@ -145,7 +137,9 @@ export default function PostComment({
                 </div>
               </div>
             ) : (
-              <div className="text-body-20-regular">{content}</div>
+              <div className="text-body-20-regular break-words w-full">
+                {content}
+              </div>
             )}
           </div>
 
@@ -159,7 +153,7 @@ export default function PostComment({
             </div>
           )}
 
-          {/* 답글 입력창 (임시 디자인) */}
+          {/* 답글 입력창 */}
           {replyOpen && (
             <div className="w-full mt-2">
               <textarea
@@ -181,8 +175,6 @@ export default function PostComment({
                     await onReply?.(replyContent);
                     setReplyContent("");
                     setReplyOpen(false);
-                  } catch {
-                    // 실패 시 유지하거나 토스트 노출 등
                   } finally {
                     setReplyPosting(false);
                   }

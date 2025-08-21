@@ -18,4 +18,8 @@ export const mapToTroubleShootingCard = (
   status: card.status,
   likeCount: card.likeCount,
   commentCount: card.commentCount,
+
+  summaryId: card.summaryId ?? null,
+  postSummaryId: (card as any).postSummaryId ?? null,
+  summaries: (card as any).summaries ?? [],
 });

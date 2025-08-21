@@ -27,6 +27,9 @@ export interface TroublogCardProps {
   onAvatarClick?: () => void;
   onDeleted?: (id: number) => void;
   introduction?: string;
+  summaryId?: number;
+  postSummaryId?: number;
+  summaries?: object[];
 }
 
 export default function TroublogCard({
@@ -111,8 +114,8 @@ export default function TroublogCard({
       />
 
       {/* 제목, 날짜, 태그 영역 */}
-      <div className="flex justify-between items-end p-3 sm:p-4">
-        <div className="flex flex-col items-start gap-[14px] sm:gap-[18px]">
+      <div className="flex justify-between items-end p-3">
+        <div className="flex flex-col items-start gap-[14px]">
           <CardTitleSection
             title={title}
             visibility={visibility}

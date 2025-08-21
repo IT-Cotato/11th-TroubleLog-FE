@@ -16,6 +16,7 @@ import type {
 import { PATH } from "@/constants/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useViewerId } from "@/store/auth";
+import { decideCombined } from "@/utils/combinedRoute";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "complete" | "created";
@@ -27,12 +28,10 @@ export default function ProjectDetailPage() {
   const isInvalid = Number.isNaN(projectId);
   const viewerId = useViewerId();
 
-  // 트러블슈팅 문서 삭제 상태
   const [removedRecentIds, setRemovedRecentIds] = useState<Set<number>>(
     new Set()
   );
 
-  // 라우팅 시 폴더 카드에서 넘겨준 이름 사용, 없으면 api로 조회
   const location = useLocation() as { state?: { projectName?: string } };
   const [projectName, setProjectName] = useState<string>(
     location.state?.projectName ?? "프로젝트"
@@ -43,7 +42,6 @@ export default function ProjectDetailPage() {
 
   const hasProjectName = Boolean(location.state?.projectName);
 
-  // 글쓰기 버튼 드롭다운
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useClickOutside(() => setShowDropdown(false));
@@ -64,7 +62,6 @@ export default function ProjectDetailPage() {
     [navigate]
   );
 
-  // 글쓰기 드롭다운 버튼 클릭 핸들러
   const handleGoGuideTemplate = () => goGuide();
   const handleGoFreeformTemplate = () => goFreeform();
   const handlePostClick = useCallback(() => {
@@ -78,16 +75,12 @@ export default function ProjectDetailPage() {
         setTitleLoading(true);
         const detail = await getProjectDetail(projectId);
         if (detail?.name) setProjectName(detail.name);
-        //  const { content } = await getProjectList();
-        // const found = content.find((p) => p.id === projectId);
-        // if (found) setProjectName(found.name);
       } finally {
         setTitleLoading(false);
       }
     })();
   }, [projectId, isInvalid, hasProjectName]);
 
-  // UI 필터 상태
   const visibilityOptions: VisibilityOption[] = ["전체", "공개", "비공개"];
   const [selectedStatus, setSelectedStatus] = useState<StatusType>("complete");
   const [selectedSort, setSelectedSort] = useState<SortUI>("latest");
@@ -96,7 +89,6 @@ export default function ProjectDetailPage() {
   const [selectedSummaryType, setSelectedSummaryType] =
     useState<ProjectTroubleSummaryType | null>(null);
 
-  // UI-서버 파라미터 매핑
   const toApiStatus = (s: StatusType) =>
     s === "complete" ? "COMPLETED" : ("SUMMARIZED" as const);
   const toApiSort = (s: SortUI) =>
@@ -104,22 +96,16 @@ export default function ProjectDetailPage() {
   const toApiVisibility = (v: VisibilityOption) =>
     v === "공개" ? "PUBLIC" : v === "비공개" ? "PRIVATE" : "ALL";
 
-  // 서버 쿼리 결정 (상태/정렬은 항상 포함)
   const query: ProjectTroubleQuery = useMemo(() => {
     const base: ProjectTroubleQuery = {
       status: toApiStatus(selectedStatus),
       sort: toApiSort(selectedSort),
     };
     if (selectedStatus === "complete") {
-      // 작성 완료 → 공개 범위 사용 (전체/공개/비공개)
-      if (selectedVisibility !== "전체") {
+      if (selectedVisibility !== "전체")
         base.visibility = toApiVisibility(selectedVisibility);
-      }
     } else {
-      // 요약 유형만
-      if (selectedSummaryType) {
-        base.summaryType = selectedSummaryType; // 바로 enum 값
-      }
+      if (selectedSummaryType) base.summaryType = selectedSummaryType;
     }
     return base;
   }, [selectedStatus, selectedSort, selectedVisibility, selectedSummaryType]);
@@ -128,16 +114,13 @@ export default function ProjectDetailPage() {
     () => ({ type: "project" as const, projectId, query }),
     [projectId, query]
   );
-
   const troubleOpts = useMemo(() => ({ enabled: !isInvalid }), [isInvalid]);
 
-  // 프로젝트별 트러블슈팅 목록 로드
   const { cards, isLoading, error } = useTroubleCards(
     troubleParams,
     troubleOpts
   );
 
-  // 트러블슈팅 카드 삭제 후 목록 갱신
   const handleRecentDeleted = useCallback((postId: number) => {
     setRemovedRecentIds((prev) => {
       const next = new Set(prev);
@@ -147,8 +130,8 @@ export default function ProjectDetailPage() {
   }, []);
 
   return (
-    <div className="flex w-full px-[156px] pt-[79px] pb-[158px] flex-col items-start gap-[36px]">
-      {/* 상단 나의 프로젝트 텍스트 및 글쓰기 버튼 */}
+    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-[156px] pt-14 sm:pt-[79px] pb-24 sm:pb-[158px] flex flex-col items-start gap-6 sm:gap-[36px]">
+      {/* 상단 타이틀 + 글쓰기 버튼 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">나의 프로젝트</span>
         <div ref={dropdownRef} className="relative">
@@ -174,7 +157,8 @@ export default function ProjectDetailPage() {
           )}
         </div>
       </div>
-      {/* 프로젝트 아코디언 영역 */}
+
+      {/* 프로젝트 아코디언 */}
       {isInvalid ? (
         <div className="w-full flex h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
           <span className="text-body-20-regular">
@@ -186,17 +170,15 @@ export default function ProjectDetailPage() {
           title={titleLoading ? "불러오는 중…" : projectName}
           persistKey={`project:${projectId}`}
         >
-          <div className="flex flex-col sm:flex-row justify-between gap-4 w-full">
-            {/* 작성 상태 필터 버튼 */}
-            <div className="flex items-center gap-[24px] self-stretch">
-              {/* 작성 완료 필터 버튼 */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 w-full md:flex-nowrap">
+            {/* 상태 필터 */}
+            <div className="flex items-center gap-3 sm:gap-6 self-stretch">
               <StatusFilterButton
                 label="작성 완료"
                 statusKey="complete"
                 isSelected={selectedStatus === "complete"}
                 onClick={() => setSelectedStatus("complete")}
               />
-              {/* 요약 완료 필터 버튼 */}
               <StatusFilterButton
                 label="요약 완료"
                 statusKey="created"
@@ -205,8 +187,8 @@ export default function ProjectDetailPage() {
               />
             </div>
 
-            {/* 정렬 기준 버튼 (최신순/중요도순) 및 공개/비공개 필터 드롭다운 or 요약 유형 필터 드롭다운 */}
-            <div className="inline-flex items-center gap-[40px]">
+            {/* 정렬 + 공개/요약유형 드롭다운 */}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6 md:gap-10">
               <SortButtonGroup
                 selected={selectedSort}
                 onSelect={setSelectedSort}
@@ -226,25 +208,25 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {/* 트러블로그 카드 목록 (조건부) */}
+          {/* 카드 목록 */}
           {isLoading ? (
-            <div className="w-full flex h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
+            <div className="w-full flex h-[200px] sm:h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
               <span className="text-body-20-regular">불러오는 중…</span>
             </div>
           ) : error ? (
-            <div className="w-full flex h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
+            <div className="w-full flex h-[200px] sm:h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
               <span className="text-body-20-regular text-red-500">
                 목록 로드 실패
               </span>
             </div>
           ) : cards.length === 0 ? (
-            <div className="w-full flex h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
+            <div className="w-full flex h-[200px] sm:h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
               <span className="text-body-20-regular">
                 아직 작성된 트러블슈팅이 없어요.
               </span>
             </div>
           ) : (
-            <div className="flex flex-wrap justify-center sm:justify-start gap-[24px] w-full">
+            <div className="grid w-full gap-[16px] sm:gap-[24px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {cards
                 .filter((c) => !removedRecentIds.has(c.id))
                 .map((card) => (
@@ -256,9 +238,20 @@ export default function ProjectDetailPage() {
                       const ownerId = card.authorId ?? viewerId;
                       const qs = new URLSearchParams({ from: "project" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
-                      navigate(
-                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+
+                      const { goCombined, summaryId } = decideCombined(
+                        card,
+                        viewerId
                       );
+                      if (goCombined && summaryId != null) {
+                        navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                          state: { from: "project", ownerId },
+                        });
+                      } else {
+                        navigate(
+                          `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`
+                        );
+                      }
                     }}
                   />
                 ))}
