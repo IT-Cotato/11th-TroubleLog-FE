@@ -46,16 +46,19 @@ export default function FolderModal({
 
   const { uploading, progress, upload, reset: resetUpload } = useImageUpload();
 
-  const detailInflight = new Map<number, Promise<ProjectDetail>>();
-  function fetchProjectDetailOnce(id: number) {
-    if (!detailInflight.has(id)) {
-      detailInflight.set(
+  const detailInflightRef = useRef<Map<number, Promise<ProjectDetail>>>(
+    new Map()
+  );
+  const fetchProjectDetailOnce = (id: number) => {
+    const m = detailInflightRef.current;
+    if (!m.has(id)) {
+      m.set(
         id,
-        getProjectDetail(id).finally(() => detailInflight.delete(id))
+        getProjectDetail(id).finally(() => m.delete(id))
       );
     }
-    return detailInflight.get(id)!;
-  }
+    return m.get(id)!;
+  };
 
   useEffect(() => {
     if (mode !== "edit" || !projectId) return;
