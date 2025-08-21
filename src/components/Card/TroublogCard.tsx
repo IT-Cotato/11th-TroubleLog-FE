@@ -30,6 +30,7 @@ export interface TroublogCardProps {
   summaryId?: number;
   postSummaryId?: number;
   summaries?: object[];
+  imageUrl?: string;
 }
 
 export default function TroublogCard({
@@ -49,16 +50,14 @@ export default function TroublogCard({
   onClick,
   onAvatarClick,
   onDeleted,
+  imageUrl,
 }: TroublogCardProps) {
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
 
   const handleRootClick = () => {
-    if (typeof onClick === "function") {
-      onClick(id);
-    } else {
-      navigate(PATH.COMMUNITY_POST(id));
-    }
+    if (typeof onClick === "function") onClick(id);
+    else navigate(PATH.COMMUNITY_POST(id));
   };
 
   const handleRootKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
@@ -68,7 +67,6 @@ export default function TroublogCard({
     }
   };
 
-  // 케밥 > 삭제
   const handleRequestDelete = useCallback(async () => {
     if (!isMine) return;
     if (
@@ -81,7 +79,7 @@ export default function TroublogCard({
     try {
       setDeleting(true);
       await hardDeletePost(id);
-      onDeleted?.(id); // 부모에 알림(목록 갱신)
+      onDeleted?.(id);
     } catch (err: any) {
       console.error(err);
       alert(
@@ -95,45 +93,65 @@ export default function TroublogCard({
 
   return (
     <div
-      className="w-full max-w-[384px] h-[300px] sm:h-[330px] shrink-0 rounded-2xl bg-white shadow-card cursor-pointer transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-      onClick={handleRootClick}
-      onKeyDown={handleRootKeyDown}
       role="button"
       tabIndex={0}
       aria-label={`${title} 상세 페이지로 이동`}
+      onClick={handleRootClick}
+      onKeyDown={handleRootKeyDown}
+      className="
+      group w-full max-w-[384px] h-[300px] sm:h-[330px]
+      shrink-0 rounded-2xl bg-white shadow-card cursor-pointer
+      transition-shadow hover:shadow-lg
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+      overflow-hidden flex flex-col
+    "
     >
-      {/* 프리뷰 영역 */}
-      <CardPreviewArea
-        errorCategory={errorCategory}
-        isMine={isMine}
-        status={status}
-        authorProfileImageUrl={authorProfileImageUrl}
-        onAvatarClick={onAvatarClick}
-        onRequestDelete={handleRequestDelete}
-        deleting={deleting}
-      />
-
-      {/* 제목, 날짜, 태그 영역 */}
-      <div className="flex justify-between items-end p-3">
-        <div className="flex flex-col items-start gap-[14px]">
-          <CardTitleSection
-            title={title}
-            visibility={visibility}
-            createdAt={createdAt}
-            isMine={isMine}
-            status={status}
-            summaryType={summaryType}
-          />
-          <TagList tags={tags} />
-        </div>
-        <CardFooterInfo
+      {/* 프리뷰 영역: 기존 크기 유지 */}
+      <div className="relative rounded-t-2xl overflow-hidden">
+        <CardPreviewArea
+          errorCategory={errorCategory}
           isMine={isMine}
           status={status}
-          visibility={visibility}
-          likeCount={likeCount}
-          commentCount={commentCount}
-          importance={importance}
+          authorProfileImageUrl={authorProfileImageUrl}
+          onAvatarClick={onAvatarClick}
+          onRequestDelete={handleRequestDelete}
+          deleting={deleting}
+          imageUrl={imageUrl}
         />
+      </div>
+
+      {/* 하단 섹션: 오른쪽 패딩을 줄여 제목이 쓸 수 있는 폭 확대 */}
+      <div className="mt-auto flex justify-between items-end p-3 pr-2 gap-3 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col items-start gap-[14px]">
+          {/* 제목/메타: 폭 제한을 부모에게 맡기고 한 줄 말줄임 */}
+          <div className="w-full min-w-0">
+            <CardTitleSection
+              title={title}
+              visibility={visibility}
+              createdAt={createdAt}
+              isMine={isMine}
+              status={status}
+              summaryType={summaryType}
+            />
+          </div>
+
+          {/* 태그: 넘침 방지 */}
+          <div className="w-full min-w-0 overflow-hidden">
+            <TagList tags={tags} />
+          </div>
+        </div>
+
+        {/* 우측 푸터는 눌리지 않도록 */}
+        <div className="shrink-0">
+          <CardFooterInfo
+            isMine={isMine}
+            status={status}
+            visibility={visibility as any}
+            likeCount={likeCount}
+            commentCount={commentCount}
+            importance={importance}
+          />
+        </div>
       </div>
     </div>
   );

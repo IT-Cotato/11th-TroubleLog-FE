@@ -9,13 +9,8 @@ import userIcon from "@/assets/icons/user.svg";
 import circleYIcon from "@/assets/icons/circle_y.svg";
 import circleGIcon from "@/assets/icons/circle_g.svg";
 import circleBIcon from "@/assets/icons/circle_b.svg";
-import {
-  getUserInfo,
-  postFollow,
-  postUnfollow,
-  getMyProfile,
-} from "@/api/user.api";
-import type { ProfileData, UserInfoData } from "@/models/user.model";
+import { getUserInfo, postFollow, postUnfollow } from "@/api/user.api";
+import type { UserInfoData } from "@/models/user.model";
 import githubIcon from "@/assets/icons/githubIcon.svg";
 
 type MyPageSideBarProps =
@@ -67,32 +62,20 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
 
   const refetch = useCallback(async () => {
     try {
-      if (props.isMyPage) {
-        const me: ProfileData = await getMyProfile();
-        setUserInfo({
-          userId: me.userId,
-          nickname: me.nickname,
-          bio: me.bio,
-          githubUrl: me.githubUrl,
-          profileUrl: (me as any).profileUrl, // ProfileData에 존재한다면 정확한 타입으로 교체
-          followerNum: (me as any).followerNum,
-          followingNum: (me as any).followingNum,
-        });
-        setViewedUser({ id: me.userId, nickname: me.nickname ?? null });
-      } else {
-        if (!id) return;
-        const other: UserInfoData = await getUserInfo(Number(id));
-        setUserInfo({
-          userId: other.userId,
-          nickname: other.nickname,
-          bio: other.bio,
-          profileUrl: other.profileUrl,
-          followerNum: other.followerNum,
-          followingNum: other.followingNum,
-          isFollowed: other.isFollowed,
-        });
-        setViewedUser({ id: other.userId, nickname: other.nickname ?? null });
-      }
+      if (!id) return;
+      // 내 페이지든 남의 페이지든 동일 API 사용
+      const data: UserInfoData = await getUserInfo(Number(id));
+      setUserInfo({
+        userId: data.userId,
+        nickname: data.nickname,
+        bio: data.bio,
+        githubUrl: data.githubUrl, // 서버가 제공하면 표시(아래 UI는 isMyPage일 때만 노출)
+        profileUrl: data.profileUrl,
+        followerNum: data.followerNum,
+        followingNum: data.followingNum,
+        isFollowed: data.isFollowed,
+      });
+      setViewedUser({ id: data.userId, nickname: data.nickname ?? null });
     } catch (error) {
       console.error("사용자 정보 불러오기 실패:", error);
     }
@@ -201,7 +184,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       {/* 상단 프로필 영역 */}
       <div className="flex flex-col items-center gap-3 self-stretch">
         <img
-          src={props.isMyPage ? userIcon : userInfo?.profileUrl || userIcon}
+          src={userInfo?.profileUrl || userIcon}
           alt="user"
           className="w-28 h-28 sm:w-36 sm:h-36 md:w-56 md:h-56 xl:w-[288px] xl:h-[288px] object-cover rounded-full md:rounded-none"
         />

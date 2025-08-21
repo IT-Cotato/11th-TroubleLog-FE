@@ -1,7 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import { ROUTE } from "@/constants/routes";
-import Oauth from "@/pages/Login/Oauth";
 import SignPageOne from "@/pages/Login/SignPageOne";
 import ProtectedRoute from "@/components/Common/ProtectedRouter";
 import MainLayout from "@/layouts/MainLayout";
@@ -26,14 +25,17 @@ import NotFoundPage from "@/pages/Error/NotFoundPage";
 import AuthGuardPage from "@/pages/Error/AuthGuardPage";
 import SignPageOauth from "@/pages/Login/SignPageOauth";
 import CombinedDetailPage from "@/pages/MyPage/CombinedDetailPage";
+import OAuthPopupKakao from "@/pages/Login/OAuthPopupKakao";
 export const router = createBrowserRouter(
   [
     // 로그인/회원가입
     { path: PATH.ROOT, element: <LoginPage /> },
-    { path: PATH.OAUTH, element: <Oauth /> },
     { path: PATH.SIGNUP, element: <SignPageOne /> },
     { path: PATH.SIGNUP_DETAIL, element: <SignPageTwo /> },
     { path: PATH.SIGNUP_OAUTH, element: <SignPageOauth /> },
+
+    // 콜백 브릿지
+    { path: PATH.OAUTH_REGISTER, element: <OAuthPopupKakao /> },
 
     // 보호 구역 (메인 레이아웃)
     {
@@ -124,7 +126,8 @@ export const router = createBrowserRouter(
     },
   ],
   {
-    basename: import.meta.env.BASE_URL,
+    // basename: import.meta.env.BASE_URL,
+    basename: "/",
   }
 );
 

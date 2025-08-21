@@ -8,7 +8,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
 import type { ProfileData, UpdatedProfileData } from "@/models/user.model";
-import { deleteUser, getMyProfile, patchProfile } from "@/api/user.api";
+import {
+  deleteUser,
+  getMyProfile,
+  getUserInfo,
+  patchProfile,
+} from "@/api/user.api";
 import { PATH } from "@/constants/paths";
 import userIcon from "@/assets/icons/user.svg";
 import useImageUpload from "@/utils/useImageUpload";
@@ -31,12 +36,17 @@ const EditProfile = () => {
   const [profileImage, setProfileImage] = useState<string>(userIcon);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 이미지 삭제 가능 여부 판단
+  const canDeleteImage =
+    !!profile.profileUrl || (profileImage && profileImage !== userIcon);
+
   const handleImageUpload = () => {
     fileInputRef.current?.click();
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
     try {
@@ -99,24 +109,44 @@ const EditProfile = () => {
 
   // 프로필 불러오기
   useEffect(() => {
+    let alive = true;
+
     const fetchProfile = async () => {
       try {
-        const data = await getMyProfile();
+        const [me, userInfo] = await Promise.all([
+          getMyProfile(),
+          id ? getUserInfo(Number(id)) : Promise.resolve(null as any),
+        ]);
+
+        // 사용자 정보 API가 제공하는 profileUrl 우선 사용
+        const serverProfileUrl =
+          (userInfo && userInfo.profileUrl) ||
+          (me as any)?.profileUrl || // 혹시 백엔드가 주는 경우
+          "";
+
+        if (!alive) return;
+
         setProfile({
-          userId: data.userId,
-          nickname: data.nickname,
-          field: data.field,
-          bio: data.bio,
-          githubUrl: data.githubUrl,
-          profileUrl: profile.profileUrl,
+          userId: me.userId,
+          nickname: me.nickname,
+          field: me.field,
+          bio: me.bio,
+          githubUrl: me.githubUrl,
+          profileUrl: serverProfileUrl,
         });
+
+        // 미리보기에도 반영
+        setProfileImage(serverProfileUrl || userIcon);
       } catch (error) {
         console.error("정보를 불러오는 데 실패했습니다", error);
       }
     };
 
     fetchProfile();
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [id]);
 
   const handleChange =
     (field: keyof ProfileData) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,8 +209,12 @@ const EditProfile = () => {
               />
               <FollowButton
                 label="이미지 삭제"
-                colorClass="bg-subColor1"
-                onClick={handleImageDelete}
+                colorClass={
+                  canDeleteImage
+                    ? "bg-primary"
+                    : "bg-subColor1 cursor-not-allowed"
+                }
+                onClick={canDeleteImage ? handleImageDelete : undefined}
               />
             </div>
           </div>

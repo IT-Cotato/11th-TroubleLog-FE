@@ -1,17 +1,19 @@
 import { type PropsWithChildren, useEffect, useRef } from "react";
 import { connectAlertSSE } from "@/api/alert.api";
 import { useIsLoggedIn, useViewerId, useAuthStore } from "@/store/auth";
-import api from "@/api/axios";
+import { startRefresh } from "@/api/axios";
 import { useNotificationStore } from "@/store/notification";
 import type { AlertServerItem } from "@/types/alert.model";
+import { PATH } from "@/constants/paths";
 
+// 콜백 라우트 감지(풀 리다이렉트 방식: /auth/oauth-register 만 스킵)
+const isAuthCallbackPath = (p: string) => p.startsWith(PATH.OAUTH_REGISTER);
+
+// 1회 리프레시(전역 가드/404 네비 방지 플래그 부여)
 async function tryRefreshOnce() {
-  try {
-    await api.get("/auth/refresh");
-    return true;
-  } catch {
-    return false;
-  }
+  // startRefresh가 localStorage 저장 및 헤더 갱신을 처리합니다.
+  const newToken = await startRefresh();
+  return newToken != null;
 }
 
 // 타입 가드
@@ -37,6 +39,24 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!hydrated) return;
 
+    // ✅ OAuth 콜백 라우트에서는 SSE/리프레시 전부 비활성화
+    const pathname = window.location.pathname;
+    if (isAuthCallbackPath(pathname)) {
+      stopRef.current = true;
+      esCloseRef.current?.();
+      esCloseRef.current = null;
+      connectedRef.current = false;
+      prevViewerRef.current = null;
+      if (connectTimerRef.current != null) {
+        clearTimeout(connectTimerRef.current);
+        connectTimerRef.current = null;
+      }
+      if (import.meta.env.DEV)
+        console.debug("[SSE] skipped on auth callback:", pathname);
+      return;
+    }
+
+    // 로그인 전에는 연결 시도 안 함
     const token = localStorage.getItem("accessToken") ?? "";
     if (!isLoggedIn || !token) {
       stopRef.current = true;
@@ -44,7 +64,6 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       esCloseRef.current = null;
       connectedRef.current = false;
       prevViewerRef.current = null;
-      // 예약된 연결 시도도 취소
       if (connectTimerRef.current != null) {
         clearTimeout(connectTimerRef.current);
         connectTimerRef.current = null;
@@ -58,7 +77,6 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       esCloseRef.current = null;
       connectedRef.current = false;
     }
-
     if (connectedRef.current) return;
 
     stopRef.current = false;
@@ -75,30 +93,22 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
         {
           onOpen: () => console.log("[SSE] connected"),
           onMessage: (payload) => {
-            if (!isAlertPayload(payload)) {
-              return;
-            }
+            if (!isAlertPayload(payload)) return;
             useNotificationStore.getState().pushFromSSE(payload);
           },
           onError: (e) => console.warn("[SSE] error", e),
           onUnauthorized: async () => {
-            // 401/403/302 → 재연결 루프 STOP 후 토큰 갱신 1회 시도
+            // 콜백 라우트면 무시
+            if (isAuthCallbackPath(window.location.pathname)) return;
             if (refreshingRef.current) return;
             refreshingRef.current = true;
-
             const ok = await tryRefreshOnce();
             refreshingRef.current = false;
-
             if (stopRef.current) return;
-            if (!ok) {
-              // 갱신 실패 → 연결 유지하지 않음 (사용자가 재로그인하면 effect가 다시 트리거)
-              return;
-            }
-            // 갱신 성공 → 새 토큰으로 재연결
+            if (!ok) return;
             esCloseRef.current?.();
             esCloseRef.current = null;
             connectedRef.current = false;
-            // 약간의 딜레이 후 재시도(토큰 저장/동기화 여유)
             connectTimerRef.current = window.setTimeout(start, 200);
           },
         },
@@ -112,10 +122,9 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       connectedRef.current = true;
     };
 
-    // StrictMode 2회 실행 방지: 첫 사이클은 예약-즉시-해제되어 네트워크 요청 X
+    // StrictMode 중복 연결 방지: 0ms 지연으로 예약
     connectTimerRef.current = window.setTimeout(start, 0);
 
-    // 포커스/온라인 복귀 시 재연결 보조 (dev에서도 활성화)
     const onFocusOrOnline = () => {
       if (stopRef.current) return;
       if (!connectedRef.current) {
@@ -132,16 +141,13 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
 
     return () => {
       stopRef.current = true;
-
       if (connectTimerRef.current != null) {
         clearTimeout(connectTimerRef.current);
         connectTimerRef.current = null;
       }
-
       window.removeEventListener("focus", onFocusOrOnline);
       window.removeEventListener("online", onFocusOrOnline);
       window.removeEventListener("beforeunload", onBeforeUnload);
-
       esCloseRef.current?.();
       esCloseRef.current = null;
       connectedRef.current = false;

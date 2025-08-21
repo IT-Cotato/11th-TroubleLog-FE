@@ -12,7 +12,7 @@ export const mapToTroubleShootingCard = (
   tags: card.tags,
   importance: card.importance,
   createdAt: card.createdAt,
-  thumbnailUrl: undefined,
+  thumbnailUrl: card.imageUrl,
   visibility: card.visibility,
   summaryType: card.summaryType,
   status: card.status,

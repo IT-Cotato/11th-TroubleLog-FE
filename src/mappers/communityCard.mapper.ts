@@ -14,6 +14,7 @@ export const toCommunityCard = (s: CommunityServerCard): TroublogCardProps => ({
   authorId: s.postCardUserInfoResDto?.userId,
   likeCount: s.likeCount ?? 0,
   commentCount: s.commentCount ?? 0,
+  imageUrl: s.thumbnailUrl ?? "",
 });
 
 export const toCommunityCards = (list: CommunityServerCard[]) =>

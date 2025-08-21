@@ -1,12 +1,23 @@
 import kakaoLogoIcon from "@/assets/icons/kakaologo.svg";
-import { KAKAO_REDIRECT_URI } from "../../config";
-import { useNavigate } from "react-router-dom";
+import { PATH } from "@/constants/paths";
+
 
 const KakaoLoginButton = () => {
-  const redirectUri = KAKAO_REDIRECT_URI; // 재현님 만드신 링크
-  const navigate = useNavigate();
-
+  const redirectUri = KAKAO_REDIRECT_URI; 
   const handleClick = () => navigate(redirectUri);
+
+const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+const FRONT_CALLBACK = `${window.location.origin}${BASE}${PATH.OAUTH_REGISTER}`;
+const AUTH_START_URL = `https://troublog.shop/oauth2/authorization/kakao?return_to=${encodeURIComponent(
+  FRONT_CALLBACK
+)}`;
+
+export default function KakaoLoginButton() {
+  const handleClick = () => {
+    // 팝업 없이 풀리다이렉트
+    window.location.href = AUTH_START_URL;
+  };
+
 
   return (
     <button
@@ -20,6 +31,4 @@ const KakaoLoginButton = () => {
       </span>
     </button>
   );
-};
-
-export default KakaoLoginButton;
+}
