@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import onboarding_image from "../../assets/images/onboarding_image.png";
 import { postEmailCheck } from "@/api/auth.api";
+import { PATH } from "@/constants/paths";
 
 const SignPageOne = () => {
   const [email, setEmail] = useState("");
@@ -181,7 +182,7 @@ const SignPageOne = () => {
             </h2>
             <button
               className="text-[18px] text-[#9737fd] underline font-pretendard"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(PATH.LOGIN)}
             >
               로그인
             </button>
