@@ -159,7 +159,8 @@ export default function ProjectFolderCard({
   );
 
   const ContainerClasses =
-    "flex w-full max-w-[384px] p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card overflow-hidden";
+    "flex flex-none p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card " +
+    "w-[300px] sm:w-[332px] md:w-[360px] lg:w-[384px]";
 
   return (
     <>

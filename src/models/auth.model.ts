@@ -66,6 +66,7 @@ export interface EmailCheckResponse {
 
 export interface OauthRegisterRequest {
   userId: number;
+  kakaoNickname: string;
   nickname: string;
   field: string;
   bio: string;

@@ -9,11 +9,19 @@ import { PATH } from "@/constants/paths";
 const SignPageOauth = () => {
   const navigate = useNavigate();
   const location = useLocation() as any;
-  const stateUserId = location?.state?.userId as number | undefined;
-  const stateNickname = location?.state?.nickname as string | undefined;
 
+  // location.state에서 넘어온 값 (카카오 인증 직후)
+  const stateUserId = location?.state?.userId as number | undefined;
+  const stateKakaoNickname = location?.state?.nickname as string | undefined;
+
+  // 카카오 원본 정보 (읽기 전용)
   const [userId, setUserId] = useState<number | null>(stateUserId ?? null);
-  const [nickname, setNickname] = useState(stateNickname ?? "");
+  const [kakaoNickname, setKakaoNickname] = useState<string>(
+    stateKakaoNickname ?? ""
+  );
+
+  // 사용자 입력용
+  const [nickname, setNickname] = useState<string>(""); // 서비스에서 사용할 닉네임
   const [field, setField] = useState("");
   const [bio, setBio] = useState("");
   const [githubad, setGithubad] = useState("");
@@ -26,18 +34,25 @@ const SignPageOauth = () => {
 
   // 새로고침 폴백
   useEffect(() => {
-    if (userId != null && nickname) return;
+    if (userId != null && kakaoNickname) return;
     try {
       const raw = sessionStorage.getItem("oauth_payload");
       if (raw) {
         const p = JSON.parse(raw) as { userId?: number; nickname?: string };
         if (p?.userId && !userId) setUserId(p.userId);
-        if (p?.nickname && !nickname) setNickname(p.nickname);
+        if (p?.nickname && !kakaoNickname) setKakaoNickname(p.nickname);
       }
     } catch (err) {
       console.debug("oauth_payload parse failed:", err);
     }
-  }, [userId, nickname]);
+  }, [userId, kakaoNickname]);
+
+  // UX: 사용자 입력 닉네임이 비어있다면, 카카오 닉네임을 기본값으로 채워줌
+  useEffect(() => {
+    if (!nickname && kakaoNickname) {
+      setNickname(kakaoNickname);
+    }
+  }, [kakaoNickname, nickname]);
 
   const validateForm = () => {
     let valid = true;
@@ -76,6 +91,7 @@ const SignPageOauth = () => {
     try {
       const payload: OauthRegisterRequest = {
         userId: userId!, // 카카오로 받은 ID
+        kakaoNickname: kakaoNickname.trim(),
         nickname: nickname.trim(),
         field: field.trim(),
         bio: bio.trim(),
@@ -139,15 +155,31 @@ const SignPageOauth = () => {
             className="flex flex-col items-start w-full"
           >
             <div className="flex flex-col items-start w-full">
+              {/* 카카오 닉네임 */}
+              <Input
+                label="카카오 닉네임"
+                type="text"
+                value={kakaoNickname}
+                onChange={() => {}}
+                placeholder="카카오에서 전달된 닉네임"
+                error={""}
+                name="kakaoNickname"
+              />
+              <p className="text-xs text-gray-500 -mt-2 mb-3">
+                카카오에서 받은 닉네임이며, 계정 식별을 위해 그대로 저장됩니다.
+              </p>
+
+              {/* 서비스에서 사용할 닉네임 (사용자 입력) */}
               <Input
                 label="닉네임"
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                placeholder="닉네임을 입력해주세요."
+                placeholder="서비스에서 사용할 닉네임을 입력해주세요."
                 error={nicknameError}
                 name="nickname"
               />
+
               <Input
                 label="분야"
                 type="text"
@@ -180,7 +212,7 @@ const SignPageOauth = () => {
             <div className="flex flex-col items-start gap-4 w-full">
               <button
                 type="submit"
-                className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center"
+                className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center disabled:opacity-60"
                 disabled={submitting}
               >
                 <span className="text-white text-[20px] font-semibold font-pretendard">
