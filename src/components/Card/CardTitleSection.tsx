@@ -20,25 +20,23 @@ export default function CardTitleSection({
 }: CardTitleSectionProps) {
   return (
     <div className="gap-2">
-      {/* 제목 + 공개 여부 아이콘 or 요약 유형 */}
-      <div className="flex items-start gap-1 sm:gap-2 min-w-0">
-        {/* 고정 max-w 제거하고 부모 폭을 최대로 사용해 한 줄 말줄임 */}
-        <div
-          className="flex-1 min-w-0 text-head-20-semibold whitespace-nowrap overflow-hidden text-ellipsis"
-          title={title}
-        >
+      {/* 제목 + 공개/비공개 아이콘(or 요약 유형) */}
+      <div className="flex items-center min-w-0">
+        {/* 제목: 컨테이너 제약 내에서만 잘림/말줄임 */}
+        <span className="min-w-0 truncate text-head-20-semibold" title={title}>
           {title}
-        </div>
+        </span>
 
+        {/* 바로 옆(작은 여백) */}
         {isMine &&
           (status === "created" && summaryType ? (
-            <span className="text-body-16-regular text-gray3">
+            <span className="ml-1 sm:ml-2 text-body-16-regular text-gray3 shrink-0">
               {summaryType}
             </span>
           ) : (
             <img
               src={visibility === "public" ? publicIcon : privateIcon}
-              className="w-[24px] h-[24px] shrink-0"
+              className="ml-1 sm:ml-2 w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] shrink-0"
               alt={visibility === "public" ? "공개" : "비공개"}
             />
           ))}

@@ -21,9 +21,17 @@ export default function NotificationModal() {
   const navigate = useNavigate();
 
   return (
-    <div className="w-[600px] h-[262px] rounded-[20px] bg-white shadow-card p-0 overflow-hidden flex flex-col">
-      {/* 카테고리 탭 */}
-      <div className="flex gap-[28px] mt-[24px] ml-[36px] mb-[15px]">
+    <div
+      className="
+        w-[92vw] sm:w-[520px] md:w-[560px] lg:w-[600px]
+        max-w-[92vw]
+        h-[262px]
+        rounded-[20px] bg-white shadow-card p-0
+        overflow-hidden flex flex-col
+      "
+    >
+      {/* 카테고리 탭 (기존 gap/마진 유지, xs에서만 좌여백 살짝 축소) */}
+      <div className="flex gap-[28px] mt-[24px] ml-4 sm:ml-[36px] mb-[15px]">
         {tabs.map((tab) => (
           <span
             key={tab}
@@ -38,11 +46,11 @@ export default function NotificationModal() {
         ))}
       </div>
 
-      {/* 구분선 */}
+      {/* 구분선 (기존 간격 유지) */}
       <div className="w-full h-[1px] bg-gray1 mb-[28px]" />
 
-      {/* 알림 영역 */}
-      <div className="flex-1 overflow-y-auto px-[38px] pb-[46px]">
+      {/* 알림 영역 (기존 여백/간격 유지) */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-[38px] pb-[46px]">
         {loading ? (
           <div className="w-full h-full flex items-center justify-center text-head-20-semibold">
             불러오는 중…
@@ -65,7 +73,7 @@ export default function NotificationModal() {
                 <div
                   onClick={() => {
                     const internal = toInternalSpaPath(item.link);
-                    if (!internal) return; // 스킴이 이상하면 무시
+                    if (!internal) return;
                     navigate(internal);
                   }}
                   className={clsx(
