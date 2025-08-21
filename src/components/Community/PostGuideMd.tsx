@@ -57,7 +57,6 @@ export default function PostGuideMd({
               src={item.src}
               alt={item.alt ?? ""}
               className="rounded-lg my-4 max-w-full h-auto"
-              className="rounded-lg my-4 max-w-full h-auto"
               onError={(e) => {
                 const img = e.currentTarget as HTMLImageElement;
                 img.onerror = null;

@@ -89,14 +89,10 @@ const LoginPage = () => {
 
   return (
     <div className="flex w-screen h-screen overflow-hidden">
-      <img
-        src={mockimg}
-        alt="login visual"
-        className="w-1/2 h-full object-cover"
-      />
-      <div className="w-1/2 h-full flex justify-center items-center">
-        <div className="w-[560px] flex flex-col items-center gap-10">
-          <h2 className="text-black font-bold text-[48px] w-full font-pretendard">
+      <img src={mockimg} className="w-1/2 h-full object-fill" />
+      <div className="w-full lg:w-1/2 flex justify-center items-center p-6 sm:p-8">
+        <div className="w-full max-w-[560px] flex flex-col items-center gap-8">
+          <h2 className="text-black text-3xl sm:text-4xl lg:text-[36px] font-bold w-full font-pretendard">
             로그인
           </h2>
 
@@ -104,7 +100,7 @@ const LoginPage = () => {
             onSubmit={handleSubmit}
             className="flex flex-col items-start gap-4 w-full"
           >
-            <div className="flex flex-col items-start w-full">
+            <div className="flex flex-col items-start w-full gap-2">
               <Input
                 label="이메일"
                 type="email"
@@ -127,32 +123,32 @@ const LoginPage = () => {
               />
             </div>
 
-            {formError && (
-              <p className="text-red-500 text-[14px]">{formError}</p>
-            )}
+            {formError && <p className="text-red-500 text-sm">{formError}</p>}
 
             <div className="flex flex-col items-start gap-3 w-full">
               <button
                 type="submit"
-                className="flex justify-center items-center w-full h-12 bg-[#9737fd] rounded-lg"
+                className="flex justify-center items-center w-full h-12 bg-[#9737fd] rounded-lg disabled:opacity-60"
                 disabled={loading}
               >
-                <span className="text-white font-semibold text-[20px] font-pretendard">
+                <span className="text-white font-semibold text-base sm:text-lg font-pretendard">
                   {loading ? "로그인 중..." : "로그인"}
                 </span>
               </button>
 
-              <KakaoLoginButton />
+              <div className="w-full">
+                <KakaoLoginButton />
+              </div>
             </div>
           </form>
 
-          <div className="w-[200px] flex flex-col items-center gap-4">
-            <h2 className="text-gray-500 text-[18px] font-pretendard">
+          <div className="w-full flex flex-col items-center gap-3">
+            <h2 className="text-gray-500 text-sm sm:text-base font-pretendard">
               트러블로그가 처음이신가요?
             </h2>
             <button
               onClick={() => navigate("/signup")}
-              className="text-gray-500 underline text-[18px] font-pretendard w-full text-center"
+              className="text-gray-500 underline text-sm sm:text-base font-pretendard w-full text-center"
             >
               회원가입
             </button>
@@ -162,5 +158,4 @@ const LoginPage = () => {
     </div>
   );
 };
-
 export default LoginPage;
