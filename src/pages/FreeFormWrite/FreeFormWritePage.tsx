@@ -961,21 +961,23 @@ export default function FreeFormWritePage() {
                 <MDEditor
                   className="mt-2"
                   value={block.content}
-                  onChange={(val) =>
-                    handleChangeBlock(block.id, "content", val || "")
+                  onChange={(val?: string) =>
+                    handleChangeBlock(block.id, "content", val ?? "")
                   }
                   preview="edit"
                   textareaProps={{
-                    onPaste: (e) => handlePasteImage(block.id, e),
-                    onDrop: (e) => handleDropImage(block.id, e),
-                    onDragOver: (e) => {
+                    onPaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) =>
+                      handlePasteImage(block.id, e),
+                    onDrop: (e: React.DragEvent<HTMLTextAreaElement>) =>
+                      handleDropImage(block.id, e),
+                    onDragOver: (e: React.DragEvent<HTMLTextAreaElement>) => {
                       if (e.dataTransfer?.types?.includes("Files")) {
                         e.preventDefault();
                         e.stopPropagation();
                       }
                     },
                   }}
-                  commandsFilter={(cmd) =>
+                  commandsFilter={(cmd: ICommand): ICommand =>
                     cmd.keyCommand === "image" ? imageUploadCmd : cmd
                   }
                 />
