@@ -22,10 +22,18 @@ const LoginPage = () => {
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     const next = sp.get("next");
+    const expectedState = sessionStorage.getItem("oauth_state");
     if (next) {
       try {
         const decoded = decodeURIComponent(next);
         const u = new URL(decoded, window.location.origin); // 상대 경로 대비
+        // 1) 외부 origin 차단
+        if (u.origin !== window.location.origin) return;
+        // 2) 콜백 전용 경로에서만 토큰 해석
+        if (u.pathname !== PATH.OAUTH_REGISTER) return;
+        // 3) state 일치 검증(없다면 즉시 중단)
+        const state = u.searchParams.get("state");
+        if (!state || !expectedState || state !== expectedState) return;
         const accessToken = u.searchParams.get("accessToken");
         const userIdStr = u.searchParams.get("userId");
         if (accessToken && userIdStr) {
@@ -35,7 +43,7 @@ const LoginPage = () => {
 
           // 주소 정리 후 홈으로
           try {
-            history.replaceState(null, "", "/");
+            window.history.replaceState(null, "", "/");
           } catch {
             //
           }
