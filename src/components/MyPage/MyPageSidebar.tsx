@@ -180,7 +180,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   };
 
   return (
-    <div className="flex w-full md:w-[296px] flex-col items-start gap-8 sm:gap-12 xl:gap-[140px] md:sticky md:top-24">
+    <div className="flex w-full md:w-[296px] flex-col items-start gap-8 sm:gap-12 xl:gap-[140px] md:sticky md:top-24 mb-12 sm:mb-16 lg:mb-24">
       {/* 상단 프로필 영역 */}
       <div className="flex flex-col items-center gap-3 self-stretch">
         <img
