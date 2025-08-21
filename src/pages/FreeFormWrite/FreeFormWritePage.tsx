@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
 import DropDownButton from "@/components/Button/DropDownButton";
 import CategoryTag from "@/components/TemplateWrite/CategoryTag";
@@ -203,6 +203,89 @@ export default function FreeFormWritePage() {
   const [isStartingSummary, setIsStartingSummary] = useState(false);
   const closingRef = useRef(false);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+
+  {
+    /*텍스트 길어지면 블록도 길어지게*/
+  }
+  const [editorHeights, setEditorHeights] = useState<Record<number, number>>(
+    {}
+  );
+
+  const editorWrapRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  const autosizeFor = useCallback((blockId: number) => {
+    const root = editorWrapRefs.current.get(blockId);
+    if (!root) return;
+
+    const ta = root.querySelector(
+      "textarea.w-md-editor-text-input"
+    ) as HTMLTextAreaElement | null;
+    if (!ta) return;
+
+    // 1) textarea를 auto로 풀고 실제 내용 높이 측정
+    const prev = ta.style.height;
+    ta.style.height = "auto";
+    const taScrollH = ta.scrollHeight;
+
+    // 2) 툴바/바텀바/패딩/보더 높이 합산(크롬)
+    const editorRoot = ta.closest(".w-md-editor") as HTMLElement | null;
+    const toolbar = editorRoot?.querySelector(
+      ".w-md-editor-toolbar"
+    ) as HTMLElement | null;
+    const bottombar = editorRoot?.querySelector(
+      ".w-md-editor-bar"
+    ) as HTMLElement | null;
+
+    const toolbarH = toolbar?.offsetHeight ?? 0;
+    const bottombarH = bottombar?.offsetHeight ?? 0;
+
+    const taCS = getComputedStyle(ta);
+    const taVPad =
+      (parseFloat(taCS.paddingTop || "0") || 0) +
+      (parseFloat(taCS.paddingBottom || "0") || 0);
+
+    const taWrap = ta.parentElement as HTMLElement | null;
+    const wrapCS = taWrap ? getComputedStyle(taWrap) : null;
+    const wrapVPad = wrapCS
+      ? (parseFloat(wrapCS.paddingTop || "0") || 0) +
+        (parseFloat(wrapCS.paddingBottom || "0") || 0)
+      : 0;
+
+    const rootCS = editorRoot ? getComputedStyle(editorRoot) : null;
+    const rootVPad =
+      (rootCS ? parseFloat(rootCS.paddingTop || "0") : 0) +
+      (rootCS ? parseFloat(rootCS.paddingBottom || "0") : 0);
+    const rootVBorder =
+      (rootCS ? parseFloat(rootCS.borderTopWidth || "0") : 0) +
+      (rootCS ? parseFloat(rootCS.borderBottomWidth || "0") : 0);
+
+    const chrome =
+      toolbarH + bottombarH + taVPad + wrapVPad + rootVPad + rootVBorder + 16;
+
+    // 3) 최종 높이 반영(200~20000 사이로 클램프)
+    const next = Math.max(200, Math.min(20000, taScrollH + chrome));
+    setEditorHeights((prevHeights) =>
+      prevHeights[blockId] === next
+        ? prevHeights
+        : { ...prevHeights, [blockId]: next }
+    );
+
+    ta.style.height = prev;
+  }, []);
+
+  useEffect(() => {
+    const recalcAll = () => {
+      for (const b of blocks) requestAnimationFrame(() => autosizeFor(b.id));
+    };
+    window.addEventListener("resize", recalcAll);
+    return () => window.removeEventListener("resize", recalcAll);
+  }, [blocks, autosizeFor]);
+
+  useEffect(() => {
+    for (const b of blocks) requestAnimationFrame(() => autosizeFor(b.id));
+  }, [blocks.length, autosizeFor]);
+
+  //
 
   // 프리필 + 포커스
   useEffect(() => {
@@ -907,27 +990,48 @@ export default function FreeFormWritePage() {
                   />
                 </div>
 
-                <MDEditor
-                  className="mt-2"
-                  value={block.content}
-                  onChange={(val) =>
-                    handleChangeBlock(block.id, "content", val || "")
-                  }
-                  preview="edit"
-                  textareaProps={{
-                    onPaste: (e) => handlePasteImage(block.id, e),
-                    onDrop: (e) => handleDropImage(block.id, e),
-                    onDragOver: (e) => {
-                      if (e.dataTransfer?.types?.includes("Files")) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }
-                    },
+                {/* 🔹 래퍼 ref만 추가 */}
+                <div
+                  ref={(el) => {
+                    if (el) editorWrapRefs.current.set(block.id, el);
+                    else editorWrapRefs.current.delete(block.id);
+                    // ref 세팅 직후 1프레임 뒤 계산
+                    requestAnimationFrame(() => autosizeFor(block.id));
                   }}
-                  commandsFilter={(cmd) =>
-                    cmd.keyCommand === "image" ? imageUploadCmd : cmd
-                  }
-                />
+                  className="mt-2"
+                >
+                  <MDEditor
+                    value={block.content}
+                    onChange={(val) => {
+                      handleChangeBlock(block.id, "content", val || "");
+                      requestAnimationFrame(() => autosizeFor(block.id));
+                    }}
+                    preview="edit"
+                    // 🔹 높이만 prop으로 주입
+                    height={editorHeights[block.id] ?? 200}
+                    textareaProps={{
+                      onPaste: (e) => {
+                        handlePasteImage(block.id, e);
+                        requestAnimationFrame(() => autosizeFor(block.id));
+                      },
+                      onDrop: (e) => {
+                        handleDropImage(block.id, e);
+                        requestAnimationFrame(() => autosizeFor(block.id));
+                      },
+                      onInput: () =>
+                        requestAnimationFrame(() => autosizeFor(block.id)),
+                      onDragOver: (e) => {
+                        if (e.dataTransfer?.types?.includes("Files")) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      },
+                    }}
+                    commandsFilter={(cmd) =>
+                      cmd.keyCommand === "image" ? imageUploadCmd : cmd
+                    }
+                  />
+                </div>
               </div>
             ))}
 

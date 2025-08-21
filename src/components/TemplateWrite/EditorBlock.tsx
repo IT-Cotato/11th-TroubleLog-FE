@@ -1,4 +1,7 @@
 import MDEditor, { type ICommand } from "@uiw/react-md-editor";
+import "@uiw/react-md-editor/markdown-editor.css";
+import "@uiw/react-markdown-preview/markdown.css";
+
 import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
@@ -51,7 +54,7 @@ export type EditorBlockProps = {
 };
 
 const MIN_H = 200;
-const MAX_H = 2000;
+const MAX_H = 20000;
 const clamp = (n: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, n));
 
@@ -77,28 +80,99 @@ const EditorBlock = ({
   commandsFilter,
 }: EditorBlockProps) => {
   const [editorHeight, setEditorHeight] = useState<number>(MIN_H);
-  const taRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // 콘텐츠 길이에 따라 자동 높이 조절 (textarea.style.height 직접 조작 X)
+  const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const editorWrapRef = useRef<HTMLDivElement | null>(null);
+
   const autosize = useCallback(() => {
     const ta = taRef.current;
     if (!ta) return;
-    const next = clamp(ta.scrollHeight + 2, MIN_H, MAX_H);
-    setEditorHeight((h) => (h !== next ? next : h));
+    const prevTaH = ta.style.height;
+    ta.style.height = "auto";
+
+    const taScrollH = ta.scrollHeight;
+
+    const editorRoot = ta.closest(".w-md-editor") as HTMLElement | null;
+    const toolbar = editorRoot?.querySelector(
+      ".w-md-editor-toolbar"
+    ) as HTMLElement | null;
+    const bottombar = editorRoot?.querySelector(
+      ".w-md-editor-bar"
+    ) as HTMLElement | null;
+
+    const toolbarH = toolbar?.offsetHeight ?? 0;
+    const bottombarH = bottombar?.offsetHeight ?? 0;
+
+    // textarea
+    const taCS = getComputedStyle(ta);
+    const taVPad =
+      (parseFloat(taCS.paddingTop || "0") || 0) +
+      (parseFloat(taCS.paddingBottom || "0") || 0);
+
+    // textarea 부모
+    const taWrap = ta.parentElement as HTMLElement | null;
+    const wrapCS = taWrap ? getComputedStyle(taWrap) : null;
+    const wrapVPad = wrapCS
+      ? (parseFloat(wrapCS.paddingTop || "0") || 0) +
+        (parseFloat(wrapCS.paddingBottom || "0") || 0)
+      : 0;
+
+    // 에디터 루트 보더/패딩
+    const rootCS = editorRoot ? getComputedStyle(editorRoot) : null;
+    const rootVPad =
+      (rootCS ? parseFloat(rootCS.paddingTop || "0") : 0) +
+      (rootCS ? parseFloat(rootCS.paddingBottom || "0") : 0);
+    const rootVBorder =
+      (rootCS ? parseFloat(rootCS.borderTopWidth || "0") : 0) +
+      (rootCS ? parseFloat(rootCS.borderBottomWidth || "0") : 0);
+
+    // 여유분(렌더 오차/간격용)
+    const fudge = 16;
+
+    const chrome =
+      toolbarH +
+      bottombarH +
+      taVPad +
+      wrapVPad +
+      rootVPad +
+      rootVBorder +
+      fudge;
+
+    const next = clamp(taScrollH + chrome, MIN_H, MAX_H);
+    setEditorHeight((h) => (h === next ? h : next));
+
+    ta.style.height = prevTaH;
   }, []);
 
-  // 콘텐츠/활성 변경 시 한 프레임 뒤에 측정
-  useLayoutEffect(() => {
-    const id = requestAnimationFrame(autosize);
-    return () => cancelAnimationFrame(id);
-  }, [block.content, isActive, autosize]);
+  const attachTextareaRef = useCallback(() => {
+    if (taRef.current) return;
+    const root = editorWrapRef.current;
+    if (!root) return;
 
-  // 입력 중 높이 변동 감지 (선택적)
+    const ta = root.querySelector(
+      "textarea.w-md-editor-text-input"
+    ) as HTMLTextAreaElement | null;
+
+    if (ta) {
+      taRef.current = ta;
+      requestAnimationFrame(autosize);
+    }
+  }, [autosize]);
+
+  useLayoutEffect(() => {
+    const id = requestAnimationFrame(() => {
+      attachTextareaRef();
+      autosize();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [attachTextareaRef, autosize, isActive, block.content]);
+
   useEffect(() => {
-    const ta = taRef.current;
-    if (!ta || !("ResizeObserver" in window)) return;
+    const target = editorWrapRef.current;
+    if (!target || !("ResizeObserver" in window)) return;
+
     const ro = new ResizeObserver(() => requestAnimationFrame(autosize));
-    ro.observe(ta);
+    ro.observe(target);
     return () => ro.disconnect();
   }, [autosize]);
 
@@ -155,11 +229,11 @@ const EditorBlock = ({
           )}
         </div>
 
-        {/* 편집 / 프리뷰 분리 렌더 → caret/height 안정 */}
+        {/* 편집 / 프리뷰 분리 */}
         {isActive ? (
           <div
+            ref={editorWrapRef}
             className="w-full overflow-visible rounded-md border border-gray-200"
-            style={{ minHeight: MIN_H, maxHeight: MAX_H, height: editorHeight }}
           >
             <MDEditor
               value={block.content}
@@ -169,18 +243,11 @@ const EditorBlock = ({
               }}
               height={editorHeight}
               preview="edit"
-              visiableDragbar={false}
+              visibleDragbar={false}
               style={{ width: "100%", border: "none" }}
               autoFocus
               commandsFilter={commandsFilter}
               textareaProps={{
-                // v4.0.7: 타입에 ref 정의가 없어 단언 사용
-                ...({
-                  ref: (el: HTMLTextAreaElement | null) => {
-                    taRef.current = el;
-                    requestAnimationFrame(autosize); // 초기 한 번 계산
-                  },
-                } as any),
                 onInput: () => requestAnimationFrame(autosize),
                 onPaste: (e) => {
                   onPasteImage?.(block.id, e);
