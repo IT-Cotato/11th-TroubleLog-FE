@@ -1,9 +1,8 @@
 import { type PropsWithChildren, useEffect, useRef } from "react";
 import { connectAlertSSE } from "@/api/alert.api";
-import { useIsLoggedIn, useViewerId, useAuthStore } from "@/store/auth";
+import { useIsLoggedIn, useViewerId } from "@/store/auth";
 import { startRefresh } from "@/api/axios";
 import { useNotificationStore } from "@/store/notification";
-import type { AlertServerItem } from "@/types/alert.model";
 import { PATH } from "@/constants/paths";
 
 // 콜백 라우트 감지(풀 리다이렉트 방식: /auth/oauth-register 만 스킵)
@@ -17,14 +16,14 @@ async function tryRefreshOnce() {
 }
 
 // 타입 가드
-function isAlertPayload(x: any): x is AlertServerItem {
-  return x && typeof x === "object" && "title" in x && "message" in x;
-}
+// function isAlertPayload(x: any): x is AlertServerItem {
+//   return x && typeof x === "object" && "title" in x && "message" in x;
+// }
 
 export default function AlertSSEProvider({ children }: PropsWithChildren) {
   const isLoggedIn = useIsLoggedIn();
   const viewerId = useViewerId();
-  const hydrated = (useAuthStore as any).persist?.hasHydrated?.() ?? true;
+  // const hydrated = (useAuthStore as any).persist?.hasHydrated?.() ?? true;
 
   const esCloseRef = useRef<null | (() => void)>(null);
   const connectedRef = useRef(false);
@@ -37,7 +36,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
   const retryMs = Number(import.meta.env.VITE_SSE_RETRY_MS ?? 3000);
 
   useEffect(() => {
-    if (!hydrated) return;
+    // if (!hydrated) return;
 
     // ✅ OAuth 콜백 라우트에서는 SSE/리프레시 전부 비활성화
     const pathname = window.location.pathname;
@@ -91,12 +90,18 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
 
       const close = connectAlertSSE(
         {
-          onOpen: () => console.log("[SSE] connected"),
+          onOpen: () => {
+            connectedRef.current = true;
+            console.log("[SSE] connected");
+          },
           onMessage: (payload) => {
-            if (!isAlertPayload(payload)) return;
+            // if (!isAlertPayload(payload)) return;
             useNotificationStore.getState().pushFromSSE(payload);
           },
-          onError: (e) => console.warn("[SSE] error", e),
+          onError: (e) => {
+            console.warn("[SSE] error", e);
+            connectedRef.current = false;
+          },
           onUnauthorized: async () => {
             // 콜백 라우트면 무시
             if (isAuthCallbackPath(window.location.pathname)) return;
@@ -119,7 +124,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
         close();
         connectedRef.current = false;
       };
-      connectedRef.current = true;
+      // connectedRef.current = true;
     };
 
     // StrictMode 중복 연결 방지: 0ms 지연으로 예약
@@ -152,7 +157,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       esCloseRef.current = null;
       connectedRef.current = false;
     };
-  }, [hydrated, isLoggedIn, viewerId, autoReconnect, retryMs]);
+  }, [isLoggedIn, viewerId, autoReconnect, retryMs]);
 
   return <>{children}</>;
 }
