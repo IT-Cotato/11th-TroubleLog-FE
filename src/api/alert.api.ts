@@ -46,6 +46,24 @@ function buildSSEHeaders(opts?: { token?: string; envType?: string }) {
   return headers;
 }
 
+function normalizeAlert(x: any): AlertServerItem | null {
+  if (!x) return null;
+  // 흔한 래퍼 형태 풀기
+  if (Array.isArray(x) && x.length) return normalizeAlert(x[0]);
+  if (x.data) return normalizeAlert(x.data);
+  if (x.alert) return normalizeAlert(x.alert);
+
+  // 다양한 키 대응
+  const title = x.title ?? x.alertTitle ?? x.notificationTitle ?? x.subject;
+  const message = x.message ?? x.alertMessage ?? x.body ?? x.content;
+  const targetUrl = x.targetUrl ?? x.link ?? x.url;
+
+  if (typeof title === "string" && typeof message === "string") {
+    return { title, message, targetUrl } as AlertServerItem;
+  }
+  return null;
+}
+
 // SSE 연결 (실시간 알림)
 export function connectAlertSSE(
   h: Handlers = {},
@@ -91,20 +109,17 @@ export function connectAlertSSE(
     },
 
     onmessage(ev) {
-      // 서버가 이벤트 이름을 준다면 'alert'만 처리
       if (ev.event && ev.event !== "alert") return;
-
       const d = ev.data;
-      // 서버/프록시 keepalive 주석 라인 무시
       if (typeof d === "string" && d.startsWith(":")) return;
       if (!d) return;
 
-      // 알림 payload만 파싱 시도
       try {
         const parsed = JSON.parse(d);
-        h.onMessage?.(parsed);
+        const item = normalizeAlert(parsed);
+        if (item) h.onMessage?.(item);
       } catch {
-        // 비-JSON은 무시 (예: "SSE 연결 성공")
+        // 비 JSON(환영 메시지 등)은 무시
       }
     },
 
