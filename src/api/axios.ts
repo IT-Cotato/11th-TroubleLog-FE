@@ -130,52 +130,21 @@ export const startRefresh = async (): Promise<string | null> => {
       __skipGlobalAuthGuard: true,
       __skipGlobal404: true,
     });
-    // 다양한 응답 포맷을 지원
-    const pick = (d: any): string | null =>
-      d?.accessToken ??
-      d?.data?.accessToken ??
-      d?.content?.accessToken ??
-      d?.token ??
-      d?.data?.token ??
+    // 서버 응답 케이스 모두 대응:
+    //  - { success:true, data:"<token>" }   ← 현재 스키마
+    //  - { data:{ accessToken:"<token>" } }
+    //  - { accessToken:"<token>" }
+    const body = r?.data;
+    const newToken: string | null =
+      (typeof body?.data === "string" && body.data) ||
+      body?.data?.accessToken ||
+      body?.accessToken ||
       null;
-    const newToken = pick(r.data);
-
-    if (import.meta.env.DEV) {
-      // 민감정보 노출 방지(앞 8자만)
-      const mask = (t?: string | null) =>
-        t ? `${t.slice(0, 8)}…(${t.length})` : null;
-      console.groupCollapsed("[DEBUG] /auth/refresh response");
-      console.log("status:", r.status);
-      console.log("headers:", r.headers);
-      console.log("raw data:", r.data);
-      console.log("extracted accessToken:", mask(newToken));
-      console.groupEnd();
-    }
-
     if (!newToken) {
-      console.error(
-        "[Auth] Refresh response missing accessToken (unrecognized shape).",
-        r.data
-      );
+      console.error("[Auth] Refresh: token not found in response:", body);
       return null;
     }
-
-    // 저장 전 기존 값과 비교 로그(DEV)
-    if (import.meta.env.DEV) {
-      const before = localStorage.getItem("accessToken");
-      console.debug(
-        "[DEBUG] localStorage.accessToken (before):",
-        before ? `${before.slice(0, 8)}…(${before.length})` : null
-      );
-    }
     localStorage.setItem("accessToken", newToken);
-    if (import.meta.env.DEV) {
-      const after = localStorage.getItem("accessToken");
-      console.debug(
-        "[DEBUG] localStorage.accessToken (after):",
-        after ? `${after.slice(0, 8)}…(${after.length})` : null
-      );
-    }
 
     setRecentRefreshOk(); // 갱신 성공 신호
     return newToken;
@@ -229,6 +198,8 @@ const resId = api.interceptors.response.use(
     const status = error.response?.status;
     const cfg = (error.config ?? {}) as import("axios").AxiosRequestConfig & {
       _retry?: boolean;
+      __skipGlobalAuthGuard?: boolean;
+      __skipGlobal404?: boolean;
     };
     const reqUrl = cfg.url ?? "";
 
@@ -277,24 +248,8 @@ const resId = api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // 401 → 리프레시 시도 (SSE/스킵 요청 제외)
+    // ✅ 401 → "무조건" 리프레시 먼저 시도, 성공 시 원요청 1회 재시도
     if (status === 401 && !skipAuth && !isSSEAuth) {
-      // NEW: 다른 요청/탭에서 이미 갱신 성공한 경우 → 현재 토큰으로 즉시 1회 재시도
-      const latestToken = localStorage.getItem("accessToken");
-      if (hasRecentRefreshOk() && latestToken && !cfg._retry) {
-        cfg._retry = true;
-        cfg.headers = cfg.headers ?? {};
-        (cfg.headers as any).Authorization = `Bearer ${latestToken}`;
-        return api(cfg);
-      }
-
-      // 기존 로직: 리프레시 시도 (중복 방지)
-      if (cfg._retry) {
-        localStorage.removeItem("accessToken");
-        await navigateToAuthGuardOnce(401);
-        return Promise.reject(error);
-      }
-
       let p = getRefreshPromise();
       if (!p) {
         p = startRefresh().finally(() =>
@@ -304,11 +259,13 @@ const resId = api.interceptors.response.use(
       }
       const newToken = await p;
 
-      if (newToken && !cfg._retry) {
-        cfg._retry = true;
-        cfg.headers = cfg.headers ?? {};
-        (cfg.headers as any).Authorization = `Bearer ${newToken}`;
-        return api(cfg); // 재시도
+      if (newToken) {
+        if (!cfg._retry) {
+          cfg._retry = true;
+          cfg.headers = cfg.headers ?? {};
+          (cfg.headers as any).Authorization = `Bearer ${newToken}`;
+          return api(cfg); // 재시도
+        }
       }
 
       localStorage.removeItem("accessToken");
@@ -318,7 +275,7 @@ const resId = api.interceptors.response.use(
 
     // 403 → 접근권한 없음 화면
     if (status === 403 && !skipAuth && !isSSEAuth) {
-      // NEW 1) 리프레시가 "진행 중"이라면 완료까지 기다렸다가 성공 시 재시도
+      // 1) 리프레시 진행 중이면 완료까지 대기 후 재시도
       const inflight = getRefreshPromise();
       if (inflight && !cfg._retry) {
         const t = await inflight;
@@ -330,7 +287,7 @@ const resId = api.interceptors.response.use(
         }
       }
 
-      // NEW 2) 직전에 갱신 성공한 토큰이 있으면 1회 재시도
+      // 2) 직전에 갱신 성공한 토큰이 있으면 1회 재시도 (선택적)
       const latestToken = localStorage.getItem("accessToken");
       if (hasRecentRefreshOk() && latestToken && !cfg._retry) {
         cfg._retry = true;
@@ -339,7 +296,7 @@ const resId = api.interceptors.response.use(
         return api(cfg);
       }
 
-      // 기존 동작: 접근 권한 없음 화면
+      // 3) 실패 → 접근 권한 없음 화면
       await navigateToAuthGuardOnce(403);
       return Promise.reject(error);
     }
