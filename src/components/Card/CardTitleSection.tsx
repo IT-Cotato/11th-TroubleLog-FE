@@ -15,7 +15,7 @@ export default function CardTitleSection({
   visibility,
   createdAt,
   isMine,
-  status,
+  // status,
   summaryType,
 }: CardTitleSectionProps) {
   return (
@@ -29,7 +29,7 @@ export default function CardTitleSection({
 
         {/* 바로 옆(작은 여백) */}
         {isMine &&
-          (status === "created" && summaryType ? (
+          (summaryType ? (
             <span className="ml-1 sm:ml-2 text-body-16-regular text-gray3 shrink-0">
               {summaryType}
             </span>
