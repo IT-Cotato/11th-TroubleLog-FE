@@ -30,7 +30,7 @@ export default function NotificationModal() {
     if (item.type === "트러블슈팅") {
       if (viewerId != null) return PATH.MYPAGE(String(viewerId));
       // 로그인 정보가 없다면 적절한 폴백
-      return PATH.HOME; // 또는 PATH.LOGIN
+      return PATH.LOGIN;
     }
     // 2) 그 외엔 서버가 내려준 targetUrl을 내부 경로로만 허용
     return toInternalSpaPath(item.link);
