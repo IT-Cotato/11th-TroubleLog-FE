@@ -50,7 +50,7 @@ export const createPost = (body: CreatePostRequest) =>
 export const editPost = (postId: number, body: EditPostRequest) =>
   getAPIResponseData<EditPostResponse>({
     url: `/troubles/${postId}`,
-    method: "PUT",
+    method: "PATCH",
     data: body,
   });
 

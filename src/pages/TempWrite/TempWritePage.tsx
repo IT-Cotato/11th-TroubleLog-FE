@@ -270,6 +270,18 @@ const TempWritePage = () => {
 
   // 썸네일 상태
   const [currentThumbnail, setCurrentThumbnail] = useState<string | null>(null);
+  // 최초 작성 상태
+  const [initialPostStatus, setInitialPostStatus] = useState<
+    "WRITING" | "COMPLETED" | "SUMMARIZED" | null
+  >(null);
+  const wasEverCompleted = useMemo(
+    () =>
+      initialPostStatus === "COMPLETED" || initialPostStatus === "SUMMARIZED",
+    [initialPostStatus]
+  );
+  const [detailPrefill, setDetailPrefill] = useState<PostSavePayload | null>(
+    null
+  );
 
   // 수정 모드 초기 진입 시 상세 조회에서 가져오기
   useEffect(() => {
@@ -278,6 +290,22 @@ const TempWritePage = () => {
       try {
         const d: any = await getPostDetail(resumePostId);
         setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
+        // 서버 필드명 상이할 수 있어 둘 다 고려
+        const s = (d?.postStatus ?? d?.status) as
+          | "WRITING"
+          | "COMPLETED"
+          | "SUMMARIZED"
+          | undefined;
+        setInitialPostStatus(s ?? null);
+        // ← 기존 introduction / starRating / visibility / projectId 등을 프리필에 저장
+        setDetailPrefill({
+          importance: Number(d?.starRating ?? 0),
+          description: String(d?.introduction ?? ""),
+          visibility: d?.isVisible ? "public" : "private",
+          projectId: Number.isFinite(d?.projectId) ? Number(d.projectId) : null,
+          projectName: "", // 필요시 후속 조회로 채워도 무방
+          thumbnail: d?.thumbnailImageUrl ?? null,
+        });
       } catch {
         /* ignore */
       }
@@ -380,10 +408,23 @@ const TempWritePage = () => {
   };
 
   // 현재 화면 상태 + PostSaveModal에서 받은 meta로 수정 페이로드 만들기
-  const buildEditFormFromMeta = async (meta: PostSavePayload) => {
+  const buildEditFormFromMeta = async (
+    meta: PostSavePayload,
+    opts?: { mode?: "temp" | "final" | "summary" } // temp: 임시저장, final: 최종저장(요약 안함), summary: 요약 직전 최종저장
+  ) => {
+    const mode = opts?.mode ?? "temp";
     const canonicalTags = await canonicalizeTags(selectedTags);
     const { checklistError, checklistReason } =
       encodeChecklistToNumbers(blocks);
+    const nextStatus: "WRITING" | "COMPLETED" | "SUMMARIZED" = (() => {
+      // 최종 저장(요약 유무와 무관)에서는 COMPLETED로 고정,
+      // 다만 기존이 SUMMARIZED면 그대로 유지
+      if (mode === "final" || mode === "summary") {
+        return initialPostStatus === "SUMMARIZED" ? "SUMMARIZED" : "COMPLETED";
+      }
+      // 임시 저장은 기존 정책 유지: 과거에 완료 이력 있으면 그대로 유지, 아니면 WRITING
+      return wasEverCompleted ? initialPostStatus ?? "COMPLETED" : "WRITING";
+    })();
 
     return {
       title,
@@ -391,7 +432,7 @@ const TempWritePage = () => {
       postTags: canonicalTags,
       isVisible: (meta.visibility ?? "private") === "public",
       isSummaryCreated: false,
-      postStatus: "COMPLETED", // 저장(완료) 상태로 반영
+      postStatus: nextStatus, // 저장(완료) 상태로 반영
       starRating: Number(meta.importance ?? 0),
       templateType: "GUIDELINE",
       projectId: Number(meta.projectId),
@@ -406,7 +447,7 @@ const TempWritePage = () => {
   // 수정 모드에서만 호출: 템플릿 선택 모달에서 요약을 시작하지 않는 경우에 저장
   const persistEditsIfEditMode = async () => {
     if (!isResume || !resumePostId || !previewMeta) return;
-    const form = await buildEditFormFromMeta(previewMeta);
+    const form = await buildEditFormFromMeta(previewMeta, { mode: "final" });
     await editPost(resumePostId, toEditPostRequest(form) as any);
     setDraftPostId(resumePostId);
   };
@@ -527,9 +568,39 @@ const TempWritePage = () => {
     if (isStartingSummary) return;
     setIsStartingSummary(true);
     try {
-      if (!createdPostId && !resumePostId)
-        throw new Error("Post가 아직 생성되지 않았어요.");
+      const postId = createdPostId ?? resumePostId;
+      if (!postId) throw new Error("Post가 아직 생성되지 않았어요.");
 
+      // 1) 요약 시작 전, 항상 최신 내용으로 수정 API 호출
+      const effectiveMeta: PostSavePayload = {
+        importance: previewMeta?.importance ?? detailPrefill?.importance ?? 0,
+        description:
+          previewMeta?.description ?? detailPrefill?.description ?? "",
+        visibility:
+          previewMeta?.visibility ?? detailPrefill?.visibility ?? "private",
+        projectId:
+          previewMeta?.projectId ??
+          detailPrefill?.projectId ??
+          selectedProjectIdPage ??
+          initialProjectId ??
+          null,
+        projectName:
+          previewMeta?.projectName ||
+          detailPrefill?.projectName ||
+          projectNameById(selectedProjectIdPage) ||
+          projectNameById(initialProjectId),
+        thumbnail: previewMeta?.thumbnail ?? detailPrefill?.thumbnail ?? null,
+      };
+      if (!effectiveMeta.projectId) {
+        throw new Error("프로젝트를 선택해주세요.");
+      }
+
+      const editForm = await buildEditFormFromMeta(effectiveMeta, {
+        mode: "summary",
+      });
+      await editPost(postId, toEditPostRequest(editForm) as any);
+
+      // 2) 수정 성공 후에만 요약 로딩 UI 오픈 및 요약 시작
       setIsTemplateSelectModalOpen(false);
       setIsLoadingModalOpen(true);
       setSummaryProgress(0);
@@ -537,10 +608,7 @@ const TempWritePage = () => {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const taskId = await startSummaryCompat(
-        createdPostId ?? (resumePostId as number),
-        type
-      );
+      const taskId = await startSummaryCompat(postId, type);
       setSummaryTaskId(taskId);
     } catch (e) {
       console.error(e);
@@ -731,20 +799,25 @@ const TempWritePage = () => {
         encodeChecklistToNumbers(blocks);
 
       const meta: PostSavePayload = {
-        importance: previewMeta?.importance ?? 0,
-        description: previewMeta?.description ?? "",
-        visibility: previewMeta?.visibility ?? "private",
+        importance: previewMeta?.importance ?? detailPrefill?.importance ?? 0,
+        description:
+          previewMeta?.description ?? detailPrefill?.description ?? "",
+        visibility:
+          previewMeta?.visibility ?? detailPrefill?.visibility ?? "private",
         projectId:
           selectedProjectIdPage ??
+          previewMeta?.projectId ??
+          detailPrefill?.projectId ??
           location.state?.savePrefill?.projectId ??
           initialProjectId ??
           null,
         projectName:
           projectNameById(selectedProjectIdPage) ||
           previewMeta?.projectName ||
+          detailPrefill?.projectName ||
           location.state?.savePrefill?.projectName ||
           projectNameById(initialProjectId),
-        thumbnail: previewMeta?.thumbnail ?? null,
+        thumbnail: previewMeta?.thumbnail ?? detailPrefill?.thumbnail ?? null,
       };
 
       if (!meta.projectId) {
@@ -759,7 +832,9 @@ const TempWritePage = () => {
         postTags: canonicalTags,
         isVisible: (meta.visibility ?? "private") === "public",
         isSummaryCreated: false,
-        postStatus: "WRITING",
+        postStatus: wasEverCompleted
+          ? initialPostStatus ?? "COMPLETED"
+          : "WRITING",
         starRating: Number(meta.importance ?? 0),
         templateType: "GUIDELINE",
         projectId: Number(meta.projectId),
@@ -1055,26 +1130,31 @@ const TempWritePage = () => {
               selectedErrorType={selectedErrorType}
               initialImportance={
                 previewMeta?.importance ??
+                detailPrefill?.importance ??
                 location.state?.savePrefill?.importance
               }
               initialDescription={
                 previewMeta?.description ??
+                detailPrefill?.description ??
                 location.state?.savePrefill?.description
               }
               initialVisibility={
                 previewMeta?.visibility ??
+                detailPrefill?.visibility ??
                 location.state?.savePrefill?.visibility ??
                 "private"
               }
               initialProjectId={
                 selectedProjectIdPage ??
                 previewMeta?.projectId ??
+                detailPrefill?.projectId ??
                 location.state?.savePrefill?.projectId ??
                 initialProjectId ??
                 null
               }
               initialThumbnail={
                 previewMeta?.thumbnail ??
+                detailPrefill?.thumbnail ??
                 currentThumbnail ??
                 location.state?.savePrefill?.thumbnail ??
                 null
