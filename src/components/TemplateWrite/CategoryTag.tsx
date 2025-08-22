@@ -15,7 +15,7 @@ const CategoryTag = ({ value, onChange }: CategoryTagProps) => {
     <div className="w-full flex flex-wrap items-center gap-2 sm:gap-[15px]">
       {/* 왼쪽: 검색창 (모바일 전체폭, 큰 화면 고정폭) */}
       <div
-        className="flex px-[15px] py-[7px] border border-gray-300 rounded-2xl items-center gap-[12px] w-full sm:w-[220px] md:w-[240px] flex-shrink-0 cursor-pointer"
+        className="flex px-[15px] py-[7px] border border-gray-300 rounded-2xl items-center gap-[35px] w-full sm:w-[200px] md:w-[220px] flex-shrink-0 cursor-pointer"
         onClick={() => setIsOpen(true)}
       >
         <span className="text-gray-400 font-normal text-sm whitespace-nowrap">
