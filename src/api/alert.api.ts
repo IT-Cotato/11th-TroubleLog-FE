@@ -56,10 +56,15 @@ function normalizeAlert(x: any): AlertServerItem | null {
   // 다양한 키 대응
   const title = x.title ?? x.alertTitle ?? x.notificationTitle ?? x.subject;
   const message = x.message ?? x.alertMessage ?? x.body ?? x.content;
-  const targetUrl = x.targetUrl ?? x.link ?? x.url;
+  const rawUrl = x.targetUrl ?? x.link ?? x.url;
 
   if (typeof title === "string" && typeof message === "string") {
-    return { title, message, targetUrl } as AlertServerItem;
+    const alertId = typeof x.alertId === "number" ? x.alertId : Date.now(); // 임시 ID
+    const alertType = String(x.alertType ?? x.type ?? "UNKNOWN");
+    const isRead = Boolean(x.isRead ?? false);
+    const userId = typeof x.userId === "number" ? x.userId : 0;
+    const targetUrl = typeof rawUrl === "string" ? rawUrl : null;
+    return { alertId, title, message, alertType, isRead, targetUrl, userId };
   }
   return null;
 }
