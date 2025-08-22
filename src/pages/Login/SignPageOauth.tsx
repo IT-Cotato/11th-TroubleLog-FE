@@ -139,105 +139,113 @@ const SignPageOauth = () => {
 
   return (
     <div className="flex w-screen h-screen overflow-hidden">
+      {/* 좌측 이미지 (기본 회원가입과 유사한 배치/반응형) */}
       <img
         src={onboarding_image}
-        className="w-[961.807px] h-full object-cover shrink-0"
+        className="w-1/2 h-full object-fill"
         alt="signup visual"
       />
-      <div className="w-[960px] h-full px-[200px] py-[281px] flex flex-col justify-center items-center">
-        <div className="w-[560px] flex flex-col items-center gap-10">
-          <h2 className="text-black text-[48px] font-bold w-full font-pretendard">
+
+      {/* 우측 폼 영역 */}
+      <div className="w-full lg:w-1/2 h-full px-6 sm:px-16 lg:px-[200px] py-12 sm:py-24 lg:py-[281px] flex flex-col justify-center items-center">
+        <div className="w-full max-w-[560px] flex flex-col items-center gap-10">
+          <h2 className="text-black text-3xl sm:text-4xl lg:text-[36px] font-bold w-full font-pretendard">
             회원가입
           </h2>
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col items-start w-full"
+            className="flex flex-col items-start w-full gap-3"
           >
-            <div className="flex flex-col items-start w-full">
-              {/* 카카오 닉네임 */}
-              <Input
-                label="카카오 닉네임"
-                type="text"
-                value={kakaoNickname}
-                onChange={() => {}}
-                placeholder="카카오에서 전달된 닉네임"
-                error={""}
-                name="kakaoNickname"
-              />
-              <p className="text-xs text-gray-500 -mt-2 mb-3">
-                카카오에서 받은 닉네임이며, 계정 식별을 위해 그대로 저장됩니다.
-              </p>
+            {/* 카카오 닉네임 (읽기 전용) */}
+            <Input
+              label="카카오 닉네임"
+              type="text"
+              value={kakaoNickname}
+              onChange={() => {}}
+              placeholder="카카오에서 전달된 닉네임"
+              error={""}
+              name="kakaoNickname"
+            />
+            <p className="text-xs text-gray-500 -mt-2 mb-3">
+              카카오에서 받은 닉네임이며, 계정 식별을 위해 그대로 저장됩니다.
+            </p>
 
-              {/* 서비스에서 사용할 닉네임 (사용자 입력) */}
-              <Input
-                label="닉네임"
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="서비스에서 사용할 닉네임을 입력해주세요."
-                error={nicknameError}
-                name="nickname"
-              />
+            {/* 서비스 닉네임 */}
+            <Input
+              label="닉네임"
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="서비스에서 사용할 닉네임을 입력해주세요."
+              error={nicknameError}
+              name="nickname"
+            />
 
-              <Input
-                label="분야"
-                type="text"
-                value={field}
-                onChange={(e) => setField(e.target.value)}
-                placeholder="관심 분야를 입력해주세요."
-                error={fieldError}
-                name="field"
-              />
-              <Input
-                label="한 줄 소개"
-                type="text"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="한 줄 소개를 입력해주세요. (50자 이내)"
-                error={bioError}
-                name="bio"
-              />
-              <Input
-                label="깃허브 주소(선택)"
-                type="url"
-                value={githubad}
-                onChange={(e) => setGithubad(e.target.value)}
-                placeholder="깃허브 주소를 입력해주세요."
-                error={""}
-                name="githubad"
-              />
-            </div>
+            {/* 분야 */}
+            <Input
+              label="분야"
+              type="text"
+              value={field}
+              onChange={(e) => setField(e.target.value)}
+              placeholder="관심 분야를 입력해주세요."
+              error={fieldError}
+              name="field"
+            />
 
-            <div className="flex flex-col items-start gap-4 w-full">
-              <button
-                type="submit"
-                className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center disabled:opacity-60"
-                disabled={submitting}
+            {/* 한 줄 소개 */}
+            <Input
+              label="한 줄 소개"
+              type="text"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="한 줄 소개를 입력해주세요. (50자 이내)"
+              error={bioError}
+              name="bio"
+            />
+
+            {/* 깃허브 주소(선택) */}
+            <Input
+              label="깃허브 주소(선택)"
+              type="url"
+              value={githubad}
+              onChange={(e) => setGithubad(e.target.value)}
+              placeholder="깃허브 주소를 입력해주세요."
+              error={""}
+              name="githubad"
+            />
+
+            {/* 폼 에러 */}
+            {formError && (
+              <p
+                className="text-sm text-red-500 mt-1 min-h-[10px]"
+                aria-live="polite"
+                role="alert"
               >
-                <span className="text-white text-[20px] font-semibold font-pretendard">
-                  {submitting ? "가입 처리 중..." : "회원가입"}
-                </span>
-              </button>
-            </div>
+                {formError}
+              </p>
+            )}
+
+            {/* 제출 버튼 */}
+            <button
+              type="submit"
+              className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center disabled:opacity-60"
+              disabled={submitting}
+            >
+              <span className="text-white text-lg sm:text-xl font-semibold font-pretendard">
+                {submitting ? "가입 처리 중..." : "회원가입"}
+              </span>
+            </button>
           </form>
 
-          <p
-            className={`text-[13px] min-h-[25px] ${
-              formError ? "text-red-500" : "text-transparent"
-            }`}
-            aria-live="polite"
-          >
-            {formError || " "}
-          </p>
-
+          {/* 하단 로그인 링크 (우측 정렬 유지) */}
           <div className="flex flex-row items-end self-end gap-4">
-            <h2 className="text-[18px] text-gray-500 font-pretendard">
+            <h2 className="text-sm sm:text-base md:text-lg text-gray-500 font-pretendard">
               이미 계정이 있으신가요?
             </h2>
             <button
-              className="text-[18px] text-[#9737fd] underline font-pretendard"
-              onClick={() => navigate("/")}
+              className="text-sm sm:text-base md:text-lg text-[#9737fd] underline font-pretendard"
+              onClick={() => navigate(PATH.LOGIN)}
             >
               로그인
             </button>
