@@ -608,14 +608,6 @@ export default function FreeFormWritePage() {
         if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
 
-          // 요약 성공 → postStatus = SUMMARIZED 반영 (기존 로직 유지)
-          try {
-            const targetIdNum = createdPostId ?? resumePostId!;
-            await editPost(targetIdNum, { postStatus: "SUMMARIZED" } as any);
-          } catch (e) {
-            console.error("포스트 SUMMARIZED 반영 실패(FreeForm):", e);
-          }
-
           if (typeof data?.postSummaryId === "number") {
             setCompletedSummaryId(data.postSummaryId);
             setIsLoadingModalOpen(false);
@@ -1089,6 +1081,7 @@ export default function FreeFormWritePage() {
               <PostSuccessModal
                 onClose={() => setIsSuccessModalOpen(false)}
                 summaryId={completedSummaryId}
+                postId={createdPostId ?? resumePostId ?? undefined}
               />
             )}
           </div>
