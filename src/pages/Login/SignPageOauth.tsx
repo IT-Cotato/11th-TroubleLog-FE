@@ -137,25 +137,31 @@ const SignPageOauth = () => {
     }
   };
 
+  // responsive SignPageOauth (Tailwind)
   return (
-    <div className="flex w-screen h-screen overflow-hidden">
-      <img
-        src={onboarding_image}
-        className="w-[961.807px] h-full object-cover shrink-0"
-        alt="signup visual"
-      />
-      <div className="w-[960px] h-full px-[200px] py-[281px] flex flex-col justify-center items-center">
-        <div className="w-[560px] flex flex-col items-center gap-10">
-          <h2 className="text-black text-[48px] font-bold w-full font-pretendard">
+    <div className="min-h-screen grid grid-rows-[auto_1fr] lg:grid-rows-1 lg:grid-cols-2 overflow-hidden bg-white">
+      {/* 이미지: 모바일/태블릿에선 상단 배너, 데스크탑에선 좌측 패널 */}
+      <div className="relative h-48 sm:h-64 md:h-80 lg:h-auto order-1 lg:order-none">
+        <img
+          src={onboarding_image}
+          alt="signup visual"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+
+      {/* 폼 컨테이너 */}
+      <div className="flex h-full items-center justify-center px-4 py-8 sm:px-8 md:px-12 lg:px-16">
+        <div className="w-full max-w-md sm:max-w-lg lg:max-w-[560px] flex flex-col items-center gap-8">
+          <h2 className="w-full text-black text-3xl sm:text-4xl md:text-[48px] font-bold font-pretendard">
             회원가입
           </h2>
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col items-start w-full"
+            className="flex flex-col items-start w-full gap-0"
           >
-            <div className="flex flex-col items-start w-full">
-              {/* 카카오 닉네임 */}
+            <div className="flex flex-col items-start w-full gap-0">
+              {/* 카카오 닉네임 (읽기) */}
               <Input
                 label="카카오 닉네임"
                 type="text"
@@ -169,7 +175,7 @@ const SignPageOauth = () => {
                 카카오에서 받은 닉네임이며, 계정 식별을 위해 그대로 저장됩니다.
               </p>
 
-              {/* 서비스에서 사용할 닉네임 (사용자 입력) */}
+              {/* 사용자 입력 필드들 */}
               <Input
                 label="닉네임"
                 type="text"
@@ -179,7 +185,6 @@ const SignPageOauth = () => {
                 error={nicknameError}
                 name="nickname"
               />
-
               <Input
                 label="분야"
                 type="text"
@@ -209,13 +214,13 @@ const SignPageOauth = () => {
               />
             </div>
 
-            <div className="flex flex-col items-start gap-4 w-full">
+            <div className="flex flex-col items-start gap-4 w-full mt-4">
               <button
                 type="submit"
-                className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center disabled:opacity-60"
+                className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center disabled:opacity-60 transition-colors hover:bg-[#8428f6]"
                 disabled={submitting}
               >
-                <span className="text-white text-[20px] font-semibold font-pretendard">
+                <span className="text-white text-lg sm:text-[20px] font-semibold font-pretendard">
                   {submitting ? "가입 처리 중..." : "회원가입"}
                 </span>
               </button>
@@ -232,11 +237,11 @@ const SignPageOauth = () => {
           </p>
 
           <div className="flex flex-row items-end self-end gap-4">
-            <h2 className="text-[18px] text-gray-500 font-pretendard">
+            <h2 className="text-sm sm:text-base md:text-[18px] text-gray-500 font-pretendard">
               이미 계정이 있으신가요?
             </h2>
             <button
-              className="text-[18px] text-[#9737fd] underline font-pretendard"
+              className="text-sm sm:text-base md:text-[18px] text-[#9737fd] underline font-pretendard"
               onClick={() => navigate("/")}
             >
               로그인
@@ -247,5 +252,4 @@ const SignPageOauth = () => {
     </div>
   );
 };
-
 export default SignPageOauth;
