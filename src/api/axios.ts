@@ -130,14 +130,54 @@ export const startRefresh = async (): Promise<string | null> => {
       __skipGlobalAuthGuard: true,
       __skipGlobal404: true,
     });
-    const newToken: string | undefined = r.data?.data?.accessToken;
+    // 다양한 응답 포맷을 지원
+    const pick = (d: any): string | null =>
+      d?.accessToken ??
+      d?.data?.accessToken ??
+      d?.content?.accessToken ??
+      d?.token ??
+      d?.data?.token ??
+      null;
+    const newToken = pick(r.data);
+
+    if (import.meta.env.DEV) {
+      // 민감정보 노출 방지(앞 8자만)
+      const mask = (t?: string | null) =>
+        t ? `${t.slice(0, 8)}…(${t.length})` : null;
+      console.groupCollapsed("[DEBUG] /auth/refresh response");
+      console.log("status:", r.status);
+      console.log("headers:", r.headers);
+      console.log("raw data:", r.data);
+      console.log("extracted accessToken:", mask(newToken));
+      console.groupEnd();
+    }
+
     if (!newToken) {
-      console.error("[Auth] Refresh response missing accessToken:", r.data);
+      console.error(
+        "[Auth] Refresh response missing accessToken (unrecognized shape).",
+        r.data
+      );
       return null;
     }
-    localStorage.setItem("accessToken", newToken);
 
-    setRecentRefreshOk(); // NEW: 갱신 성공 신호
+    // 저장 전 기존 값과 비교 로그(DEV)
+    if (import.meta.env.DEV) {
+      const before = localStorage.getItem("accessToken");
+      console.debug(
+        "[DEBUG] localStorage.accessToken (before):",
+        before ? `${before.slice(0, 8)}…(${before.length})` : null
+      );
+    }
+    localStorage.setItem("accessToken", newToken);
+    if (import.meta.env.DEV) {
+      const after = localStorage.getItem("accessToken");
+      console.debug(
+        "[DEBUG] localStorage.accessToken (after):",
+        after ? `${after.slice(0, 8)}…(${after.length})` : null
+      );
+    }
+
+    setRecentRefreshOk(); // 갱신 성공 신호
     return newToken;
   } catch {
     return null;
@@ -323,4 +363,18 @@ if (import.meta.env.DEV) {
   (window as any).__api = api;
   (window as any).__apiBase = API_BASE_URL;
   (window as any).__apiOrigin = API_ORIGIN;
+  (window as any).__forceRefresh = async () => {
+    console.groupCollapsed("[DEBUG] __forceRefresh()");
+    const t = await startRefresh();
+    console.log(
+      "startRefresh() returned:",
+      t ? `${t.slice(0, 8)}…(${t.length})` : t
+    );
+    console.log(
+      "localStorage.accessToken now:",
+      localStorage.getItem("accessToken")
+    );
+    console.groupEnd();
+    return t;
+  };
 }

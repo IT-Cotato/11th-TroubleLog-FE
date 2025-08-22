@@ -14,7 +14,7 @@ import PostSaveModal, {
 import PostLoadingModal from "@/pages/TempWrite/PostLoadingModal";
 import TemplateSelectModal from "@/pages/TempWrite/TemplateSelectModal";
 import PostSuccessModal from "@/pages/TempWrite/PostSuccessModal";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { PATH } from "@/constants/paths";
 import { useProjectList } from "@/hooks/useProjectList";
 import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
@@ -107,8 +107,14 @@ export default function FreeFormWritePage() {
   // ------------ 기본 상태 ------------
   const navigate = useNavigate();
   const location = useLocation() as { state?: IncomingFreeformState };
+  const params = useParams<{ id?: string; postId?: string }>();
+  const paramPostId = useMemo(() => {
+    const raw = params?.id ?? params?.postId;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }, [params]);
 
-  const [wasCompleted, setWasCompleted] = useState(false);
+  // const [wasCompleted, setWasCompleted] = useState(false);
   const [title, setTitle] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedErrorType, setSelectedErrorType] = useState<string | null>(
@@ -117,6 +123,8 @@ export default function FreeFormWritePage() {
   const [blocks, setBlocks] = useState<BlockData[]>([
     { id: Date.now(), title: "", content: "", isSaved: false },
   ]);
+
+  const [createdPostId, setCreatedPostId] = useState<number | null>(null);
 
   // 프로젝트 목록
   const { data: projectList = [], loading: projectsLoading } = useProjectList();
@@ -150,9 +158,9 @@ export default function FreeFormWritePage() {
 
   // 이어쓰기(수정) 여부 + 대상 포스트
   const resumePostId = useMemo(() => {
-    const pid = location.state?.postId;
+    const pid = location.state?.postId ?? paramPostId;
     return typeof pid === "number" && Number.isFinite(pid) ? pid : null;
-  }, [location.state]);
+  }, [location.state, paramPostId]);
   const isResume = resumePostId != null;
 
   // 초안 ID (새로 작성 시 create 결과, 이어쓰기 시 기존 id)
@@ -161,19 +169,25 @@ export default function FreeFormWritePage() {
     if (resumePostId) setDraftPostId(resumePostId);
   }, [resumePostId]);
 
-  // 최초 1회 완료 여부 (completedAt 존재)
-  useEffect(() => {
-    (async () => {
-      if (!isResume || !resumePostId) return;
-      try {
-        const detail: any = await getPostDetail(resumePostId);
-        const completedAt = detail?.completedAt ?? null;
-        setWasCompleted(Boolean(completedAt));
-      } catch {
-        // ignore
-      }
-    })();
-  }, [isResume, resumePostId]);
+  // 모든 저장/요약 경로에서 이 ID만 사용
+  const currentPostId = useMemo(
+    () => createdPostId ?? draftPostId ?? resumePostId ?? paramPostId ?? null,
+    [createdPostId, draftPostId, resumePostId, paramPostId]
+  );
+
+  // // 최초 1회 완료 여부 (completedAt 존재)
+  // useEffect(() => {
+  //   (async () => {
+  //     if (!isResume || !resumePostId) return;
+  //     try {
+  //       const detail: any = await getPostDetail(resumePostId);
+  //       const completedAt = detail?.completedAt ?? null;
+  //       setWasCompleted(Boolean(completedAt));
+  //     } catch {
+  //       // ignore
+  //     }
+  //   })();
+  // }, [isResume, resumePostId]);
 
   // ------------ 모달/알림 ------------
   const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
@@ -190,7 +204,6 @@ export default function FreeFormWritePage() {
 
   // ------------ 요약/상태 ------------
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
-  const [createdPostId, setCreatedPostId] = useState<number | null>(null);
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
   const [summaryProgress, setSummaryProgress] = useState(0);
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus | null>(
@@ -207,6 +220,50 @@ export default function FreeFormWritePage() {
   const [isStartingSummary, setIsStartingSummary] = useState(false);
   const closingRef = useRef(false);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 썸네일 상태
+  const [currentThumbnail, setCurrentThumbnail] = useState<string | null>(null);
+  const [initialPostStatus, setInitialPostStatus] = useState<
+    "WRITING" | "COMPLETED" | "SUMMARIZED" | null
+  >(null);
+  const wasEverCompleted = useMemo(
+    () =>
+      initialPostStatus === "COMPLETED" || initialPostStatus === "SUMMARIZED",
+    [initialPostStatus]
+  );
+  const [detailPrefill, setDetailPrefill] = useState<PostSavePayload | null>(
+    null
+  );
+
+  // 수정 모드 초기 진입 시 상세 조회에서 가져오기
+  const [detailLoaded, setDetailLoaded] = useState(!isResume);
+  useEffect(() => {
+    (async () => {
+      if (!isResume || !resumePostId) return;
+      try {
+        const d: any = await getPostDetail(resumePostId);
+        setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
+        const s = (d?.postStatus ?? d?.status) as
+          | "WRITING"
+          | "COMPLETED"
+          | "SUMMARIZED"
+          | undefined;
+        setInitialPostStatus(s ?? null);
+        setDetailPrefill({
+          importance: Number(d?.starRating ?? 0),
+          description: String(d?.introduction ?? ""),
+          visibility: d?.isVisible ? "public" : "private",
+          projectId: Number.isFinite(d?.projectId) ? Number(d.projectId) : null,
+          projectName: "", // 필요시 후속 조회로 채워도 무방
+          thumbnail: d?.thumbnailImageUrl ?? null,
+        });
+      } catch {
+        /* ignore */
+      } finally {
+        setDetailLoaded(true);
+      }
+    })();
+  }, [isResume, resumePostId]);
 
   // 프리필 + 포커스
   useEffect(() => {
@@ -279,7 +336,7 @@ export default function FreeFormWritePage() {
     title,
     introduction: meta?.description ?? "",
     postTags,
-    isVisible: (meta?.visibility ?? "public") === "public",
+    isVisible: (meta?.visibility ?? "private") === "public",
     isSummaryCreated: false,
     postStatus,
     starRating: Number(meta?.importance ?? 0),
@@ -308,11 +365,21 @@ export default function FreeFormWritePage() {
   };
 
   // ------------ upsert 유틸 ------------
-  const upsertPost = async (maybeId: number | null, form: PostForm) => {
-    if (maybeId) {
-      await editPost(maybeId, toEditPostRequest(form) as any);
-      return maybeId;
+  const upsertPost = async (
+    maybeId: number | null,
+    form: PostForm,
+    opts?: { forceEdit?: boolean }
+  ) => {
+    // 수정 모드에선 어떤 경우에도 생성 금지
+    const resolvedId = opts?.forceEdit
+      ? resumePostId ?? paramPostId ?? maybeId
+      : maybeId;
+
+    if (resolvedId) {
+      await editPost(resolvedId, toEditPostRequest(form) as any);
+      return resolvedId;
     }
+
     const created: any = await createPost(toCreatePostRequest(form) as any);
     const newId = Number(
       created?.id ?? created?.data?.id ?? created?.content?.id
@@ -324,6 +391,12 @@ export default function FreeFormWritePage() {
   // ------------ 임시 저장 (WRITING) ------------
   const handleClickTempSave = async (): Promise<boolean> => {
     if (isSaving) return false;
+    if (isResume && !detailLoaded) {
+      setStatusMessage(
+        "문서 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요."
+      );
+      return false;
+    }
     setIsSaving(true);
     try {
       if (!validateBasic()) return false;
@@ -331,6 +404,7 @@ export default function FreeFormWritePage() {
       const projectId =
         selectedProjectIdPage ??
         previewMeta?.projectId ??
+        detailPrefill?.projectId ??
         location.state?.savePrefill?.projectId ??
         initialProjectId ??
         null;
@@ -343,20 +417,27 @@ export default function FreeFormWritePage() {
 
       const canonicalTags = await canonicalizeTags(selectedTags);
       const meta: PostSavePayload = {
-        importance: previewMeta?.importance ?? 0,
-        description: previewMeta?.description ?? "",
-        visibility: previewMeta?.visibility ?? "public",
+        importance: previewMeta?.importance ?? detailPrefill?.importance ?? 0,
+        description:
+          previewMeta?.description ?? detailPrefill?.description ?? "",
+        visibility:
+          previewMeta?.visibility ?? detailPrefill?.visibility ?? "private",
         projectId: Number(projectId),
         projectName:
           projectNameById(selectedProjectIdPage) ||
           previewMeta?.projectName ||
+          detailPrefill?.projectName ||
           location.state?.savePrefill?.projectName ||
           projectNameById(initialProjectId),
-        thumbnail: previewMeta?.thumbnail ?? null,
+        thumbnail: previewMeta?.thumbnail ?? detailPrefill?.thumbnail ?? null,
       };
 
-      const form = buildForm("WRITING", meta, canonicalTags);
-      const id = await upsertPost(draftPostId, form);
+      const form = buildForm(
+        wasEverCompleted ? initialPostStatus ?? "COMPLETED" : "WRITING",
+        meta,
+        canonicalTags
+      );
+      const id = await upsertPost(currentPostId, form, { forceEdit: isResume });
 
       setDraftPostId(id);
       setCreatedPostId(id);
@@ -377,14 +458,13 @@ export default function FreeFormWritePage() {
   // ------------ 최종 저장 (원본 COMPLETED 저장) ------------
   const saveOriginal = async (meta: PostSavePayload) => {
     const tags = await canonicalizeTags(selectedTags);
-    // 이미 완료된 포스트라면 수정 시에도 COMPLETED 유지
-    const nextStatus: "WRITING" | "COMPLETED" = wasCompleted
-      ? "COMPLETED"
-      : "WRITING";
+    // 최종 저장은 COMPLETED 고정(단, 기존이 SUMMARIZED면 유지)
+    const nextStatus: "COMPLETED" | "SUMMARIZED" =
+      initialPostStatus === "SUMMARIZED" ? "SUMMARIZED" : "COMPLETED";
     const form = buildForm(nextStatus, meta, tags);
 
     try {
-      const id = await upsertPost(draftPostId, form);
+      const id = await upsertPost(currentPostId, form, { forceEdit: isResume });
       setDraftPostId(id);
       setCreatedPostId(id);
 
@@ -421,6 +501,13 @@ export default function FreeFormWritePage() {
 
   // End → 템플릿 선택 → 요약
   const handleEnd = () => {
+    if (isResume && !detailLoaded) {
+      setStatusMessage(
+        "문서 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요."
+      );
+      return false;
+    }
+
     if (!validateBasic()) return;
     for (const block of blocks) {
       if (!(block.title ?? "").trim()) {
@@ -435,6 +522,12 @@ export default function FreeFormWritePage() {
 
   // 저장 모달 → Next
   const handleNextInPostSaveModal = async (payload: PostSavePayload) => {
+    if (isResume && !detailLoaded) {
+      setStatusMessage(
+        "문서 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요."
+      );
+      return false;
+    }
     setPreviewMeta(payload);
     setIsPostSaveModalOpen(false);
 
@@ -453,7 +546,9 @@ export default function FreeFormWritePage() {
         // --- 생성 모드(기존 동작) ---
         const tags = await canonicalizeTags(selectedTags);
         const form = buildForm("COMPLETED", payload, tags);
-        const id = await upsertPost(draftPostId, form); // create 또는 edit
+        const id = await upsertPost(currentPostId, form, {
+          forceEdit: isResume,
+        }); // create 또는 edit
         setDraftPostId(id);
         setCreatedPostId(id);
         setIsTemplateSelectModalOpen(true);
@@ -491,6 +586,40 @@ export default function FreeFormWritePage() {
       const postId = createdPostId ?? resumePostId;
       if (!postId) throw new Error("Post가 아직 생성되지 않았어요.");
 
+      // 1) 요약 시작 전, 최신 내용으로 반드시 수정 API 호출
+      const effectiveMeta: PostSavePayload = {
+        importance: previewMeta?.importance ?? detailPrefill?.importance ?? 0,
+        description:
+          previewMeta?.description ?? detailPrefill?.description ?? "",
+        visibility:
+          previewMeta?.visibility ?? detailPrefill?.visibility ?? "private",
+        projectId:
+          previewMeta?.projectId ??
+          detailPrefill?.projectId ??
+          selectedProjectIdPage ??
+          initialProjectId ??
+          null,
+        projectName:
+          previewMeta?.projectName ||
+          detailPrefill?.projectName ||
+          projectNameById(selectedProjectIdPage) ||
+          projectNameById(initialProjectId),
+        thumbnail:
+          previewMeta?.thumbnail ??
+          detailPrefill?.thumbnail ??
+          currentThumbnail ??
+          null,
+      };
+      if (!effectiveMeta.projectId) {
+        throw new Error("프로젝트를 선택해주세요.");
+      }
+
+      const editForm = await buildEditFormFromMeta(effectiveMeta, {
+        mode: "summary",
+      });
+      await editPost(postId, toEditPostRequest(editForm) as any);
+
+      // 2) 수정 성공 후에만 요약 로딩 UI 오픈 및 요약 시작
       setIsTemplateSelectModalOpen(false);
       setIsLoadingModalOpen(true);
       setSummaryProgress(0);
@@ -590,14 +719,6 @@ export default function FreeFormWritePage() {
 
         if (data?.status === "COMPLETED" || p >= 100) {
           setSummaryProgress(100);
-
-          // 요약 성공 → postStatus = SUMMARIZED 반영 (기존 로직 유지)
-          try {
-            const targetIdNum = createdPostId ?? resumePostId!;
-            await editPost(targetIdNum, { postStatus: "SUMMARIZED" } as any);
-          } catch (e) {
-            console.error("포스트 SUMMARIZED 반영 실패(FreeForm):", e);
-          }
 
           if (typeof data?.postSummaryId === "number") {
             setCompletedSummaryId(data.postSummaryId);
@@ -889,12 +1010,20 @@ export default function FreeFormWritePage() {
 
   // (기존 함수들 아래에 추가)
 
-  const buildEditFormFromMeta = async (meta: PostSavePayload) => {
+  const buildEditFormFromMeta = async (
+    meta: PostSavePayload,
+    opts?: { mode?: "temp" | "final" | "summary" } // temp: 임시 저장, final: 최종 저장, summary: 요약 시작 직전 저장
+  ) => {
     const tags = await canonicalizeTags(selectedTags);
-    // 이미 완료된 글이면 수정 후에도 COMPLETED 유지, 아니면 WRITING
-    const nextStatus: "WRITING" | "COMPLETED" = wasCompleted
-      ? "COMPLETED"
-      : "WRITING";
+    const mode = opts?.mode ?? "temp";
+    const nextStatus: "WRITING" | "COMPLETED" | "SUMMARIZED" = (() => {
+      // 최종 저장이거나 요약 시작 직전에는 COMPLETED로 고정(단, 기존이 SUMMARIZED면 유지)
+      if (mode === "final" || mode === "summary") {
+        return initialPostStatus === "SUMMARIZED" ? "SUMMARIZED" : "COMPLETED";
+      }
+      // 임시 저장은 기존 정책 유지
+      return wasEverCompleted ? initialPostStatus ?? "COMPLETED" : "WRITING";
+    })();
     return buildForm(nextStatus, meta, tags);
   };
 
@@ -902,7 +1031,7 @@ export default function FreeFormWritePage() {
   const persistEditsIfEditMode = async () => {
     if (!isResume || !resumePostId || !previewMeta) return;
     try {
-      const form = await buildEditFormFromMeta(previewMeta);
+      const form = await buildEditFormFromMeta(previewMeta, { mode: "final" });
       await editPost(resumePostId, toEditPostRequest(form) as any);
       setDraftPostId(resumePostId);
       setCreatedPostId(resumePostId); // 이후 미리보기/네비에 활용
@@ -1007,7 +1136,7 @@ export default function FreeFormWritePage() {
                         }
                         await handleGlobalSave();
                       }}
-                      disabled={isSaving}
+                      disabled={isSaving || (isResume && !detailLoaded)}
                       className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100 disabled:opacity-50 w-full sm:w-auto"
                     >
                       Save
@@ -1015,6 +1144,7 @@ export default function FreeFormWritePage() {
 
                     <button
                       onClick={handleEnd}
+                      disabled={isResume && !detailLoaded}
                       className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600 w-full sm:w-auto"
                     >
                       End
@@ -1104,25 +1234,32 @@ export default function FreeFormWritePage() {
                 selectedErrorType={selectedErrorType}
                 initialImportance={
                   previewMeta?.importance ??
+                  detailPrefill?.importance ??
                   location.state?.savePrefill?.importance
                 }
                 initialDescription={
                   previewMeta?.description ??
+                  detailPrefill?.description ??
                   location.state?.savePrefill?.description
                 }
                 initialVisibility={
                   previewMeta?.visibility ??
-                  location.state?.savePrefill?.visibility
+                  detailPrefill?.visibility ??
+                  location.state?.savePrefill?.visibility ??
+                  "private"
                 }
                 initialProjectId={
                   selectedProjectIdPage ??
                   previewMeta?.projectId ??
+                  detailPrefill?.projectId ??
                   location.state?.savePrefill?.projectId ??
                   initialProjectId ??
                   null
                 }
                 initialThumbnail={
                   previewMeta?.thumbnail ??
+                  detailPrefill?.thumbnail ??
+                  currentThumbnail ??
                   location.state?.savePrefill?.thumbnail ??
                   null
                 }
@@ -1171,6 +1308,7 @@ export default function FreeFormWritePage() {
               <PostSuccessModal
                 onClose={() => setIsSuccessModalOpen(false)}
                 summaryId={completedSummaryId}
+                postId={createdPostId ?? resumePostId ?? undefined}
               />
             )}
           </div>

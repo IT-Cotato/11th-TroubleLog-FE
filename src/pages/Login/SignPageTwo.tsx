@@ -159,7 +159,7 @@ const SignPageTwo = () => {
             </h2>
             <button
               className="text-sm sm:text-base md:text-lg text-[#9737fd] underline font-pretendard"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(PATH.LOGIN)}
             >
               로그인
             </button>

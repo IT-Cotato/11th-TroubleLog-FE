@@ -16,6 +16,8 @@ const LikedPostsPage = () => {
     navigate(PATH.COMMUNITY_POST(postId));
   };
 
+  const showEmpty = !loading && !error && items.length === 0;
+
   return (
     <div className="w-full max-w-[948px] mx-auto px-4 sm:px-0 flex flex-col gap-6 sm:gap-10 pb-16 sm:pb-[78px]">
       {/* 에러/로딩 */}
@@ -26,14 +28,25 @@ const LikedPostsPage = () => {
       )}
 
       <div className="flex flex-col items-start self-stretch">
-        {items.map((card) => (
-          <TroubleShootingCard
-            key={card.id}
-            {...card}
-            onDeleted={handleDeleted}
-            onClick={handleCardClick}
-          />
-        ))}
+        {/* 빈 상태 */}
+        {showEmpty && (
+          <div className="w-full flex h-[132px] justify-center items-center rounded-[8px]">
+            <span className="text-body-20-regular">
+              아직 좋아요한 포스트가 없어요.
+            </span>
+          </div>
+        )}
+
+        {/* 리스트 */}
+        {!showEmpty &&
+          items.map((card) => (
+            <TroubleShootingCard
+              key={card.id}
+              {...card}
+              onDeleted={handleDeleted}
+              onClick={handleCardClick}
+            />
+          ))}
 
         {/* 로딩 스켈레톤 */}
         {loading && (
@@ -44,7 +57,9 @@ const LikedPostsPage = () => {
         )}
 
         {/* 무한 스크롤 센티널 */}
-        {hasNext && <div ref={sentinelRef} style={{ height: 1 }} />}
+        {!showEmpty && hasNext && !loading && (
+          <div ref={sentinelRef} style={{ height: 1 }} />
+        )}
       </div>
     </div>
   );

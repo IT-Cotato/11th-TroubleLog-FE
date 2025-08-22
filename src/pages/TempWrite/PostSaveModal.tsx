@@ -101,7 +101,7 @@ export default function PostSaveModal({
   }, [initialProjectId, defaultProjectId]);
 
   useEffect(() => {
-    if (initialThumbnail !== undefined) setThumbnail(initialThumbnail);
+    setThumbnail(initialThumbnail ?? null);
   }, [initialThumbnail]);
 
   useEffect(() => {

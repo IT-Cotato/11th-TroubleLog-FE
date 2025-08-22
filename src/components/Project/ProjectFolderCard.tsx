@@ -116,7 +116,7 @@ export default function ProjectFolderCard({
 
       {/* 텍스트 영역: 고정 폭 제거 + 줄바꿈/잘림 안전 */}
       <div className="flex-1 min-w-0 flex flex-col items-start gap-3 sm:gap-[18px]">
-        <div className="flex flex-col items-start gap-1 self-stretch min-w-0">
+        <div className="flex flex-col items-start gap-1 self-stretch min-w-0 ">
           <span className="text-head-20-semibold block truncate" title={name}>
             {name}
           </span>
@@ -159,7 +159,7 @@ export default function ProjectFolderCard({
   );
 
   const ContainerClasses =
-    "flex w-full max-w-[384px] p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card";
+    "flex flex-none p-[16px] flex-col items-start gap-[10px] rounded-[8px] bg-white shadow-card w-[300px] sm:w-[332px] md:w-[360px] lg:w-[384px]";
 
   return (
     <>

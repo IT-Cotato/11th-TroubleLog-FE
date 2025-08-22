@@ -9,11 +9,19 @@ import { PATH } from "@/constants/paths";
 const SignPageOauth = () => {
   const navigate = useNavigate();
   const location = useLocation() as any;
-  const stateUserId = location?.state?.userId as number | undefined;
-  const stateNickname = location?.state?.nickname as string | undefined;
 
+  // location.state에서 넘어온 값 (카카오 인증 직후)
+  const stateUserId = location?.state?.userId as number | undefined;
+  const stateKakaoNickname = location?.state?.nickname as string | undefined;
+
+  // 카카오 원본 정보 (읽기 전용)
   const [userId, setUserId] = useState<number | null>(stateUserId ?? null);
-  const [nickname, setNickname] = useState(stateNickname ?? "");
+  const [kakaoNickname, setKakaoNickname] = useState<string>(
+    stateKakaoNickname ?? ""
+  );
+
+  // 사용자 입력용
+  const [nickname, setNickname] = useState<string>(""); // 서비스에서 사용할 닉네임
   const [field, setField] = useState("");
   const [bio, setBio] = useState("");
   const [githubad, setGithubad] = useState("");
@@ -26,18 +34,25 @@ const SignPageOauth = () => {
 
   // 새로고침 폴백
   useEffect(() => {
-    if (userId != null && nickname) return;
+    if (userId != null && kakaoNickname) return;
     try {
       const raw = sessionStorage.getItem("oauth_payload");
       if (raw) {
         const p = JSON.parse(raw) as { userId?: number; nickname?: string };
         if (p?.userId && !userId) setUserId(p.userId);
-        if (p?.nickname && !nickname) setNickname(p.nickname);
+        if (p?.nickname && !kakaoNickname) setKakaoNickname(p.nickname);
       }
     } catch (err) {
       console.debug("oauth_payload parse failed:", err);
     }
-  }, [userId, nickname]);
+  }, [userId, kakaoNickname]);
+
+  // UX: 사용자 입력 닉네임이 비어있다면, 카카오 닉네임을 기본값으로 채워줌
+  useEffect(() => {
+    if (!nickname && kakaoNickname) {
+      setNickname(kakaoNickname);
+    }
+  }, [kakaoNickname, nickname]);
 
   const validateForm = () => {
     let valid = true;
@@ -76,6 +91,7 @@ const SignPageOauth = () => {
     try {
       const payload: OauthRegisterRequest = {
         userId: userId!, // 카카오로 받은 ID
+        kakaoNickname: kakaoNickname.trim(),
         nickname: nickname.trim(),
         field: field.trim(),
         bio: bio.trim(),
@@ -122,44 +138,48 @@ const SignPageOauth = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* 좌측(또는 상단) 이미지 영역 */}
-      <div className="w-full md:w-1/2">
-        <img
-          src={onboarding_image}
-          alt="signup visual"
-          className="w-full h-40 xs:h-56 sm:h-72 md:h-screen object-cover"
-        />
-      </div>
-
-      {/* 우측(또는 하단) 폼 영역 */}
-      <div
-        className="
-          w-full md:w-1/2
-          flex items-center justify-center
-          px-5 sm:px-10 md:px-12 lg:px-16 xl:px-[200px]
-          py-8 sm:py-12 md:py-16 lg:py-24 xl:py-[281px]
-        "
-      >
-        <div className="w-full max-w-[560px] flex flex-col items-center gap-6 sm:gap-10">
-          <h2 className="w-full font-pretendard font-bold text-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-[48px]">
+    <div className="flex w-screen h-screen overflow-hidden">
+      <img
+        src={onboarding_image}
+        className="w-[961.807px] h-full object-cover shrink-0"
+        alt="signup visual"
+      />
+      <div className="w-[960px] h-full px-[200px] py-[281px] flex flex-col justify-center items-center">
+        <div className="w-[560px] flex flex-col items-center gap-10">
+          <h2 className="text-black text-[48px] font-bold w-full font-pretendard">
             회원가입
           </h2>
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col items-start w-full gap-4"
+            className="flex flex-col items-start w-full"
           >
-            <div className="flex flex-col items-start w-full gap-2 sm:gap-3">
+            <div className="flex flex-col items-start w-full">
+              {/* 카카오 닉네임 */}
+              <Input
+                label="카카오 닉네임"
+                type="text"
+                value={kakaoNickname}
+                onChange={() => {}}
+                placeholder="카카오에서 전달된 닉네임"
+                error={""}
+                name="kakaoNickname"
+              />
+              <p className="text-xs text-gray-500 -mt-2 mb-3">
+                카카오에서 받은 닉네임이며, 계정 식별을 위해 그대로 저장됩니다.
+              </p>
+
+              {/* 서비스에서 사용할 닉네임 (사용자 입력) */}
               <Input
                 label="닉네임"
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                placeholder="닉네임을 입력해주세요."
+                placeholder="서비스에서 사용할 닉네임을 입력해주세요."
                 error={nicknameError}
                 name="nickname"
               />
+
               <Input
                 label="분야"
                 type="text"
@@ -189,13 +209,13 @@ const SignPageOauth = () => {
               />
             </div>
 
-            <div className="flex flex-col items-start gap-3 sm:gap-4 w-full">
+            <div className="flex flex-col items-start gap-4 w-full">
               <button
                 type="submit"
-                className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center"
+                className="w-full h-12 bg-[#9737fd] rounded-lg flex justify-center items-center disabled:opacity-60"
                 disabled={submitting}
               >
-                <span className="text-white text-lg sm:text-[20px] font-semibold font-pretendard">
+                <span className="text-white text-[20px] font-semibold font-pretendard">
                   {submitting ? "가입 처리 중..." : "회원가입"}
                 </span>
               </button>
@@ -203,7 +223,7 @@ const SignPageOauth = () => {
           </form>
 
           <p
-            className={`text-sm sm:text-[13px] min-h-[25px] ${
+            className={`text-[13px] min-h-[25px] ${
               formError ? "text-red-500" : "text-transparent"
             }`}
             aria-live="polite"
@@ -211,15 +231,13 @@ const SignPageOauth = () => {
             {formError || " "}
           </p>
 
-          {/* 하단 링크: 모바일 정렬 보완 */}
-          <div className="flex flex-row items-end self-center md:self-end gap-3 sm:gap-4">
-            <h2 className="text-base sm:text-[18px] text-gray-500 font-pretendard">
+          <div className="flex flex-row items-end self-end gap-4">
+            <h2 className="text-[18px] text-gray-500 font-pretendard">
               이미 계정이 있으신가요?
             </h2>
             <button
-              className="text-base sm:text-[18px] text-[#9737fd] underline font-pretendard"
+              className="text-[18px] text-[#9737fd] underline font-pretendard"
               onClick={() => navigate("/")}
-              type="button"
             >
               로그인
             </button>
