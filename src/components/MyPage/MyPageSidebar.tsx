@@ -183,11 +183,26 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     <div className="flex w-full md:w-[296px] flex-col items-start gap-8 sm:gap-12 xl:gap-[140px] md:sticky md:top-24 mb-12 sm:mb-16 lg:mb-24">
       {/* 상단 프로필 영역 */}
       <div className="flex flex-col items-center gap-3 self-stretch">
-        <img
-          src={userInfo?.profileUrl || userIcon}
-          alt="user"
-          className="w-28 h-28 sm:w-36 sm:h-36 md:w-56 md:h-56 xl:w-[288px] xl:h-[288px] object-cover rounded-full md:rounded-none"
-        />
+        <div
+          className="
+      relative overflow-hidden rounded-full
+      w-28 h-28 sm:w-36 sm:h-36 md:w-56 md:h-56 xl:w-[288px] xl:h-[288px]
+      ring-1 ring-gray-200 bg-gray-100
+    "
+          aria-label="사용자 프로필 이미지"
+        >
+          <img
+            src={userInfo?.profileUrl || userIcon}
+            alt="user"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              // 이미지 로딩 실패 시 기본 아이콘으로 폴백
+              e.currentTarget.src = userIcon;
+              e.currentTarget.onerror = null;
+            }}
+            draggable={false}
+          />
+        </div>
         <div className="flex flex-col items-start gap-3 w-full">
           <div className="flex flex-col items-start gap-2 w-full">
             <p className="text-head-24-bold sm:text-head-32-semibold break-words">
