@@ -1,5 +1,5 @@
 import { useState } from "react";
-import StatusDot from "./StatusDot";
+import StatusDot from "../../entities/trouble/ui/StatusDot";
 import useClickOutside from "../../hooks/useClickOutside";
 import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";

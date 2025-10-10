@@ -1,12 +1,12 @@
 import { getCommunityRecentList } from "@/api/community.api";
-import TroublogCard from "@/components/Card/TroublogCard";
+import TroublogCard from "@/entities/trouble/ui/TroublogCard";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
 import { PATH } from "@/shared/config/paths";
 import useCommunityCards, {
   type CommunityCardsFetcher,
 } from "@/hooks/useCommunityCards";
 import type { CommunitySort } from "@/types/community.model";
-import { decideCombined } from "@/utils/combinedRoute";
+import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 

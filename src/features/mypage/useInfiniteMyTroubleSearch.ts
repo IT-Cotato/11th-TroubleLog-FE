@@ -4,7 +4,7 @@ import type {
   MyTroubleSearchPage,
   TroubleSearchCard,
 } from "@/types/troubles.server";
-import type { TroubleShootingCardProps } from "@/features/mypage/ui/TroubleShootingCard";
+import type { TroubleShootingCardProps } from "@/entities/trouble/ui/TroubleShootingCard";
 import { toTroubleShootingCard } from "@/entities/trouble/list-to-ts-card";
 
 export interface UseInfiniteMyTroubleSearchOptions {

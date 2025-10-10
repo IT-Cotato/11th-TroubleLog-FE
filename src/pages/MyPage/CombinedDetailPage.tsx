@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-import TagList from "@/components/Card/TagList";
+import TagList from "@/entities/trouble/ui/TagList";
 import PostCombineMd from "./PostCombineMd";
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";

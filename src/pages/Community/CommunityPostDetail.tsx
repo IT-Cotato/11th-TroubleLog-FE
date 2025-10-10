@@ -1,4 +1,4 @@
-import TagList from "@/components/Card/TagList";
+import TagList from "@/entities/trouble/ui/TagList";
 import PostComment, {
   type PostCommentProps,
 } from "@/components/Community/PostComment";

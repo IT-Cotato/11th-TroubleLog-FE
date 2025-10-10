@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import CardFooterInfo from "./CardFooterInfo";
-import CardPreviewArea from "./CardPreviewArea";
-import CardTitleSection from "./CardTitleSection";
-import TagList from "./TagList";
+import CardFooterInfo from "../../../components/Card/CardFooterInfo";
+import CardPreviewArea from "../../../components/Card/CardPreviewArea";
+import CardTitleSection from "../../../components/Card/CardTitleSection";
+import TagList from "../../../components/Card/TagList";
 import type { StatusType, VisibilityType } from "@/types/project";
 import { PATH } from "@/shared/config/paths";
 import { useCallback, useState } from "react";

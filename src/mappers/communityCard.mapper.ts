@@ -1,4 +1,4 @@
-import type { TroublogCardProps } from "@/components/Card/TroublogCard";
+import type { TroublogCardProps } from "@/entities/trouble/ui/TroublogCard";
 import type { CommunityServerCard } from "@/types/community.model";
 
 export const toCommunityCard = (s: CommunityServerCard): TroublogCardProps => ({

@@ -1,4 +1,4 @@
-import type { TroublogCardProps } from "@/components/Card/TroublogCard";
+import type { TroublogCardProps } from "@/entities/trouble/ui/TroublogCard";
 
 // 상태: 한글/영문 모두 허용
 export const mapStatus = (raw?: string): TroublogCardProps["status"] => {

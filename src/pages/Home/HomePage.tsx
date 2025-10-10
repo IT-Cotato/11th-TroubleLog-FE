@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import PostButton from "@/components/Button/PostButton";
 import Snackbar from "@/components/Feedback/Snackbar";
-import TroublogCard from "@/components/Card/TroublogCard";
+import TroublogCard from "@/entities/trouble/ui/TroublogCard";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
 import FolderModal from "@/components/Modal/FolderModal";
@@ -16,7 +16,7 @@ import { PATH } from "@/shared/config/paths";
 import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
 import { useViewerId } from "@/store/auth";
-import { decideCombined } from "@/utils/combinedRoute";
+import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 
 const PAGE_SIZE = 10;
 

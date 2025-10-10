@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from "react";
 import SortButtonGroup from "@/components/Project/SortButtonGroup";
-import TroubleShootingCard from "@/features/mypage/ui/TroubleShootingCard";
+import TroubleShootingCard from "@/entities/trouble/ui/TroubleShootingCard";
 import { mapToTroubleShootingCard } from "@/entities/trouble/card-compat.mapper";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import { useViewerId } from "@/store/auth";
-import { decideCombined } from "@/utils/combinedRoute";
+import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 
 interface OutletContextType {
   isMyPage: boolean;

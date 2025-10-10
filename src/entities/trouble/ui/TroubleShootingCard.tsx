@@ -3,7 +3,7 @@ import type { StatusType, VisibilityType } from "@/types/project";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import useClickOutside from "@/hooks/useClickOutside";
-import TagList from "@/components/Card/TagList";
+import TagList from "@/entities/trouble/ui/TagList";
 import imageIcon from "@/assets/icons/image.svg";
 import publicIcon from "@/assets/icons/public.svg";
 import privateIcon from "@/assets/icons/private.svg";

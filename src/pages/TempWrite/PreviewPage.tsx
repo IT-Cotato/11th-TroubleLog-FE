@@ -6,7 +6,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
-import TagList from "@/components/Card/TagList";
+import TagList from "@/entities/trouble/ui/TagList";
 import PostGuideMd from "@/components/Community/PostGuideMd";
 import PostComment, {
   type PostCommentProps,

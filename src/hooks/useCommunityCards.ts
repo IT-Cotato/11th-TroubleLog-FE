@@ -5,7 +5,7 @@ import type {
   CommunitySort,
 } from "@/types/community.model";
 import { toCommunityCards } from "@/mappers/communityCard.mapper";
-import type { TroublogCardProps } from "@/components/Card/TroublogCard";
+import type { TroublogCardProps } from "@/entities/trouble/ui/TroublogCard";
 
 type PageResp = {
   content: CommunityServerCard[];

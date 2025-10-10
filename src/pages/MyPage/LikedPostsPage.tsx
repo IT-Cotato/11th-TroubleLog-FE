@@ -1,4 +1,4 @@
-import TroubleShootingCard from "@/features/mypage/ui/TroubleShootingCard";
+import TroubleShootingCard from "@/entities/trouble/ui/TroubleShootingCard";
 import { PATH } from "@/shared/config/paths";
 import useLikedCommunityPosts from "@/hooks/useLikedCommunityPosts";
 import { useNavigate } from "react-router-dom";

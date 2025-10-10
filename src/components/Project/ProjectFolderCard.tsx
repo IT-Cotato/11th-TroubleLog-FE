@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import useClickOutside from "../../hooks/useClickOutside";
-import TagList from "../Card/TagList";
+import TagList from "../../entities/trouble/ui/TagList";
 import KebabMenuButton from "../Menu/KebabMenuButton";
 import KebabDropdown from "../Menu/KebabDropdown";
 import FolderModal from "../Modal/FolderModal";

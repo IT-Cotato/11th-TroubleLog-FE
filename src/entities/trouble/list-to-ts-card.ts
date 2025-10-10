@@ -1,4 +1,4 @@
-import type { TroubleShootingCardProps } from "@/features/mypage/ui/TroubleShootingCard";
+import type { TroubleShootingCardProps } from "@/entities/trouble/ui/TroubleShootingCard";
 import type { StatusType, VisibilityType } from "@/types/project";
 import type {
   MyTroubleDetailItem,
@@ -6,7 +6,7 @@ import type {
   TroubleSearchCard,
   UserBrief,
 } from "@/types/troubles.server";
-import { pickLatestSummaryId } from "@/utils/combinedRoute";
+import { pickLatestSummaryId } from "@/entities/trouble/lib/combinedRoute";
 import { formatYYMMDD } from "@/utils/troubleFormat";
 
 // 타입 가드

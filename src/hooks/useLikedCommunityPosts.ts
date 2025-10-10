@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getLikedCommunityPosts } from "@/api/community.api";
 import { toLikedCards } from "@/mappers/likedPosts.mapper";
-import type { TroubleShootingCardProps } from "@/features/mypage/ui/TroubleShootingCard";
+import type { TroubleShootingCardProps } from "@/entities/trouble/ui/TroubleShootingCard";
 
 const inflight = new Map<string, Promise<any>>();
 

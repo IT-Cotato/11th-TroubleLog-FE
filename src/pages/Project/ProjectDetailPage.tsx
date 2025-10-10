@@ -1,5 +1,5 @@
 import PostButton from "@/components/Button/PostButton";
-import TroublogCard from "@/components/Card/TroublogCard";
+import TroublogCard from "@/entities/trouble/ui/TroublogCard";
 import SummaryTypeDropdown from "@/components/Menu/SummaryTypeDropdown";
 import ProjectAccordion from "@/components/Project/ProjectAccordion";
 import SortButtonGroup from "@/components/Project/SortButtonGroup";
@@ -16,7 +16,7 @@ import type {
 import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useViewerId } from "@/store/auth";
-import { decideCombined } from "@/utils/combinedRoute";
+import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "inProgress" | "complete" | "created";
