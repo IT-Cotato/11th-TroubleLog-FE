@@ -27,26 +27,43 @@ const options: ChartOptions<"doughnut"> = {
   maintainAspectRatio: false,
 };
 
-const backgroundColor = ["#FFDC69", "#E4CBFE", "#9737FD"];
+const palette = ["#FFDC69", "#E4CBFE", "#9737FD", "#80E1D9", "#FFA2A2"];
 
 const ErrorCategoryPieChart = ({
   labels,
   data,
 }: ErrorCategoryPieChartProps) => {
+  const n = Math.max(0, Math.min(labels.length, data.length));
+  const safeLabels = labels.slice(0, n);
+  const safeData = data.slice(0, n);
+  const bg = palette.slice(0, n);
+
+  const total = safeData.reduce((sum, val) => sum + val, 0);
+
+  // 빈 상태 UI
+  if (n === 0 || total === 0) {
+    return (
+      <div className="flex flex-col w-full p-[36px] h-[412px] rounded-[16px] bg-white shadow-card">
+        <span className="text-head-24-bold">에러 종류 분석</span>
+        <span className="text-body-18-regular mt-1">
+          아직 통계로 볼 에러가 없어요.
+        </span>
+      </div>
+    );
+  }
+
   const chartData = {
-    labels,
+    labels: safeLabels,
     datasets: [
       {
         label: "에러 빈도수",
-        data,
-        backgroundColor,
+        data: safeData,
+        backgroundColor: bg,
         borderWidth: 0,
         cutout: "55%",
       },
     ],
   };
-
-  const total = data.reduce((sum, val) => sum + val, 0);
 
   return (
     <div className="flex flex-col w-full p-[36px] h-[412px] rounded-[16px] bg-white shadow-card">
@@ -66,14 +83,15 @@ const ErrorCategoryPieChart = ({
 
         {/* 에러 종류 목록 */}
         <div className="flex flex-col w-[239px] items-start gap-[30px]">
-          {labels.map((label, i) => (
+          {safeLabels.map((label, i) => (
             <div
-              key={label}
+              key={`${label}-${i}`}
               className="flex items-center gap-[16px] self-stretch"
             >
               <div
                 className="w-[24px] h-[24px] rounded-full"
-                style={{ backgroundColor: backgroundColor[i] }}
+                style={{ backgroundColor: bg[i] }}
+                aria-hidden
               />
               <span className="text-body-18-regular">{label}</span>
             </div>
