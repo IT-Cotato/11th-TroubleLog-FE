@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ConfirmDeleteModal from "../Modal/ConfirmDeleteModal";
+import ConfirmDeleteModal from "../../../shared/ui/Modal/ConfirmDeleteModal";
 import replyIcon from "@/assets/icons/reply_icon.svg";
 import image from "@/assets/icons/image.svg";
 

@@ -1,6 +1,6 @@
 import { getCommunityRecentList } from "@/api/community.api";
 import TroublogCard from "@/entities/trouble/ui/TroublogCard";
-import GenericDropdown from "@/components/Menu/GenericDropdown";
+import GenericDropdown from "@/shared/ui/Dropdown/GenericDropdown";
 import { PATH } from "@/shared/config/paths";
 import useCommunityCards, {
   type CommunityCardsFetcher,

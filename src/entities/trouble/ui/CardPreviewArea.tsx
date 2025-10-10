@@ -1,4 +1,4 @@
-import CardHeaderRight from "../../../components/Card/CardHeaderRight";
+import CardHeaderRight from "@/entities/trouble/ui/CardHeaderRight";
 import type { StatusType } from "@/types/project";
 
 interface CardPreviewAreaProps {

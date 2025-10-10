@@ -6,8 +6,8 @@ import logo from "@/assets/icons/logo.svg";
 import { PATH } from "@/shared/config/paths";
 import { useEffect, useRef, useState, useCallback } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
-import NotificationModal from "../Modal/NotificationModal";
-import UserMenuDropdown from "../Menu/UserMenuDropdown";
+import NotificationModal from "../../shared/ui/Modal/NotificationModal";
+import UserMenuDropdown from "../../shared/ui/Menu/UserMenuDropdown";
 import { useViewerId } from "@/store/auth";
 import { useNotificationStore } from "@/store/notification";
 

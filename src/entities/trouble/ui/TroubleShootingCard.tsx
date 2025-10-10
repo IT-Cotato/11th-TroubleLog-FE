@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import type { StatusType, VisibilityType } from "@/types/project";
-import KebabMenuButton from "@/components/Menu/KebabMenuButton";
-import KebabDropdown from "@/components/Menu/KebabDropdown";
+import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
+import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
 import useClickOutside from "@/hooks/useClickOutside";
 import TagList from "@/entities/trouble/ui/TagList";
 import imageIcon from "@/assets/icons/image.svg";

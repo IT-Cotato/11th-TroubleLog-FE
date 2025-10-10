@@ -1,6 +1,6 @@
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
-import FollowButton from "@/components/Button/FollowButton";
+import FollowButton from "@/shared/ui/Button/FollowButton";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import type { StatusType } from "@/types/project";
 import { PATH } from "@/shared/config/paths";

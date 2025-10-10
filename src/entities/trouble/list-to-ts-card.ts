@@ -7,7 +7,7 @@ import type {
   UserBrief,
 } from "@/types/troubles.server";
 import { pickLatestSummaryId } from "@/entities/trouble/lib/combinedRoute";
-import { formatYYMMDD } from "@/utils/troubleFormat";
+import { formatYYMMDD } from "@/entities/trouble/lib/troubleFormat";
 
 // 타입 가드
 const has = (o: unknown, k: string) => !!o && typeof o === "object" && k in o;

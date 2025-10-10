@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import BaseModal from "../../components/Modal/BaseModal";
-import SaveButton from "../../components/Button/SaveButton";
-import CancelButton from "../../components/Button/CancelButton";
-import DropDownButton from "@/components/Button/DropDownButton";
+import BaseModal from "./BaseModal";
+import SaveButton from "../Button/SaveButton";
+import CancelButton from "../Button/CancelButton";
+import DropDownButton from "@/shared/ui/Button/DropDownButton";
 import exitIcon from "@/assets/icons/exiticon.svg";
 import addImageIcon from "@/assets/icons/add_image.svg";
 import starFilledIcon from "@/assets/icons/starfilled.svg";

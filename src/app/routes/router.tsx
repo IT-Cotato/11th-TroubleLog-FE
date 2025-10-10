@@ -6,7 +6,7 @@ import { PATH } from "@/shared/config/paths";
 const MainLayout = lazy(() => import("@/layouts/MainLayout"));
 const MyPageLayout = lazy(() => import("@/layouts/MyPageLayout"));
 const ProtectedRoute = lazy(
-  () => import("@/components/Common/ProtectedRouter")
+  () => import("@/app/routes/ProtectedRoute/ProtectedRouter")
 );
 
 const IntroLandingPage = lazy(
@@ -39,7 +39,7 @@ const EditProfile = lazy(() => import("@/pages/EditProfile/EditProfile"));
 const TroubleShootingList = lazy(
   () => import("@/widgets/mypage/TroubleShootingList")
 );
-const MyFollowing = lazy(() => import("@/components/MyPage/MyFollowing"));
+const MyFollowing = lazy(() => import("@/widgets/mypage/MyFollowing"));
 
 const TempWritePage = lazy(() => import("@/pages/TempWrite/TempWritePage"));
 const FreeFormWritePage = lazy(

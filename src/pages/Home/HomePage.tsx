@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import PostButton from "@/components/Button/PostButton";
-import Snackbar from "@/components/Feedback/Snackbar";
+import PostButton from "@/shared/ui/Button/PostButton";
+import Snackbar from "@/shared/ui/Feedback/Snackbar";
 import TroublogCard from "@/entities/trouble/ui/TroublogCard";
 import ProjectAccordion from "@/entities/project/ui/ProjectAccordion";
 import ProjectFolderCard from "@/entities/project/ui/ProjectFolderCard";
-import FolderModal from "@/components/Modal/FolderModal";
+import FolderModal from "@/shared/ui/Modal/FolderModal";
 import useClickOutside from "@/hooks/useClickOutside";
 import { getProjectList, postCreateProject } from "@/api/project.api";
 import type {

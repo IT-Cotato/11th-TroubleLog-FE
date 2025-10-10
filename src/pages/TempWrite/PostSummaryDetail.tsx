@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
+import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
 import TagList from "@/entities/trouble/ui/TagList";
-import PostGuideMd from "@/components/Community/PostGuideMd";
+import PostGuideMd from "@/entities/trouble/ui/PostGuideMd";
 import { getPostSummary } from "@/api/post.api";
 import type { GetSummaryResponse } from "@/models/post.model";
 

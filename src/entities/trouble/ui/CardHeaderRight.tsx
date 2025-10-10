@@ -1,8 +1,8 @@
 import { useState } from "react";
-import StatusDot from "../../entities/trouble/ui/StatusDot";
-import useClickOutside from "../../hooks/useClickOutside";
-import KebabMenuButton from "../Menu/KebabMenuButton";
-import KebabDropdown from "../Menu/KebabDropdown";
+import StatusDot from "@/entities/trouble/ui/StatusDot";
+import useClickOutside from "@/hooks/useClickOutside";
+import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
+import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
 import type { StatusType } from "@/types/project";
 import image from "@/assets/icons/image.svg";
 

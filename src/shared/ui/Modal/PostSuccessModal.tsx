@@ -1,4 +1,4 @@
-import BaseModal from "../../components/Modal/BaseModal";
+import BaseModal from "./BaseModal";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import exitIcon from "@/assets/icons/exiticon.svg";

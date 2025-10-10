@@ -1,10 +1,10 @@
 import TagList from "@/entities/trouble/ui/TagList";
 import PostComment, {
   type PostCommentProps,
-} from "@/components/Community/PostComment";
-import PostGuideMd from "@/components/Community/PostGuideMd";
-import KebabDropdown from "@/components/Menu/KebabDropdown";
-import KebabMenuButton from "@/components/Menu/KebabMenuButton";
+} from "@/entities/trouble/ui/PostComment";
+import PostGuideMd from "@/entities/trouble/ui/PostGuideMd";
+import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
+import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
 import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -28,7 +28,7 @@ import {
   makeOptimisticComment,
   toPostComment,
   toPostComments,
-} from "@/mappers/communityComment.mapper";
+} from "@/entities/trouble/mappers/communityComment.mapper";
 import { useViewerId } from "@/store/auth";
 import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";

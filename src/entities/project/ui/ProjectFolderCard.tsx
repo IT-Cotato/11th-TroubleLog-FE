@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import useClickOutside from "../../../hooks/useClickOutside";
 import TagList from "../../trouble/ui/TagList";
-import KebabMenuButton from "../../../components/Menu/KebabMenuButton";
-import KebabDropdown from "../../../components/Menu/KebabDropdown";
-import FolderModal from "../../../components/Modal/FolderModal";
-import ConfirmDeleteModal from "../../../components/Modal/ConfirmDeleteModal";
+import KebabMenuButton from "../../../shared/ui/Menu/KebabMenuButton";
+import KebabDropdown from "../../../shared/ui/Menu/KebabDropdown";
+import FolderModal from "../../../shared/ui/Modal/FolderModal";
+import ConfirmDeleteModal from "../../../shared/ui/Modal/ConfirmDeleteModal";
 import type { UpdateProjectRequest } from "@/types/project.model";
 import { deleteProject, putUpdateProject } from "@/api/project.api";
 import { Link } from "react-router-dom";

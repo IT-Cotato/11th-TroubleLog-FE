@@ -1,6 +1,6 @@
 import { useState } from "react";
 import CategoryTagModal from "@/pages/TempWrite/CategoryTagModal";
-import { allTags } from "@/pages/TempWrite/tagData";
+import { allTags } from "@/features/template-write/lib/tagData";
 import searchIcon2 from "@/assets/icons/searchicon2.svg";
 
 interface CategoryTagProps {

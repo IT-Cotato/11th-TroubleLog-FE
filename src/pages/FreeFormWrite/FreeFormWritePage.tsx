@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
-import DropDownButton from "@/components/Button/DropDownButton";
-import CategoryTag from "@/components/TemplateWrite/CategoryTag";
+import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
+import DropDownButton from "@/shared/ui/Button/DropDownButton";
+import CategoryTag from "@/shared/ui/Editor/CategoryTag";
 import MDEditor, {
   commands,
   TextAreaTextApi,
@@ -10,10 +10,10 @@ import MDEditor, {
 } from "@uiw/react-md-editor";
 import PostSaveModal, {
   type PostSavePayload,
-} from "@/pages/TempWrite/PostSaveModal";
-import PostLoadingModal from "@/pages/TempWrite/PostLoadingModal";
-import TemplateSelectModal from "@/pages/TempWrite/TemplateSelectModal";
-import PostSuccessModal from "@/pages/TempWrite/PostSuccessModal";
+} from "@/shared/ui/Modal/PostSaveModal";
+import PostLoadingModal from "@/shared/ui/Modal/PostLoadingModal";
+import TemplateSelectModal from "@/shared/ui/Modal/TemplateSelectModal";
+import PostSuccessModal from "@/shared/ui/Modal/PostSuccessModal";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import { useProjectList } from "@/hooks/useProjectList";

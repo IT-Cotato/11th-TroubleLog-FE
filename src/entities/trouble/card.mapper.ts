@@ -1,12 +1,12 @@
 import type { TroublogCardProps } from "@/entities/trouble/ui/TroublogCard";
 import type { TroubleListItem } from "@/entities/trouble/model";
 import { pickLatestSummaryId } from "@/entities/trouble/lib/combinedRoute";
-import { formatYYMMDD } from "@/utils/troubleFormat";
+import { formatYYMMDD } from "@/entities/trouble/lib/troubleFormat";
 import {
   mapStatus,
   mapSummaryType,
   mapVisibility,
-} from "@/utils/troubleMapping";
+} from "@/entities/trouble/lib/troubleMapping";
 
 export type TroublogCardVM = TroublogCardProps & { createdAtIso: string };
 

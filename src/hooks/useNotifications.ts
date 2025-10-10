@@ -4,7 +4,7 @@ import {
   toNotificationItem,
   type NotificationItem,
   type TabType,
-} from "@/mappers/alert.mapper";
+} from "@/features/notification/alert.mapper";
 import type { AlertTypeParam } from "@/types/alert.model";
 
 // 탭 -> 서버 쿼리 파라미터

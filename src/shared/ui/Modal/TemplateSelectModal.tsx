@@ -1,7 +1,7 @@
 import { useState } from "react";
-import BaseModal from "@/components/Modal/BaseModal";
-import CancelButton from "@/components/Button/CancelButton";
-import SaveButton from "@/components/Button/SaveButton";
+import BaseModal from "@/shared/ui/Modal/BaseModal";
+import CancelButton from "@/shared/ui/Button/CancelButton";
+import SaveButton from "@/shared/ui/Button/SaveButton";
 import exitIcon from "@/assets/icons/exiticon.svg";
 import type { SummaryTypeParam } from "@/models/post.model";
 

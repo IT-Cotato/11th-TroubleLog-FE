@@ -1,5 +1,5 @@
 import type { CommunityCommentServerItem } from "@/types/community.model";
-import type { PostCommentProps } from "@/components/Community/PostComment";
+import type { PostCommentProps } from "@/entities/trouble/ui/PostComment";
 
 const fmtYYMMDD = (iso: string) => {
   if (!iso) return "";
