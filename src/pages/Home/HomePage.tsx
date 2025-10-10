@@ -11,8 +11,8 @@ import type {
   ProjectListItem,
   CreateProjectRequest,
 } from "@/types/project.model";
-import useTroubleCards from "@/hooks/useTroubleCards";
-import { PATH } from "@/constants/paths";
+import useTroubleCards from "@/features/mypage/useTroubleCards";
+import { PATH } from "@/shared/config/paths";
 import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
 import { useViewerId } from "@/store/auth";
@@ -410,7 +410,9 @@ export default function HomePage() {
 
                       // CPD가 분기 판단에 쓸 힌트를 state로 전달
                       navigate(
-                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`,
+                        `${PATH.COMMUNITY_POST(
+                          String(card.id)
+                        )}?${qs.toString()}`,
                         {
                           state: {
                             from: "home",

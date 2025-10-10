@@ -1,7 +1,7 @@
-import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
-import { PATH } from "@/constants/paths";
+import TroubleShootingCard from "@/features/mypage/ui/TroubleShootingCard";
+import { PATH } from "@/shared/config/paths";
 import { useInfiniteCommunityTroubleSearch } from "@/hooks/useInfiniteCommunityTroubleSearch";
-import { useInfiniteMyTroubleSearch } from "@/hooks/useInfiniteMyTroubleSearch";
+import { useInfiniteMyTroubleSearch } from "@/features/mypage/useInfiniteMyTroubleSearch";
 import { useInfiniteUserTroubleSearch } from "@/hooks/useInfiniteUserTroubleSearch";
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -219,7 +219,7 @@ const SearchResultPage = () => {
                             });
                           } else {
                             const url = `${PATH.COMMUNITY_POST(
-                              idNum
+                              String(idNum)
                             )}?from=search&scope=${scopeForDetail}`;
                             navigate(url, {
                               state: {

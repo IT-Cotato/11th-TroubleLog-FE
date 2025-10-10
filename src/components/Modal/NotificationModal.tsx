@@ -5,7 +5,7 @@ import escapeIcon from "@/assets/icons/escape.svg";
 import useNotifications from "@/hooks/useNotifications";
 import { toInternalSpaPath } from "@/utils/url";
 import { useViewerId } from "@/store/auth";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
 const tabs = ["전체", "트러블슈팅", "댓글", "좋아요"] as const;
 type TabType = (typeof tabs)[number];

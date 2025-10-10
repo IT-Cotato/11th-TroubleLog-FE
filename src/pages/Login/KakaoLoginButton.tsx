@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import kakaoLogoIcon from "@/assets/icons/kakaologo.svg";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
 export default function KakaoLoginButton() {
   const AUTH_START_URL = useMemo(() => {

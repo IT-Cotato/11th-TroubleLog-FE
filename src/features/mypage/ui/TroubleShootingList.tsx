@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from "react";
-import SortButtonGroup from "../Project/SortButtonGroup";
-import TroubleShootingCard from "./TroubleShootingCard";
-import { mapToTroubleShootingCard } from "@/mappers/cardMapper";
+import SortButtonGroup from "@/components/Project/SortButtonGroup";
+import TroubleShootingCard from "@/features/mypage/ui/TroubleShootingCard";
+import { mapToTroubleShootingCard } from "@/entities/trouble/card-compat.mapper";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import { useViewerId } from "@/store/auth";
 import { decideCombined } from "@/utils/combinedRoute";
 

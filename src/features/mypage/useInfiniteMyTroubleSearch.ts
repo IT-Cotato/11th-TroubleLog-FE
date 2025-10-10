@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { searchMyTroubles } from "@/api/trouble.api";
+import { searchMyTroubles } from "@/entities/trouble/api";
 import type {
   MyTroubleSearchPage,
   TroubleSearchCard,
 } from "@/types/troubles.server";
-import type { TroubleShootingCardProps } from "@/components/MyPage/TroubleShootingCard";
-import { toTroubleShootingCard } from "@/mappers/trouble.list-to-ts-card";
+import type { TroubleShootingCardProps } from "@/features/mypage/ui/TroubleShootingCard";
+import { toTroubleShootingCard } from "@/entities/trouble/list-to-ts-card";
 
 export interface UseInfiniteMyTroubleSearchOptions {
   isMine?: boolean;

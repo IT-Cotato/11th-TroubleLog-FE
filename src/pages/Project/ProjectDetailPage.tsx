@@ -7,13 +7,13 @@ import StatusFilterButton from "@/components/Project/StatusFilterButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import useTroubleCards from "@/hooks/useTroubleCards";
+import useTroubleCards from "@/features/mypage/useTroubleCards";
 import { getProjectDetail } from "@/api/project.api";
 import type {
   ProjectTroubleQuery,
   ProjectTroubleSummaryType,
-} from "@/types/trouble.model";
-import { PATH } from "@/constants/paths";
+} from "@/entities/trouble/model";
+import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useViewerId } from "@/store/auth";
 import { decideCombined } from "@/utils/combinedRoute";
@@ -283,7 +283,9 @@ export default function ProjectDetailPage() {
                       const isMineFromList = card.isMine === true; // boolean
 
                       navigate(
-                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`,
+                        `${PATH.COMMUNITY_POST(
+                          String(card.id)
+                        )}?${qs.toString()}`,
                         {
                           state: {
                             from: "project",

@@ -3,8 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import FollowButton from "@/components/Button/FollowButton";
 import { useMyPageStore } from "@/store/useMyPageStore";
 import type { StatusType } from "@/types/project";
-import { PATH } from "@/constants/paths";
-import { MYPAGE_SUBPATH } from "@/constants/routes";
+import { PATH } from "@/shared/config/paths";
 import userIcon from "@/assets/icons/user.svg";
 import circleYIcon from "@/assets/icons/circle_y.svg";
 import circleGIcon from "@/assets/icons/circle_g.svg";
@@ -12,6 +11,14 @@ import circleBIcon from "@/assets/icons/circle_b.svg";
 import { getUserInfo, postFollow, postUnfollow } from "@/api/user.api";
 import type { UserInfoData } from "@/models/user.model";
 import githubIcon from "@/assets/icons/githubIcon.svg";
+
+const SUBPATH = {
+  FOLLOWING: "following",
+  FOLLOWER: "follower",
+  EDIT_PROFILE: "editprofile",
+  STATISTICS: "statistics",
+  LIKES: "likes",
+} as const;
 
 type MyPageSideBarProps =
   | {
@@ -195,11 +202,11 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
             </p>
 
             <div className="flex gap-1 text-body-16-regular sm:text-body-20-regular text-gray4">
-              <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWING, true)}>
+              <button onClick={handleNavigate(SUBPATH.FOLLOWING, true)}>
                 팔로잉 {userInfo?.followingNum ?? 0}
               </button>
               <span>·</span>
-              <button onClick={handleNavigate(MYPAGE_SUBPATH.FOLLOWER, true)}>
+              <button onClick={handleNavigate(SUBPATH.FOLLOWER, true)}>
                 팔로워 {userInfo?.followerNum ?? 0}
               </button>
             </div>
@@ -224,7 +231,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               <FollowButton
                 label="프로필 수정"
                 colorClass="bg-primary"
-                onClick={handleNavigate(MYPAGE_SUBPATH.EDIT_PROFILE)}
+                onClick={handleNavigate(SUBPATH.EDIT_PROFILE)}
               />
             ) : userInfo?.isFollowed ? (
               <FollowButton
@@ -315,17 +322,17 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
           </div>
 
           <button
-            onClick={handleNavigate(MYPAGE_SUBPATH.STATISTICS, true)}
+            onClick={handleNavigate(SUBPATH.STATISTICS, true)}
             className={getMenuButtonClass(
-              location.pathname.includes(MYPAGE_SUBPATH.STATISTICS)
+              location.pathname.includes(SUBPATH.STATISTICS)
             )}
           >
             통계 시각화
           </button>
           <button
-            onClick={handleNavigate(MYPAGE_SUBPATH.LIKES, true)}
+            onClick={handleNavigate(SUBPATH.LIKES, true)}
             className={getMenuButtonClass(
-              location.pathname.includes(MYPAGE_SUBPATH.LIKES)
+              location.pathname.includes(SUBPATH.LIKES)
             )}
           >
             좋아요한 포스트

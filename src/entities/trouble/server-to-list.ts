@@ -1,4 +1,4 @@
-import type { TroubleListItem } from "@/types/trouble.model";
+import type { TroubleListItem } from "@/entities/trouble/model";
 import type { MyTroubleDetailItem } from "@/types/troubles.server";
 
 // 서버 -> 공통 도메인 (TroubleListItem)

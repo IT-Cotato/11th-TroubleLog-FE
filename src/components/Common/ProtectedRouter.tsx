@@ -1,4 +1,4 @@
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 

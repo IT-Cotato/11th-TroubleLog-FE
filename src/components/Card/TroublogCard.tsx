@@ -4,7 +4,7 @@ import CardPreviewArea from "./CardPreviewArea";
 import CardTitleSection from "./CardTitleSection";
 import TagList from "./TagList";
 import type { StatusType, VisibilityType } from "@/types/project";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import { useCallback, useState } from "react";
 import { hardDeletePost } from "@/api/post.api";
 
@@ -57,7 +57,7 @@ export default function TroublogCard({
 
   const handleRootClick = () => {
     if (typeof onClick === "function") onClick(id);
-    else navigate(PATH.COMMUNITY_POST(id));
+    else navigate(PATH.COMMUNITY_POST(String(id)));
   };
 
   const handleRootKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {

@@ -1,5 +1,5 @@
 import type { LikedPostServerItem } from "@/types/community.model";
-import type { TroubleShootingCardProps } from "@/components/MyPage/TroubleShootingCard";
+import type { TroubleShootingCardProps } from "@/features/mypage/ui/TroubleShootingCard";
 
 // YY.MM.DD
 const fmtYYMMDD = (iso: string) => {

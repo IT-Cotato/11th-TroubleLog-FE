@@ -11,7 +11,7 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
 import {
   getCombinedDetail,

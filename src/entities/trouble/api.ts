@@ -2,9 +2,9 @@ import type {
   GetProjectTroubleListResponse,
   GetTroubleListResponse,
   ProjectTroubleQuery,
-} from "@/types/trouble.model";
+} from "@/entities/trouble/model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
-import api from "./axios";
+import api from "@/api/axios";
 
 // 엔드포인트별 검색 응답 타입으로 분리
 import type {

@@ -1,7 +1,7 @@
 import { getCommunityRecentList } from "@/api/community.api";
 import TroublogCard from "@/components/Card/TroublogCard";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import useCommunityCards, {
   type CommunityCardsFetcher,
 } from "@/hooks/useCommunityCards";
@@ -133,9 +133,12 @@ export default function CommunityPage() {
                     state: { from: "community", ownerId },
                   });
                 } else {
-                  navigate(`${PATH.COMMUNITY_POST(id)}?${qs.toString()}`, {
-                    state: { from: "community", ownerId },
-                  });
+                  navigate(
+                    `${PATH.COMMUNITY_POST(String(id))}?${qs.toString()}`,
+                    {
+                      state: { from: "community", ownerId },
+                    }
+                  );
                 }
               }}
               onAvatarClick={() => {

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import {
   KAKAO_REST_KEY,
   KAKAO_REDIRECT_URI,

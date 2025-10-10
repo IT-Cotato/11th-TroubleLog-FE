@@ -1,5 +1,5 @@
 import type { TroublogCardProps } from "@/components/Card/TroublogCard";
-import type { TroubleListItem } from "@/types/trouble.model";
+import type { TroubleListItem } from "@/entities/trouble/model";
 import { pickLatestSummaryId } from "@/utils/combinedRoute";
 import { formatYYMMDD } from "@/utils/troubleFormat";
 import {

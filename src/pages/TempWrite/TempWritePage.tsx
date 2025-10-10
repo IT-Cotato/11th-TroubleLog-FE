@@ -11,7 +11,7 @@ import PostLoadingModal from "./PostLoadingModal";
 import TemplateSelectModal from "./TemplateSelectModal";
 import PostSuccessModal from "./PostSuccessModal";
 import { useNavigate, useLocation } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
 import { toCreatePostRequest, toEditPostRequest } from "@/mappers/postMapper";
 

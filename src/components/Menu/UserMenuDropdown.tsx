@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { postLogout } from "@/api/auth.api";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 interface UserMenuDropdownProps {
   onNavigateToMyPage: () => void;
   onClose: () => void;

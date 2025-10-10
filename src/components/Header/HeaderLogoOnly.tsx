@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/icons/logo.svg";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import { useViewerId } from "@/store/auth";
 
 type HeaderLogoOnlyProps = {

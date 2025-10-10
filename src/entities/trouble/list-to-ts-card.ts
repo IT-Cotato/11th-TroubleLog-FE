@@ -1,4 +1,4 @@
-import type { TroubleShootingCardProps } from "@/components/MyPage/TroubleShootingCard";
+import type { TroubleShootingCardProps } from "@/features/mypage/ui/TroubleShootingCard";
 import type { StatusType, VisibilityType } from "@/types/project";
 import type {
   MyTroubleDetailItem,

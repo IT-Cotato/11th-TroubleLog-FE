@@ -14,7 +14,7 @@ import {
   getUserInfo,
   patchProfile,
 } from "@/api/user.api";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import userIcon from "@/assets/icons/user.svg";
 import useImageUpload from "@/utils/useImageUpload";
 

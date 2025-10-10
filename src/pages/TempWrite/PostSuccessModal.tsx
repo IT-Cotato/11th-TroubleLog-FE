@@ -1,6 +1,6 @@
 import BaseModal from "../../components/Modal/BaseModal";
 import { useNavigate } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import exitIcon from "@/assets/icons/exiticon.svg";
 import postSuccessIcon from "@/assets/icons/postsuccess.svg";
 

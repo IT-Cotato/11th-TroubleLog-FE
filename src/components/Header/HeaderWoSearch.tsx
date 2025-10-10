@@ -3,7 +3,7 @@ import { BsFillBellFill } from "react-icons/bs";
 import { FaUserCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/icons/logo.svg";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import { useEffect, useRef, useState, useCallback } from "react";
 import useClickOutside from "@/hooks/useClickOutside";
 import NotificationModal from "../Modal/NotificationModal";

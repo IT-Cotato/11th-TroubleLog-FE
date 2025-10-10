@@ -3,15 +3,15 @@ import {
   getTroubleList,
   getProjectTroubleList,
   getUserTroubleList,
-} from "@/api/trouble.api";
+} from "@/entities/trouble/api";
 import {
   toTroublogCardVMs,
   type TroublogCardVM,
-} from "@/mappers/troubleCard.mapper";
+} from "@/entities/trouble/card.mapper";
 import type {
   ProjectTroubleQuery,
   TroubleListItem,
-} from "@/types/trouble.model";
+} from "@/entities/trouble/model";
 import { useViewerId } from "@/store/auth";
 
 // 내 전체 목록 정렬용 (서버 스펙)

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import HeaderLogoOnly from "@/components/Header/HeaderLogoOnly";
 import HeroLaptop from "@/assets/images/hero-laptop.png";
 import GuideShot from "@/assets/images/guide-shot.png";

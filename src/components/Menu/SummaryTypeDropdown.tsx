@@ -1,7 +1,7 @@
 import { useState } from "react";
 import useClickOutside from "../../hooks/useClickOutside";
 import dropdownIcon from "@/assets/icons/dropdown_icon.svg";
-import type { ProjectTroubleSummaryType } from "@/types/trouble.model";
+import type { ProjectTroubleSummaryType } from "@/entities/trouble/model";
 
 type Option = { label: string; value: ProjectTroubleSummaryType | null };
 

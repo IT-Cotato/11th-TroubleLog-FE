@@ -1,5 +1,5 @@
 import type { TroublogCardProps } from "@/components/Card/TroublogCard";
-import type { TroubleShootingCardProps } from "@/components/MyPage/TroubleShootingCard";
+import type { TroubleShootingCardProps } from "@/features/mypage/ui/TroubleShootingCard";
 
 export const mapToTroubleShootingCard = (
   card: TroublogCardProps

@@ -15,7 +15,7 @@ import PostLoadingModal from "@/pages/TempWrite/PostLoadingModal";
 import TemplateSelectModal from "@/pages/TempWrite/TemplateSelectModal";
 import PostSuccessModal from "@/pages/TempWrite/PostSuccessModal";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import { useProjectList } from "@/hooks/useProjectList";
 import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
 import {

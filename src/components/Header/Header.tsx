@@ -8,7 +8,7 @@ import { useSearchStore } from "@/store/useSearchStore";
 import useClickOutside from "@/hooks/useClickOutside";
 import UserMenuDropdown from "../Menu/UserMenuDropdown";
 import NotificationModal from "../Modal/NotificationModal";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import logo from "@/assets/icons/logo.svg";
 import { useViewerId } from "@/store/auth";
 import { useNotificationStore } from "@/store/notification";

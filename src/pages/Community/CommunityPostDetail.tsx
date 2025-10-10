@@ -5,7 +5,7 @@ import PostComment, {
 import PostGuideMd from "@/components/Community/PostGuideMd";
 import KebabDropdown from "@/components/Menu/KebabDropdown";
 import KebabMenuButton from "@/components/Menu/KebabMenuButton";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
