@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import SortButtonGroup from "@/components/Project/SortButtonGroup";
+import SortButtonGroup from "@/entities/project/ui/SortButtonGroup";
 import TroubleShootingCard from "@/entities/trouble/ui/TroubleShootingCard";
 import { mapToTroubleShootingCard } from "@/entities/trouble/card-compat.mapper";
 import { useMyPageStore } from "@/store/useMyPageStore";

@@ -13,7 +13,10 @@ import PostSuccessModal from "./PostSuccessModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 
-import { toCreatePostRequest, toEditPostRequest } from "@/mappers/postMapper";
+import {
+  toCreatePostRequest,
+  toEditPostRequest,
+} from "@/entities/trouble/mappers/postMapper";
 
 import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
 import { useProjectList } from "@/hooks/useProjectList";

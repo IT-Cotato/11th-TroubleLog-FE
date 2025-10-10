@@ -4,7 +4,7 @@ import type {
   PostSummaryContentItem,
 } from "@/models/post.model";
 import type { CommunityPostDetailProps } from "@/pages/Community/CommunityPostDetail";
-import { toPostDetailVM } from "@/mappers/myPostDetail.mapper";
+import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
 
 export type TwoPaneDetailVM = {
   header: Pick<

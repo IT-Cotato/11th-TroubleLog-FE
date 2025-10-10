@@ -1,4 +1,4 @@
-import type { ProjectFolderCardProps } from "@/components/Project/ProjectFolderCard";
+import type { ProjectFolderCardProps } from "@/entities/project/ui/ProjectFolderCard";
 
 export const mockFolders: ProjectFolderCardProps[] = [
   {

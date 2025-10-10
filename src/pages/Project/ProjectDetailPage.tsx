@@ -1,9 +1,9 @@
 import PostButton from "@/components/Button/PostButton";
 import TroublogCard from "@/entities/trouble/ui/TroublogCard";
 import SummaryTypeDropdown from "@/components/Menu/SummaryTypeDropdown";
-import ProjectAccordion from "@/components/Project/ProjectAccordion";
-import SortButtonGroup from "@/components/Project/SortButtonGroup";
-import StatusFilterButton from "@/components/Project/StatusFilterButton";
+import ProjectAccordion from "@/entities/project/ui/ProjectAccordion";
+import SortButtonGroup from "@/entities/project/ui/SortButtonGroup";
+import StatusFilterButton from "@/entities/project/ui/StatusFilterButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import GenericDropdown from "@/components/Menu/GenericDropdown";
 import { useLocation, useNavigate, useParams } from "react-router-dom";

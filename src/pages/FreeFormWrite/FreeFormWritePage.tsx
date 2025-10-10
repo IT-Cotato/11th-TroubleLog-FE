@@ -22,7 +22,7 @@ import {
   toCreatePostRequest,
   toEditPostRequest,
   type PostForm,
-} from "@/mappers/postMapper";
+} from "@/entities/trouble/mappers/postMapper";
 import {
   createPost,
   startSummary,

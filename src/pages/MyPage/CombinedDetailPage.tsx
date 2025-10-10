@@ -19,7 +19,7 @@ import {
   getPostDetail,
 } from "@/api/post.api";
 import type { ViewCombinedResponse } from "@/models/post.model";
-import { toTwoPaneVM } from "@/mappers/combinedDetail.mapper";
+import { toTwoPaneVM } from "@/entities/trouble/mappers/combinedDetail.mapper";
 import { useViewerId } from "@/store/auth";
 import PostComment, {
   type PostCommentProps,

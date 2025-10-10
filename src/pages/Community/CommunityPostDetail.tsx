@@ -23,7 +23,7 @@ import {
   softDeleteCommunityComment,
   updateCommunityComment,
 } from "@/api/community.api";
-import { toCommunityPostVM } from "@/mappers/communityPostDetail.mapper";
+import { toCommunityPostVM } from "@/entities/trouble/mappers/communityPostDetail.mapper";
 import {
   makeOptimisticComment,
   toPostComment,
@@ -31,7 +31,7 @@ import {
 } from "@/mappers/communityComment.mapper";
 import { useViewerId } from "@/store/auth";
 import { getPostDetail, hardDeletePost } from "@/api/post.api";
-import { toPostDetailVM } from "@/mappers/myPostDetail.mapper";
+import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
 import { postFollow, postUnfollow } from "@/api/user.api";
 
 export interface CommunityPostDetailProps {
