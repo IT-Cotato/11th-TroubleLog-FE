@@ -1,4 +1,4 @@
-import MyPageSideBar from "@/features/mypage/ui/MyPageSidebar";
+import MyPageSideBar from "@/widgets/mypage/MyPageSidebar";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import useTroubleCards from "@/features/mypage/useTroubleCards";

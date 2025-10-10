@@ -5,7 +5,7 @@ import {
   makeDebugTechTags,
   mergeTechTagStats,
   toBubbleData,
-} from "@/utils/techTags";
+} from "@/features/mypage/lib/techTags";
 
 type BubbleDatum = { label: string; count: number; color: string };
 

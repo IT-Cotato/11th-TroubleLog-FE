@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { getErrorTagTop3 } from "@/api/statistics.api";
 import type { ErrorTagStat } from "@/types/statistics.model";
-import { makeDebugErrorTags, mergeErrorTagStats } from "@/utils/errorTagStats";
+import {
+  makeDebugErrorTags,
+  mergeErrorTagStats,
+} from "@/features/mypage/lib/errorTagStats";
 
 export function useErrorTagsTop3() {
   const [loading, setLoading] = useState(true);

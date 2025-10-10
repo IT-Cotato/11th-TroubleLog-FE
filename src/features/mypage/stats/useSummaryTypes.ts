@@ -4,7 +4,7 @@ import type { SummaryTypeStat } from "@/types/statistics.model";
 import {
   makeDebugSummaryTypes,
   mergeSummaryTypeStats,
-} from "@/utils/summaryTypes";
+} from "@/features/mypage/lib/summaryTypes";
 
 type SummaryDatum = { label: string; value: number };
 

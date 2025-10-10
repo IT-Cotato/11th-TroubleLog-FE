@@ -37,7 +37,7 @@ const StatisticsPage = lazy(() => import("@/pages/MyPage/StatisticsPage"));
 const LikedPostsPage = lazy(() => import("@/pages/MyPage/LikedPostsPage"));
 const EditProfile = lazy(() => import("@/pages/EditProfile/EditProfile"));
 const TroubleShootingList = lazy(
-  () => import("@/features/mypage/ui/TroubleShootingList")
+  () => import("@/widgets/mypage/TroubleShootingList")
 );
 const MyFollowing = lazy(() => import("@/components/MyPage/MyFollowing"));
 
