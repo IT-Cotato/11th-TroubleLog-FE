@@ -31,9 +31,10 @@ export function useSummaryTypes() {
     (async () => {
       try {
         const res = (await getSummaryTypes()) ?? []; // [] 가능
-        const debug = (
-          localStorage.getItem("debug.summaryTypes") || ""
-        ).toLowerCase();
+        const debug =
+          typeof window !== "undefined"
+            ? (localStorage.getItem("debug.summaryTypes") || "").toLowerCase()
+            : "";
         const dummy = makeDebugSummaryTypes();
 
         const effective: SummaryTypeStat[] =

@@ -21,9 +21,10 @@ export function useErrorTagsTop3() {
       try {
         const res = (await getErrorTagTop3()) ?? []; // [] or 실제 배열
         // 디버그 플래그: localStorage.debug.errorTags = 'replace' | 'merge'
-        const debug = (
-          localStorage.getItem("debug.errorTags") || ""
-        ).toLowerCase();
+        const debug =
+          typeof window !== "undefined"
+            ? (localStorage.getItem("debug.errorTags") || "").toLowerCase()
+            : "";
         const dummy = makeDebugErrorTags();
 
         let effective: ErrorTagStat[] =

@@ -25,9 +25,10 @@ export function useTechTagsTop5() {
     (async () => {
       try {
         const res = (await getTechTagsTop5()) ?? []; // [] 가능
-        const debug = (
-          localStorage.getItem("debug.techTags") || ""
-        ).toLowerCase();
+        const debug =
+          typeof window !== "undefined"
+            ? (localStorage.getItem("debug.techTags") || "").toLowerCase()
+            : "";
         let cfg: any = {};
         try {
           cfg = JSON.parse(localStorage.getItem("debug.techTags.cfg") || "{}");
