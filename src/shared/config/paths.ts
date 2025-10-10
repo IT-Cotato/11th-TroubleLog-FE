@@ -2,7 +2,6 @@ export const PATH = {
   LANDING: "/",
   ROOT: "/login",
   LOGIN: "/login",
-
   SIGNUP: "/signup",
   SIGNUP_DETAIL: "/signup/detail",
   SIGNUP_OAUTH: "/signup/oauth",
@@ -11,19 +10,19 @@ export const PATH = {
   USER: "/user",
   HOME: "/user/home",
   SEARCH: "/user/search",
-  MYPAGE: (id: string) => `/user/mypage/${id}`,
-  MYPAGE_EDIT: (id: string) => `/user/mypage/${id}/editprofile`,
-  FOLLOWING: (id: string) => `/user/mypage/${id}/following`,
-  FOLLOWER: (id: string) => `/user/mypage/${id}/follower`,
-  STATISTICS: (id: string) => `/user/mypage/${id}/statistics`,
-  LIKES: (id: string) => `/user/mypage/${id}/likes`,
-  PROJECT_DETAIL: (id: string) => `/user/project/${id}`,
+
+  // 동적 세그먼트는 콜백 형태로만 제공(한 곳에서 관리)
+  MYPAGE: (id = ":id") => `/user/mypage/${id}`,
+  MYPAGE_EDIT: (id = ":id") => `/user/mypage/${id}/editprofile`,
+  PROJECT_DETAIL: (id = ":id") => `/user/project/${id}`,
+
   COMMUNITY: "/user/community",
-  COMMUNITY_POST: (postId: number) => `/user/community/${postId}`,
+  COMMUNITY_POST: (postId = ":postId") => `/user/community/${postId}`,
 
   TEMP_WRITING: "/tempwriting",
   FREEFORM_WRITING: "/freeformwriting",
-  PREVIEW: (postId: number, summaryId?: number | string) =>
+
+  PREVIEW: (postId: string | number, summaryId?: string | number) =>
     summaryId != null
       ? `/troubles/${postId}?summaryId=${summaryId}`
       : `/troubles/${postId}`,
@@ -31,6 +30,7 @@ export const PATH = {
 
   POST_SUMMARY: (summaryId: string | number) => `/post/summary/${summaryId}`,
   POST_SUMMARY_ROUTE: "/post/summary/:summaryId",
+
   NOT_FOUND: "/404",
   AUTH_GUARD: "/auth-required",
 
@@ -38,4 +38,4 @@ export const PATH = {
     postId && summaryId
       ? `/troubles/${postId}/combine/${summaryId}`
       : "/troubles/:postId/combine/:summaryId",
-};
+} as const;

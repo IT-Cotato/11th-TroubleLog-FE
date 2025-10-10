@@ -3,10 +3,7 @@ import { connectAlertSSE } from "@/api/alert.api";
 import { useIsLoggedIn, useViewerId } from "@/store/auth";
 import { startRefresh } from "@/api/axios";
 import { useNotificationStore } from "@/store/notification";
-import { PATH } from "@/constants/paths";
-
-// 콜백 라우트 감지(풀 리다이렉트 방식: /auth/oauth-register 만 스킵)
-const isAuthCallbackPath = (p: string) => p.startsWith(PATH.OAUTH_REGISTER);
+import { isAuthCallbackPath } from "@/shared/lib/auth-route";
 
 // 1회 리프레시(전역 가드/404 네비 방지 플래그 부여)
 async function tryRefreshOnce() {
