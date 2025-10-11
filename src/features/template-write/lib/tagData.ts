@@ -1,4 +1,4 @@
-import type { Tag } from "./CategoryTagModal";
+import type { Tag } from "@/pages/TempWrite/CategoryTagModal";
 
 export const allTags: Tag[] = [
   // 프론트엔드
