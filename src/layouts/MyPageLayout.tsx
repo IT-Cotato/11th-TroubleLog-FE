@@ -1,10 +1,10 @@
-import MyPageSideBar from "@/components/MyPage/MyPageSidebar";
+import MyPageSideBar from "@/widgets/mypage/MyPageSidebar";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
-import useTroubleCards from "@/hooks/useTroubleCards";
+import useTroubleCards from "@/features/mypage/useTroubleCards";
 import { useMemo, useState } from "react";
 import { useViewerId } from "@/store/auth";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
 const MyPageLayout = () => {
   const { id } = useParams<{ id: string }>();

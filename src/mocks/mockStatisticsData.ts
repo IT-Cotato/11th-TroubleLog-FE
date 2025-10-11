@@ -1,4 +1,4 @@
-import type { ErrorCategoryPieChartProps } from "@/components/MyPage/ErrorCategoryPieChart";
+import type { ErrorCategoryPieChartProps } from "@/features/mypage/ui/ErrorCategoryPieChart";
 
 export const mockErrorCategoryData: ErrorCategoryPieChartProps = {
   labels: ["Build/Compile", "Dependency", "Syntax"],

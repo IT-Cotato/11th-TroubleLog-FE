@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-import TagList from "@/components/Card/TagList";
+import TagList from "@/entities/trouble/ui/TagList";
 import PostCombineMd from "./PostCombineMd";
-import KebabDropdown from "@/components/Menu/KebabDropdown";
-import KebabMenuButton from "@/components/Menu/KebabMenuButton";
-import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
+import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
+import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
+import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
 import {
   getCombinedDetail,
@@ -19,11 +19,11 @@ import {
   getPostDetail,
 } from "@/api/post.api";
 import type { ViewCombinedResponse } from "@/models/post.model";
-import { toTwoPaneVM } from "@/mappers/combinedDetail.mapper";
+import { toTwoPaneVM } from "@/entities/trouble/mappers/combinedDetail.mapper";
 import { useViewerId } from "@/store/auth";
 import PostComment, {
   type PostCommentProps,
-} from "@/components/Community/PostComment";
+} from "@/entities/trouble/ui/PostComment";
 import {
   createCommunityComment,
   getCommunityComments,
@@ -36,7 +36,7 @@ import {
 import {
   toPostComment,
   toPostComments,
-} from "@/mappers/communityComment.mapper";
+} from "@/entities/trouble/mappers/communityComment.mapper";
 
 export default function CombinedDetailPage() {
   const { postId, summaryId } = useParams<{

@@ -1,22 +1,22 @@
-import PostButton from "@/components/Button/PostButton";
-import TroublogCard from "@/components/Card/TroublogCard";
-import SummaryTypeDropdown from "@/components/Menu/SummaryTypeDropdown";
-import ProjectAccordion from "@/components/Project/ProjectAccordion";
-import SortButtonGroup from "@/components/Project/SortButtonGroup";
-import StatusFilterButton from "@/components/Project/StatusFilterButton";
+import PostButton from "@/shared/ui/Button/PostButton";
+import TroublogCard from "@/entities/trouble/ui/TroublogCard";
+import SummaryTypeDropdown from "@/shared/ui/Menu/SummaryTypeDropdown";
+import ProjectAccordion from "@/entities/project/ui/ProjectAccordion";
+import SortButtonGroup from "@/entities/project/ui/SortButtonGroup";
+import StatusFilterButton from "@/entities/project/ui/StatusFilterButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import GenericDropdown from "@/components/Menu/GenericDropdown";
+import GenericDropdown from "@/shared/ui/Dropdown/GenericDropdown";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import useTroubleCards from "@/hooks/useTroubleCards";
+import useTroubleCards from "@/features/mypage/useTroubleCards";
 import { getProjectDetail } from "@/api/project.api";
 import type {
   ProjectTroubleQuery,
   ProjectTroubleSummaryType,
-} from "@/types/trouble.model";
-import { PATH } from "@/constants/paths";
+} from "@/entities/trouble/model";
+import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useViewerId } from "@/store/auth";
-import { decideCombined } from "@/utils/combinedRoute";
+import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "inProgress" | "complete" | "created";
@@ -283,7 +283,9 @@ export default function ProjectDetailPage() {
                       const isMineFromList = card.isMine === true; // boolean
 
                       navigate(
-                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`,
+                        `${PATH.COMMUNITY_POST(
+                          String(card.id)
+                        )}?${qs.toString()}`,
                         {
                           state: {
                             from: "project",

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import onboarding_image from "../../assets/images/onboarding_image.png";
 import { postEmailCheck } from "@/api/auth.api";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
 const SignPageOne = () => {
   const [email, setEmail] = useState("");

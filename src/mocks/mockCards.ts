@@ -1,4 +1,4 @@
-import type { TroublogCardProps } from "@/components/Card/TroublogCard";
+import type { TroublogCardProps } from "@/entities/trouble/ui/TroublogCard";
 
 export const mockCards: TroublogCardProps[] = [
   {

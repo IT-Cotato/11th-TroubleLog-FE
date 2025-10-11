@@ -1,9 +1,8 @@
 import axios, { AxiosError } from "axios";
-import { router } from "@/routes/Router";
-import { PATH } from "@/constants/paths";
-
-// 콜백 라우트 검출 (이 경로에서는 전역 네비/리프레시/404 모두 비활성화)
-const isAuthCallbackPath = (p: string) => p.startsWith(PATH.OAUTH_REGISTER);
+import { router } from "@/app/routes/router";
+import { PATH } from "@/shared/config/paths";
+import { isAuthCallbackPath } from "@/shared/lib/auth-route";
+import { getOriginSafely, isAbsoluteUrl } from "@/shared/lib/url";
 
 // ----- BASE URL / ORIGIN -----
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(
@@ -12,16 +11,6 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(
 );
 const ENVTYPE = import.meta.env.VITE_ENV_TYPE;
 
-const getOriginSafely = (maybeUrl?: string | null): string => {
-  try {
-    if (maybeUrl && /^https?:\/\//i.test(maybeUrl))
-      return new URL(maybeUrl).origin;
-  } catch {
-    //
-  }
-  // '/api' 같이 상대 경로면 현재 오리진
-  return window.location.origin;
-};
 const API_ORIGIN = getOriginSafely(API_BASE_URL);
 
 // axios 타입 확장: 요청 단위로 전역 가드를 스킵
@@ -110,7 +99,7 @@ const reqId = api.interceptors.request.use((config) => {
   const url = config.url ?? "";
   config.headers = config.headers ?? {};
 
-  const isAbsolute = /^https?:\/\//i.test(url);
+  const isAbsolute = isAbsoluteUrl(url);
   const reqOrigin = isAbsolute ? getOriginSafely(url) : API_ORIGIN;
   const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
   if (isExternalAbsolute) return config;

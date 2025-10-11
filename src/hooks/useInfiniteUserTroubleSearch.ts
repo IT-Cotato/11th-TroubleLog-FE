@@ -2,8 +2,8 @@ import { useCallback, useMemo } from "react";
 import {
   useInfiniteMyTroubleSearch,
   type Fetcher,
-} from "./useInfiniteMyTroubleSearch";
-import { searchUserTroubles } from "@/api/trouble.api";
+} from "../features/mypage/useInfiniteMyTroubleSearch";
+import { searchUserTroubles } from "@/entities/trouble/api";
 import type {
   TroubleSearchCard,
   MyTroubleSearchPage,

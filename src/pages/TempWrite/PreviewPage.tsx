@@ -5,21 +5,21 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
-import TagList from "@/components/Card/TagList";
-import PostGuideMd from "@/components/Community/PostGuideMd";
+import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
+import TagList from "@/entities/trouble/ui/TagList";
+import PostGuideMd from "@/entities/trouble/ui/PostGuideMd";
 import PostComment, {
   type PostCommentProps,
-} from "@/components/Community/PostComment";
-import KebabDropdown from "@/components/Menu/KebabDropdown";
-import KebabMenuButton from "@/components/Menu/KebabMenuButton";
+} from "@/entities/trouble/ui/PostComment";
+import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
+import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
 import useClickOutside from "@/hooks/useClickOutside";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import { getCombinedDetail, getPostDetail } from "@/api/post.api";
 import type {
   ViewCombinedResponse,

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, useRef } from "react";
-import CancelButton from "@/components/Button/CancelButton";
-import SaveButton from "@/components/Button/SaveButton";
-import MyInput from "@/components/MyPage/MyInput";
-import WithdrawBox from "@/components/MyPage/WithdrawBox";
-import FollowButton from "@/components/Button/FollowButton";
+import CancelButton from "@/shared/ui/Button/CancelButton";
+import SaveButton from "@/shared/ui/Button/SaveButton";
+import MyInput from "@/features/mypage/ui/MyInput";
+import WithdrawBox from "@/features/mypage/ui/WithdrawBox";
+import FollowButton from "@/shared/ui/Button/FollowButton";
 import { useNavigate, useParams } from "react-router-dom";
-import ConfirmDeleteModal from "@/components/Modal/ConfirmDeleteModal";
-import WithdrawCompleteModal from "@/components/Modal/WithdrawCompleteModal";
+import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
+import WithdrawCompleteModal from "@/shared/ui/Modal/WithdrawCompleteModal";
 import type { ProfileData, UpdatedProfileData } from "@/models/user.model";
 import {
   deleteUser,
@@ -14,7 +14,7 @@ import {
   getUserInfo,
   patchProfile,
 } from "@/api/user.api";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import userIcon from "@/assets/icons/user.svg";
 import useImageUpload from "@/utils/useImageUpload";
 

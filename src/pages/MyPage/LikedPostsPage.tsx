@@ -1,5 +1,5 @@
-import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
-import { PATH } from "@/constants/paths";
+import TroubleShootingCard from "@/entities/trouble/ui/TroubleShootingCard";
+import { PATH } from "@/shared/config/paths";
 import useLikedCommunityPosts from "@/hooks/useLikedCommunityPosts";
 import { useNavigate } from "react-router-dom";
 
@@ -13,7 +13,7 @@ const LikedPostsPage = () => {
   };
 
   const handleCardClick = (postId: number) => {
-    navigate(PATH.COMMUNITY_POST(postId));
+    navigate(PATH.COMMUNITY_POST(String(postId)));
   };
 
   const showEmpty = !loading && !error && items.length === 0;

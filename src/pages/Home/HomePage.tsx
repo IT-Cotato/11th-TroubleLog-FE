@@ -1,22 +1,22 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import PostButton from "@/components/Button/PostButton";
-import Snackbar from "@/components/Feedback/Snackbar";
-import TroublogCard from "@/components/Card/TroublogCard";
-import ProjectAccordion from "@/components/Project/ProjectAccordion";
-import ProjectFolderCard from "@/components/Project/ProjectFolderCard";
-import FolderModal from "@/components/Modal/FolderModal";
+import PostButton from "@/shared/ui/Button/PostButton";
+import Snackbar from "@/shared/ui/Feedback/Snackbar";
+import TroublogCard from "@/entities/trouble/ui/TroublogCard";
+import ProjectAccordion from "@/entities/project/ui/ProjectAccordion";
+import ProjectFolderCard from "@/entities/project/ui/ProjectFolderCard";
+import FolderModal from "@/shared/ui/Modal/FolderModal";
 import useClickOutside from "@/hooks/useClickOutside";
 import { getProjectList, postCreateProject } from "@/api/project.api";
 import type {
   ProjectListItem,
   CreateProjectRequest,
 } from "@/types/project.model";
-import useTroubleCards from "@/hooks/useTroubleCards";
-import { PATH } from "@/constants/paths";
+import useTroubleCards from "@/features/mypage/useTroubleCards";
+import { PATH } from "@/shared/config/paths";
 import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
 import { useViewerId } from "@/store/auth";
-import { decideCombined } from "@/utils/combinedRoute";
+import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 
 const PAGE_SIZE = 10;
 
@@ -410,7 +410,9 @@ export default function HomePage() {
 
                       // CPD가 분기 판단에 쓸 힌트를 state로 전달
                       navigate(
-                        `${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`,
+                        `${PATH.COMMUNITY_POST(
+                          String(card.id)
+                        )}?${qs.toString()}`,
                         {
                           state: {
                             from: "home",

@@ -4,7 +4,7 @@ import onboarding_image from "../../assets/images/onboarding_image.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import { postRegister } from "@/api/auth.api";
 import type { RegisterRequest } from "@/models/auth.model";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
 const SignPageTwo = () => {
   const navigate = useNavigate();
