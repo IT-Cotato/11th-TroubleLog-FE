@@ -157,16 +157,19 @@ const TroubleShootingList = () => {
                 if (ownerIdForState != null)
                   qs.set("ownerId", String(ownerIdForState));
 
-                navigate(`${PATH.COMMUNITY_POST(card.id)}?${qs.toString()}`, {
-                  state: {
-                    from: "mypage",
-                    ownerId: ownerIdForState,
-                    statusFromList,
-                    isVisibleFromList,
-                    summaryIdFromList,
-                    isMineFromList,
-                  },
-                });
+                navigate(
+                  `${PATH.COMMUNITY_POST(String(card.id))}?${qs.toString()}`,
+                  {
+                    state: {
+                      from: "mypage",
+                      ownerId: ownerIdForState,
+                      statusFromList,
+                      isVisibleFromList,
+                      summaryIdFromList,
+                      isMineFromList,
+                    },
+                  }
+                );
               }}
             />
           );
