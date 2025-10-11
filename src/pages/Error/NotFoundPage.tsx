@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import { useViewerId } from "@/store/auth";
 
 export default function NotFoundPage() {

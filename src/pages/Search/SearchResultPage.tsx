@@ -1,12 +1,12 @@
-import TroubleShootingCard from "@/components/MyPage/TroubleShootingCard";
-import { PATH } from "@/constants/paths";
+import TroubleShootingCard from "@/entities/trouble/ui/TroubleShootingCard";
+import { PATH } from "@/shared/config/paths";
 import { useInfiniteCommunityTroubleSearch } from "@/hooks/useInfiniteCommunityTroubleSearch";
-import { useInfiniteMyTroubleSearch } from "@/hooks/useInfiniteMyTroubleSearch";
+import { useInfiniteMyTroubleSearch } from "@/features/mypage/useInfiniteMyTroubleSearch";
 import { useInfiniteUserTroubleSearch } from "@/hooks/useInfiniteUserTroubleSearch";
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useViewerId } from "@/store/auth";
-import { decideCombined } from "@/utils/combinedRoute";
+import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 
 // 상태 정규화: API/한글/대소문자 뒤섞여도 'inProgress' | 'complete' | 'created'로 통일
 const normStatus = (raw: any): "inProgress" | "complete" | "created" => {
@@ -219,7 +219,7 @@ const SearchResultPage = () => {
                             });
                           } else {
                             const url = `${PATH.COMMUNITY_POST(
-                              idNum
+                              String(idNum)
                             )}?from=search&scope=${scopeForDetail}`;
                             navigate(url, {
                               state: {

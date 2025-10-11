@@ -1,11 +1,11 @@
-import ErrorCategoryPieChart from "@/components/MyPage/ErrorCategoryPieChart";
-import SummaryTypeBarChart from "@/components/MyPage/SummaryTypeBarChart";
-import TagBubbleChart from "@/components/MyPage/TagBubbleChart";
-import TroublogActivityChart from "@/components/MyPage/TroublogActivityChart";
-import { useDailyActivityMap } from "@/hooks/useDailyActivityMap";
-import { useErrorTagsTop3 } from "@/hooks/useErrorTagsTop3";
-import { useSummaryTypes } from "@/hooks/useSummaryTypes";
-import { useTechTagsTop5 } from "@/hooks/useTechTagsTop5";
+import ErrorCategoryPieChart from "@/features/mypage/ui/ErrorCategoryPieChart";
+import SummaryTypeBarChart from "@/features/mypage/ui/SummaryTypeBarChart";
+import TagBubbleChart from "@/features/mypage/ui/TagBubbleChart";
+import TroublogActivityChart from "@/features/mypage/ui/TroublogActivityChart";
+import { useDailyActivityMap } from "@/features/mypage/useDailyActivityMap";
+import { useErrorTagsTop3 } from "@/features/mypage/stats/useErrorTagsTop3";
+import { useSummaryTypes } from "@/features/mypage/stats/useSummaryTypes";
+import { useTechTagsTop5 } from "@/features/mypage/stats/useTechTagsTop5";
 
 const StatisticsPage = () => {
   const year = new Date().getFullYear();

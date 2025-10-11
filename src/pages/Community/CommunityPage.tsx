@@ -1,12 +1,12 @@
 import { getCommunityRecentList } from "@/api/community.api";
-import TroublogCard from "@/components/Card/TroublogCard";
-import GenericDropdown from "@/components/Menu/GenericDropdown";
-import { PATH } from "@/constants/paths";
+import TroublogCard from "@/entities/trouble/ui/TroublogCard";
+import GenericDropdown from "@/shared/ui/Dropdown/GenericDropdown";
+import { PATH } from "@/shared/config/paths";
 import useCommunityCards, {
   type CommunityCardsFetcher,
 } from "@/hooks/useCommunityCards";
 import type { CommunitySort } from "@/types/community.model";
-import { decideCombined } from "@/utils/combinedRoute";
+import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -133,9 +133,12 @@ export default function CommunityPage() {
                     state: { from: "community", ownerId },
                   });
                 } else {
-                  navigate(`${PATH.COMMUNITY_POST(id)}?${qs.toString()}`, {
-                    state: { from: "community", ownerId },
-                  });
+                  navigate(
+                    `${PATH.COMMUNITY_POST(String(id))}?${qs.toString()}`,
+                    {
+                      state: { from: "community", ownerId },
+                    }
+                  );
                 }
               }}
               onAvatarClick={() => {

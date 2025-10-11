@@ -1,14 +1,12 @@
 import "@/App.css";
-import AlertSSEProvider from "@/providers/AlertSSEProvider";
-import { router } from "@/routes/Router";
 import { RouterProvider } from "react-router-dom";
+import { router } from "@/app/routes/router";
+import { AppProviders } from "@/app/providers";
 
-function App() {
+export default function App() {
   return (
-    <AlertSSEProvider>
+    <AppProviders>
       <RouterProvider router={router} />
-    </AlertSSEProvider>
+    </AppProviders>
   );
 }
-
-export default App;

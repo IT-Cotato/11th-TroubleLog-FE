@@ -1,4 +1,4 @@
-import type { TroubleListItem } from "@/types/trouble.model";
+import type { TroubleListItem } from "@/entities/trouble/model";
 
 export const mockProjectTroubles: Record<string, TroubleListItem[]> = {
   1: [

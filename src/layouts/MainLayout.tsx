@@ -1,5 +1,5 @@
-import Header from "@/components/Header/Header";
-import NotificationToaster from "@/components/Notification/NotificationToaster";
+import Header from "@/layouts/Header/Header";
+import NotificationToaster from "@/features/notification/NotificationToaster";
 import { Outlet } from "react-router-dom";
 
 export default function MainLayout() {

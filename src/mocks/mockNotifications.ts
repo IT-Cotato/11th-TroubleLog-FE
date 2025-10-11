@@ -1,4 +1,4 @@
-import type { NotificationItem } from "@/components/Modal/NotificationModal";
+import type { NotificationItem } from "@/shared/ui/Modal/NotificationModal";
 
 export const mockNotifications: NotificationItem[] = [
   {

@@ -1,19 +1,22 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import HeaderWoSearch from "@/components/Header/HeaderWoSearch";
-import DropDownButton from "@/components/Button/DropDownButton";
-import CategoryTag from "@/components/TemplateWrite/CategoryTag";
-import EditorBlock, {
-  type BlockData,
-} from "@/components/TemplateWrite/EditorBlock";
-import { questionData } from "@/components/TemplateWrite/questionTemplate";
-import PostSaveModal, { type PostSavePayload } from "./PostSaveModal";
-import PostLoadingModal from "./PostLoadingModal";
-import TemplateSelectModal from "./TemplateSelectModal";
-import PostSuccessModal from "./PostSuccessModal";
+import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
+import DropDownButton from "@/shared/ui/Button/DropDownButton";
+import CategoryTag from "@/shared/ui/Editor/CategoryTag";
+import EditorBlock, { type BlockData } from "@/shared/ui/Editor/EditorBlock";
+import { questionData } from "@/features/template-write/lib/questionTemplate";
+import PostSaveModal, {
+  type PostSavePayload,
+} from "../../shared/ui/Modal/PostSaveModal";
+import PostLoadingModal from "../../shared/ui/Modal/PostLoadingModal";
+import TemplateSelectModal from "../../shared/ui/Modal/TemplateSelectModal";
+import PostSuccessModal from "../../shared/ui/Modal/PostSuccessModal";
 import { useNavigate, useLocation } from "react-router-dom";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 
-import { toCreatePostRequest, toEditPostRequest } from "@/mappers/postMapper";
+import {
+  toCreatePostRequest,
+  toEditPostRequest,
+} from "@/entities/trouble/mappers/postMapper";
 
 import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
 import { useProjectList } from "@/hooks/useProjectList";

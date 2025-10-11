@@ -4,7 +4,7 @@ import Input from "./Input";
 import onboarding_image from "../../assets/images/onboarding_image.png";
 import KakaoLoginButton from "./KakaoLoginButton";
 import { postLogin } from "@/api/auth.api";
-import { PATH } from "@/constants/paths";
+import { PATH } from "@/shared/config/paths";
 import { useAuthStore } from "@/store/auth";
 import { applyAuth } from "@/utils/applyAuth";
 
