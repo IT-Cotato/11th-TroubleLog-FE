@@ -149,9 +149,7 @@ const EditorBlock = ({
     const root = editorWrapRef.current;
     if (!root) return;
 
-    const ta = root.querySelector(
-      "textarea.w-md-editor-text-input"
-    ) as HTMLTextAreaElement | null;
+    const ta = root.querySelector("textarea") as HTMLTextAreaElement | null;
 
     if (ta) {
       taRef.current = ta;
@@ -240,6 +238,7 @@ const EditorBlock = ({
           <div
             ref={editorWrapRef}
             className="w-full overflow-visible rounded-md border border-gray-200"
+            style={{ overflow: "visible" }}
           >
             <MDEditor
               value={block.content}
@@ -250,7 +249,13 @@ const EditorBlock = ({
               height={editorHeight}
               preview="edit"
               visibleDragbar={false}
-              style={{ width: "100%", border: "none" }}
+              style={{
+                width: "100%",
+                border: "none",
+                overflow: "visible",
+                minHeight: `${editorHeight}px`,
+                maxHeight: "none",
+              }}
               autoFocus
               commandsFilter={commandsFilter}
               textareaProps={{
@@ -271,7 +276,7 @@ const EditorBlock = ({
             />
           </div>
         ) : (
-          <div className="w-full rounded-md border border-gray-200 p-3">
+          <div className="w-full rounded-md border border-gray-200 p-3 min-h-[150px]">
             <MDEditor.Markdown source={block.content || ""} />
           </div>
         )}
