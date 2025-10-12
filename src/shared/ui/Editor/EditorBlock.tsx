@@ -191,10 +191,14 @@ const EditorBlock = ({
           {isActive && (
             <div className="flex sm:justify-end gap-2">
               <button
-                disabled={!!isSaving || !canSave}
+                // disabled 속성 제거
                 onClick={async () => {
                   try {
-                    if (!canSave || !onSave) return onShowAlert?.();
+                    if (!canSave || !onSave) {
+                      // 제목 미입력 등 저장 불가 조건일 때 알림 표시
+                      onShowAlert?.();
+                      return;
+                    }
                     const ok = await onSave();
                     if (ok) onShowSaveAlert?.();
                   } catch (e) {
@@ -202,8 +206,10 @@ const EditorBlock = ({
                   }
                 }}
                 className={`px-3 py-2 border rounded-xl text-sm ${
-                  isSaving || !canSave
-                    ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                  isSaving
+                    ? "border-gray-200 text-gray-300 cursor-wait"
+                    : !canSave
+                    ? "border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer"
                     : "border-gray-200 text-purple-500 hover:bg-gray-100"
                 }`}
               >
