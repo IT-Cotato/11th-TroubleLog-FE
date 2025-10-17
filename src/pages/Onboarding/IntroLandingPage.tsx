@@ -9,6 +9,7 @@ import Slide1 from "@/assets/images/slide1.png";
 import Slide2 from "@/assets/images/slide2.png";
 import Slide3 from "@/assets/images/slide3.png";
 import Slide4 from "@/assets/images/slide4.png";
+import { FiChevronDown } from "react-icons/fi";
 
 type Slide = { img: string; alt: string };
 
@@ -27,6 +28,17 @@ export default function IntroLandingPage() {
   const goLogin = () => nav(PATH.LOGIN);
   const prev = () => setIdx((i) => (i - 1 + slides.length) % slides.length);
   const next = () => setIdx((i) => (i + 1) % slides.length);
+
+  // 하단 CTA 섹션으로 스크롤하기 위한 ref & 핸들러 추가
+  const bottomCtaRef = useRef<HTMLDivElement | null>(null);
+  const scrollToBottomCTA = useCallback(() => {
+    if (bottomCtaRef.current) {
+      bottomCtaRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, []);
 
   // 자동 슬라이드
   useEffect(() => {
@@ -103,11 +115,16 @@ export default function IntroLandingPage() {
 그저 넘겼던 문제 해결 과정을 이제는 구조적으로 기록하고,
 이력서, 면접, 블로그, 이슈관리에 바로 활용할 수 있는 요약본까지 자동 생성해드립니다.`}
             </p>
+
             <button
-              onClick={goLogin}
-              className="inline-flex h-12 items-center rounded-xl bg-primary px-6 text-white text-body-16-semibold hover:opacity-90 transition"
+              type="button"
+              onClick={scrollToBottomCTA}
+              aria-label="아래로 스크롤"
+              title="아래로 스크롤"
+              className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 bg-white shadow-sm hover:bg-gray-50 active:scale-95 transition
+                         animate-bounce"
             >
-              시작하기
+              <FiChevronDown className="text-2xl" />
             </button>
           </div>
           <div className="w-full">
@@ -220,15 +237,17 @@ export default function IntroLandingPage() {
           </section>
 
           {/* 마지막 CTA */}
-          <section className="py-20 sm:py-24 lg:py-28">
+          <section ref={bottomCtaRef} className="py-20 sm:py-24 lg:py-28">
             <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 text-center space-y-6 sm:space-y-8">
               <h3 className="text-head-32-bold">지금 시작해보세요!</h3>
+
               <button
                 onClick={goLogin}
                 className="inline-flex h-12 items-center rounded-xl bg-primary px-6 text-white text-body-16-semibold hover:opacity-90 transition"
               >
-                트러블슈팅 작성하러 가기
+                시작하기
               </button>
+
               <p className="text-body-14-regular text-gray-600 whitespace-pre-line leading-relaxed sm:leading-7">
                 {`버튼을 눌러 첫 기록을 남겨보세요.
 기록을 시작하면, 원하시는 형식으로 정리해드려요.`}
