@@ -130,12 +130,21 @@ export default function TroublogCard({
       </div>
 
       {/* 하단 섹션 */}
-      <div
-        className={`mt-auto flex justify-between items-end ${bodyPaddingClass} min-w-0`}
-      >
-        <div className="flex-1 min-w-0 flex flex-col items-start gap-3">
+      <div className={`mt-auto ${bodyPaddingClass} min-w-0`}>
+        {/* 상단: 에러종류 + 제목/작성일 */}
+        <div className="w-full">
+          {/* 에러종류 */}
+          <div className="w-full">
+            <span
+              className="block text-body-16-regular text-gray-900 truncate"
+              title={errorCategory}
+            >
+              [{errorCategory}]
+            </span>
+          </div>
+
           {/* 제목/메타 */}
-          <div className="w-full min-w-0">
+          <div className="w-full min-w-0 mt-1">
             <CardTitleSection
               title={title}
               visibility={visibility}
@@ -145,23 +154,26 @@ export default function TroublogCard({
               summaryType={summaryType}
             />
           </div>
-
-          {/* 태그: 넘침 방지 */}
-          <div className="w-full min-w-0 overflow-hidden">
-            <TagList tags={tags} />
-          </div>
         </div>
 
-        {/* 우측 푸터는 눌리지 않도록 */}
-        <div className="shrink-0">
-          <CardFooterInfo
-            isMine={isMine}
-            status={status}
-            visibility={visibility as any}
-            likeCount={likeCount}
-            commentCount={commentCount}
-            importance={importance}
-          />
+        {/* 전체 폭 구분선 (패딩만 제외) */}
+        <div className="w-full h-px bg-gray-200 my-2" />
+
+        {/* 하단: 태그(왼쪽) + 우측 푸터(오른쪽) */}
+        <div className="w-full flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <TagList tags={tags} />
+          </div>
+          <div className="shrink-0">
+            <CardFooterInfo
+              isMine={isMine}
+              status={status}
+              visibility={visibility as any}
+              likeCount={likeCount}
+              commentCount={commentCount}
+              importance={importance}
+            />
+          </div>
         </div>
       </div>
     </div>
