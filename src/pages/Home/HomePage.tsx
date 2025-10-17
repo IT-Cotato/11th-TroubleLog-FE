@@ -384,6 +384,7 @@ export default function HomePage() {
                   <TroublogCard
                     key={card.id}
                     {...card}
+                    compact
                     onDeleted={handleRecentDeleted}
                     onClick={() => {
                       const ownerId = viewerId; // 내 글 목록이라면 viewerId로 충분

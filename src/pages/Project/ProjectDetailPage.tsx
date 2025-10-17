@@ -221,7 +221,7 @@ export default function ProjectDetailPage() {
 
           {/* 카드 목록 */}
           {isLoading ? (
-            <div className="w-full flex h-[200px] sm:h-[220px] justify-center items-center rounded-[16px] bg-white shadow-card">
+            <div className="w-full flex h-[180px] sm:h-[198px] justify-center items-center rounded-[16px] bg-white shadow-card">
               <span className="text-body-20-regular">불러오는 중…</span>
             </div>
           ) : error ? (
@@ -244,6 +244,7 @@ export default function ProjectDetailPage() {
                   <TroublogCard
                     key={card.id}
                     {...card}
+                    compact
                     onDeleted={handleRecentDeleted}
                     onClick={() => {
                       const ownerId = card.authorId ?? viewerId;
