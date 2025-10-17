@@ -238,7 +238,6 @@ const EditorBlock = ({
           <div
             ref={editorWrapRef}
             className="w-full overflow-visible rounded-md border border-gray-200"
-            style={{ overflow: "visible" }}
           >
             <MDEditor
               value={block.content}
