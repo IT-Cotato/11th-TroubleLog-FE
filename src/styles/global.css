@@ -25,42 +25,42 @@
 
 /* Head */
 .text-head-48 {
-  @apply text-4xl sm:text-5xl font-bold font-sans;
+  @apply text-3xl sm:text-4xl font-bold font-sans;
 }
 
 .text-head-32-bold {
-  @apply text-2xl sm:text-3xl font-bold font-sans;
-}
-
-.text-head-32-regular {
-  @apply text-2xl sm:text-3xl font-normal font-sans;
-}
-
-.text-head-24-bold {
   @apply text-xl sm:text-2xl font-bold font-sans;
 }
 
+.text-head-32-regular {
+  @apply text-xl sm:text-2xl font-normal font-sans;
+}
+
+.text-head-24-bold {
+  @apply text-lg sm:text-xl font-bold font-sans;
+}
+
 .text-head-20-semibold {
-  @apply text-lg sm:text-xl font-semibold font-sans;
+  @apply text-base sm:text-lg font-semibold font-sans;
 }
 
 .text-head-32-semibold {
-  @apply text-2xl sm:text-3xl font-semibold font-sans;
+  @apply text-xl sm:text-2xl font-semibold font-sans;
 }
 
 /* Body */
 .text-body-20-regular {
-  @apply text-lg sm:text-xl font-normal font-sans;
+  @apply text-base sm:text-lg font-normal font-sans;
 }
 
 .text-body-16-semibold {
-  @apply text-sm sm:text-base font-semibold font-sans;
+  @apply text-xs sm:text-sm font-semibold font-sans;
 }
 
 .text-body-16-regular {
-  @apply text-sm sm:text-base font-normal font-sans;
+  @apply text-xs sm:text-sm font-normal font-sans;
 }
 
 .text-body-14-regular {
-  @apply text-xs sm:text-sm font-normal font-sans;
+  @apply text-[10px] sm:text-xs font-normal font-sans;
 }
