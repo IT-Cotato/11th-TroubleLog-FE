@@ -185,13 +185,13 @@ export default function ProjectDetailPage() {
                 onClick={() => setSelectedStatus("inProgress")}
               />
               <StatusFilterButton
-                label="작성 완료"
+                label="원본"
                 statusKey="complete"
                 isSelected={selectedStatus === "complete"}
                 onClick={() => setSelectedStatus("complete")}
               />
               <StatusFilterButton
-                label="요약 완료"
+                label="요약본"
                 statusKey="created"
                 isSelected={selectedStatus === "created"}
                 onClick={() => setSelectedStatus("created")}
@@ -251,7 +251,7 @@ export default function ProjectDetailPage() {
                       const qs = new URLSearchParams({ from: "project" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
 
-                      // '요약 완료'면 합본이 아니라 요약본 상세로 이동
+                      // '요약본'면 합본이 아니라 요약본 상세로 이동
                       // - 현재 탭이 'created'이거나, 카드 자체 상태가 created인 경우
                       // - summaryId 가 있을 때만 동작
                       if (
@@ -265,7 +265,7 @@ export default function ProjectDetailPage() {
                         return;
                       }
 
-                      // 요약 완료가 아닌 경우에는 합본 분기/커뮤 상세/힌트 전달
+                      // 요약본가 아닌 경우에는 합본 분기/커뮤 상세/힌트 전달
                       const { goCombined, summaryId } = decideCombined(
                         card,
                         viewerId

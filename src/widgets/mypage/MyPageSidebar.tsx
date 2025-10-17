@@ -316,7 +316,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                   aria-hidden="true"
                   className="w-3.5 h-3.5"
                 />
-                <span>작성 완료 ({props.counts.complete})</span>
+                <span>원본 ({props.counts.complete})</span>
               </button>
               <button
                 onClick={() => {
@@ -331,7 +331,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
                   aria-hidden="true"
                   className="w-3.5 h-3.5"
                 />
-                <span>작성+요약 완료 ({props.counts.created})</span>
+                <span>작성+요약본 ({props.counts.created})</span>
               </button>
             </div>
           </div>

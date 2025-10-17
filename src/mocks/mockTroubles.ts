@@ -11,7 +11,7 @@ export const mockTroubleList: TroubleListItem[] = [
     starRating: 4,
     error: "UnknownHostException",
     techs: ["Java", "Gradle", "Network"],
-    status: "작성 완료",
+    status: "원본",
     summaryType: "에러 중심 요약",
     likeCount: 0,
     commentCount: 0,

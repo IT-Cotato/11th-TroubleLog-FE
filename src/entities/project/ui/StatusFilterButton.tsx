@@ -1,5 +1,5 @@
 interface StatusFilterButtonProps {
-  label: "작성 중" | "작성 완료" | "요약 완료";
+  label: "작성 중" | "원본" | "요약본";
   statusKey: "inProgress" | "complete" | "created";
   isSelected: boolean;
   onClick: () => void;

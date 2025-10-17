@@ -77,10 +77,9 @@ const TroubleShootingList = () => {
     if (isMyPage) {
       if (selectedStatus === "inProgress")
         return "작성 중인 트러블슈팅이 없어요.";
-      if (selectedStatus === "complete")
-        return `작성 완료된 트러블슈팅이 없어요.`;
+      if (selectedStatus === "complete") return `원본된 트러블슈팅이 없어요.`;
       if (selectedStatus === "created")
-        return `작성+요약 완료된 트러블슈팅이 없어요.`;
+        return `작성+요약본된 트러블슈팅이 없어요.`;
       return `조건에 맞는 트러블슈팅이 없어요.`;
     } else {
       if (selectedTag) return `선택한 태그에 해당하는 트러블슈팅이 없어요.`;

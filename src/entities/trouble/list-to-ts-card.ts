@@ -20,7 +20,7 @@ const toStatus = (
   if (isSummaryCreated) return "created";
   const v = String(postStatus ?? "").trim();
   const U = v.toUpperCase();
-  if (U === "COMPLETED" || v === "작성 완료") return "complete";
+  if (U === "COMPLETED" || v === "원본") return "complete";
   if (
     U === "IN_PROGRESS" ||
     U === "WRITING" ||
