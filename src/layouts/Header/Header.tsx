@@ -177,7 +177,8 @@ const Header = () => {
         >
           <input
             ref={inputRef}
-            className="text-body-14-regular sm:text-body-16-regular w-full h-full focus:outline-none"
+            className="text-body-14-regular sm:text-body-16-regular w-full h-full focus:outline-none
+                      placeholder-sm placeholder-tight"
             placeholder={placeholder}
             value={search}
             onChange={handleSearch}
