@@ -45,21 +45,21 @@ export default function NotificationModal() {
   return (
     <div
       className="
-        w-[92vw] sm:w-[520px] md:w-[560px] lg:w-[600px]
-        max-w-[92vw]
-        h-[262px]
-        rounded-[20px] bg-white shadow-card p-0
+        w-[88vw] sm:w-[420px] md:w-[460px] lg:w-[500px]
+        max-w-[88vw]
+        h-[210px]
+        rounded-[16px] bg-white shadow-card p-0
         overflow-hidden flex flex-col
       "
     >
       {/* 카테고리 탭 (기존 gap/마진 유지, xs에서만 좌여백 살짝 축소) */}
-      <div className="flex gap-[28px] mt-[24px] ml-4 sm:ml-[36px] mb-[15px]">
+      <div className="flex gap-[20px] mt-[16px] ml-3 sm:ml-[28px] mb-[12px]">
         {tabs.map((tab) => (
           <span
             key={tab}
             onClick={() => setSelectedTab(tab)}
             className={clsx(
-              "text-head-24-bold cursor-pointer transition-colors",
+              "text-head-20-semibold cursor-pointer transition-colors",
               selectedTab === tab ? "text-black" : "text-[#AFB1B6]"
             )}
           >
@@ -69,10 +69,10 @@ export default function NotificationModal() {
       </div>
 
       {/* 구분선 (기존 간격 유지) */}
-      <div className="w-full h-[1px] bg-gray1 mb-[28px]" />
+      <div className="w-full h-[1px] bg-gray1 mb-[20px]" />
 
       {/* 알림 영역 (기존 여백/간격 유지) */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-[38px] pb-[46px]">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-[28px] pb-[28px]">
         {loading ? (
           <div className="w-full h-full flex items-center justify-center text-head-20-semibold">
             불러오는 중…
@@ -97,7 +97,7 @@ export default function NotificationModal() {
                   <div
                     onClick={() => clickable && handleItemClick(item)}
                     className={clsx(
-                      "text-body-20-regular transition-all",
+                      "text-body-16-regular transition-all",
                       clickable &&
                         "cursor-pointer group-hover:text-primary group-hover:underline"
                     )}
@@ -107,7 +107,7 @@ export default function NotificationModal() {
                   <img
                     src={escapeIcon}
                     alt="delete"
-                    className="w-[24px] h-[24px] cursor-pointer shrink-0"
+                    className="w-[20px] h-[20px] cursor-pointer shrink-0"
                     onClick={() => removeOne(item.id)}
                   />
                 </div>
