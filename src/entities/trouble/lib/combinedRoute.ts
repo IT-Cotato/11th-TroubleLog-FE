@@ -33,7 +33,7 @@ export function pickLatestSummaryId(x: AnyCard): number | null {
   return null;
 }
 
-/** 'SUMMARIZED' | 'CREATED' 등 요약 완료 상태를 통일 */
+/** 'SUMMARIZED' | 'CREATED' 등 요약본 상태를 통일 */
 export function isSummarizedStatus(raw: unknown) {
   const s = norm(raw);
   return s === "SUMMARIZED" || s === "CREATED";

@@ -13,7 +13,7 @@ interface CardPreviewAreaProps {
 }
 
 export default function CardPreviewArea({
-  errorCategory,
+  // errorCategory,
   isMine,
   status,
   authorProfileImageUrl,
@@ -35,13 +35,7 @@ export default function CardPreviewArea({
       // 이미지가 있을 때만 backgroundImage 적용
       style={hasImage ? { backgroundImage: `url(${imageUrl})` } : undefined}
     >
-      <div className="flex justify-between items-start gap-2 min-w-0">
-        <span
-          className="text-body-16-semibold truncate max-w-[65%] sm:max-w-[70%]"
-          title={errorCategory}
-        >
-          [{errorCategory}]
-        </span>
+      <div className="flex justify-end items-start gap-2 min-w-0">
         <CardHeaderRight
           isMine={isMine}
           status={status}

@@ -122,6 +122,7 @@ export default function CommunityPage() {
           <div key={card.id} className="cursor-pointer">
             <TroublogCard
               {...card}
+              compact
               onClick={(id) => {
                 const ownerId = card.authorId;
                 const qs = new URLSearchParams({ from: "community" });
@@ -152,9 +153,9 @@ export default function CommunityPage() {
         {/* 로딩 스켈레톤 */}
         {active.isLoading && (
           <>
-            <div className="w-full h-[220px] sm:h-[300px] bg-gray-100 rounded-2xl" />
-            <div className="w-full h-[220px] sm:h-[300px] bg-gray-100 rounded-2xl" />
-            <div className="w-full h-[220px] sm:h-[300px] bg-gray-100 rounded-2xl" />
+            <div className="w-full h-[198px] sm:h-[270px] bg-gray-100 rounded-2xl" />
+            <div className="w-full h-[198px] sm:h-[270px] bg-gray-100 rounded-2xl" />
+            <div className="w-full h-[198px] sm:h-[270px] bg-gray-100 rounded-2xl" />
           </>
         )}
 

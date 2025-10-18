@@ -31,6 +31,7 @@ export interface TroublogCardProps {
   postSummaryId?: number;
   summaries?: object[];
   imageUrl?: string;
+  compact?: boolean;
 }
 
 export default function TroublogCard({
@@ -51,6 +52,7 @@ export default function TroublogCard({
   onAvatarClick,
   onDeleted,
   imageUrl,
+  compact = false,
 }: TroublogCardProps) {
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
@@ -91,6 +93,13 @@ export default function TroublogCard({
     }
   }, [id, isMine, onDeleted]);
 
+  const rootSizeClass = compact
+    ? // 10% 축소: 300→270, 330→297, 384→346 근사
+      "max-w-[346px] h-[270px] sm:h-[297px]"
+    : "max-w-[384px] h-[300px] sm:h-[330px]";
+
+  const bodyPaddingClass = compact ? "p-2.5 pr-2 gap-3" : "p-3 pr-2 gap-3";
+
   return (
     <div
       role="button"
@@ -98,15 +107,15 @@ export default function TroublogCard({
       aria-label={`${title} 상세 페이지로 이동`}
       onClick={handleRootClick}
       onKeyDown={handleRootKeyDown}
-      className="
-      group w-full max-w-[384px] h-[300px] sm:h-[330px]
-      shrink-0 rounded-2xl bg-white shadow-card cursor-pointer
-      transition-shadow hover:shadow-lg
-      focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-      overflow-hidden flex flex-col
-    "
+      className={`
+        group w-full ${rootSizeClass}
+        shrink-0 rounded-2xl bg-white shadow-card cursor-pointer
+        transition-shadow hover:shadow-lg
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+        overflow-hidden flex flex-col
+      `}
     >
-      {/* 프리뷰 영역: 기존 크기 유지 */}
+      {/* 프리뷰 영역 */}
       <div className="relative rounded-t-2xl overflow-hidden">
         <CardPreviewArea
           errorCategory={errorCategory}
@@ -120,11 +129,22 @@ export default function TroublogCard({
         />
       </div>
 
-      {/* 하단 섹션: 오른쪽 패딩을 줄여 제목이 쓸 수 있는 폭 확대 */}
-      <div className="mt-auto flex justify-between items-end p-3 pr-2 gap-3 min-w-0">
-        <div className="flex-1 min-w-0 flex flex-col items-start gap-[14px]">
-          {/* 제목/메타: 폭 제한을 부모에게 맡기고 한 줄 말줄임 */}
-          <div className="w-full min-w-0">
+      {/* 하단 섹션 */}
+      <div className={`mt-auto ${bodyPaddingClass} min-w-0`}>
+        {/* 상단: 에러종류 + 제목/작성일 */}
+        <div className="w-full">
+          {/* 에러종류 */}
+          <div className="w-full">
+            <span
+              className="block text-body-16-regular text-gray-900 truncate"
+              title={errorCategory}
+            >
+              [{errorCategory}]
+            </span>
+          </div>
+
+          {/* 제목/메타 */}
+          <div className="w-full min-w-0 mt-1">
             <CardTitleSection
               title={title}
               visibility={visibility}
@@ -134,23 +154,26 @@ export default function TroublogCard({
               summaryType={summaryType}
             />
           </div>
-
-          {/* 태그: 넘침 방지 */}
-          <div className="w-full min-w-0 overflow-hidden">
-            <TagList tags={tags} />
-          </div>
         </div>
 
-        {/* 우측 푸터는 눌리지 않도록 */}
-        <div className="shrink-0">
-          <CardFooterInfo
-            isMine={isMine}
-            status={status}
-            visibility={visibility as any}
-            likeCount={likeCount}
-            commentCount={commentCount}
-            importance={importance}
-          />
+        {/* 전체 폭 구분선 (패딩만 제외) */}
+        <div className="w-full h-px bg-gray-200 my-2" />
+
+        {/* 하단: 태그(왼쪽) + 우측 푸터(오른쪽) */}
+        <div className="w-full flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <TagList tags={tags} />
+          </div>
+          <div className="shrink-0">
+            <CardFooterInfo
+              isMine={isMine}
+              status={status}
+              visibility={visibility as any}
+              likeCount={likeCount}
+              commentCount={commentCount}
+              importance={importance}
+            />
+          </div>
         </div>
       </div>
     </div>

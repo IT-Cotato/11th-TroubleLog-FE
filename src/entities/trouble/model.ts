@@ -1,6 +1,6 @@
 import type { PaginatedResponse } from "@/types/common.model";
 
-export type TroubleStatus = "작성 완료" | "임시 저장" | "요약 완료";
+export type TroubleStatus = "원본" | "임시 저장" | "요약본";
 export type TroubleSummaryType = "에러 중심 요약" | "전체 흐름 요약" | string;
 export type TroubleSort = "latest" | "oldest" | "popular";
 

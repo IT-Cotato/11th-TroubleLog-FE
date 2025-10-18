@@ -19,9 +19,9 @@ const normStatus = (raw: any): "inProgress" | "complete" | "created" => {
     raw === "작성 중"
   )
     return "inProgress";
-  if (t === "SUMMARIZED" || t === "CREATED" || raw === "요약 완료")
+  if (t === "SUMMARIZED" || t === "CREATED" || raw === "요약본")
     return "created";
-  // 기본 complete (작성 완료)
+  // 기본 complete (원본)
   return "complete";
 };
 

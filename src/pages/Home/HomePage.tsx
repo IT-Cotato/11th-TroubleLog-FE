@@ -384,6 +384,7 @@ export default function HomePage() {
                   <TroublogCard
                     key={card.id}
                     {...card}
+                    compact
                     onDeleted={handleRecentDeleted}
                     onClick={() => {
                       const ownerId = viewerId; // 내 글 목록이라면 viewerId로 충분
@@ -396,7 +397,7 @@ export default function HomePage() {
                       const summaryIdFromList = card.summaryId ?? undefined;
                       const isMineFromList = card.isMine === true;
 
-                      // 요약 완료는 합본으로 바로 라우팅(기존 로직 유지)
+                      // 요약본는 합본으로 바로 라우팅(기존 로직 유지)
                       const { goCombined, summaryId } = decideCombined(
                         card,
                         viewerId
