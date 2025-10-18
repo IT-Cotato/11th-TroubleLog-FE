@@ -62,7 +62,7 @@ export default function CommunityPostDetail() {
 
   // 고정 폭(상단 콘텐츠/본문 공통)
   const CONTENT_WIDTH_CLASS =
-    "w-full sm:w-[600px] md:w-[720px] lg:w-[920px] xl:w-[1200px]";
+    "w-full sm:w-[520px] md:w-[680px] lg:w-[820px] xl:w-[960px]";
 
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
@@ -942,7 +942,7 @@ export default function CommunityPostDetail() {
   // 로딩/에러 처리
   if (loading) {
     return (
-      <div className="w-full px-4 sm:px-6 md:px-8">
+      <div className="w-full px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32 2xl:px-40">
         <div className="mx-auto flex justify-center">
           <div
             className={`${CONTENT_WIDTH_CLASS} flex flex-col gap-6 sm:gap-[24px] pt-24 sm:pt-[180px]`}
@@ -1044,7 +1044,7 @@ export default function CommunityPostDetail() {
   return (
     <div className="w-full px-4 sm:px-6 md:px-8">
       {/* 전체(본문+TOC) 그룹을 가로 중앙 정렬 */}
-      <div className="mx-auto flex items-start justify-center gap-6">
+      <div className="mx-auto max-w-[1280px] flex items-start justify-center gap-6">
         {/* 본문 컬럼: 상단/본문/댓글이 모두 동일한 고정 폭을 사용 */}
         <div
           ref={contentColRef}
@@ -1328,7 +1328,7 @@ export default function CommunityPostDetail() {
 
         {/* 목차(TOC): 큰 화면에서만 보이되, 본문과 함께 중앙 정렬 그룹에 포함 */}
         <aside
-          className="hidden xl:block h-fit w-[260px] 2xl:w-[320px] sticky"
+          className="hidden xl:block h-fit w-[220px] 2xl:w-[280px] sticky"
           style={{ top: HEADER_OFFSET, marginTop: asideOffset }}
         >
           <div className="flex flex-col items-start gap-[16px] border-l border-gray3 pl-[12px] pr-[8px] text-body-20-regular text-gray3 w-full">

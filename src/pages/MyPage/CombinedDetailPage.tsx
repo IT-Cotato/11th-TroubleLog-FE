@@ -542,8 +542,8 @@ export default function CombinedDetailPage() {
 
   if (loading) {
     return (
-      <div className="w-full px-4 sm:px-6 md:px-8">
-        <div className="mx-auto max-w-screen-2xl flex justify-center">
+      <div className="w-full px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32 2xl:px-40">
+        <div className="mx-auto max-w-5xl flex justify-center">
           <div className="w-full max-w-[1200px] flex flex-col gap-6 pt-24 sm:pt-[180px]">
             <div className="w-full h-[120px] bg-gray-100 rounded" />
             <div className="w-full h-[400px] bg-gray-100 rounded" />
@@ -566,8 +566,8 @@ export default function CombinedDetailPage() {
     <div className="w-full">
       <HeaderWoSearch />
 
-      <div className="w-full px-4 sm:px-6 md:px-8">
-        <div className="mx-auto max-w-screen-2xl flex flex-col items-center gap-12 sm:gap-[50px] mb-24 sm:mb-[224px]">
+      <div className="w-full px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32 2xl:px-40">
+        <div className="mx-auto max-w-5xl flex flex-col items-center gap-12 sm:gap-[50px] mb-24 sm:mb-[224px]">
           {/* 상단 헤더 */}
           <div className="w-full pt-20 sm:pt-[180px] pb-4 sm:pb-[18px] border-b border-gray1">
             <div className="flex flex-col gap-6 sm:gap-[40px] w-full">
