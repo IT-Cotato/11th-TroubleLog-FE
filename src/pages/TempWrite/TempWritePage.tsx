@@ -1031,8 +1031,8 @@ const TempWritePage = () => {
   return (
     <div className="min-h-screen">
       <HeaderWoSearch />
-      <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-12 lg:px-28 pt-8 sm:pt-12">
-        <div className="mx-auto w-full max-w-[1500px] flex flex-col gap-8 sm:gap-9">
+      <div className="mx-auto w-full max-w-[1680px] px-4 sm:px-12 lg:px-28 pt-8 sm:pt-12">
+        <div className="mx-auto w-full max-w-[1680px] flex flex-col gap-8 sm:gap-9">
           {showAlert && (
             <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
               제목, 프로젝트, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요.

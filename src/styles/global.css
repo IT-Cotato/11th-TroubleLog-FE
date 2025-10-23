@@ -64,3 +64,21 @@
 .text-body-14-regular {
   @apply text-[10px] sm:text-xs font-normal font-sans;
 }
+
+@layer utilities {
+  /* placeholder 전용 폰트 크기 */
+  .placeholder-sm::placeholder {
+    @apply text-body-16-regular;
+  }
+  .placeholder-md::placeholder {
+    @apply text-body-20-regular;
+  }
+  .placeholder-lg::placeholder {
+    @apply text-head-20-semibold;
+  }
+
+  /* 줄 간격 옵션 */
+  .placeholder-tight::placeholder {
+    @apply leading-[1.4];
+  }
+}

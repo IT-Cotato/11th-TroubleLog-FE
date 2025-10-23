@@ -136,9 +136,11 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-[156px] pt-14 sm:pt-[79px] pb-24 sm:pb-[158px] flex flex-col items-start gap-6 sm:gap-[36px]">
-      {/* 상단 타이틀 + 글쓰기 버튼 */}
+      {/* 상단 타이틀(프로젝트명) + 글쓰기 버튼 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
-        <span className="text-head-32-regular">나의 프로젝트</span>
+        <span className="text-head-32-regular">
+          {titleLoading ? "불러오는 중…" : projectName}
+        </span>
         <div ref={dropdownRef} className="relative">
           <PostButton onClick={handlePostClick} />
 
@@ -172,8 +174,10 @@ export default function ProjectDetailPage() {
         </div>
       ) : (
         <ProjectAccordion
-          title={titleLoading ? "불러오는 중…" : projectName}
+          title={null as any}
           persistKey={`project:${projectId}`}
+          collapsible={false}
+          hideHeader
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 w-full md:flex-nowrap">
             {/* 상태 필터 */}

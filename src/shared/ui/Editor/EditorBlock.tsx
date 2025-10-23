@@ -24,6 +24,9 @@ export interface BlockData {
 }
 
 export type EditorBlockProps = {
+  checklistWidthClass?: string;
+  nowrapChecklistItems?: boolean;
+
   title: string;
   selectedErrorType: string | null;
   block: BlockData;
@@ -78,6 +81,8 @@ const EditorBlock = ({
   onPasteImage,
   onDropImage,
   commandsFilter,
+  checklistWidthClass,
+  nowrapChecklistItems,
 }: EditorBlockProps) => {
   const [editorHeight, setEditorHeight] = useState<number>(MIN_H);
 
@@ -282,7 +287,12 @@ const EditorBlock = ({
       </div>
 
       {/* 체크리스트 */}
-      <div className="w-full md:w-60 lg:w-72 mt-2 md:mt-10 flex-shrink-0">
+      <div
+        className={[
+          "w-full mt-2 md:mt-10 flex-shrink-0 md:basis-[320px] lg:basis-[380px] xl:basis-[440px] md:max-w-[480px]",
+          checklistWidthClass ?? "",
+        ].join(" ")}
+      >
         <div className="flex flex-col gap-2">
           {block.checklistItems.length > 0 && (
             <h3 className="text-sm md:text-base font-semibold text-gray4 flex items-center gap-2">
@@ -313,7 +323,17 @@ const EditorBlock = ({
                              [background-image:var(--icon-unchecked)]
                              peer-checked:[background-image:var(--icon-checked)]"
                 />
-                <span className="leading-5">{item}</span>
+                <span
+                  className={[
+                    "leading-5",
+                    nowrapChecklistItems
+                      ? "whitespace-nowrap overflow-hidden text-ellipsis"
+                      : "",
+                  ].join(" ")}
+                  title={item}
+                >
+                  {item}
+                </span>
               </label>
             ))}
           </div>
