@@ -149,9 +149,7 @@ const EditorBlock = ({
     const root = editorWrapRef.current;
     if (!root) return;
 
-    const ta = root.querySelector(
-      "textarea.w-md-editor-text-input"
-    ) as HTMLTextAreaElement | null;
+    const ta = root.querySelector("textarea") as HTMLTextAreaElement | null;
 
     if (ta) {
       taRef.current = ta;
@@ -191,10 +189,14 @@ const EditorBlock = ({
           {isActive && (
             <div className="flex sm:justify-end gap-2">
               <button
-                disabled={!!isSaving || !canSave}
+                // disabled 속성 제거
                 onClick={async () => {
                   try {
-                    if (!canSave || !onSave) return onShowAlert?.();
+                    if (!canSave || !onSave) {
+                      // 제목 미입력 등 저장 불가 조건일 때 알림 표시
+                      onShowAlert?.();
+                      return;
+                    }
                     const ok = await onSave();
                     if (ok) onShowSaveAlert?.();
                   } catch (e) {
@@ -202,8 +204,10 @@ const EditorBlock = ({
                   }
                 }}
                 className={`px-3 py-2 border rounded-xl text-sm ${
-                  isSaving || !canSave
-                    ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                  isSaving
+                    ? "border-gray-200 text-gray-300 cursor-wait"
+                    : !canSave
+                    ? "border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer"
                     : "border-gray-200 text-purple-500 hover:bg-gray-100"
                 }`}
               >
@@ -244,7 +248,13 @@ const EditorBlock = ({
               height={editorHeight}
               preview="edit"
               visibleDragbar={false}
-              style={{ width: "100%", border: "none" }}
+              style={{
+                width: "100%",
+                border: "none",
+                overflow: "visible",
+                minHeight: `${editorHeight}px`,
+                maxHeight: "none",
+              }}
               autoFocus
               commandsFilter={commandsFilter}
               textareaProps={{
@@ -265,7 +275,7 @@ const EditorBlock = ({
             />
           </div>
         ) : (
-          <div className="w-full rounded-md border border-gray-200 p-3">
+          <div className="w-full rounded-md border border-gray-200 p-3 min-h-[150px]">
             <MDEditor.Markdown source={block.content || ""} />
           </div>
         )}

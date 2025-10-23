@@ -849,9 +849,7 @@ export default function FreeFormWritePage() {
     const root = editorWrapRefs.current.get(blockId);
     if (!root) return;
 
-    const ta = root.querySelector(
-      "textarea.w-md-editor-text-input"
-    ) as HTMLTextAreaElement | null;
+    const ta = root.querySelector("textarea") as HTMLTextAreaElement | null;
     if (!ta) return;
 
     // textarea 실제 내용 높이 측정
