@@ -11,13 +11,18 @@ export const PATH = {
   HOME: "/user/home",
   SEARCH: "/user/search",
 
-  // 동적 세그먼트는 콜백 형태로만 제공(한 곳에서 관리)
-  MYPAGE: (id = ":id") => `/user/mypage/${id}`,
-  MYPAGE_EDIT: (id = ":id") => `/user/mypage/${id}/editprofile`,
+  // 마이페이지: 내 페이지(무 id) / 타인 페이지(id 포함) 분리
+  MYPAGE_BASE: "/user/mypage", // 내 마이페이지
+  MYPAGE_ID: (id = ":id") => `/user/mypage/${id}`, // 타인 마이페이지
+  MYPAGE_EDIT_ME: "/user/mypage/editprofile", // 내 프로필 편집
+  MYPAGE_EDIT: (id = ":id") => `/user/mypage/${id}/editprofile`, // (옵션) 타인 경로 유지 필요시
+
+  // 프로젝트/커뮤니티
   PROJECT_DETAIL: (id = ":id") => `/user/project/${id}`,
 
   COMMUNITY: "/user/community",
-  COMMUNITY_POST: (postId = ":postId") => `/user/community/${postId}`,
+  COMMUNITY_POST_ID: (postId = ":postId") => `/user/community/${postId}`, // 하위 호환
+  COMMUNITY_POST_SLUG: (slug = ":slug") => `/user/community/p/${slug}`, // 새 슬러그 경로
 
   TEMP_WRITING: "/tempwriting",
   FREEFORM_WRITING: "/freeformwriting",

@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import plusIcon from "@/assets/icons/plus.svg";
 import { useAuthHydrated, useIsLoggedIn, useViewerId } from "@/store/auth";
 import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
+import { makePostSlug } from "@/shared/lib/slug";
 
 const PAGE_SIZE = 10;
 
@@ -398,7 +399,8 @@ export default function HomePage() {
                     compact
                     onDeleted={handleRecentDeleted}
                     onClick={() => {
-                      const ownerId = viewerId; // 내 글 목록이라면 viewerId로 충분
+                      const ownerId = card.authorId ?? undefined;
+
                       const qs = new URLSearchParams({ from: "home" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
 
@@ -420,26 +422,24 @@ export default function HomePage() {
                         return;
                       }
 
-                      // CPD가 분기 판단에 쓸 힌트를 state로 전달
+                      // 제목 기반 슬러그 경로로 이동
+                      const slug = makePostSlug(card.title, card.id);
                       navigate(
-                        `${PATH.COMMUNITY_POST(
-                          String(card.id)
-                        )}?${qs.toString()}`,
+                        `${PATH.COMMUNITY_POST_SLUG(slug)}?${qs.toString()}`,
                         {
                           state: {
                             from: "home",
                             ownerId,
-                            statusFromList, // 작성 상태
-                            isVisibleFromList, // 공개/비공개 (boolean)
-                            summaryIdFromList, // 요약 id(있을 수도)
-                            isMineFromList, // 내 글 여부 힌트
+                            statusFromList,
+                            isVisibleFromList,
+                            summaryIdFromList,
+                            isMineFromList,
                           },
                         }
                       );
                     }}
                     onAvatarClick={() => {
-                      if (viewerId != null)
-                        navigate(PATH.MYPAGE(String(viewerId)));
+                      if (viewerId != null) navigate(PATH.MYPAGE_BASE);
                       else navigate(PATH.LOGIN);
                     }}
                   />

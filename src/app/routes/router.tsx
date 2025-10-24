@@ -81,10 +81,10 @@ export const router = createBrowserRouter(
         // 검색
         { path: PATH.SEARCH, element: <SearchResultPage /> },
 
-        // 마이페이지
+        // 내 마이페이지: /user/mypage
         {
-          path: PATH.MYPAGE(":id"),
-          element: <MyPageLayout />,
+          path: PATH.MYPAGE_BASE,
+          element: <MyPageLayout />, // id 없음 → 내부에서 viewerId로 처리
           children: [
             { index: true, element: <TroubleShootingList /> },
             { path: "following", element: <MyFollowing /> },
@@ -93,17 +93,38 @@ export const router = createBrowserRouter(
             { path: "likes", element: <LikedPostsPage /> },
           ],
         },
+
+        // 타인 마이페이지: /user/mypage/:id
+        {
+          path: PATH.MYPAGE_ID(),
+          element: <MyPageLayout />, // id 존재
+          children: [
+            { index: true, element: <TroubleShootingList /> },
+            { path: "following", element: <MyFollowing /> },
+            { path: "follower", element: <MyFollowing /> },
+            { path: "statistics", element: <StatisticsPage /> },
+            { path: "likes", element: <LikedPostsPage /> },
+          ],
+        },
+
+        // 내 프로필 편집: /user/mypage/editprofile
+        { path: PATH.MYPAGE_EDIT_ME, element: <EditProfile /> },
+        // (옵션) 하위 호환 유지가 필요하면 아래도 유지
         { path: PATH.MYPAGE_EDIT(":id"), element: <EditProfile /> },
 
         // 프로젝트 상세
         { path: PATH.PROJECT_DETAIL(":id"), element: <ProjectDetailPage /> },
 
-        // 커뮤니티
+        // 커뮤니티: id/slug 둘 다 지원
         { path: PATH.COMMUNITY, element: <CommunityPage /> },
         {
-          path: PATH.COMMUNITY_POST(":postId"),
+          path: PATH.COMMUNITY_POST_ID(":postId"),
           element: <CommunityPostDetail />,
-        },
+        }, // 기존
+        {
+          path: PATH.COMMUNITY_POST_SLUG(":slug"),
+          element: <CommunityPostDetail />,
+        }, // 새 슬러그
       ],
     },
 

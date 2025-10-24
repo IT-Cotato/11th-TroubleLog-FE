@@ -74,7 +74,11 @@ const Header = () => {
     const mypageMatch = path.match(/^\/user\/mypage\/([^/]+)/);
     const pageUserId = mypageMatch?.[1];
 
-    if (path.startsWith(PATH.MYPAGE(""))) {
+    if (path === PATH.MYPAGE_BASE) {
+      setPlaceholder(
+        "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
+      );
+    } else if (path.startsWith(PATH.MYPAGE_BASE + "/")) {
       if (pageUserId && myUserIdStr && pageUserId === myUserIdStr) {
         setPlaceholder(
           "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
@@ -131,7 +135,9 @@ const Header = () => {
       scope = "community";
       const mypageMatch = currentPath.match(/^\/user\/mypage\/([^/]+)/);
       pageUserId = mypageMatch?.[1] ?? "";
-      if (currentPath.startsWith(PATH.MYPAGE(""))) {
+      if (currentPath === PATH.MYPAGE_BASE) {
+        scope = "mypage";
+      } else if (currentPath.startsWith(PATH.MYPAGE_BASE + "/")) {
         scope = pageUserId === myUserIdStr ? "mypage" : "user";
       } else if (
         currentPath.startsWith(PATH.HOME) ||
@@ -223,7 +229,7 @@ const Header = () => {
                 <UserMenuDropdown
                   onClose={() => setIsUserDropdownOpen(false)}
                   onNavigateToMyPage={() => {
-                    if (myUserIdStr) navigate(PATH.MYPAGE(myUserIdStr));
+                    if (myUserIdStr) navigate(PATH.MYPAGE_BASE);
                     else navigate(PATH.ROOT);
                     setIsUserDropdownOpen(false);
                   }}

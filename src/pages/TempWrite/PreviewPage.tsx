@@ -221,7 +221,7 @@ export default function PreviewPage() {
     setComments((prev) => [c, ...prev]);
     setCommentInput("");
   };
-  const handleProfileClick = () => navigate(PATH.MYPAGE?.("1") ?? "/");
+  const handleProfileClick = () => navigate(PATH.MYPAGE_BASE ?? "/");
 
   // 로딩/에러/빈데이터 처리
   if (loading) {

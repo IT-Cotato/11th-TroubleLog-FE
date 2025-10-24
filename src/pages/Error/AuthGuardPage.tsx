@@ -32,7 +32,7 @@ export default function AuthGuardPage() {
   };
 
   const goMyPage = () => {
-    if (viewerId != null) nav(PATH.MYPAGE(String(viewerId)));
+    if (viewerId != null) nav(PATH.MYPAGE_BASE);
     else goLogin();
   };
 

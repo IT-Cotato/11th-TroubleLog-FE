@@ -11,6 +11,7 @@ import circleBIcon from "@/assets/icons/circle_b.svg";
 import { getUserInfo, postFollow, postUnfollow } from "@/api/user.api";
 import type { UserInfoData } from "@/models/user.model";
 import githubIcon from "@/assets/icons/githubIcon.svg";
+import { useViewerId } from "@/store/auth";
 
 const SUBPATH = {
   FOLLOWING: "following",
@@ -52,6 +53,8 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
+  const viewerId = useViewerId();
+
   const {
     selectedStatus,
     setSelectedStatus,
@@ -64,14 +67,20 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   const [userInfo, setUserInfo] = useState<DisplayUser | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
 
-  const basePath = PATH.MYPAGE(id!);
+  // 내/타인에 따라 베이스 경로를 정확히 설정
+  const basePath = props.isMyPage
+    ? PATH.MYPAGE_BASE
+    : PATH.MYPAGE_ID(id ?? ":id");
+
   const isOnMainPage = location.pathname === basePath;
 
   const refetch = useCallback(async () => {
     try {
-      if (!id) return;
-      // 내 페이지든 남의 페이지든 동일 API 사용
-      const data: UserInfoData = await getUserInfo(Number(id));
+      // 내 페이지면 viewerId, 타인이면 URL의 id 사용
+      const rawId = props.isMyPage ? viewerId ?? NaN : id ? Number(id) : NaN;
+      if (!Number.isFinite(rawId)) return; // 로그인/하이드레이션 전이라면 잠시 대기
+
+      const data: UserInfoData = await getUserInfo(Number(rawId));
       setUserInfo({
         userId: data.userId,
         nickname: data.nickname,
@@ -86,7 +95,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     } catch (error) {
       console.error("사용자 정보 불러오기 실패:", error);
     }
-  }, [id, props.isMyPage, setViewedUser]);
+  }, [id, viewerId, props.isMyPage, setViewedUser]);
 
   useEffect(() => {
     refetch();
@@ -95,7 +104,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   useEffect(() => () => resetViewedUser(), [resetViewedUser]);
 
   useEffect(() => {
-    const onMain = location.pathname === PATH.MYPAGE(id!);
+    const onMain = location.pathname === PATH.MYPAGE_BASE;
     if (!onMain) {
       resetSelectedStatus();
       resetSelectedTag();
@@ -252,13 +261,13 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               <FollowButton
                 label="팔로잉"
                 colorClass="bg-subColor1"
-                onClick={() => handleUnfollow(Number(id))}
+                onClick={() => id && handleUnfollow(Number(id))}
               />
             ) : (
               <FollowButton
                 label="팔로우"
                 colorClass="bg-primary"
-                onClick={() => handleFollow(Number(id))}
+                onClick={() => id && handleFollow(Number(id))}
               />
             )}
           </div>

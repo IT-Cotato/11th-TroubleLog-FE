@@ -28,7 +28,7 @@ export default function NotificationModal() {
   const getDestination = (item: NotificationItem): string | null => {
     // 1) 트러블슈팅 알림이면 무조건 내 마이페이지로
     if (item.type === "트러블슈팅") {
-      if (viewerId != null) return PATH.MYPAGE(String(viewerId));
+      if (viewerId != null) return PATH.MYPAGE_BASE;
       // 로그인 정보가 없다면 적절한 폴백
       return PATH.LOGIN;
     }

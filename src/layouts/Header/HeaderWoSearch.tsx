@@ -91,7 +91,7 @@ const HeaderWoSearch = () => {
               <UserMenuDropdown
                 onClose={() => setIsUserDropdownOpen(false)}
                 onNavigateToMyPage={() => {
-                  if (myUserIdStr) navigate(PATH.MYPAGE(myUserIdStr));
+                  if (myUserIdStr) navigate(PATH.MYPAGE_BASE);
                   else navigate(PATH.ROOT);
                   setIsUserDropdownOpen(false);
                 }}
