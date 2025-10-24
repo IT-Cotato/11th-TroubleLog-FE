@@ -83,7 +83,7 @@ export function connectAlertSSE(
   const ctrl = new AbortController();
   const headers = buildSSEHeaders({ token, envType });
 
-  fetchEventSource("/api/alert/connect", {
+  fetchEventSource(`${import.meta.env.VITE_API_BASE_URL}/alert/connect`, {
     method: "GET",
     headers,
     credentials: "include",
