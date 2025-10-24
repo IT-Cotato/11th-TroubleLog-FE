@@ -251,7 +251,21 @@ const resId = api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // ✅ 401 → "무조건" 리프레시 먼저 시도, 성공 시 원요청 1회 재시도
+    // 토큰 전무 상태의 401은 refresh/가드 네비 금지 (그냥 실패로 반환)
+    const storedToken = localStorage.getItem("accessToken") || "";
+    const hasBearer = !!(cfg.headers && (cfg.headers as any).Authorization);
+
+    if (
+      status === 401 &&
+      !skipAuth &&
+      !isSSEAuth &&
+      !storedToken &&
+      !hasBearer
+    ) {
+      return Promise.reject(error);
+    }
+
+    // 401 → "무조건" 리프레시 먼저 시도, 성공 시 원요청 1회 재시도
     if (status === 401 && !skipAuth && !isSSEAuth) {
       let p = getRefreshPromise();
       if (!p) {
