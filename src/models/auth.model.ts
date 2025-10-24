@@ -20,6 +20,12 @@ export interface RegisterRequest {
   field: string;
   bio: string;
   githubUrl?: string;
+  termsAgreements: termsAgreements;
+}
+
+interface termsAgreements {
+  "1": boolean;
+  "2": boolean;
 }
 
 export interface RegisterResponse {

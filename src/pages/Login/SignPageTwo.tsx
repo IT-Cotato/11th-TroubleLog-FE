@@ -63,6 +63,11 @@ const SignPageTwo = () => {
         field,
         bio,
         githubUrl: githubad || undefined,
+        // 임시
+        termsAgreements: {
+          "1": true,
+          "2": true,
+        },
       };
 
       await postRegister(payload);
