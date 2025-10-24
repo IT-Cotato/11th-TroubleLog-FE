@@ -18,6 +18,7 @@ declare module "axios" {
   export interface AxiosRequestConfig {
     __skipGlobal404?: boolean;
     __skipGlobalAuthGuard?: boolean;
+    __anonymous?: boolean;
     _retry?: boolean;
   }
 }
@@ -103,6 +104,18 @@ const reqId = api.interceptors.request.use((config) => {
   const reqOrigin = isAbsolute ? getOriginSafely(url) : API_ORIGIN;
   const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
   if (isExternalAbsolute) return config;
+
+  // 익명 요청이면 토큰/쿠키/EnvType만 최소화
+  if (config.__anonymous) {
+    // 토큰 금지
+    delete (config.headers as any).Authorization;
+    // 쿠키 금지 (CSRF 회피용)
+    config.withCredentials = false;
+    // EnvType 유지
+    if ((config.headers as any).EnvType == null)
+      (config.headers as any).EnvType = ENVTYPE;
+    return config;
+  }
 
   const token = localStorage.getItem("accessToken");
   if (token) (config.headers as any).Authorization = `Bearer ${token}`;
@@ -226,7 +239,8 @@ const resId = api.interceptors.response.use(
     }
 
     // 401/403 → 전역 가드 (특정 요청 스킵 가능)
-    const skipAuth = cfg.__skipGlobalAuthGuard === true;
+    const skipAuth =
+      cfg.__skipGlobalAuthGuard === true || cfg.__anonymous === true;
     const isSSEAuth = /\/alert|\/connect|\/events/i.test(String(reqUrl));
     const isRefreshCall = /\/auth\/refresh\b/.test(String(reqUrl));
 
