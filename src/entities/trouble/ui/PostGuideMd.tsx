@@ -50,6 +50,7 @@ export default function PostGuideMd({
               <div key={i} className="w-full">
                 <MDEditor.Markdown
                   source={item}
+                  data-color-mode="light"
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw, rehypeSanitize]}
                 />
