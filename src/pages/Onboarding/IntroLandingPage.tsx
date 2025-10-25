@@ -31,7 +31,10 @@ export default function IntroLandingPage() {
     const token = localStorage.getItem("accessToken");
     if (token) {
       const next = new URLSearchParams(loc.search).get("next");
-      nav(next || PATH.HOME, { replace: true });
+      // 내부 경로만 허용 (절대 경로이고 같은 origin인지 확인)
+      const isInternalPath =
+        next && next.startsWith("/") && !next.startsWith("//");
+      nav(isInternalPath ? next : PATH.HOME, { replace: true });
       return; // 렌더 차단
     }
     setReady(true); // 토큰 없을 때만 온보딩 노출
