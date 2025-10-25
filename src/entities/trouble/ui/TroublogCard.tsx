@@ -59,7 +59,7 @@ export default function TroublogCard({
 
   const handleRootClick = () => {
     if (typeof onClick === "function") onClick(id);
-    else navigate(PATH.COMMUNITY_POST(String(id)));
+    else navigate(PATH.COMMUNITY_POST_ID(String(id)));
   };
 
   const handleRootKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
