@@ -677,7 +677,7 @@ export default function CommunityPostDetail() {
 
   // 좋아요 토글(커뮤니티 글에서만)
   const handleToggleLike = async () => {
-    if (!postId) return;
+    if (!Number.isFinite(effectiveId)) return;
     if (!isCommunitySource) {
       alert("작성 중/비공개 문서는 좋아요를 사용할 수 없어요.");
       return;
@@ -726,13 +726,13 @@ export default function CommunityPostDetail() {
 
   // 댓글 1페이지를 강제 새로고침(작성/삭제 직후 사용)
   const reloadCommentsFirstPage = useCallback(async () => {
-    if (!postId) return;
+    if (!Number.isFinite(effectiveId)) return;
     await loadComments(effectiveId, 1, detailCtx.viewerId ?? null);
   }, [postId, detailCtx.viewerId]);
 
   // 댓글 제출(커뮤니티 글에서만)
   const handleSubmitComment = async () => {
-    if (!postId || !isCommunitySource) return;
+    if (!Number.isFinite(effectiveId) || !isCommunitySource) return;
     const contents = commentInput.trim();
     if (!contents || isCommentPosting) return;
 
@@ -773,7 +773,7 @@ export default function CommunityPostDetail() {
 
   // 대댓글 제출
   const handleReply = async (parentId: string, replyContent: string) => {
-    if (!postId || !isCommunitySource) return;
+    if (!Number.isFinite(effectiveId) || !isCommunitySource) return;
     const contents = replyContent.trim();
     if (!contents) return;
 
@@ -806,7 +806,7 @@ export default function CommunityPostDetail() {
 
   // 댓글 내용 수정
   const handleEdit = async (id: string, newContent: string) => {
-    if (!postId || !isCommunitySource) return;
+    if (!Number.isFinite(effectiveId) || !isCommunitySource) return;
     const pid = effectiveId;
     const cid = Number(id);
     try {
@@ -844,7 +844,7 @@ export default function CommunityPostDetail() {
 
   // 포스트 삭제
   const handleDeletePost = useCallback(async () => {
-    if (!postId) return;
+    if (!Number.isFinite(effectiveId)) return;
     if (
       !window.confirm(
         "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
@@ -1281,13 +1281,17 @@ export default function CommunityPostDetail() {
                   <button
                     disabled={!commentInput.trim() || isCommentPosting}
                     onClick={handleSubmitComment}
-                    className={`flex px-6 sm:pl-[32px] sm:pr-[31px] py-2 sm:pt-[8px] sm:pb-[12px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
-                      commentInput.trim() && !isCommentPosting
-                        ? "bg-primary"
-                        : "bg-subColor1"
-                    }`}
+                    className={`inline-flex items-center justify-center rounded-[100px] px-6 sm:px-8
+              py-2 sm:py-3 text-white transition-colors
+              ${
+                commentInput.trim() && !isCommentPosting
+                  ? "bg-primary"
+                  : "bg-subColor1"
+              }`}
                   >
-                    {isCommentPosting ? "작성 중…" : "작성하기"}
+                    <span className="text-head-20-semibold leading-none">
+                      {isCommentPosting ? "작성 중…" : "작성하기"}
+                    </span>
                   </button>
                 </div>
               )}
@@ -1325,7 +1329,7 @@ export default function CommunityPostDetail() {
                     </div>
                   ))}
 
-                {cHasNext && postId && (
+                {cHasNext && Number.isFinite(effectiveId) && (
                   <button
                     disabled={cLoading}
                     onClick={() =>

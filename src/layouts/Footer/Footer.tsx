@@ -35,15 +35,15 @@ export default function Footer() {
 
       {/* 이메일 */}
       <p className="text-xs text-gray-300 mt-2">
-        문의하기:{" "}
         <a
-          href="https://forms.gle/your-google-form-link" // TODO: 실제 구글폼 링크 삽입
+          href="https://docs.google.com/forms/d/1hG-H3wsRooQfeIUg1awoGF_qkhjvgZdIqng-C0o-Xq0/edit?pli=1"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:underline hover:text-gray-100 transition-colors"
         >
-          troublog.official@gmail.com
+          문의하기
         </a>
+        : troublog.official@gmail.com
       </p>
 
       {/* 구분선 */}
