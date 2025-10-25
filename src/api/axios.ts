@@ -100,12 +100,7 @@ const reqId = api.interceptors.request.use((config) => {
   const url = config.url ?? "";
   config.headers = config.headers ?? {};
 
-  const isAbsolute = isAbsoluteUrl(url);
-  const reqOrigin = isAbsolute ? getOriginSafely(url) : API_ORIGIN;
-  const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
-  if (isExternalAbsolute) return config;
-
-  // 익명 요청이면 토큰/쿠키/EnvType만 최소화
+  // 1) 익명 요청 우선 적용 (외부 URL 포함)
   if (config.__anonymous) {
     // 토큰 금지
     delete (config.headers as any).Authorization;
@@ -114,6 +109,16 @@ const reqId = api.interceptors.request.use((config) => {
     // EnvType 유지
     if ((config.headers as any).EnvType == null)
       (config.headers as any).EnvType = ENVTYPE;
+    return config;
+  }
+
+  // 2) 외부 절대 URL → 토큰/쿠키 금지
+  const isAbsolute = isAbsoluteUrl(url);
+  const reqOrigin = isAbsolute ? getOriginSafely(url) : API_ORIGIN;
+  const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
+  if (isExternalAbsolute) {
+    delete (config.headers as any).Authorization;
+    config.withCredentials = false;
     return config;
   }
 
