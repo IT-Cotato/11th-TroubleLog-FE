@@ -243,6 +243,7 @@ const EditorBlock = ({
           <div
             ref={editorWrapRef}
             className="w-full overflow-visible rounded-md border border-gray-200"
+            data-color-mode="light"
           >
             <MDEditor
               value={block.content}

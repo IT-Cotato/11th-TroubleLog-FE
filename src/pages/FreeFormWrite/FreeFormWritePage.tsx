@@ -1176,38 +1176,42 @@ export default function FreeFormWritePage() {
                   }}
                   className="mt-2"
                 >
-                  <MDEditor
-                    value={block.content}
-                    onChange={(val?: string) => {
-                      handleChangeBlock(block.id, "content", val ?? "");
-                      requestAnimationFrame(() => autosizeFor(block.id));
-                    }}
-                    preview="edit"
-                    height={editorHeights[block.id] ?? 200}
-                    textareaProps={{
-                      onPaste: (
-                        e: React.ClipboardEvent<HTMLTextAreaElement>
-                      ) => {
-                        handlePasteImage(block.id, e);
+                  <div data-color-mode="light">
+                    <MDEditor
+                      value={block.content}
+                      onChange={(val?: string) => {
+                        handleChangeBlock(block.id, "content", val ?? "");
                         requestAnimationFrame(() => autosizeFor(block.id));
-                      },
-                      onDrop: (e: React.DragEvent<HTMLTextAreaElement>) => {
-                        handleDropImage(block.id, e);
-                        requestAnimationFrame(() => autosizeFor(block.id));
-                      },
-                      onInput: () =>
-                        requestAnimationFrame(() => autosizeFor(block.id)),
-                      onDragOver: (e: React.DragEvent<HTMLTextAreaElement>) => {
-                        if (e.dataTransfer?.types?.includes("Files")) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }
-                      },
-                    }}
-                    commandsFilter={(cmd: ICommand): ICommand =>
-                      cmd.keyCommand === "image" ? imageUploadCmd : cmd
-                    }
-                  />
+                      }}
+                      preview="edit"
+                      height={editorHeights[block.id] ?? 200}
+                      textareaProps={{
+                        onPaste: (
+                          e: React.ClipboardEvent<HTMLTextAreaElement>
+                        ) => {
+                          handlePasteImage(block.id, e);
+                          requestAnimationFrame(() => autosizeFor(block.id));
+                        },
+                        onDrop: (e: React.DragEvent<HTMLTextAreaElement>) => {
+                          handleDropImage(block.id, e);
+                          requestAnimationFrame(() => autosizeFor(block.id));
+                        },
+                        onInput: () =>
+                          requestAnimationFrame(() => autosizeFor(block.id)),
+                        onDragOver: (
+                          e: React.DragEvent<HTMLTextAreaElement>
+                        ) => {
+                          if (e.dataTransfer?.types?.includes("Files")) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        },
+                      }}
+                      commandsFilter={(cmd: ICommand): ICommand =>
+                        cmd.keyCommand === "image" ? imageUploadCmd : cmd
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             ))}

@@ -11,7 +11,7 @@ export const questionData = [
     ],
   },
   {
-    question: "문제 원인 파악",
+    question: "문제 원인을 파악해보세요!",
     title: "어떻게 원인을 발견했나요?",
     checklistItems: [
       "공식 문서 또는 라이브러리 문서 확인",
@@ -22,7 +22,7 @@ export const questionData = [
     ],
   },
   {
-    question: "해결 방법 및 적용",
+    question: "어떤 방법으로 해결하고 적용했나요?",
     title: "Tip",
     checklistItems: [
       "참고한 문서 or 외부 리소스 링크를 첨부해 보세요",
@@ -30,7 +30,7 @@ export const questionData = [
     ],
   },
   {
-    question: "검증 및 회고",
+    question: "검증 및 회고를 작성해보세요!",
     title: "검증 및 회고",
     checklistItems: [],
   },
