@@ -1,6 +1,7 @@
 import Header from "@/layouts/Header/Header";
 import NotificationToaster from "@/features/notification/NotificationToaster";
 import { Outlet } from "react-router-dom";
+import Footer from "./Footer/Footer";
 
 export default function MainLayout() {
   return (
@@ -11,6 +12,7 @@ export default function MainLayout() {
         <Outlet />
         <NotificationToaster />
       </main>
+      <Footer />
     </div>
   );
 }
