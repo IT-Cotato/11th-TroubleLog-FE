@@ -29,6 +29,15 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         // rehydrate가 끝남을 표시
         state?.setHydrated(true);
+
+        // 토큰이 없으면 반쪽 로그인 제거: user 비우기
+        try {
+          const hasToken = !!localStorage.getItem("accessToken");
+          if (!hasToken) state?.clearUser();
+        } catch {
+          // 스토리지 접근 실패 시에도 user 비우기(보수적)
+          state?.clearUser();
+        }
       },
     }
   )

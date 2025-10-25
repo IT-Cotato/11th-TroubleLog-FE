@@ -692,9 +692,14 @@ export default function CombinedDetailPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center self-stretch gap-4">
                 <div
                   className="flex items-center gap-4 sm:gap-[28px] cursor-pointer"
-                  onClick={() =>
-                    authorId && navigate(PATH.MYPAGE(String(authorId)))
-                  }
+                  onClick={() => {
+                    if (!authorId) return;
+                    if (viewerId != null && authorId === viewerId) {
+                      navigate(PATH.MYPAGE_BASE);
+                    } else {
+                      navigate(PATH.MYPAGE_ID(String(authorId)));
+                    }
+                  }}
                 >
                   <img
                     src={authorProfile || imageIcon}

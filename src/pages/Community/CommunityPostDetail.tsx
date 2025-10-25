@@ -7,7 +7,7 @@ import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
 import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
 import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
@@ -33,6 +33,7 @@ import { useViewerId } from "@/store/auth";
 import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
 import { postFollow, postUnfollow } from "@/api/user.api";
+import { extractIdFromSlug, makePostSlug } from "@/shared/lib/slug";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -64,7 +65,7 @@ export default function CommunityPostDetail() {
   const CONTENT_WIDTH_CLASS =
     "w-full sm:w-[520px] md:w-[680px] lg:w-[820px] xl:w-[960px]";
 
-  const { postId } = useParams<{ postId: string }>();
+  const { postId, slug } = useParams<{ postId?: string; slug?: string }>();
   const navigate = useNavigate();
 
   const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
@@ -112,6 +113,13 @@ export default function CommunityPostDetail() {
       "요청 처리 중 오류가 발생했어요.";
     return { status, message };
   };
+
+  // 유효 ID 계산
+  const effectiveId = useMemo(() => {
+    if (postId && Number.isFinite(Number(postId))) return Number(postId);
+    if (slug) return extractIdFromSlug(slug);
+    return NaN;
+  }, [postId, slug]);
 
   useEffect(() => {
     const updateAsideOffset = () => {
@@ -415,22 +423,21 @@ export default function CommunityPostDetail() {
     setLoading(true);
     setLoadError(null);
 
-    const numId = Number(postId);
-    if (!Number.isFinite(numId)) {
+    if (!Number.isFinite(effectiveId)) {
       setLoadError({ message: "잘못된 포스트 ID" });
       setLoading(false);
       return;
     }
 
     const loadCommunity = async () => {
-      const communityData = await getCommunityPostDetail(numId);
+      const communityData = await getCommunityPostDetail(effectiveId);
       if (!communityData) throw new Error("빈 응답입니다.");
       const vm = toCommunityPostVM(communityData, detailCtx.viewerId);
       setPost(vm);
       setIsLiked(vm.isLiked);
       setLikeCounts(vm.likeCounts);
       setIsCommunitySource(true);
-      void loadComments(numId, 1, detailCtx.viewerId ?? null);
+      void loadComments(effectiveId, 1, detailCtx.viewerId ?? null);
     };
 
     const loadMineDraft = async (id: number) => {
@@ -512,13 +519,13 @@ export default function CommunityPostDetail() {
         // 1) 힌트가 있으면 즉시 분기 (중복 호출 차단)
         if (isMine && statusFromList === "inProgress") {
           // 작성 중 → 에디터(프리필 위해 1회 내 상세 호출)
-          await loadMineDraft(numId);
+          await loadMineDraft(effectiveId);
           return;
         }
 
         if (isMine && statusFromList === "created") {
           if (summaryIdFromList != null) {
-            navigate(PATH.COMBINED_DETAIL(numId, summaryIdFromList), {
+            navigate(PATH.COMBINED_DETAIL(effectiveId, summaryIdFromList), {
               replace: true,
               state: {
                 from: "community-detail",
@@ -529,7 +536,7 @@ export default function CommunityPostDetail() {
           }
           // 힌트에 summaryId가 없으면 한 번만 내 상세 조회로 보강
           try {
-            const myDetail = await getPostDetail(numId);
+            const myDetail = await getPostDetail(effectiveId);
             const sid =
               (typeof (myDetail as any)?.postSummaryId === "number" &&
                 (myDetail as any).postSummaryId) ||
@@ -537,7 +544,7 @@ export default function CommunityPostDetail() {
                 (myDetail as any).summaryId) ||
               null;
             if (sid != null) {
-              navigate(PATH.COMBINED_DETAIL(numId, sid), {
+              navigate(PATH.COMBINED_DETAIL(effectiveId, sid), {
                 replace: true,
                 state: {
                   from: "community-detail",
@@ -563,7 +570,7 @@ export default function CommunityPostDetail() {
             await loadCommunity();
           } else {
             // 비공개 완료 → 내 상세만
-            const myDetail = await getPostDetail(numId);
+            const myDetail = await getPostDetail(effectiveId);
             const vmMine = toPostDetailVM(myDetail as any, viewerId);
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
@@ -576,9 +583,9 @@ export default function CommunityPostDetail() {
         // 2) 힌트가 부족하면 기존 로직(내 상세로 판정 → 필요 시 커뮤) 실행
         if (isMine) {
           try {
-            const myDetail = await getPostDetail(numId);
+            const myDetail = await getPostDetail(effectiveId);
             const isDraft = (myDetail as any)?.completedAt == null;
-            if (isDraft) await loadMineDraft(numId);
+            if (isDraft) await loadMineDraft(effectiveId);
             else await loadCommunity();
           } catch {
             await loadCommunity();
@@ -599,7 +606,7 @@ export default function CommunityPostDetail() {
       cancelled = true;
     };
   }, [
-    postId,
+    effectiveId,
     detailCtx.viewerId,
     detailCtx.ownerId,
     detailCtx.statusFromList,
@@ -608,6 +615,18 @@ export default function CommunityPostDetail() {
     detailCtx.isMineFromList,
     navigate,
   ]);
+
+  useEffect(() => {
+    if (!post) return;
+    const canonical =
+      PATH.COMMUNITY_POST_SLUG(
+        makePostSlug(post.title, postId ?? effectiveId)
+      ) + window.location.search;
+    // slug 경로가 아니면 슬러그로 교체
+    if (!slug || slug !== makePostSlug(post.title, effectiveId)) {
+      navigate(canonical, { replace: true });
+    }
+  }, [post, slug, effectiveId, navigate, postId]);
 
   const navigatingRef = useRef(false);
 
@@ -618,7 +637,7 @@ export default function CommunityPostDetail() {
     closeMenu();
 
     try {
-      const pid = Number(postId);
+      const pid = effectiveId;
       if (!Number.isFinite(pid)) return;
 
       const myDetail = await getPostDetail(pid);
@@ -653,7 +672,7 @@ export default function CommunityPostDetail() {
   // 작성자 프로필 클릭
   const handleProfileClick = () => {
     if (!post || post.authorId == null) return;
-    navigate(PATH.MYPAGE(String(post.authorId)));
+    navigate(PATH.MYPAGE_ID(String(post.authorId)));
   };
 
   // 좋아요 토글(커뮤니티 글에서만)
@@ -667,7 +686,7 @@ export default function CommunityPostDetail() {
     likeLockRef.current = true;
     setIsLiking(true);
 
-    const pid = Number(postId);
+    const pid = effectiveId;
     const wasLiked = isLiked;
     const prevCount = likeCounts;
 
@@ -708,7 +727,7 @@ export default function CommunityPostDetail() {
   // 댓글 1페이지를 강제 새로고침(작성/삭제 직후 사용)
   const reloadCommentsFirstPage = useCallback(async () => {
     if (!postId) return;
-    await loadComments(Number(postId), 1, detailCtx.viewerId ?? null);
+    await loadComments(effectiveId, 1, detailCtx.viewerId ?? null);
   }, [postId, detailCtx.viewerId]);
 
   // 댓글 제출(커뮤니티 글에서만)
@@ -727,7 +746,7 @@ export default function CommunityPostDetail() {
     setCommentInput("");
 
     try {
-      const created = await createCommunityComment(Number(postId), {
+      const created = await createCommunityComment(effectiveId, {
         contents,
       });
       const mapped = toPostComment(created, detailCtx.viewerId, {
@@ -763,7 +782,7 @@ export default function CommunityPostDetail() {
 
     try {
       const created = await replyCommunityComment(
-        Number(postId),
+        effectiveId,
         Number(parentId),
         { contents }
       );
@@ -788,7 +807,7 @@ export default function CommunityPostDetail() {
   // 댓글 내용 수정
   const handleEdit = async (id: string, newContent: string) => {
     if (!postId || !isCommunitySource) return;
-    const pid = Number(postId);
+    const pid = effectiveId;
     const cid = Number(id);
     try {
       const updated = await updateCommunityComment({
@@ -835,7 +854,7 @@ export default function CommunityPostDetail() {
 
     try {
       setDeleting(true);
-      await hardDeletePost(Number(postId));
+      await hardDeletePost(effectiveId);
       alert("문서가 영구 삭제되었습니다.");
 
       if (detailCtx.from === "community") {
@@ -969,7 +988,7 @@ export default function CommunityPostDetail() {
     navigate(`${PATH.ROOT}?${sp.toString()}`, { replace: true });
   };
   const goMyPage = () => {
-    if (viewerIdForCta != null) navigate(PATH.MYPAGE(String(viewerIdForCta)));
+    if (viewerIdForCta != null) navigate(PATH.MYPAGE_BASE);
     else goLogin();
   };
 
@@ -1101,7 +1120,9 @@ export default function CommunityPostDetail() {
               <div className="flex w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div
                   className="flex items-center gap-[14px] sm:gap-[20px] cursor-pointer"
-                  onClick={() => navigate(PATH.MYPAGE(String(post.authorId)))}
+                  onClick={() =>
+                    navigate(PATH.MYPAGE_ID(String(post.authorId)))
+                  }
                 >
                   <img
                     src={post.authorProfile || imageIcon}
@@ -1309,7 +1330,7 @@ export default function CommunityPostDetail() {
                     disabled={cLoading}
                     onClick={() =>
                       loadComments(
-                        Number(postId),
+                        effectiveId,
                         cPage,
                         detailCtx.viewerId ?? null
                       )

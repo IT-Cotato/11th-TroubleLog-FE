@@ -1,4 +1,5 @@
 import { PATH } from "@/shared/config/paths";
+import { useAuthHydrated } from "@/store/auth";
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
@@ -10,6 +11,7 @@ interface ProtectedRouteProps {
 // const isDevBypass = true;
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const hydrated = useAuthHydrated();
   const isAuthenticated = !!localStorage.getItem("accessToken");
   const loc = useLocation();
 
@@ -18,8 +20,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   //   return <>{children}</>;
   // }
 
+  if (!hydrated) return null;
+
   if (!isAuthenticated) {
-    const next = encodeURIComponent(loc.pathname + loc.search);
+    const next = encodeURIComponent(`${loc.pathname}${loc.search}${loc.hash}`);
     return <Navigate to={`${PATH.ROOT}?next=${next}`} replace />;
   }
   return <>{children}</>;

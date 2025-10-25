@@ -7,23 +7,26 @@ import { useViewerId } from "@/store/auth";
 import { PATH } from "@/shared/config/paths";
 
 const MyPageLayout = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id?: string }>();
   const location = useLocation();
   const navigate = useNavigate();
 
   const viewerId = useViewerId();
   const myUserIdStr = viewerId != null ? String(viewerId) : null;
 
-  const myUserId = typeof window !== "undefined" ? myUserIdStr : null;
-  const isMyPage = !!myUserId && id === myUserId;
+  // id가 없으면 '내 마이페이지'로 간주
+  const isMyPage = !id || (myUserIdStr != null && id === myUserIdStr);
 
   const [sortBy, setSortBy] = useState<"latest" | "important">("latest");
 
+  // 숫자 id 계산 (타인 페이지일 때만 의미 있음)
   const userIdNum = useMemo(() => {
+    if (!id) return NaN; // 내 페이지면 NaN
     const n = Number(id);
     return Number.isFinite(n) ? n : NaN;
   }, [id]);
 
+  // 태그 선택 시 URL 생성 로직: 내/타인 분기
   const selectedTag = useMemo(() => {
     const sp = new URLSearchParams(location.search);
     const t = sp.get("tag");
@@ -31,10 +34,8 @@ const MyPageLayout = () => {
   }, [location.search]);
 
   const handleSelectTag = (tag: string | null) => {
-    if (!id) return;
-    const url = tag
-      ? `${PATH.MYPAGE(id)}?tag=${encodeURIComponent(tag)}`
-      : PATH.MYPAGE(id);
+    const base = isMyPage ? PATH.MYPAGE_BASE : PATH.MYPAGE_ID(id!);
+    const url = tag ? `${base}?tag=${encodeURIComponent(tag)}` : base;
     navigate(url);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

@@ -9,6 +9,7 @@ import type { CommunitySort } from "@/types/community.model";
 import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { makePostSlug } from "@/shared/lib/slug";
 
 export default function CommunityPage() {
   const navigate = useNavigate();
@@ -134,8 +135,10 @@ export default function CommunityPage() {
                     state: { from: "community", ownerId },
                   });
                 } else {
+                  // 제목 기반 슬러그 이동
+                  const slug = makePostSlug(card.title, id);
                   navigate(
-                    `${PATH.COMMUNITY_POST(String(id))}?${qs.toString()}`,
+                    `${PATH.COMMUNITY_POST_SLUG(slug)}?${qs.toString()}`,
                     {
                       state: { from: "community", ownerId },
                     }
@@ -144,7 +147,7 @@ export default function CommunityPage() {
               }}
               onAvatarClick={() => {
                 if (card.authorId != null)
-                  navigate(PATH.MYPAGE(String(card.authorId)));
+                  navigate(PATH.MYPAGE_ID(String(card.authorId)));
               }}
             />
           </div>

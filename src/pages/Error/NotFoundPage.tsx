@@ -19,7 +19,7 @@ export default function NotFoundPage() {
 
   const goMyPage = () => {
     if (viewerId != null) {
-      navigate(PATH.MYPAGE(String(viewerId)));
+      navigate(PATH.MYPAGE_BASE);
     } else {
       navigate(PATH.ROOT);
     }

@@ -132,7 +132,7 @@ const EditProfile = () => {
     }
     try {
       await patchProfile(profile);
-      navigate(PATH.MYPAGE(id!));
+      navigate(PATH.MYPAGE_BASE);
     } catch (error) {
       console.error("프로필 수정 실패:", error);
     }

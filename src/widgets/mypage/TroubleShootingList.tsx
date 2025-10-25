@@ -7,6 +7,7 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import { useViewerId } from "@/store/auth";
 import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
+import { makePostSlug } from "@/shared/lib/slug";
 
 interface OutletContextType {
   isMyPage: boolean;
@@ -137,8 +138,13 @@ const TroubleShootingList = () => {
                   card,
                   viewerId
                 );
-                const ownerIdForState =
-                  isMyPage && viewerId != null ? Number(viewerId) : undefined;
+                const ownerIdForState = isMyPage
+                  ? viewerId != null
+                    ? Number(viewerId)
+                    : undefined
+                  : card.authorId != null
+                  ? Number(card.authorId)
+                  : undefined;
 
                 if (goCombined && summaryId != null) {
                   navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
@@ -157,19 +163,19 @@ const TroubleShootingList = () => {
                 if (ownerIdForState != null)
                   qs.set("ownerId", String(ownerIdForState));
 
-                navigate(
-                  `${PATH.COMMUNITY_POST(String(card.id))}?${qs.toString()}`,
-                  {
-                    state: {
-                      from: "mypage",
-                      ownerId: ownerIdForState,
-                      statusFromList,
-                      isVisibleFromList,
-                      summaryIdFromList,
-                      isMineFromList,
-                    },
-                  }
-                );
+                // 슬러그 생성
+                const slug = makePostSlug(vm.title, card.id);
+
+                navigate(`${PATH.COMMUNITY_POST_SLUG(slug)}?${qs.toString()}`, {
+                  state: {
+                    from: "mypage",
+                    ownerId: ownerIdForState,
+                    statusFromList,
+                    isVisibleFromList,
+                    summaryIdFromList,
+                    isMineFromList,
+                  },
+                });
               }}
             />
           );

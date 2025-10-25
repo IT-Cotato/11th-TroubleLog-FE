@@ -1,6 +1,6 @@
 import { type PropsWithChildren, useEffect, useRef } from "react";
 import { connectAlertSSE } from "@/api/alert.api";
-import { useIsLoggedIn, useViewerId } from "@/store/auth";
+import { useAuthHydrated, useIsLoggedIn, useViewerId } from "@/store/auth";
 import { startRefresh } from "@/api/axios";
 import { useNotificationStore } from "@/store/notification";
 import { isAuthCallbackPath } from "@/shared/lib/auth-route";
@@ -18,6 +18,7 @@ async function tryRefreshOnce() {
 // }
 
 export default function AlertSSEProvider({ children }: PropsWithChildren) {
+  const hydrated = useAuthHydrated();
   const isLoggedIn = useIsLoggedIn();
   const viewerId = useViewerId();
   // const hydrated = (useAuthStore as any).persist?.hasHydrated?.() ?? true;
@@ -33,7 +34,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
   const retryMs = Number(import.meta.env.VITE_SSE_RETRY_MS ?? 3000);
 
   useEffect(() => {
-    // if (!hydrated) return;
+    if (!hydrated) return;
 
     // ✅ OAuth 콜백 라우트에서는 SSE/리프레시 전부 비활성화
     const pathname = window.location.pathname;
@@ -102,6 +103,10 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
           onUnauthorized: async () => {
             // 콜백 라우트면 무시
             if (isAuthCallbackPath(window.location.pathname)) return;
+
+            // 토큰이 없으면(로그인 전/로그아웃 상태) 리프레시 시도 자체를 하지 않음
+            if (!localStorage.getItem("accessToken")) return;
+
             if (refreshingRef.current) return;
             refreshingRef.current = true;
             const ok = await tryRefreshOnce();
@@ -154,7 +159,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       esCloseRef.current = null;
       connectedRef.current = false;
     };
-  }, [isLoggedIn, viewerId, autoReconnect, retryMs]);
+  }, [hydrated, isLoggedIn, viewerId, autoReconnect, retryMs]);
 
   return <>{children}</>;
 }
