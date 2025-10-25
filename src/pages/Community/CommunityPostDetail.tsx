@@ -618,9 +618,10 @@ export default function CommunityPostDetail() {
 
   useEffect(() => {
     if (!post) return;
-    const canonical = PATH.COMMUNITY_POST_SLUG(
-      makePostSlug(post.title, postId ?? effectiveId)
-    );
+    const canonical =
+      PATH.COMMUNITY_POST_SLUG(
+        makePostSlug(post.title, postId ?? effectiveId)
+      ) + window.location.search;
     // slug 경로가 아니면 슬러그로 교체
     if (!slug || slug !== makePostSlug(post.title, effectiveId)) {
       navigate(canonical, { replace: true });
