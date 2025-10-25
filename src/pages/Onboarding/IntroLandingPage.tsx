@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import HeaderLogoOnly from "@/layouts/Header/HeaderLogoOnly";
 import HeroLaptop from "@/assets/images/hero-laptop.png";
@@ -22,6 +22,21 @@ const slides: Slide[] = [
 
 export default function IntroLandingPage() {
   const nav = useNavigate();
+  const loc = useLocation();
+  // 온보딩 렌더 여부(깜빡임 방지)
+  const [ready, setReady] = useState(false);
+
+  // 토큰 있으면 홈(또는 next)으로 즉시 이동
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      const next = new URLSearchParams(loc.search).get("next");
+      nav(next || PATH.HOME, { replace: true });
+      return; // 렌더 차단
+    }
+    setReady(true); // 토큰 없을 때만 온보딩 노출
+  }, [nav, loc.search]);
+
   const [idx, setIdx] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
@@ -99,6 +114,8 @@ export default function IntroLandingPage() {
     }
     touchStartX.current = null;
   };
+
+  if (!ready) return null; // 리다이렉트 판정 전 렌더 방지
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
