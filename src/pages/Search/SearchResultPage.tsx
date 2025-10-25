@@ -218,7 +218,7 @@ const SearchResultPage = () => {
                               },
                             });
                           } else {
-                            const url = `${PATH.COMMUNITY_POST(
+                            const url = `${PATH.COMMUNITY_POST_ID(
                               String(idNum)
                             )}?from=search&scope=${scopeForDetail}`;
                             navigate(url, {

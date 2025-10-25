@@ -13,7 +13,7 @@ const LikedPostsPage = () => {
   };
 
   const handleCardClick = (postId: number) => {
-    navigate(PATH.COMMUNITY_POST(String(postId)));
+    navigate(PATH.COMMUNITY_POST_ID(String(postId)));
   };
 
   const showEmpty = !loading && !error && items.length === 0;

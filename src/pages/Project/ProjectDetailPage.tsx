@@ -288,7 +288,7 @@ export default function ProjectDetailPage() {
                       const isMineFromList = card.isMine === true; // boolean
 
                       navigate(
-                        `${PATH.COMMUNITY_POST(
+                        `${PATH.COMMUNITY_POST_ID(
                           String(card.id)
                         )}?${qs.toString()}`,
                         {
