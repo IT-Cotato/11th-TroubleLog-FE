@@ -268,7 +268,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-8 lg:px-12 xl:px-20 2xl:px-28 pt-16 pb-40 flex flex-col gap-10">
+    <div className="page-container pt-16 pb-40 flex flex-col gap-10">
       {/* 상단 영역 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">나의 프로젝트</span>

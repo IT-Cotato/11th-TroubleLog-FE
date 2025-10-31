@@ -224,7 +224,10 @@ const Header = () => {
             onBlur={closeCommunityTipImmediately}
           >
             <FaUserGroup
-              className="cursor-pointer text-[#525252] text-[28px] sm:text-[32px] lg:text-[40px] transition-colors hover:text-primary"
+              className="cursor-pointer text-[#525252] text-[28px] sm:text-[32px] lg:text-[40px] 
+             transition-colors hover:text-primary
+             focus:outline-none focus:ring-0 focus-visible:outline-none"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => navigate(PATH.COMMUNITY)}
               aria-label="커뮤니티로 이동"
               role="button"
