@@ -145,7 +145,7 @@ export default function ProjectDetailPage() {
           <PostButton onClick={handlePostClick} />
 
           {showDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-[160px] rounded-[8px] shadow-card bg-subColor2 z-10">
+            <div className="absolute right-0 top-full mt-2 w-[140px] rounded-[8px] shadow-card bg-subColor2 z-10">
               <button
                 type="button"
                 onClick={handleGoGuideTemplate}

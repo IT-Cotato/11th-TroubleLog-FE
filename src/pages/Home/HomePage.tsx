@@ -282,7 +282,7 @@ export default function HomePage() {
           {showDropdown && (
             <div
               ref={dropdownRef}
-              className="absolute top-full right-0 mt-2 w-[160px] rounded-[8px] shadow-card bg-subColor2"
+              className="absolute top-full right-0 mt-2 w-[140px] rounded-[8px] shadow-card bg-subColor2"
             >
               <button
                 type="button"
