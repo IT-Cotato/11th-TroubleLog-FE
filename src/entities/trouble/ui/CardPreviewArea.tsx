@@ -28,7 +28,7 @@ export default function CardPreviewArea({
     <div
       className={[
         // 공통 스타일
-        "rounded-2xl h-[170px] sm:h-[200px] md:h-[210px] xl:h-[220px] flex flex-col p-3 sm:p-4",
+        "rounded-2xl h-[170px] sm:h-[200px] md:h-[210px] xl:h-[220px] flex flex-col pt-4 pr-2",
         // 이미지 유무에 따라 배경 클래스 분기
         hasImage ? "bg-center bg-cover bg-no-repeat" : "bg-gray1",
       ].join(" ")}

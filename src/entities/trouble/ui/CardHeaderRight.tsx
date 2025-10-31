@@ -56,7 +56,7 @@ export default function CardHeaderRight({
   }
 
   return (
-    <div className="relative flex items-center gap-1 sm:gap-2" ref={menuRef}>
+    <div className="relative flex gap-1 sm:gap-2" ref={menuRef}>
       <StatusDot status={status} />
       <div className="relative" {...stopCardClick}>
         <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
