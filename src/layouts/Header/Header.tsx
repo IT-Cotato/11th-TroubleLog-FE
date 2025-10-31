@@ -21,6 +21,8 @@ const Header = () => {
   const { placeholder, setPlaceholder } = useSearchStore();
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isCommunityTipOpen, setIsCommunityTipOpen] = useState(false);
+  const communityTipTimer = useRef<NodeJS.Timeout | null>(null);
   const userDropdownRef = useClickOutside(() => setIsUserDropdownOpen(false));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,6 +33,21 @@ const Header = () => {
 
   const hasNew = useNotificationStore((s) => s.hasNew);
   const clearNew = useNotificationStore((s) => s.clearNew);
+
+  const openCommunityTip = () => {
+    if (communityTipTimer.current) clearTimeout(communityTipTimer.current);
+    setIsCommunityTipOpen(true);
+  };
+  const scheduleCloseCommunityTip = () => {
+    communityTipTimer.current = setTimeout(
+      () => setIsCommunityTipOpen(false),
+      180
+    );
+  };
+  const closeCommunityTipImmediately = () => {
+    if (communityTipTimer.current) clearTimeout(communityTipTimer.current);
+    setIsCommunityTipOpen(false);
+  };
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -198,10 +215,49 @@ const Header = () => {
 
         {/* Icons */}
         <div className="flex gap-4 sm:gap-6 lg:gap-10 items-center relative">
-          <FaUserGroup
-            className="cursor-pointer text-[#525252] text-[28px] sm:text-[32px] lg:text-[40px]"
-            onClick={() => navigate(PATH.COMMUNITY)}
-          />
+          {/* Community */}
+          <div
+            className="relative"
+            onMouseEnter={openCommunityTip}
+            onMouseLeave={scheduleCloseCommunityTip}
+            onFocus={openCommunityTip}
+            onBlur={closeCommunityTipImmediately}
+          >
+            <FaUserGroup
+              className="cursor-pointer text-[#525252] text-[28px] sm:text-[32px] lg:text-[40px] transition-colors hover:text-primary"
+              onClick={() => navigate(PATH.COMMUNITY)}
+              aria-label="커뮤니티로 이동"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(PATH.COMMUNITY);
+                }
+              }}
+              onMouseEnter={openCommunityTip}
+              onMouseLeave={scheduleCloseCommunityTip}
+            />
+
+            {/* Guide Tooltip */}
+            {isCommunityTipOpen && (
+              <div
+                className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-20
+                           rounded-md bg-gray-900 text-white px-3 py-1
+                           text-[12px] sm:text-[13px] shadow-lg whitespace-nowrap
+                           animate-in fade-in zoom-in-95"
+                role="tooltip"
+              >
+                커뮤니티로 이동
+                {/* 꼬리(삼각형) */}
+                <span
+                  className="absolute -top-1 left-1/2 -translate-x-1/2
+                             w-2 h-2 rotate-45 bg-gray-900"
+                  aria-hidden
+                />
+              </div>
+            )}
+          </div>
           {/* Notifications */}
           <div
             className="relative"
