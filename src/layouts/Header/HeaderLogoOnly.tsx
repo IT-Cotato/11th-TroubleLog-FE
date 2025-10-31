@@ -20,6 +20,10 @@ export default function HeaderLogoOnly({
   // 기본 네비게이션: 로그인된 경우 홈, 아니면 루트(로그인)
   const defaultTo = to ?? (viewerId != null ? PATH.HOME : PATH.ROOT);
 
+  const handleLoginClick = () => {
+    navigate(PATH.LOGIN);
+  };
+
   return (
     <div
       className={[
@@ -36,8 +40,16 @@ export default function HeaderLogoOnly({
         className="w-[56px] h-[40px] sm:w-[70px] sm:h-[51px] cursor-pointer select-none"
         onClick={() => navigate(defaultTo)}
       />
-      {/* 로고만 표시 (오른쪽 액션 비움) */}
-      <div aria-hidden className="w-0 h-0" />
+
+      {/* 우측: 로그인 버튼 */}
+      {!viewerId && (
+        <button
+          onClick={handleLoginClick}
+          className="inline-flex h-12 items-center rounded-xl bg-primary px-6 text-white text-body-16-semibold hover:opacity-90 transition"
+        >
+          로그인
+        </button>
+      )}
     </div>
   );
 }
