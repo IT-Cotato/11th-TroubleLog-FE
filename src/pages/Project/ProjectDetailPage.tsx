@@ -145,11 +145,11 @@ export default function ProjectDetailPage() {
           <PostButton onClick={handlePostClick} />
 
           {showDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-[184px] rounded-[8px] shadow-card bg-subColor2 z-10">
+            <div className="absolute right-0 top-full mt-2 w-[160px] rounded-[8px] shadow-card bg-subColor2 z-10">
               <button
                 type="button"
                 onClick={handleGoGuideTemplate}
-                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-b border-gray2 text-body-16-regular"
+                className="flex w-full pt-[8px] pb-[9px] justify-center items-center text-body-16-regular"
               >
                 가이드 템플릿
               </button>

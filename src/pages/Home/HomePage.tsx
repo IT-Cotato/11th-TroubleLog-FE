@@ -282,12 +282,12 @@ export default function HomePage() {
           {showDropdown && (
             <div
               ref={dropdownRef}
-              className="absolute top-full right-0 mt-2 w-[184px] rounded-[8px] shadow-card bg-subColor2"
+              className="absolute top-full right-0 mt-2 w-[160px] rounded-[8px] shadow-card bg-subColor2"
             >
               <button
                 type="button"
                 onClick={handleGoGuideTemplate}
-                className="flex w-full py-2.5 justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
+                className="flex w-full py-2.5 justify-center items-center border-0.5px text-body-16-regular"
               >
                 가이드 템플릿
               </button>
