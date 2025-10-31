@@ -187,7 +187,7 @@ const Header = () => {
   }, [location.pathname, location.search]);
 
   return (
-    <div className="flex w-full py-4 sm:py-5 lg:py-[25px] px-4 sm:px-6 lg:px-[88px] gap-4 sm:gap-8 lg:gap-12 justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
+    <div className="flex w-full py-4 px-4 sm:px-6 lg:px-[88px] gap-4 sm:gap-8 lg:gap-12 justify-between items-center shadow-[0_0_6px_0_rgba(0,0,0,0.12)]">
       <img
         src={logo}
         alt="logo"

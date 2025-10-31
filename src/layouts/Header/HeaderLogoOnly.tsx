@@ -29,7 +29,7 @@ export default function HeaderLogoOnly({
       className={[
         "flex w-full justify-between items-center",
         // 기존 Header와 동일한 여백/반응형 패딩
-        "py-4 sm:py-5 lg:py-[25px] px-4 sm:px-6 lg:px-[88px]",
+        "py-4 px-4 sm:px-6 lg:px-[88px]",
         withShadow ? "shadow-[0_0_6px_0_rgba(0,0,0,0.12)]" : "",
         "bg-white",
       ].join(" ")}
