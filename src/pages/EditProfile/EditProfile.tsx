@@ -169,9 +169,7 @@ const EditProfile = () => {
               <FollowButton
                 label="이미지 삭제"
                 colorClass={
-                  canDeleteImage
-                    ? "bg-primary"
-                    : "bg-subColor1 cursor-not-allowed"
+                  canDeleteImage ? "bg-red1" : "bg-subColor1 cursor-not-allowed"
                 }
                 onClick={canDeleteImage ? handleImageDelete : undefined}
               />
