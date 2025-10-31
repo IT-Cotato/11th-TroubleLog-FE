@@ -96,7 +96,10 @@ const Header = () => {
         "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
       );
     } else if (path.startsWith(PATH.MYPAGE_BASE + "/")) {
-      if (pageUserId && myUserIdStr && pageUserId === myUserIdStr) {
+      if (
+        (pageUserId && myUserIdStr && pageUserId === myUserIdStr) ||
+        path.endsWith("editprofile")
+      ) {
         setPlaceholder(
           "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
         );
