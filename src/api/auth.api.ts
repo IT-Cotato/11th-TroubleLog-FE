@@ -8,6 +8,7 @@ import type {
   LoginResponse,
   EmailCheckResponse,
   OauthRegisterRequest,
+  TermsLatestResponse,
 } from "@/models/auth.model";
 
 // 회원가입
@@ -16,6 +17,14 @@ export const postRegister = (payload: RegisterRequest) =>
     url: "/auth/register",
     method: "POST",
     data: payload,
+    headers: getAuthHeaders(),
+  });
+
+// 최신 약관 조회
+export const getLatestTerms = () =>
+  getAPIResponseData<TermsLatestResponse>({
+    url: "/terms/latest",
+    method: "GET",
     headers: getAuthHeaders(),
   });
 
