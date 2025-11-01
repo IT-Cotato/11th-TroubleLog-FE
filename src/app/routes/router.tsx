@@ -15,8 +15,10 @@ const IntroLandingPage = lazy(
 const LoginPage = lazy(() => import("@/pages/Login/LoginPage"));
 const SignPageOne = lazy(() => import("@/pages/Login/SignPageOne"));
 const SignPageTwo = lazy(() => import("@/pages/Login/SignPageTwo"));
+
 const TermsDetailPage = lazy(() => import("@/pages/Login/TermsDetailPage"));
 const SignPageOauth = lazy(() => import("@/pages/Login/SignPageOauth"));
+
 const OAuthPopupKakao = lazy(() => import("@/pages/Login/OAuthPopupKakao"));
 
 const HomePage = lazy(() => import("@/pages/Home/HomePage"));

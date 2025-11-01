@@ -57,7 +57,7 @@ export default function CommunityPage() {
   const active = selectedTab === "trouble" ? trouble : recent;
 
   return (
-    <div className="flex flex-col mt-10 sm:mt-[79px] mb-16 sm:mb-[104px] max-w-[1600px] w-full mx-auto px-4 gap-8 sm:gap-[50px]">
+    <div className="page-container flex flex-col mt-10 sm:mt-[79px] mb-16 sm:mb-[104px] gap-8 sm:gap-[50px]">
       <div className="flex w-full flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         {/* 옵션 탭 */}
         <div className="flex gap-3 sm:gap-[40px] w-full sm:w-auto">

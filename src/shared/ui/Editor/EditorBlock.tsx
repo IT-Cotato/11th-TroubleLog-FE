@@ -56,7 +56,7 @@ export type EditorBlockProps = {
   commandsFilter?: (command: ICommand, isExtra: boolean) => false | ICommand;
 };
 
-const MIN_H = 200;
+const MIN_H = 300;
 const MAX_H = 20000;
 const clamp = (n: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, n));
@@ -243,10 +243,10 @@ const EditorBlock = ({
           <div
             ref={editorWrapRef}
             className="w-full overflow-visible rounded-md border border-gray-200"
-            data-color-mode="light"
           >
             <MDEditor
               value={block.content}
+              data-color-mode="light"
               onChange={(val) => {
                 onChange(index, { content: val || "" });
                 requestAnimationFrame(autosize);
@@ -282,7 +282,11 @@ const EditorBlock = ({
           </div>
         ) : (
           <div className="w-full rounded-md border border-gray-200 p-3 min-h-[150px]">
-            <MDEditor.Markdown source={block.content || ""} />
+            <MDEditor.Markdown
+              source={block.content || ""}
+              data-color-mode="light"
+              className="!bg-white !text-black wmde-markdown-light"
+            />
           </div>
         )}
       </div>
@@ -290,22 +294,22 @@ const EditorBlock = ({
       {/* 체크리스트 */}
       <div
         className={[
-          "w-full mt-2 md:mt-10 flex-shrink-0 md:basis-[320px] lg:basis-[380px] xl:basis-[440px] md:max-w-[480px]",
+          "w-full mt-6 md:mt-14 flex-shrink-0 md:basis-[200px] lg:basis-[250px] xl:basis-[300px] md:max-w-[300px]",
           checklistWidthClass ?? "",
         ].join(" ")}
       >
         <div className="flex flex-col gap-2">
           {block.checklistItems.length > 0 && (
-            <h3 className="text-sm md:text-base font-semibold text-gray4 flex items-center gap-2">
-              <img src={alertIcon} alt="alert icon" className="w-5 h-5" />
+            <h3 className="text-xs sm:text-base font-semibold text-gray4 flex items-center gap-2">
+              <img src={alertIcon} alt="alert icon" className="w-4 h-4" />
               {block.checklistTitle}
             </h3>
           )}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             {block.checklistItems.map((item) => (
               <label
                 key={item}
-                className="flex items-start gap-2 cursor-pointer text-sm text-gray-700"
+                className="flex items-start gap-1 cursor-pointer text-xs text-gray-700"
               >
                 <input
                   type="checkbox"
@@ -320,7 +324,7 @@ const EditorBlock = ({
                     ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
                     ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
                   }}
-                  className="inline-block w-5 h-5 bg-no-repeat bg-center bg-contain
+                  className="inline-block w-4 h-4 bg-no-repeat bg-center bg-contain
                              [background-image:var(--icon-unchecked)]
                              peer-checked:[background-image:var(--icon-checked)]"
                 />

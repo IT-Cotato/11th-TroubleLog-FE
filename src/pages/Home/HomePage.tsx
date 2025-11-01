@@ -268,7 +268,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-8 lg:px-12 xl:px-20 2xl:px-28 pt-16 pb-40 flex flex-col gap-10">
+    <div className="page-container pt-16 pb-40 flex flex-col gap-10">
       {/* 상단 영역 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">나의 프로젝트</span>
@@ -282,12 +282,12 @@ export default function HomePage() {
           {showDropdown && (
             <div
               ref={dropdownRef}
-              className="absolute top-full right-0 mt-2 w-[184px] rounded-[8px] shadow-card bg-subColor2"
+              className="absolute top-full right-0 mt-2 w-[140px] rounded-[8px] shadow-card bg-subColor2"
             >
               <button
                 type="button"
                 onClick={handleGoGuideTemplate}
-                className="flex w-full py-2.5 justify-center items-center border-0.5px border-b border-gray2 text-body-16-regular"
+                className="flex w-full py-2.5 justify-center items-center border-0.5px text-body-16-regular"
               >
                 가이드 템플릿
               </button>

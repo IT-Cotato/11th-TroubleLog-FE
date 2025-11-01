@@ -82,3 +82,10 @@
     @apply leading-[1.4];
   }
 }
+
+/* 표준 페이지 컨테이너: 좌우 여백/최대폭 통일 */
+.page-container {
+  /* 중앙 정렬 + 폭 제한 + 반응형 패딩 */
+  @apply mx-auto w-full max-w-screen-2xl
+         px-4 sm:px-8 lg:px-12 xl:px-20 2xl:px-28;
+}

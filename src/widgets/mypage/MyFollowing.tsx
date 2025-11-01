@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FollowingBtn from "./FollowingBtn";
 import type { FollowingData } from "@/models/user.model";
 import {
@@ -8,6 +8,7 @@ import {
   postUnfollow,
 } from "@/api/user.api";
 import { useLocation, useParams } from "react-router-dom";
+import { useViewerId } from "@/store/auth";
 
 const MyFollowing = () => {
   const [followList, setFollowList] = useState<FollowingData[]>([]);
@@ -15,11 +16,23 @@ const MyFollowing = () => {
   const [err, setErr] = useState<string | null>(null);
 
   const { id } = useParams();
-  const userId = Number(id);
+  const viewerId = useViewerId();
   const { pathname } = useLocation();
 
+  // path tail 한 번만 계산
+  const pathTail = useMemo(() => pathname.split("/").pop(), [pathname]);
+
+  // 최종 조회 대상 ID: URL에 id가 있으면 사용, 없으면 viewerId로 폴백
+  const targetUserId = useMemo(() => {
+    const fromParam = Number(id);
+    return Number.isFinite(fromParam) ? fromParam : viewerId ?? undefined;
+  }, [id, viewerId]);
+
   useEffect(() => {
-    const path = pathname.split("/").pop();
+    // follower/following 외 경로면 패스
+    if (pathTail !== "following" && pathTail !== "follower") return;
+    // id/로그인 정보가 아직 없으면 대기
+    if (!targetUserId) return;
 
     const fetchData = async () => {
       try {
@@ -27,8 +40,8 @@ const MyFollowing = () => {
         setErr(null);
 
         let data: FollowingData[] = [];
-        if (path === "following") data = await getFollowings(userId);
-        else if (path === "follower") data = await getFollowers(userId);
+        if (pathTail === "following") data = await getFollowings(targetUserId);
+        else data = await getFollowers(targetUserId);
 
         setFollowList(data);
       } catch (e) {
@@ -39,10 +52,8 @@ const MyFollowing = () => {
       }
     };
 
-    if (Number.isFinite(userId)) {
-      fetchData();
-    }
-  }, [userId, pathname]);
+    fetchData();
+  }, [targetUserId, pathTail]);
 
   const handleFollowClick = async (id: number) => {
     try {
@@ -62,7 +73,6 @@ const MyFollowing = () => {
     }
   };
 
-  const pathTail = pathname.split("/").pop();
   const emptyMessage =
     pathTail === "following"
       ? "아직 팔로잉한 사용자가 없어요."

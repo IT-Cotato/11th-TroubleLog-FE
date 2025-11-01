@@ -30,6 +30,8 @@ export default function PostCombineMd({
               <MDEditor.Markdown
                 key={i}
                 source={item}
+                data-color-mode="light"
+                className="!bg-white !text-black wmde-markdown-light"
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw, rehypeSanitize]}
               />
