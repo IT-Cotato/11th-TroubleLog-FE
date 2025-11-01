@@ -106,7 +106,7 @@ const TroubleShootingCard = ({
 
   return (
     <div
-      className={`w-full py-5 sm:py-7 flex flex-col items-start gap-2.5 border-b border-gray3 bg-white ${
+      className={`w-full py-5 sm:py-7 flex flex-row items-start gap-2.5 border-b border-gray3 bg-white ${
         isClickable
           ? "cursor-pointer"
           : disabled
@@ -252,18 +252,18 @@ const TroubleShootingCard = ({
               </div>
             </div>
           </div>
-
-          {/* 트러블로그 썸네일 */}
-          <div className="w-full md:w-[240px] h-[144px] rounded-[16px] bg-[#ECECEC] overflow-hidden">
-            {thumbnailUrl && (
-              <img
-                src={thumbnailUrl}
-                alt="thumbnail"
-                className="w-full h-full object-cover rounded-[16px]"
-              />
-            )}
-          </div>
         </div>
+      </div>
+
+      {/* 트러블로그 썸네일 */}
+      <div className="mt-3 w-full md:w-[450px] h-[200px] rounded-[16px] bg-[#ECECEC] overflow-hidden">
+        {thumbnailUrl && (
+          <img
+            src={thumbnailUrl}
+            alt="thumbnail"
+            className="w-full h-full object-cover rounded-[16px]"
+          />
+        )}
       </div>
     </div>
   );

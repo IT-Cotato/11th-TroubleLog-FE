@@ -135,7 +135,7 @@ export default function ProjectDetailPage() {
   }, []);
 
   return (
-    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-[156px] pt-14 sm:pt-[79px] pb-24 sm:pb-[158px] flex flex-col items-start gap-6 sm:gap-[36px]">
+    <div className="page-container pt-14 sm:pt-[79px] pb-24 sm:pb-[158px] flex flex-col items-start gap-6 sm:gap-[36px]">
       {/* 상단 타이틀(프로젝트명) + 글쓰기 버튼 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
         <span className="text-head-32-regular">
@@ -145,11 +145,11 @@ export default function ProjectDetailPage() {
           <PostButton onClick={handlePostClick} />
 
           {showDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-[184px] rounded-[8px] shadow-card bg-subColor2 z-10">
+            <div className="absolute right-0 top-full mt-2 w-[140px] rounded-[8px] shadow-card bg-subColor2 z-10">
               <button
                 type="button"
                 onClick={handleGoGuideTemplate}
-                className="flex w-full pt-[8px] pb-[9px] justify-center items-center border-b border-gray2 text-body-16-regular"
+                className="flex w-full pt-[8px] pb-[9px] justify-center items-center text-body-16-regular"
               >
                 가이드 템플릿
               </button>
