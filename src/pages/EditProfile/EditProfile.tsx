@@ -149,7 +149,7 @@ const EditProfile = () => {
             <img
               src={profileImage}
               alt="user"
-              className="w-40 h-40 sm:w-56 sm:h-56 md:w-72 md:h-72 object-cover rounded-full"
+              className="w-40 h-40 sm:w-56 sm:h-56 object-cover rounded-full"
             />
 
             <input
@@ -169,9 +169,7 @@ const EditProfile = () => {
               <FollowButton
                 label="이미지 삭제"
                 colorClass={
-                  canDeleteImage
-                    ? "bg-primary"
-                    : "bg-subColor1 cursor-not-allowed"
+                  canDeleteImage ? "bg-red1" : "bg-subColor1 cursor-not-allowed"
                 }
                 onClick={canDeleteImage ? handleImageDelete : undefined}
               />
@@ -179,7 +177,7 @@ const EditProfile = () => {
           </div>
 
           {/* 오른쪽 */}
-          <div className="flex flex-col items-start gap-8 sm:gap-12 w-full md:w-3/4">
+          <div className="flex flex-col items-start gap-8 w-full md:w-3/4">
             <p className="text-head-48 pb-2">프로필 수정</p>
             <MyInput
               label="닉네임"
@@ -214,7 +212,9 @@ const EditProfile = () => {
           <SaveButton onClick={handleSave} label="저장" />
         </div>
 
-        <WithdrawBox onWithdraw={() => setShowWithdrawModal(true)} />
+        <div className="w-full md:w-3/4">
+          <WithdrawBox onWithdraw={() => setShowWithdrawModal(true)} />
+        </div>
       </div>
 
       {showWithdrawModal && (
