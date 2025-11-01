@@ -210,7 +210,7 @@ export default function CombinedDetailPage() {
         content: c.body ?? "",
         checklist: [],
         checklistItems: [],
-        checklistTitle: c.subTitle ? `${c.subTitle} 체크리스트` : "",
+        checklistTitle: c.subTitle ? `${c.subTitle} ` : "",
         question: c.subTitle ?? `질문 ${i + 1}`,
         isSaved: false,
       }));
