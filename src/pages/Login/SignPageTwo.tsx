@@ -93,7 +93,6 @@ const SignPageTwo = () => {
       bio,
       githubad,
       email,
-      password,
       termsAgreements: agreeMap,
     };
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -242,7 +241,6 @@ const SignPageTwo = () => {
                     bio,
                     githubad,
                     email,
-                    password,
                     termsAgreements: agreeMap,
                   };
                   sessionStorage.setItem(DRAFT_KEY, JSON.stringify(formDraft));
