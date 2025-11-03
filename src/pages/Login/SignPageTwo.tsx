@@ -162,7 +162,7 @@ const SignPageTwo = () => {
       };
 
       await postRegister(payload);
-      sessionStorage.removeItem("termsAgreements");
+      sessionStorage.removeItem(DRAFT_KEY);
       navigate(PATH.LOGIN);
     } catch (error: any) {
       console.error("회원가입 실패:", error);
