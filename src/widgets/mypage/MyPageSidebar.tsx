@@ -19,6 +19,7 @@ const SUBPATH = {
   EDIT_PROFILE: "editprofile",
   STATISTICS: "statistics",
   LIKES: "likes",
+  TROUBLES: "troubles",
 } as const;
 
 type MyPageSideBarProps =
@@ -72,7 +73,12 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     ? PATH.MYPAGE_BASE
     : PATH.MYPAGE_ID(id ?? ":id");
 
-  const isOnMainPage = location.pathname === basePath;
+  // 현재 화면이 '목록'인지 판정
+  const isOnTroubles =
+    location.pathname === basePath || // 타인: index가 목록
+    location.pathname === `${basePath}/${SUBPATH.TROUBLES}`; // 내 페이지: 목록 탭
+
+  const isOnTroubleSection = isOnTroubles;
 
   const refetch = useCallback(async () => {
     try {
@@ -104,12 +110,13 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   useEffect(() => () => resetViewedUser(), [resetViewedUser]);
 
   useEffect(() => {
-    const onMain = location.pathname === PATH.MYPAGE_BASE;
-    if (!onMain) {
+    const onTroublePage =
+      location.pathname === `${basePath}/${SUBPATH.TROUBLES}`;
+    if (!onTroublePage) {
       resetSelectedStatus();
       resetSelectedTag();
     }
-  }, [location.pathname, id, resetSelectedStatus, resetSelectedTag]);
+  }, [location.pathname, basePath, resetSelectedStatus, resetSelectedTag]);
 
   const handleNavigate =
     (subPath: string = "", clearStatus = false) =>
@@ -280,7 +287,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
           <div className="w-full">
             <div
               className={`pb-2 border-b ${
-                isOnMainPage && selectedStatus
+                isOnTroubleSection && selectedStatus
                   ? "text-black border-black"
                   : "border-gray3"
               } `}
@@ -291,7 +298,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               <button
                 onClick={() => {
                   setSelectedStatus("all");
-                  handleNavigate()();
+                  handleNavigate(SUBPATH.TROUBLES)();
                 }}
                 className={getFilterButtonClass("all")}
               >
@@ -300,7 +307,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               <button
                 onClick={() => {
                   setSelectedStatus("inProgress");
-                  handleNavigate()();
+                  handleNavigate(SUBPATH.TROUBLES)();
                 }}
                 className={getFilterButtonClass("inProgress")}
               >
@@ -315,7 +322,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               <button
                 onClick={() => {
                   setSelectedStatus("complete");
-                  handleNavigate()();
+                  handleNavigate(SUBPATH.TROUBLES)();
                 }}
                 className={getFilterButtonClass("complete")}
               >
@@ -330,7 +337,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               <button
                 onClick={() => {
                   setSelectedStatus("created");
-                  handleNavigate()();
+                  handleNavigate(SUBPATH.TROUBLES)();
                 }}
                 className={getFilterButtonClass("created")}
               >

@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 
 // 레이지 import (코드 스플리팅)
@@ -86,7 +86,8 @@ export const router = createBrowserRouter(
           path: PATH.MYPAGE_BASE,
           element: <MyPageLayout />, // id 없음 → 내부에서 viewerId로 처리
           children: [
-            { index: true, element: <TroubleShootingList /> },
+            { index: true, element: <Navigate to="statistics" replace /> },
+            { path: "troubles", element: <TroubleShootingList /> },
             { path: "following", element: <MyFollowing /> },
             { path: "follower", element: <MyFollowing /> },
             { path: "statistics", element: <StatisticsPage /> },
@@ -100,6 +101,7 @@ export const router = createBrowserRouter(
           element: <MyPageLayout />, // id 존재
           children: [
             { index: true, element: <TroubleShootingList /> },
+            { path: "troubles", element: <TroubleShootingList /> },
             { path: "following", element: <MyFollowing /> },
             { path: "follower", element: <MyFollowing /> },
             { path: "statistics", element: <StatisticsPage /> },
