@@ -13,11 +13,15 @@ const SignPageTwo = () => {
   const navigate = useNavigate();
   const location = useLocation() as any;
 
+  const [restoredEmail, setRestoredEmail] = useState("");
+  const [restoredPassword, setRestoredPassword] = useState("");
+
   const [nickname, setNickname] = useState("");
   const [field, setField] = useState("");
   const [bio, setBio] = useState("");
   const [githubad, setGithubad] = useState("");
-  const { email, password } = location.state || {};
+  const email = location.state?.email || restoredEmail;
+  const password = location.state?.password || restoredPassword;
 
   const [nicknameError, setNicknameError] = useState("");
   const [fieldError, setFieldError] = useState("");
@@ -59,13 +63,8 @@ const SignPageTwo = () => {
           setAgreeMap(draft.termsAgreements);
         }
 
-        if (draft.email)
-          location.state = { ...(location.state || {}), email: draft.email };
-        if (draft.password)
-          location.state = {
-            ...(location.state || {}),
-            password: draft.password,
-          };
+        if (draft.email) setRestoredEmail(draft.email);
+        if (draft.password) setRestoredPassword(draft.password);
       }
     }
 
