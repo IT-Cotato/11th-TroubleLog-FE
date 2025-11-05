@@ -892,7 +892,7 @@ export default function FreeFormWritePage() {
     const chrome =
       toolbarH + bottombarH + taVPad + wrapVPad + rootVPad + rootVBorder + 16;
 
-    const next = Math.max(200, Math.min(20000, taScrollH + chrome));
+    const next = Math.max(300, Math.min(30000, taScrollH + chrome));
     setEditorHeights((prevHeights) =>
       prevHeights[blockId] === next
         ? prevHeights
@@ -1184,7 +1184,7 @@ export default function FreeFormWritePage() {
                         requestAnimationFrame(() => autosizeFor(block.id));
                       }}
                       preview="edit"
-                      height={editorHeights[block.id] ?? 200}
+                      height={editorHeights[block.id] ?? 300}
                       textareaProps={{
                         onPaste: (
                           e: React.ClipboardEvent<HTMLTextAreaElement>
