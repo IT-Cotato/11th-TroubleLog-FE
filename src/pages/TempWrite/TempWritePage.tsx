@@ -1149,7 +1149,7 @@ const TempWritePage = () => {
                 previewMeta?.visibility ??
                 detailPrefill?.visibility ??
                 location.state?.savePrefill?.visibility ??
-                "private"
+                "public"
               }
               initialProjectId={
                 selectedProjectIdPage ??

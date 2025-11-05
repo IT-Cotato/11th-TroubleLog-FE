@@ -34,8 +34,11 @@ const MyPageLayout = () => {
   }, [location.search]);
 
   const handleSelectTag = (tag: string | null) => {
-    const base = isMyPage ? PATH.MYPAGE_BASE : PATH.MYPAGE_ID(id!);
-    const url = tag ? `${base}?tag=${encodeURIComponent(tag)}` : base;
+    const baseWithoutTab = isMyPage ? PATH.MYPAGE_BASE : PATH.MYPAGE_ID(id!);
+    const targetBase = isMyPage ? `${baseWithoutTab}/troubles` : baseWithoutTab;
+    const url = tag
+      ? `${targetBase}?tag=${encodeURIComponent(tag)}`
+      : targetBase;
     navigate(url);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { FaUserGroup } from "react-icons/fa6";
 import { BsFillBellFill } from "react-icons/bs";
 import { FaUserCircle } from "react-icons/fa";
@@ -31,8 +31,31 @@ const Header = () => {
   const myUserIdStr = viewerId != null ? String(viewerId) : null;
   const viewedUser = useMyPageStore((s) => s.viewedUser);
 
+  const [searchParams] = useSearchParams();
   const hasNew = useNotificationStore((s) => s.hasNew);
   const clearNew = useNotificationStore((s) => s.clearNew);
+
+  // ?openNotif=1 오면 모달 오픈 + 파라미터 제거
+  useEffect(() => {
+    if (searchParams.get("openNotif") === "1") {
+      setIsNotificationModalOpen(true);
+      if (hasNew) clearNew();
+
+      const sp = new URLSearchParams(location.search);
+      sp.delete("openNotif");
+      navigate(
+        { pathname: location.pathname, search: sp.toString() },
+        { replace: true }
+      );
+    }
+  }, [
+    searchParams,
+    hasNew,
+    clearNew,
+    navigate,
+    location.pathname,
+    location.search,
+  ]);
 
   const openCommunityTip = () => {
     if (communityTipTimer.current) clearTimeout(communityTipTimer.current);
