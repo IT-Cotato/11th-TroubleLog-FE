@@ -282,7 +282,7 @@ const EditorBlock = ({
           </div>
         ) : (
           <div data-color-mode="light">
-            <div className="w-full rounded-md border border-gray-200 p-3 min-h-[150px]  ">
+            <div className="w-full rounded-md border border-gray-200 p-3 min-h-[250px]  ">
               <MDEditor.Markdown
                 source={block.content || ""}
                 data-color-mode="light"
