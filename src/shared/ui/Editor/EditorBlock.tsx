@@ -281,12 +281,14 @@ const EditorBlock = ({
             />
           </div>
         ) : (
-          <div className="w-full rounded-md border border-gray-200 p-3 min-h-[150px]">
-            <MDEditor.Markdown
-              source={block.content || ""}
-              data-color-mode="light"
-              className="!bg-white !text-black wmde-markdown-light"
-            />
+          <div data-color-mode="light">
+            <div className="w-full rounded-md border border-gray-200 p-3 min-h-[150px]  ">
+              <MDEditor.Markdown
+                source={block.content || ""}
+                data-color-mode="light"
+                className="!bg-white !text-black wmde-markdown-light"
+              />
+            </div>
           </div>
         )}
       </div>
