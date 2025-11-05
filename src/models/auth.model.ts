@@ -32,6 +32,22 @@ export interface RegisterResponse {
   status: number;
 }
 
+// 약관
+export type TermsType = "TERMS_OF_SERVICE" | "PRIVACY_POLICY" | string;
+
+export interface TermsDto {
+  id: number;
+  termsType: TermsType;
+  title: string;
+  body: string;
+  isRequired: boolean;
+  expirationPeriod: number;
+}
+
+export interface TermsLatestResponse {
+  termsDtoList: TermsDto[];
+}
+
 // 엑세스 토큰 재발급
 export interface RefreshResponse {
   accessToken: string;
@@ -72,7 +88,6 @@ export interface EmailCheckResponse {
 
 export interface OauthRegisterRequest {
   userId: number;
-  kakaoNickname: string;
   nickname: string;
   field: string;
   bio: string;

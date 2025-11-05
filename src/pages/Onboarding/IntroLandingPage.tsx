@@ -2,279 +2,223 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import HeaderLogoOnly from "@/layouts/Header/HeaderLogoOnly";
-import HeroLaptop from "@/assets/images/hero-laptop.png";
-import GuideShot from "@/assets/images/guide-shot.png";
-import GuideChecklist from "@/assets/images/guide-checklist.png";
-import Slide1 from "@/assets/images/slide1.png";
-import Slide2 from "@/assets/images/slide2.png";
-import Slide3 from "@/assets/images/slide3.png";
-import Slide4 from "@/assets/images/slide4.png";
 import { FiChevronDown } from "react-icons/fi";
 
-type Slide = { img: string; alt: string };
+import HeroMock from "@/assets/images/intro/hero_mock.png";
+import GuideComposite from "@/assets/images/intro/guide_composite.png";
 
-const slides: Slide[] = [
-  { img: Slide1, alt: "자기소개서 템플릿" },
-  { img: Slide2, alt: "면접 대비 템플릿" },
-  { img: Slide3, alt: "블로그 템플릿" },
-  { img: Slide4, alt: "이슈 관리 템플릿" },
+// 샘플 문서 이미지(탭과 매핑)
+import SampleDocResume from "@/assets/images/intro/sample_doc_resume.png";
+import SampleDocInterview from "@/assets/images/intro/sample_doc_interview.png";
+import SampleDocBlog from "@/assets/images/intro/sample_doc_blog.png";
+import SampleDocIssue from "@/assets/images/intro/sample_doc_issue.png";
+
+import LaptopSide from "@/assets/images/intro/laptop_side.png";
+
+type TabKey = "resume" | "interview" | "blog" | "issue";
+
+const TABS: { key: TabKey; title: string; desc: string }[] = [
+  { key: "resume", title: "자기소개서", desc: "직무 역량 중심으로" },
+  { key: "interview", title: "면접대비", desc: "경험 기반 질문과 답변" },
+  { key: "blog", title: "블로그", desc: "개발 맥락과 배운 점을 담아" },
+  { key: "issue", title: "Issue 관리", desc: "문제 원인과 해결 방법" },
 ];
+
+const SAMPLE_BY_TAB: Record<TabKey, string> = {
+  resume: SampleDocResume,
+  interview: SampleDocInterview,
+  blog: SampleDocBlog,
+  issue: SampleDocIssue,
+};
 
 export default function IntroLandingPage() {
   const nav = useNavigate();
   const loc = useLocation();
-  // 온보딩 렌더 여부(깜빡임 방지)
   const [ready, setReady] = useState(false);
 
-  // 토큰 있으면 홈(또는 next)으로 즉시 이동
+  // 로그인 토큰 보유 시 홈/next로 우회
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (token) {
       const next = new URLSearchParams(loc.search).get("next");
-      // 내부 경로만 허용 (절대 경로이고 같은 origin인지 확인)
-      const isInternalPath =
-        next && next.startsWith("/") && !next.startsWith("//");
-      nav(isInternalPath ? next : PATH.HOME, { replace: true });
-      return; // 렌더 차단
+      const isInternal = next && next.startsWith("/") && !next.startsWith("//");
+      nav(isInternal ? next : PATH.HOME, { replace: true });
+      return;
     }
-    setReady(true); // 토큰 없을 때만 온보딩 노출
+    setReady(true);
   }, [nav, loc.search]);
 
-  const [idx, setIdx] = useState(0);
-  const touchStartX = useRef<number | null>(null);
-
-  const goLogin = () => nav(PATH.LOGIN);
-  const prev = () => setIdx((i) => (i - 1 + slides.length) % slides.length);
-  const next = () => setIdx((i) => (i + 1) % slides.length);
-
-  // 하단 CTA 섹션으로 스크롤하기 위한 ref & 핸들러 추가
-  const bottomCtaRef = useRef<HTMLDivElement | null>(null);
-  const scrollToBottomCTA = useCallback(() => {
-    if (bottomCtaRef.current) {
-      bottomCtaRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
+  // “바로 아래 섹션” 스크롤 타깃
+  const nextSectionRef = useRef<HTMLDivElement | null>(null);
+  const scrollToNextSection = useCallback(() => {
+    if (!nextSectionRef.current) return;
+    const header = document.querySelector("header");
+    const headerH = header ? (header as HTMLElement).offsetHeight : 0;
+    const y =
+      window.scrollY +
+      nextSectionRef.current.getBoundingClientRect().top -
+      (headerH + 8);
+    window.scrollTo({ top: y, behavior: "smooth" });
   }, []);
 
-  // 자동 슬라이드
-  useEffect(() => {
-    const id = setInterval(next, 5000);
-    return () => clearInterval(id);
-  }, []);
+  // 탭 상태
+  const [activeTab, setActiveTab] = useState<TabKey>("resume");
 
-  const viewportRef = useRef<HTMLDivElement | null>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  // 선택된 카드(i)를 뷰포트 "가운데"로 정확히 스크롤 (패딩/갭/뷰폭 무관)
-  const centerActive = useCallback((i: number) => {
-    const vp = viewportRef.current;
-    const el = itemRefs.current[i];
-    if (!vp || !el) return;
-
-    const vpRect = vp.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-
-    const nextLeft =
-      vp.scrollLeft +
-      (elRect.left + elRect.width / 2) -
-      (vpRect.left + vpRect.width / 2);
-
-    vp.scrollTo({ left: nextLeft, behavior: "smooth" });
-  }, []);
-
-  // idx 바뀔 때마다 중앙 정렬
-  useEffect(() => {
-    centerActive(idx);
-  }, [idx, centerActive]);
-
-  // 초기 마운트/리사이즈에도 중앙 유지
-  useEffect(() => {
-    const onResize = () => centerActive(idx);
-    window.addEventListener("resize", onResize);
-    // 초기 1회 보정 (이미지 로딩 등 레이아웃 안정 후)
-    const t = setTimeout(() => centerActive(idx), 0);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener("resize", onResize);
-    };
-  }, [idx, centerActive]);
-
-  const SWIPE_THRESHOLD = 40;
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current == null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > SWIPE_THRESHOLD) {
-      if (dx > 0) {
-        prev();
-      } else {
-        next();
-      }
-    }
-    touchStartX.current = null;
-  };
-
-  if (!ready) return null; // 리다이렉트 판정 전 렌더 방지
+  if (!ready) return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <HeaderLogoOnly />
 
       <main className="flex-1">
-        {/* HERO (배경: 흰색) */}
-        <section className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 py-16 sm:py-20 lg:py-28 grid lg:grid-cols-2 gap-10 items-center">
-          <div className="space-y-6 sm:space-y-8 md:space-y-10">
-            <h1 className="text-head-48">Troublog에 오신 걸 환영합니다!</h1>
-            <p className="text-body-20-regular text-gray-600 whitespace-pre-line leading-relaxed sm:leading-8">
-              {`개발자의 문제 해결 기록이 성장으로 이어지는 곳
+        {/* ================== 1) HERO: 배경 이미지 + 중앙 카피 ================== */}
+        <section
+          className="relative w-full"
+          style={{
+            backgroundImage: `url(${HeroMock})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          {/* 대비를 위한 옅은 오버레이 */}
+          <div
+            className="absolute inset-0 bg-white/65 sm:bg-white/55"
+            aria-hidden
+          />
+          <div className="relative mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 py-20 sm:py-24 lg:py-32">
+            <div className="max-w-3xl mx-auto text-center">
+              <h1 className="text-head-48">TrouBlog에 오신 걸 환영합니다!</h1>
+              <p className="mt-5 text-body-20-regular text-gray-700 leading-relaxed sm:leading-8 whitespace-pre-line">
+                {`개발자의 문제 해결 기록이 성장으로 이어지는 곳
 버그, 이슈, 막막했던 순간들...
 그저 넘겼던 문제 해결 과정을 이제는 구조적으로 기록하고,
 이력서, 면접, 블로그, 이슈관리에 바로 활용할 수 있는 요약본까지 자동 생성해드립니다.`}
-            </p>
+              </p>
 
-            <button
-              type="button"
-              onClick={scrollToBottomCTA}
-              aria-label="아래로 스크롤"
-              title="아래로 스크롤"
-              className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 bg-white shadow-sm hover:bg-gray-50 active:scale-95 transition
-                         animate-bounce"
-            >
-              <FiChevronDown className="text-2xl" />
-            </button>
-          </div>
-          <div className="w-full">
-            <img
-              src={HeroLaptop}
-              alt="Troublog 화면 예시"
-              className="w-full h-auto"
-              loading="lazy"
-            />
+              {/* 스크롤 버튼 (아랫단으로만 이동) */}
+              <div className="mt-8">
+                <button
+                  type="button"
+                  onClick={scrollToNextSection}
+                  className={[
+                    "inline-flex h-14 w-14 items-center justify-center rounded-full",
+                    "border border-[#D7C6FF] bg-white shadow-[0_8px_20px_rgba(155,93,224,0.15)]",
+                    "hover:bg-[#FBF8FF] active:scale-95 transition",
+                  ].join(" ")}
+                  aria-label="아래 섹션으로 이동"
+                  title="아래로 스크롤"
+                >
+                  <FiChevronDown className="text-2xl text-primary" />
+                </button>
+                <p className="mt-3 text-body-14-regular text-gray-600">
+                  트러블로그 소개 더 보기
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        <div className="bg-gradient-to-b from-white via-[#F4ECFF] to-[#E6D4FF]">
-          {/* 작성 가이드 섹션 */}
-          <section className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 py-16 sm:py-20 lg:py-28 grid lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1 relative">
+        {/* ================== 2) GUIDE ================== */}
+        <section
+          ref={nextSectionRef}
+          className="bg-gradient-to-b from-white via-[#F4ECFF] to-[#E6D4FF]"
+        >
+          <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 py-16 sm:py-20 lg:py-28 grid lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1">
               <img
-                src={GuideShot}
-                alt="작성 가이드 화면"
-                className="w-full h-auto"
+                src={GuideComposite}
+                alt="작성 가이드/체크리스트"
+                className="w-full h-auto rounded-2xl"
                 loading="lazy"
-              />
-              <img
-                src={GuideChecklist}
-                alt="가이드 체크리스트"
-                loading="lazy"
-                aria-hidden
-                className="pointer-events-none absolute -top-4 right-2 sm:-top-8 sm:right-4 md:-top-10 md:right-8 lg:-top-12 lg:right-10 w-32 sm:w-44 md:w-56 lg:w-64 rounded-2xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-white/80"
               />
             </div>
 
-            <div className="order-1 lg:order-2 text-left space-y-5 sm:space-y-6 lg:pl-16 xl:pl-24 2xl:pl-32">
-              <h2 className="text-head-32-bold text-primary whitespace-pre-line leading-relaxed sm:leading-9">
-                {`쉽고 
+            <div className="order-1 lg:order-2 text-left space-y-5 sm:space-y-6 lg:pl-16 xl:pl-24">
+              <h2 className="text-head-32-bold text-primary whitespace-pre-line leading-relaxed sm:leading-9">{`쉽고 
 명확하게
-작성해 보세요!`}
-              </h2>
-              <p className="text-body-20-regular text-gray-600 whitespace-pre-line leading-relaxed sm:leading-8">
+작성해 보세요!`}</h2>
+              <p className="text-body-20-regular text-gray-600 leading-relaxed sm:leading-8 whitespace-pre-line">
                 {`트러블로그가 트러블슈팅 해결을 위한
 가이드를 제공해드려요!`}
               </p>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* 캐러셀: 화면 전체 너비 차지 + 중앙 포커싱 */}
-          <section className="py-16 sm:py-20 lg:py-28">
-            {/* 🟣 Full-bleed 래퍼: 부모의 좌우 패딩/최대폭을 무시하고 화면 전체 차지 */}
-            <div className="relative left-1/2 -translate-x-1/2 w-screen">
-              <h3 className="text-center text-head-32-bold mb-10 sm:mb-12 px-4">
-                트러블로그가 문제 해결 경험을 원하는 형식으로 정리해드려요!
-              </h3>
+        {/* ================== 3) FORMATS: 탭 버튼 + 매핑 샘플 ================== */}
+        <section className="py-16 sm:py-20 lg:py-28">
+          <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8">
+            <h3 className="text-center text-head-32-bold">
+              트러블로그를 통해 문제 해결 경험을 원하는 형식으로 정리해보세요!
+            </h3>
 
-              {/* 뷰포트: 화면 전체 너비 */}
-              <div
-                ref={viewportRef}
-                className="w-screen overflow-x-auto snap-x snap-mandatory scroll-smooth select-none
-                           px-4 sm:px-6 md:px-8"
-                onTouchStart={onTouchStart}
-                onTouchEnd={onTouchEnd}
-              >
-                {/* 트랙 */}
-                <div className="flex items-stretch gap-8 sm:gap-10 md:gap-12 lg:gap-14">
-                  {slides.map((s, i) => {
-                    const active = i === idx;
-                    return (
-                      <div
-                        key={i}
-                        ref={(el) => {
-                          itemRefs.current[i] = el;
-                        }}
-                        className="snap-center relative
-                                   w-[62vw] xs:w-[50vw] sm:w-60 md:w-72 lg:w-80 xl:w-96
-                                   aspect-square overflow-hidden rounded-2xl flex-shrink-0
-                                   bg-white border border-gray-200 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
-                        aria-hidden={!active}
-                        onClick={() => setIdx(i)} // 클릭 시 해당 슬라이드로 포커싱
-                      >
-                        <img
-                          src={s.img}
-                          alt={s.alt}
-                          className={[
-                            "absolute inset-0 w-full h-full object-cover",
-                            "transition-all duration-300 ease-out",
-                            active
-                              ? "opacity-100 scale-100"
-                              : "opacity-80 scale-[0.96] blur-[2px]",
-                          ].join(" ")}
-                          loading="lazy"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 인디케이터 */}
-              <div className="mt-6 sm:mt-8 flex justify-center gap-2">
-                {slides.map((_, i) => (
+            {/* 탭 버튼들 */}
+            <div className="mt-8 flex flex-wrap justify-center gap-3 sm:gap-4">
+              {TABS.map(({ key, title, desc }) => {
+                const active = key === activeTab;
+                return (
                   <button
-                    key={i}
-                    aria-label={`${i + 1}번째 슬라이드로 이동`}
-                    onClick={() => setIdx(i)}
-                    className={`h-2 rounded-full transition-all ${
-                      idx === i ? "w-6 bg-primary" : "w-2 bg-gray-300"
-                    }`}
-                  />
-                ))}
+                    key={key}
+                    onClick={() => setActiveTab(key)}
+                    className={[
+                      "px-4 sm:px-5 py-3 rounded-xl border transition",
+                      "text-left",
+                      active
+                        ? "bg-primary text-white border-primary shadow-[0_8px_20px_rgba(155,93,224,0.20)]"
+                        : "bg-white text-gray-800 border-gray-200 hover:bg-gray-50",
+                    ].join(" ")}
+                    aria-pressed={active}
+                  >
+                    <div className="text-body-16-semibold">{title}</div>
+                    <div className={active ? "text-white/90" : "text-gray-500"}>
+                      {desc}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 샘플 문서 프리뷰 (탭에 따라 이미지 교체) */}
+            <div className="mt-10 sm:mt-14">
+              <div className="rounded-[20px] border border-gray-200 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-4 sm:p-6">
+                <img
+                  src={SAMPLE_BY_TAB[activeTab]}
+                  alt={`${TABS.find((t) => t.key === activeTab)?.title} 샘플`}
+                  className="w-full h-auto rounded-[14px]"
+                  loading="lazy"
+                />
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* 마지막 CTA */}
-          <section ref={bottomCtaRef} className="py-20 sm:py-24 lg:py-28">
-            <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 text-center space-y-6 sm:space-y-8">
+        {/* ================== 4) CTA ================== */}
+        <section className="relative overflow-hidden py-20 sm:py-24 lg:py-28">
+          <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 grid lg:grid-cols-2 gap-10 items-center">
+            <div className="space-y-6 sm:space-y-7">
               <h3 className="text-head-32-bold">지금 시작해보세요!</h3>
-
+              <p className="text-body-16-regular text-gray-600 whitespace-pre-line leading-relaxed sm:leading-7">
+                {`버튼을 눌러 첫 기록을 남겨보세요.
+기록을 시작하면, 원하시는 형식으로 정리해드려요.`}
+              </p>
               <button
-                onClick={goLogin}
+                onClick={() => nav(PATH.LOGIN)}
                 className="inline-flex h-12 items-center rounded-xl bg-primary px-6 text-white text-body-16-semibold hover:opacity-90 transition"
               >
                 시작하기
               </button>
-
-              <p className="text-body-14-regular text-gray-600 whitespace-pre-line leading-relaxed sm:leading-7">
-                {`버튼을 눌러 첫 기록을 남겨보세요.
-기록을 시작하면, 원하시는 형식으로 정리해드려요.`}
-              </p>
             </div>
-          </section>
-        </div>
+
+            <div className="w-full">
+              <img
+                src={LaptopSide}
+                alt="노트북 목업"
+                className="w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );
