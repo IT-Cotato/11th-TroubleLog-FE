@@ -89,3 +89,13 @@
   @apply mx-auto w-full max-w-screen-2xl
          px-4 sm:px-8 lg:px-12 xl:px-20 2xl:px-28;
 }
+
+/* uiweditor (마크다운 에디터)용 css*/
+.wmde-markdown ul,
+.wmde-markdown ol {
+  list-style: disc !important;
+  margin-left: 1.5rem !important;
+}
+.wmde-markdown li {
+  display: list-item !important;
+}

@@ -62,8 +62,10 @@ export default function ProjectDetailPage() {
     [navigate]
   );
 
-  const handleGoGuideTemplate = () => goGuide();
-  const handleGoFreeformTemplate = () => goFreeform();
+  // 프로젝트 아이디 넘겨줌
+  const handleGoGuideTemplate = () => goGuide(projectId);
+  const handleGoFreeformTemplate = () => goFreeform(projectId);
+
   const handlePostClick = useCallback(() => {
     setShowDropdown((prev) => !prev);
   }, []);
