@@ -23,6 +23,11 @@ export async function getAlerts(alertType?: AlertTypeParam) {
   return inflightAlerts.get(key)!;
 }
 
+export async function getUnreadAlerts(alertType?: AlertTypeParam) {
+  const all = await getAlerts(alertType);
+  return (all ?? []).filter((a) => !a.isRead);
+}
+
 // 알림 삭제
 export async function deleteAlert(alertId: number) {
   await api.delete("/alert", { params: { alertId } });

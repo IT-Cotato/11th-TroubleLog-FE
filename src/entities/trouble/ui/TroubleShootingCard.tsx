@@ -137,7 +137,7 @@ const TroubleShootingCard = ({
           </div>
         )}
 
-        {/* 에러 종류 + 케밥 메뉴 */}
+        {/* 에러 종류 */}
         <div className="flex justify-between items-start mb-4 sm:mb-6">
           <div
             className="text-body-14-regular sm:text-body-16-regular text-gray-800 truncate"
@@ -145,28 +145,6 @@ const TroubleShootingCard = ({
           >
             {errorCategory}
           </div>
-          {!isSearchResult && isMine && (
-            <div
-              ref={menuRef}
-              className="relative"
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-            >
-              <KebabMenuButton
-                onClick={() => !deleting && setShowMenu(!showMenu)}
-              />
-              {showMenu && (
-                <KebabDropdown
-                  options={[
-                    {
-                      label: deleting ? "삭제 중..." : "삭제",
-                      onClick: deleting ? () => {} : handleDelete,
-                    },
-                  ]}
-                />
-              )}
-            </div>
-          )}
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center self-stretch gap-4 md:gap-6">
@@ -265,6 +243,30 @@ const TroubleShootingCard = ({
           />
         )}
       </div>
+
+      {/* 케밥 메뉴 */}
+      {!isSearchResult && isMine && (
+        <div
+          ref={menuRef}
+          className="relative"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <KebabMenuButton
+            onClick={() => !deleting && setShowMenu(!showMenu)}
+          />
+          {showMenu && (
+            <KebabDropdown
+              options={[
+                {
+                  label: deleting ? "삭제 중..." : "삭제",
+                  onClick: deleting ? () => {} : handleDelete,
+                },
+              ]}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };
