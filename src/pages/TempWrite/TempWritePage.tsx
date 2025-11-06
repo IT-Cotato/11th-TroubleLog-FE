@@ -1055,7 +1055,7 @@ const TempWritePage = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="제목을 입력하세요."
-              className="w-full text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black outline-none leading-tight placeholder:text-neutral-400"
+              className="w-[1100px] md:w-[870px] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black outline-none leading-tight placeholder:text-neutral-400"
             />
 
             <div className="flex gap-5 items-center flex-wrap w-full lg:w-auto ">

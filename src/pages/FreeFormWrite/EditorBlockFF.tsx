@@ -79,7 +79,7 @@ const EditorBlock = ({
             value={block.content}
             onChange={(val) => onChange(index, { content: val || "" })}
             preview={isActive ? "edit" : "preview"}
-            height={isActive ? 300 : 220}
+            height={isActive ? 300 : 300}
             autoFocus={isActive}
             className="w-full"
           />

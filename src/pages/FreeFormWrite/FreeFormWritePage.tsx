@@ -892,7 +892,7 @@ export default function FreeFormWritePage() {
     const chrome =
       toolbarH + bottombarH + taVPad + wrapVPad + rootVPad + rootVBorder + 16;
 
-    const next = Math.max(200, Math.min(20000, taScrollH + chrome));
+    const next = Math.max(300, Math.min(30000, taScrollH + chrome));
     setEditorHeights((prevHeights) =>
       prevHeights[blockId] === next
         ? prevHeights
@@ -1184,7 +1184,7 @@ export default function FreeFormWritePage() {
                         requestAnimationFrame(() => autosizeFor(block.id));
                       }}
                       preview="edit"
-                      height={editorHeights[block.id] ?? 200}
+                      height={editorHeights[block.id] ?? 300}
                       textareaProps={{
                         onPaste: (
                           e: React.ClipboardEvent<HTMLTextAreaElement>
@@ -1219,7 +1219,7 @@ export default function FreeFormWritePage() {
             <button
               onClick={handleAddBlock}
               disabled={blocks.length >= 20}
-              className="border-2 border-dashed p-4 sm:p-6 rounded-xl w-full h-[120px] sm:h-[140px] mt-4 text-gray-500 text-lg sm:text-xl hover:bg-gray-50 disabled:opacity-50"
+              className="border-2 border-dashed p-4 sm:p-6 rounded-xl w-full h-[80px] sm:h-[100px] mt-4 text-gray-500 text-lg sm:text-xl hover:bg-gray-50 disabled:opacity-50"
             >
               + 블록 추가하기 ({blocks.length}/20)
             </button>
