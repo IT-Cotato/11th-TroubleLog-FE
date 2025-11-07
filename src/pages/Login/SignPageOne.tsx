@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import onboarding_image from "../../assets/images/onboarding_image.png";
 import { postEmailCheck } from "@/api/auth.api";
 import { PATH } from "@/shared/config/paths";
+
+const EMAIL_DUP_MSG = "이미 가입된 이메일 입니다!";
 
 const SignPageOne = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +17,18 @@ const SignPageOne = () => {
   const [formError, setFormError] = useState("");
   const [isFormValid, setIsFormValid] = useState(false);
   const navigate = useNavigate();
+
+  const AUTH_START_URL = useMemo(() => {
+    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+    const callback = `${window.location.origin}${base}${PATH.OAUTH_REGISTER}`;
+    return `https://troublog.shop/oauth2/authorization/kakao?return_to=${encodeURIComponent(
+      callback
+    )}`;
+  }, []);
+
+  const handleKakaoLogin = () => {
+    window.location.href = AUTH_START_URL;
+  };
 
   useEffect(() => {
     const valid =
@@ -73,10 +87,10 @@ const SignPageOne = () => {
 
     try {
       await postEmailCheck(trimmedEmail);
-      setEmailError(""); // 서버에서 중복 아님 -> 에러 없음
+      setEmailError(""); // 중복 아님
     } catch (error: any) {
       if (error.response?.status === 409) {
-        setEmailError("이미 사용 중인 이메일입니다.");
+        setEmailError(EMAIL_DUP_MSG);
       } else {
         setEmailError("이메일 확인 중 오류가 발생했습니다.");
       }
@@ -116,6 +130,8 @@ const SignPageOne = () => {
     });
   };
 
+  const isEmailDuplicate = emailError === EMAIL_DUP_MSG;
+
   return (
     <div className="flex w-screen h-screen overflow-hidden">
       <img src={onboarding_image} className="w-1/2 h-full object-fill" />
@@ -138,6 +154,13 @@ const SignPageOne = () => {
                 onBlur={handleEmailBlur}
                 placeholder="이메일을 입력해주세요."
                 error={emailError}
+                // 409(중복)일 때만 우측에 텍스트 버튼 노출
+                errorActionLabel={
+                  isEmailDuplicate ? "카카오로 로그인하기" : undefined
+                }
+                onErrorActionClick={
+                  isEmailDuplicate ? handleKakaoLogin : undefined
+                }
               />
               <Input
                 label="비밀번호"

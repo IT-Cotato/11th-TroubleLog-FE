@@ -9,6 +9,8 @@ interface InputProps {
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   error?: string;
   name?: string;
+  errorActionLabel?: string;
+  onErrorActionClick?: () => void;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -20,7 +22,11 @@ const Input: React.FC<InputProps> = ({
   onBlur,
   error,
   name,
+  errorActionLabel,
+  onErrorActionClick,
 }) => {
+  const showError = Boolean(error);
+
   return (
     <div className="flex flex-col items-start gap-2 w-full">
       <label className="text-black font-pretendard text-base sm:text-lg font-normal leading-normal">
@@ -39,17 +45,33 @@ const Input: React.FC<InputProps> = ({
         error ? "border-red-500 focus:ring-red-200" : "border-gray-300 bg-white"
       }`}
         aria-invalid={!!error}
+        aria-describedby={showError ? `${name ?? label}-error` : undefined}
       />
 
-      <p
-        className={`text-[13px] mt-1 min-h-[20px] transition-opacity duration-150
-      ${error ? "text-red-500 opacity-100" : "opacity-0"}`}
-        aria-live={error ? "polite" : undefined}
-        role={error ? "alert" : undefined}
-        aria-hidden={!error}
+      {/* 에러 메시지 + 우측 액션 버튼 영역 */}
+      <div
+        id={`${name ?? label}-error`}
+        className={`mt-1 min-h-[20px] w-full max-w-[560px] flex items-center transition-opacity duration-150 ${
+          showError ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        aria-live={showError ? "polite" : undefined}
+        role={showError ? "alert" : undefined}
+        aria-hidden={!showError}
       >
-        {error || "placeholder"}
-      </p>
+        <span className={`text-[13px] ${showError ? "text-red-500" : ""}`}>
+          {error || "placeholder"}
+        </span>
+
+        {showError && errorActionLabel && onErrorActionClick && (
+          <button
+            type="button"
+            onClick={onErrorActionClick}
+            className="pl-5 text-[13px] font-pretendard underline hover:opacity-80"
+          >
+            {errorActionLabel}
+          </button>
+        )}
+      </div>
     </div>
   );
 };
