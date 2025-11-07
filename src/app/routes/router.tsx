@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
+import TermsPublicPage from "@/pages/Login/TermsPublicPage";
 
 // 레이지 import (코드 스플리팅)
 const MainLayout = lazy(() => import("@/layouts/MainLayout"));
@@ -66,6 +67,7 @@ export const router = createBrowserRouter(
     { path: PATH.SIGNUP, element: <SignPageOne /> },
     { path: PATH.SIGNUP_DETAIL, element: <SignPageTwo /> },
     { path: PATH.TERMS, element: <TermsDetailPage /> },
+    { path: PATH.TERMS_FOOTER, element: <TermsPublicPage /> },
     { path: PATH.SIGNUP_OAUTH, element: <SignPageOauth /> },
 
     // 콜백 브릿지
