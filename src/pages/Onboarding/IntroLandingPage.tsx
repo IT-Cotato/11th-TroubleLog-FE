@@ -86,7 +86,7 @@ export default function IntroLandingPage() {
           <div aria-hidden />
           <div className="relative mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 py-20 sm:py-24 lg:py-32">
             <div className="max-w-3xl mx-auto text-center">
-              <img src={logo} className="w-36 h-24 mx-auto pb-8" />
+              <img src={logo} alt="로고" className="w-36 h-24 mx-auto pb-8" />
               <p className="text-[#000] text-center text-6xl font-extrabold font-sans leading-[normal] whitespace-pre-line">
                 {`TrouBlog에 오신 걸
                 환영합니다!`}
