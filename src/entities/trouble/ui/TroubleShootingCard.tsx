@@ -178,7 +178,7 @@ const TroubleShootingCard = ({
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
               <TagList tags={tags} variant="mypage" />
               <div className="flex items-center gap-3">
-                {!isSearchResult && importance !== undefined && (
+                {isMine && !isSearchResult && importance !== undefined && (
                   <div className="flex items-center gap-1">
                     <img
                       src={starIcon}
