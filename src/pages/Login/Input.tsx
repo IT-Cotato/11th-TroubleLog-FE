@@ -58,9 +58,7 @@ const Input: React.FC<InputProps> = ({
         role={showError ? "alert" : undefined}
         aria-hidden={!showError}
       >
-        <span className={`text-[13px] ${showError ? "text-red-500" : ""}`}>
-          {error || "placeholder"}
-        </span>
+        {showError && <span className="text-[13px] text-red-500">{error}</span>}
 
         {showError && errorActionLabel && onErrorActionClick && (
           <button
