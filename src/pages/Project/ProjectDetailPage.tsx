@@ -98,8 +98,7 @@ export default function ProjectDetailPage() {
       : s === "created"
       ? "SUMMARIZED"
       : ("WRITING" as const);
-  const toApiSort = (s: SortUI) =>
-    s === "latest" ? "LATEST" : ("LIKES" as const);
+  const toApiSort = (s: SortUI) => (s === "latest" ? "LATEST" : "IMPORTANT");
   const toApiVisibility = (v: VisibilityOption) =>
     v === "공개" ? "PUBLIC" : v === "비공개" ? "PRIVATE" : "ALL";
 
