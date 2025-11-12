@@ -14,6 +14,8 @@ import { useViewerId } from "@/store/auth";
 import { useNotificationStore } from "@/store/notification";
 import { useMyPageStore } from "@/store/useMyPageStore";
 
+const MIN_QUERY_LEN = 2;
+
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,6 +36,25 @@ const Header = () => {
   const [searchParams] = useSearchParams();
   const hasNew = useNotificationStore((s) => s.hasNew);
   const clearNew = useNotificationStore((s) => s.clearNew);
+
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 공용 알림 함수 (토스트 우선, 안 되면 alert)
+  const notify = (msg: string) => {
+    setToastMsg(msg);
+    setToastOpen(true);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastOpen(false), 1600);
+  };
+
+  // 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   // ?openNotif=1 오면 모달 오픈 + 파라미터 제거
   useEffect(() => {
@@ -160,7 +181,13 @@ const Header = () => {
     setSearch(e.target.value);
 
   const handleSubmitSearch = () => {
-    if (!search.trim()) return;
+    const q = search.trim();
+    if (q.length < MIN_QUERY_LEN) {
+      notify(`검색어는 최소 ${MIN_QUERY_LEN}자 이상 입력해주세요.`);
+      inputRef.current?.focus();
+      return;
+    }
+
     const currentPath = location.pathname;
     const existing = new URLSearchParams(location.search);
     const rawScope = existing.get("scope");
@@ -226,8 +253,7 @@ const Header = () => {
         >
           <input
             ref={inputRef}
-            className="text-body-14-regular sm:text-body-16-regular w-full h-full focus:outline-none
-                      placeholder-sm placeholder-tight"
+            className="text-body-14-regular sm:text-body-16-regular w-full h-full focus:outline-none placeholder-sm placeholder-tight"
             placeholder={placeholder}
             value={search}
             onChange={handleSearch}
@@ -236,6 +262,7 @@ const Header = () => {
           <MdSearch
             onClick={handleSubmitSearch}
             className="cursor-pointer text-[20px] sm:text-[24px]"
+            aria-label="검색"
           />
         </div>
 
@@ -322,6 +349,21 @@ const Header = () => {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Toast */}
+      <div
+        aria-live="assertive"
+        className={`fixed left-1/2 -translate-x-1/2 bottom-6 z-[1000] transition-all duration-200
+              ${
+                toastOpen
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-2 pointer-events-none"
+              }`}
+      >
+        <div className="rounded-md bg-gray-900/90 text-white px-4 py-2 text-sm shadow-lg">
+          {toastMsg}
         </div>
       </div>
     </div>
