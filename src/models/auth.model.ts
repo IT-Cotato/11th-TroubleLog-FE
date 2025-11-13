@@ -88,8 +88,10 @@ export interface EmailCheckResponse {
 
 export interface OauthRegisterRequest {
   userId: number;
+  kakaoNickname: string;
   nickname: string;
   field: string;
   bio: string;
   githubUrl?: string;
+  termsAgreements: { "1": boolean; "2": boolean };
 }

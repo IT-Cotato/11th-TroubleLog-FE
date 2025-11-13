@@ -164,10 +164,12 @@ const SignPageOauth = () => {
     try {
       const payload: OauthRegisterRequest = {
         userId: userId!, // 카카오에서 받은 필수 ID
+        kakaoNickname: nickname.trim(),
         nickname: nickname.trim(),
         field: field.trim(),
         bio: bio.trim(),
         githubUrl: githubad.trim() || undefined,
+        termsAgreements: { ...agreeMap },
       };
 
       await postOauthRegister(payload);
