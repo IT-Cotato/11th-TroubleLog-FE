@@ -8,6 +8,7 @@ export const PATH = {
   TERMS_FOOTER: "/terms",
   SIGNUP_OAUTH: "/signup/oauth",
   OAUTH_REGISTER: "/auth/oauth-register",
+  COMBINE_SIGNUP: "/signup/combine",
 
   USER: "/user",
   HOME: "/user/home",
