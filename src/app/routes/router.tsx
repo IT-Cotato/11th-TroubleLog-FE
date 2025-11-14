@@ -16,6 +16,7 @@ const IntroLandingPage = lazy(
 const LoginPage = lazy(() => import("@/pages/Login/LoginPage"));
 const SignPageOne = lazy(() => import("@/pages/Login/SignPageOne"));
 const SignPageTwo = lazy(() => import("@/pages/Login/SignPageTwo"));
+const CombineSignPage = lazy(() => import("@/pages/Login/CombineSignPage"));
 
 const TermsDetailPage = lazy(() => import("@/pages/Login/TermsDetailPage"));
 const SignPageOauth = lazy(() => import("@/pages/Login/SignPageOauth"));
@@ -69,6 +70,7 @@ export const router = createBrowserRouter(
     { path: PATH.TERMS, element: <TermsDetailPage /> },
     { path: PATH.TERMS_FOOTER, element: <TermsPublicPage /> },
     { path: PATH.SIGNUP_OAUTH, element: <SignPageOauth /> },
+    { path: PATH.COMBINE_SIGNUP, element: <CombineSignPage /> },
 
     // 콜백 브릿지
     { path: PATH.OAUTH_REGISTER, element: <OAuthPopupKakao /> },

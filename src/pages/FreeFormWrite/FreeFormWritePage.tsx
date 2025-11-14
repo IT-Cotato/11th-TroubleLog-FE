@@ -1085,35 +1085,67 @@ export default function FreeFormWritePage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="제목을 입력하세요."
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-black outline-none w-full leading-tight"
+                className="text-3xl sm:text-4xl md:text-5xl font-bold text-black outline-none w-full leading-tight"
               />
               <div className="flex w-full max-w-[1200px] justify-between gap-3 flex-wrap">
-                <div className="flex gap-3 items-center flex-wrap w-full lg:w-auto">
-                  {/* 프로젝트 선택 */}
-                  <DropDownButton
-                    options={projectNames}
-                    placeholder={
-                      projectsLoading
-                        ? "프로젝트 불러오는 중..."
-                        : projectNameById(selectedProjectIdPage) ||
-                          "프로젝트를 선택하세요"
-                    }
-                    width="w-full sm:w-[160px] lg:w-[200px]"
-                    onSelect={(name) =>
-                      setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                    }
-                  />
+                <div className="flex flex-col gap-4 w-full">
+                  <div className="flex items-end justify-between">
+                    <div className="flex gap-3 items-center flex-wrap w-full lg:w-auto">
+                      {/* 프로젝트 선택 */}
+                      <DropDownButton
+                        options={projectNames}
+                        placeholder={
+                          projectsLoading
+                            ? "프로젝트 불러오는 중..."
+                            : projectNameById(selectedProjectIdPage) ||
+                              "프로젝트를 선택하세요"
+                        }
+                        width="w-full sm:w-[200px] lg:w-[220px]"
+                        onSelect={(name) =>
+                          setSelectedProjectIdPage(nameToId.get(name) ?? null)
+                        }
+                      />
 
-                  {/* 에러 종류 */}
-                  <DropDownButton
-                    options={errorOptions}
-                    placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
-                    width="w-full sm:w-[200px] lg:w-[240px]"
-                    onSelect={(selectedError) =>
-                      setSelectedErrorType(selectedError)
-                    }
-                  />
+                      {/* 에러 종류 */}
+                      <DropDownButton
+                        options={errorOptions}
+                        placeholder={
+                          selectedErrorType ?? "에러 종류를 선택하세요"
+                        }
+                        width="w-full sm:w-[200px] lg:w-[240px]"
+                        onSelect={(selectedError) =>
+                          setSelectedErrorType(selectedError)
+                        }
+                      />
+                    </div>
 
+                    <div className="flex gap-2 w-full lg:w-auto">
+                      <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                        <button
+                          onClick={async () => {
+                            if (!canSave) {
+                              setShowAlert(true);
+                              setTimeout(() => setShowAlert(false), 1000);
+                              return;
+                            }
+                            await handleGlobalSave();
+                          }}
+                          disabled={isSaving || (isResume && !detailLoaded)}
+                          className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100 disabled:opacity-50 w-full sm:w-auto"
+                        >
+                          Save
+                        </button>
+
+                        <button
+                          onClick={handleEnd}
+                          disabled={isResume && !detailLoaded}
+                          className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600 w-full sm:w-auto"
+                        >
+                          End
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   {/* 태그 */}
                   <div className="w-full sm:w-auto min-w-[200px]">
                     <CategoryTag
@@ -1122,40 +1154,13 @@ export default function FreeFormWritePage() {
                     />
                   </div>
                 </div>
-
-                <div className="flex gap-2 w-full lg:w-auto">
-                  <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                    <button
-                      onClick={async () => {
-                        if (!canSave) {
-                          setShowAlert(true);
-                          setTimeout(() => setShowAlert(false), 1000);
-                          return;
-                        }
-                        await handleGlobalSave();
-                      }}
-                      disabled={isSaving || (isResume && !detailLoaded)}
-                      className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100 disabled:opacity-50 w-full sm:w-auto"
-                    >
-                      Save
-                    </button>
-
-                    <button
-                      onClick={handleEnd}
-                      disabled={isResume && !detailLoaded}
-                      className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600 w-full sm:w-auto"
-                    >
-                      End
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
 
             {/* 블록 리스트 */}
             {blocks.map((block) => (
               <div key={block.id} className="w-full">
-                <div className="w-full flex items-end h-[60px] mb-2">
+                <div className="w-full flex items-end h-[50px] mb-2">
                   <input
                     type="text"
                     value={block.title}
