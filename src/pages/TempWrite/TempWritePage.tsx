@@ -1057,40 +1057,40 @@ const TempWritePage = () => {
               placeholder="제목을 입력하세요."
               className="w-[1100px] md:w-[870px] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black outline-none leading-tight placeholder:text-neutral-400"
             />
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-5 items-center flex-wrap w-full lg:w-auto ">
+                <DropDownButton
+                  options={projectNames}
+                  placeholder={
+                    projectsLoading
+                      ? "프로젝트 불러오는 중..."
+                      : projectNameById(selectedProjectIdPage) ||
+                        "프로젝트를 선택하세요"
+                  }
+                  width="w-full sm:w-[200px] md:w-[220px]"
+                  onSelect={(name: string) =>
+                    setSelectedProjectIdPage(nameToId.get(name) ?? null)
+                  }
+                />
 
-            <div className="flex gap-5 items-center flex-wrap w-full lg:w-auto ">
-              <DropDownButton
-                options={projectNames}
-                placeholder={
-                  projectsLoading
-                    ? "프로젝트 불러오는 중..."
-                    : projectNameById(selectedProjectIdPage) ||
-                      "프로젝트를 선택하세요"
-                }
-                width="w-full sm:w-[160px] lg:w-[200px]"
-                onSelect={(name: string) =>
-                  setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                }
-              />
-
-              <DropDownButton
-                options={[
-                  "Build/Compile Error",
-                  "Runtime Error",
-                  "Dependency/Version Error",
-                  "Network/API Error",
-                  "Authentication/Authorization Error",
-                  "Database Error",
-                  "UI/Rendering Error",
-                  "Configuration Error",
-                  "Timeout/Error Handling",
-                  "Third-Party Library Error",
-                ]}
-                placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
-                width="w-full sm:w-[200px] lg:w-[240px]"
-                onSelect={(v: string) => setSelectedErrorType(v)}
-              />
-
+                <DropDownButton
+                  options={[
+                    "Build/Compile Error",
+                    "Runtime Error",
+                    "Dependency/Version Error",
+                    "Network/API Error",
+                    "Authentication/Authorization Error",
+                    "Database Error",
+                    "UI/Rendering Error",
+                    "Configuration Error",
+                    "Timeout/Error Handling",
+                    "Third-Party Library Error",
+                  ]}
+                  placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
+                  width="w-full sm:w-[200px] lg:w-[240px]"
+                  onSelect={(v: string) => setSelectedErrorType(v)}
+                />
+              </div>
               <div className="w-full sm:w-auto min-w-[200px]">
                 <CategoryTag value={selectedTags} onChange={setSelectedTags} />
               </div>
