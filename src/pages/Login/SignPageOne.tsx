@@ -6,12 +6,18 @@ import { postEmailCheck } from "@/api/auth.api";
 import { PATH } from "@/shared/config/paths";
 
 const EMAIL_DUP_MSG = "이미 가입된 이메일 입니다!";
+const KAKAO_COMBINE_LINK = "카카오로 로그인하기";
 
 const SignPageOne = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordcf, setPasswordcf] = useState("");
-  const [emailError, setEmailError] = useState("");
+
+  const [emailError, setEmailError] = useState<{
+    message: string;
+    action?: string;
+  } | null>(null);
+
   const [passwordError, setPasswordError] = useState("");
   const [passwordcfError, setPasswordcfError] = useState("");
   const [formError, setFormError] = useState("");
@@ -30,24 +36,28 @@ const SignPageOne = () => {
     window.location.href = AUTH_START_URL;
   };
 
+  // 폼 전체 유효성 체크
   useEffect(() => {
     const valid =
       email.trim() !== "" &&
       password.trim() !== "" &&
       passwordcf.trim() !== "" &&
       password === passwordcf;
+
     setIsFormValid(valid);
   }, [email, password, passwordcf]);
 
+  // 폼 제출 유효성
   const validateForm = () => {
     let valid = true;
-    setEmailError("");
+
+    setEmailError(null);
     setPasswordError("");
     setPasswordcfError("");
     setFormError("");
 
     if (!email) {
-      setEmailError("이메일을 입력해주세요.");
+      setEmailError({ message: "이메일을 입력해주세요." });
       valid = false;
     }
     if (!password) {
@@ -66,33 +76,36 @@ const SignPageOne = () => {
     return valid;
   };
 
+  // 이메일 중복 + 형식 체크
   const handleEmailBlur = async () => {
     const trimmedEmail = email.trim();
 
-    // 1) 빈 이메일
     if (!trimmedEmail) {
-      setEmailError("이메일을 입력해주세요.");
+      setEmailError({ message: "이메일을 입력해주세요." });
       return;
     }
 
-    // 2) 이메일 형식 유효성
+    // 이메일 형식 검사
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      setEmailError("유효한 이메일 형식을 입력해주세요.");
+      setEmailError({ message: "유효한 이메일 형식을 입력해주세요." });
       return;
     }
 
-    // 형식이 맞으면 에러 초기화
-    setEmailError("");
+    // 문제 없으면 일단 초기화
+    setEmailError(null);
 
     try {
       await postEmailCheck(trimmedEmail);
-      setEmailError(""); // 중복 아님
+      setEmailError(null); // 중복 아님
     } catch (error: any) {
       if (error.response?.status === 409) {
-        setEmailError(EMAIL_DUP_MSG);
+        setEmailError({
+          message: EMAIL_DUP_MSG,
+          action: KAKAO_COMBINE_LINK, // 우측 버튼 label
+        });
       } else {
-        setEmailError("이메일 확인 중 오류가 발생했습니다.");
+        setEmailError({ message: "이메일 확인 중 오류가 발생했습니다." });
       }
     }
   };
@@ -122,19 +135,19 @@ const SignPageOne = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+
     navigate("/signup/detail", {
-      state: {
-        email,
-        password,
-      },
+      state: { email, password },
     });
   };
 
-  const isEmailDuplicate = emailError === EMAIL_DUP_MSG;
+  // 중복 이메일 여부 판별 (message 기반)
+  const isEmailDuplicate = emailError?.message === EMAIL_DUP_MSG;
 
   return (
     <div className="flex w-screen h-screen overflow-hidden">
       <img src={onboarding_image} className="w-1/2 h-full object-fill" />
+
       <div className="w-full lg:w-1/2 h-full scale-[0.8] px-6 sm:px-16 lg:px-[200px] py-12 sm:py-24 lg:py-[281px] flex flex-col justify-center items-center">
         <div className="w-full max-w-[560px] flex flex-col items-center gap-10">
           <h2 className="text-black text-3xl sm:text-4xl lg:text-[36px] font-bold w-full font-pretendard">
@@ -153,15 +166,15 @@ const SignPageOne = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={handleEmailBlur}
                 placeholder="이메일을 입력해주세요."
-                error={emailError}
-                // 409(중복)일 때만 우측에 텍스트 버튼 노출
+                error={emailError?.message} // 문자열만 전달
                 errorActionLabel={
-                  isEmailDuplicate ? "카카오로 로그인하기" : undefined
+                  isEmailDuplicate ? KAKAO_COMBINE_LINK : undefined
                 }
                 onErrorActionClick={
                   isEmailDuplicate ? handleKakaoLogin : undefined
                 }
               />
+
               <Input
                 label="비밀번호"
                 type="password"
@@ -171,6 +184,7 @@ const SignPageOne = () => {
                 placeholder="비밀번호를 입력해주세요."
                 error={passwordError}
               />
+
               <Input
                 label="비밀번호 확인"
                 type="password"
