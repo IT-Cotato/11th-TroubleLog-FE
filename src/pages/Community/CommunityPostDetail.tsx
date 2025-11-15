@@ -507,7 +507,28 @@ export default function CommunityPostDetail() {
           isVisibleFromList,
           summaryIdFromList,
           isMineFromList,
+          from,
         } = detailCtx;
+
+        // ProjectDetail → 원본 탭에서 온 글은 항상 /troubles만
+        if (from === "project") {
+          const myDetail = await getPostDetail(effectiveId);
+          const completedAt = (myDetail as any)?.completedAt ?? null;
+          const isDraft = completedAt == null;
+
+          if (isDraft) {
+            // 작성 중이면 기존 드래프트 처리 로직 재사용
+            await loadMineDraft(effectiveId);
+          } else {
+            // 완료 문서면 내 상세 화면으로만 세팅
+            const vmMine = toPostDetailVM(myDetail as any, viewerId);
+            setPost(vmMine);
+            setIsLiked(vmMine.isLiked);
+            setLikeCounts(vmMine.likeCounts);
+            setIsCommunitySource(false); // 좋아요/댓글 비활성
+          }
+          return;
+        }
 
         // 내 글 여부 결정(힌트 우선)
         const mineByIds =
@@ -613,6 +634,7 @@ export default function CommunityPostDetail() {
     detailCtx.isVisibleFromList,
     detailCtx.summaryIdFromList,
     detailCtx.isMineFromList,
+    detailCtx.from,
     navigate,
   ]);
 

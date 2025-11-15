@@ -286,7 +286,7 @@ export default function ProjectDetailPage() {
                       const statusFromList = card.status; // 'inProgress' | 'complete' | 'created'
                       const isVisibleFromList = card.visibility === "public"; // boolean
                       const summaryIdFromList = card.summaryId ?? undefined; // number | undefined
-                      const isMineFromList = card.isMine === true; // boolean
+                      const isMineFromList = true; // 항상 true
 
                       navigate(
                         `${PATH.COMMUNITY_POST_ID(
