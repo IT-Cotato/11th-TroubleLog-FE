@@ -1027,6 +1027,18 @@ const TempWritePage = () => {
     }));
   }, [blocks]);
 
+  // next 누를시에 다음 블록에 자동 포커싱
+  const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
+  useEffect(() => {
+    const el = blockRefs.current[activeIndex];
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [activeIndex]);
+
   // ---------- UI ----------
   return (
     <div className="min-h-screen">
@@ -1099,30 +1111,37 @@ const TempWritePage = () => {
 
           <div className="flex flex-col gap-6 sm:gap-8">
             {reversedBlocks.map(({ block, originalIndex }) => (
-              <EditorBlock
+              <div
                 key={block.id}
-                block={block}
-                index={originalIndex}
-                isActive={originalIndex === activeIndex}
-                isLast={originalIndex === questionData.length - 1}
-                onChange={handleChangeBlockContent}
-                onToggleChecklist={handleToggleChecklist}
-                onAddBlock={handleAddBlock}
-                onEnd={handleEnd}
-                title={title}
-                selectedErrorType={selectedErrorType}
-                onShowSaveAlert={handleShowSaveAlert}
-                onShowAlert={handleShowAlert}
-                onSave={handleClickSave}
-                isSaving={isSaving}
-                canSave={canSave}
-                onActivate={(i) => setActiveIndex(i)}
-                onPasteImage={handlePasteImage}
-                onDropImage={handleDropImage}
-                commandsFilter={(cmd) =>
-                  cmd.keyCommand === "image" ? imageUploadCmd : cmd
-                }
-              />
+                ref={(el) => {
+                  blockRefs.current[originalIndex] = el;
+                }}
+              >
+                <EditorBlock
+                  key={block.id}
+                  block={block}
+                  index={originalIndex}
+                  isActive={originalIndex === activeIndex}
+                  isLast={originalIndex === questionData.length - 1}
+                  onChange={handleChangeBlockContent}
+                  onToggleChecklist={handleToggleChecklist}
+                  onAddBlock={handleAddBlock}
+                  onEnd={handleEnd}
+                  title={title}
+                  selectedErrorType={selectedErrorType}
+                  onShowSaveAlert={handleShowSaveAlert}
+                  onShowAlert={handleShowAlert}
+                  onSave={handleClickSave}
+                  isSaving={isSaving}
+                  canSave={canSave}
+                  onActivate={(i) => setActiveIndex(i)}
+                  onPasteImage={handlePasteImage}
+                  onDropImage={handleDropImage}
+                  commandsFilter={(cmd) =>
+                    cmd.keyCommand === "image" ? imageUploadCmd : cmd
+                  }
+                />
+              </div>
             ))}
           </div>
 
