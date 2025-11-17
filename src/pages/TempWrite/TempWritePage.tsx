@@ -916,20 +916,32 @@ const TempWritePage = () => {
   const handleAddBlock = useCallback(() => {
     setBlocks((prev) => {
       const nextStep = prev.length;
-      if (nextStep >= questionData.length) return prev;
-      const stepData = questionData[nextStep];
-      const newBlock: BlockData = {
-        id: Date.now(),
-        content: "",
-        checklist: [],
-        checklistItems: stepData.checklistItems ?? [],
-        checklistTitle: stepData.title ?? "",
-        question: stepData.question,
-        isSaved: false,
-      } as any;
-      const next = [...prev, newBlock];
-      setActiveIndex(next.length - 1);
-      return next;
+
+      // 1) 아직 questionData 남아 있는 경우: 새 블록 생성
+      if (nextStep < questionData.length) {
+        const stepData = questionData[nextStep];
+        const newBlock: BlockData = {
+          id: Date.now(),
+          content: "",
+          checklist: [],
+          checklistItems: stepData.checklistItems ?? [],
+          checklistTitle: stepData.title ?? "",
+          question: stepData.question,
+          isSaved: false,
+        } as any;
+
+        const next = [...prev, newBlock];
+        setActiveIndex(next.length - 1); // 새 블록으로 포커싱
+        return next;
+      }
+
+      // 2) 이미 모든 블록이 생성된 경우
+      setActiveIndex((idx) => {
+        const nextIdx = Math.min(idx + 1, prev.length - 1);
+        return nextIdx;
+      });
+
+      return prev;
     });
   }, []);
 
@@ -1117,7 +1129,7 @@ const TempWritePage = () => {
             </div>
           </div>
 
-          <div className="flex flex-col gap-6 sm:gap-8">
+          <div className="flex flex-col pb-2">
             {reversedBlocks.map(({ block, originalIndex }) => (
               <div
                 key={block.id}
