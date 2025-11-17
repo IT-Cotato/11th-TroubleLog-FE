@@ -99,3 +99,10 @@
 .wmde-markdown li {
   display: list-item !important;
 }
+
+/* 제목용 placeholder */
+.title-editable[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  @apply text-neutral-400;
+  pointer-events: none;
+}
