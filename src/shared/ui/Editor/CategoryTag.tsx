@@ -27,7 +27,7 @@ const CategoryTag = ({ value, onChange }: CategoryTagProps) => {
 
   return (
     <div className="w-full flex flex-wrap items-center gap-2 sm:gap-[15px]">
-      <div className="flex px-[15px] py-[7px] border border-gray-300 rounded-2xl items-center gap-2 w-full sm:w-[200px] md:w-[220px] flex-shrink-0">
+      <div className="flex px-[15px] py-[7px] border border-gray-300 rounded-2xl items-center gap-2 w-full sm:w-[180px] md:w-[200px] flex-shrink-0">
         <input
           type="text"
           className="w-full text-sm text-gray-700 placeholder-gray-400 outline-none"

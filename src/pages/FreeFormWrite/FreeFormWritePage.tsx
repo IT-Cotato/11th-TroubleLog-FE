@@ -1079,18 +1079,25 @@ export default function FreeFormWritePage() {
 
             {/* 제목/태그 + 상단 액션바 */}
             <div className="flex flex-col items-start gap-[40px]">
-              <input
-                ref={titleInputRef}
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="제목을 입력하세요."
-                className="text-3xl sm:text-4xl md:text-5xl font-bold text-black outline-none w-full leading-tight"
-              />
+              <div
+                contentEditable
+                spellCheck={false}
+                suppressContentEditableWarning
+                onInput={(e) => setTitle(e.currentTarget.textContent || "")}
+                data-placeholder="제목을 입력하세요."
+                className="
+    title-editable
+    w-[1100px] md:w-[1030px]
+    text-2xl sm:text-3xl md:text-4xl lg:text-5xl
+    font-bold text-black outline-none leading-tight
+    whitespace-pre-wrap break-words
+    relative
+  "
+              ></div>
               <div className="flex w-full max-w-[1200px] justify-between gap-3 flex-wrap">
                 <div className="flex flex-col gap-4 w-full">
                   <div className="flex items-end justify-between">
-                    <div className="flex gap-3 items-center flex-wrap w-full lg:w-auto">
+                    <div className="flex gap-3 items-center flex-wrap max-w-[1100px] md:max-w-[900px] lg:w-auto">
                       {/* 프로젝트 선택 */}
                       <DropDownButton
                         options={projectNames}
@@ -1100,8 +1107,8 @@ export default function FreeFormWritePage() {
                             : projectNameById(selectedProjectIdPage) ||
                               "프로젝트를 선택하세요"
                         }
-                        width="w-full sm:w-[200px] lg:w-[220px]"
-                        onSelect={(name) =>
+                        width="w-full sm:w-[170px] md:w-[190px]"
+                        onSelect={(name: string) =>
                           setSelectedProjectIdPage(nameToId.get(name) ?? null)
                         }
                       />
@@ -1112,11 +1119,19 @@ export default function FreeFormWritePage() {
                         placeholder={
                           selectedErrorType ?? "에러 종류를 선택하세요"
                         }
-                        width="w-full sm:w-[200px] lg:w-[240px]"
+                        width="w-full sm:w-[180px] lg:w-[220px]"
                         onSelect={(selectedError) =>
                           setSelectedErrorType(selectedError)
                         }
                       />
+
+                      {/* 태그 */}
+                      <div className="w-full sm:w-auto min-w-[200px]">
+                        <CategoryTag
+                          value={selectedTags}
+                          onChange={setSelectedTags}
+                        />
+                      </div>
                     </div>
 
                     <div className="flex gap-2 w-full lg:w-auto">
@@ -1145,13 +1160,6 @@ export default function FreeFormWritePage() {
                         </button>
                       </div>
                     </div>
-                  </div>
-                  {/* 태그 */}
-                  <div className="w-full sm:w-auto min-w-[200px]">
-                    <CategoryTag
-                      value={selectedTags}
-                      onChange={setSelectedTags}
-                    />
                   </div>
                 </div>
               </div>
