@@ -65,7 +65,7 @@ const TroubleShootingCard = ({
   const menuRef = useClickOutside(handleCloseMenu);
 
   const shouldShowVisibilityIcon = status === "complete" && visibility;
-  const shouldShowSummaryType = status === "created";
+  const shouldShowSummaryType = status === "created" && isMine;
 
   const isClickable = typeof onClick === "function" && !disabled;
   const handleRootClick = () => {
