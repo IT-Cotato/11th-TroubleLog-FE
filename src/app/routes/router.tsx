@@ -23,6 +23,8 @@ const SignPageOauth = lazy(() => import("@/pages/Login/SignPageOauth"));
 
 const OAuthPopupKakao = lazy(() => import("@/pages/Login/OAuthPopupKakao"));
 
+const FindPassword = lazy(() => import("@/pages/Login/FindPassword"));
+
 const HomePage = lazy(() => import("@/pages/Home/HomePage"));
 const SearchResultPage = lazy(() => import("@/pages/Search/SearchResultPage"));
 
@@ -74,6 +76,9 @@ export const router = createBrowserRouter(
 
     // 콜백 브릿지
     { path: PATH.OAUTH_REGISTER, element: <OAuthPopupKakao /> },
+
+    // 비밀번호 찾기
+    { path: PATH.FIND_PASSWORD, element: <FindPassword /> },
 
     // 보호 구역 (메인 레이아웃)
     {

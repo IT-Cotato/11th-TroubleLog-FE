@@ -9,6 +9,7 @@ export const PATH = {
   SIGNUP_OAUTH: "/signup/oauth",
   OAUTH_REGISTER: "/auth/oauth-register",
   COMBINE_SIGNUP: "/signup/combine",
+  FIND_PASSWORD: "/find-password",
 
   USER: "/user",
   HOME: "/user/home",

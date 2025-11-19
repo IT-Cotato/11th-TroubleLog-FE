@@ -145,8 +145,8 @@ const LoginPage = () => {
 
       {/* 우측 폼 영역: 모바일 풀폭, 데스크톱 절반 */}
       <div className="w-full md:w-1/2 flex justify-center items-center px-4 sm:px-6 lg:px-10 py-10 md:py-0">
-        <div className="w-full max-w-[560px] flex flex-col items-center gap-10">
-          <h2 className="w-full text-head-32-semibold sm:text-head-48">
+        <div className="w-full max-w-[560px] flex flex-col items-center">
+          <h2 className="w-full text-head-32-semibold sm:text-head-48 pb-10">
             로그인
           </h2>
 
@@ -196,15 +196,18 @@ const LoginPage = () => {
             </div>
           </form>
 
-          <div className="w-full max-w-[200px] flex flex-col items-center gap-4">
-            <h2 className="text-gray-500 text-body-16-regular">
-              트러블로그가 처음이신가요?
-            </h2>
+          <div className="w-full flex justify-between pt-5">
             <button
               onClick={() => navigate("/signup")}
-              className="text-gray-500 underline text-body-16-regular w-full text-center"
+              className="text-gray-500 underline text-body-16-regular"
             >
               회원가입
+            </button>
+            <button
+              onClick={() => navigate("/find-password")}
+              className="text-gray-500 underline text-body-16-regular"
+            >
+              비밀번호 찾기
             </button>
           </div>
         </div>
