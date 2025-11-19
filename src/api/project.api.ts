@@ -56,8 +56,8 @@ export const getProjectSummaries = (
     url: `/projects/${projectId}/summaries`,
     method: "GET",
     params: {
-      ...(params.sort && { sort: params.sort }),
-      ...(params.summaryType && { summaryType: params.summaryType }),
+      sort: params.sort,
+      summaryType: params.summaryType ?? "NONE",
     },
   });
 

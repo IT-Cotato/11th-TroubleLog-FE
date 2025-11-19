@@ -44,7 +44,7 @@ export type ProjectTroubleSummaryType =
 export interface ProjectTroubleQuery {
   status: ProjectTroubleStatus; // required
   sort?: ProjectTroubleSort;
-  visibility?: ProjectTroubleVisibility;
+  visibility: ProjectTroubleVisibility;
   summaryType?: ProjectTroubleSummaryType;
 }
 

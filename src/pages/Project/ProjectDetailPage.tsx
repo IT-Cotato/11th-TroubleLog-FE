@@ -106,6 +106,7 @@ export default function ProjectDetailPage() {
     const base: ProjectTroubleQuery = {
       status: toApiStatus(selectedStatus),
       sort: toApiSort(selectedSort),
+      visibility: "ALL",
     };
     if (selectedStatus === "complete") {
       if (selectedVisibility !== "전체")
