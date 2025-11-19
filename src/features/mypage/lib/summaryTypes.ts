@@ -1,6 +1,6 @@
 import type { SummaryTypeStat } from "@/types/statistics.model";
 
-const CANDIDATES = ["자기소개서", "면접대비", "블로그", "이슈관리"];
+const CANDIDATES = ["자기소개서", "면접대비", "회고록", "이슈관리"];
 
 export function makeDebugSummaryTypes(): SummaryTypeStat[] {
   // 2~4개 랜덤 선택 + 랜덤 카운트

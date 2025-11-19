@@ -13,6 +13,7 @@ import type {
   TroubleListItem,
 } from "@/entities/trouble/model";
 import { useViewerId } from "@/store/auth";
+import { getProjectSummaries } from "@/api/project.api";
 
 // 내 전체 목록 정렬용 (서버 스펙)
 type SortParam = "latest" | "important";
@@ -96,9 +97,18 @@ async function fetchUserPagedOnce(
 async function fetchProjectOnce(pid: number, q: ProjectTroubleQuery) {
   const key = makeProjectKey(pid, q);
   if (!inflightProject.has(key)) {
-    const p = getProjectTroubleList(pid, q).finally(() =>
-      inflightProject.delete(key)
-    );
+    const p =
+      q.status === "SUMMARIZED"
+        ? // 요약본 탭일 때는 /projects/{projectId}/summaries 사용
+          getProjectSummaries(pid, {
+            sort: q.sort, // "LATEST" | "IMPORTANT" | "LIKES"
+            summaryType: q.summaryType, // "NONE" | "RESUME" | ...
+          }).finally(() => inflightProject.delete(key))
+        : // 나머지(WRITING/COMPLETED)는 프로젝트 목록 API 사용
+          getProjectTroubleList(pid, q).finally(() =>
+            inflightProject.delete(key)
+          );
+
     inflightProject.set(key, p);
   }
   return inflightProject.get(key)!;

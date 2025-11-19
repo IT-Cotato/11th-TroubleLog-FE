@@ -9,6 +9,8 @@ import type { UpdateProjectRequest } from "@/types/project.model";
 import { deleteProject, putUpdateProject } from "@/api/project.api";
 import { Link } from "react-router-dom";
 
+import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
+
 export interface ProjectFolderCardProps {
   id: number;
   name: string;
@@ -37,6 +39,8 @@ export default function ProjectFolderCard({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
+
+  const resolvedThumbnail = thumbnail || emptyThumbnail;
 
   useEffect(() => {
     if (!showMenu) return;
@@ -105,13 +109,11 @@ export default function ProjectFolderCard({
     <div className="flex items-center gap-3 sm:gap-[16px] min-w-0">
       {/* 썸네일: 모바일에서 작게, sm 이상 기존 크기 */}
       <div className="flex w-16 h-16 sm:w-[100px] sm:h-[100px] items-center justify-center rounded-[8px] bg-[rgba(217,217,217,0.5)] overflow-hidden shrink-0">
-        {thumbnail && (
-          <img
-            src={thumbnail}
-            alt="thumbnail"
-            className="w-full h-full object-cover"
-          />
-        )}
+        <img
+          src={resolvedThumbnail}
+          alt="thumbnail"
+          className="w-full h-full object-cover"
+        />
       </div>
 
       {/* 텍스트 영역: 고정 폭 제거 + 줄바꿈/잘림 안전 */}

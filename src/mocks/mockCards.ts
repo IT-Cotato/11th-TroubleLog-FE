@@ -59,7 +59,7 @@ export const mockCards: TroublogCardProps[] = [
     errorCategory: "UI/UX",
     createdAt: "25.07.05",
     tags: ["CSS", "모듈"],
-    summaryType: "블로그",
+    summaryType: "회고록",
     importance: 1,
   },
   {

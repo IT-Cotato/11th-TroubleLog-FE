@@ -8,6 +8,8 @@ import { PATH } from "@/shared/config/paths";
 import { useCallback, useState } from "react";
 import { hardDeletePost } from "@/api/post.api";
 
+import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
+
 export interface TroublogCardProps {
   id: number;
   isMine: boolean;
@@ -22,7 +24,7 @@ export interface TroublogCardProps {
   likeCount?: number;
   commentCount?: number;
   importance?: number;
-  summaryType?: "자기소개서" | "면접대비" | "블로그" | "이슈관리";
+  summaryType?: "자기소개서" | "면접대비" | "회고록" | "이슈관리";
   onClick?: (id: number) => void;
   onAvatarClick?: () => void;
   onDeleted?: (id: number) => void;
@@ -125,7 +127,7 @@ export default function TroublogCard({
           onAvatarClick={onAvatarClick}
           onRequestDelete={handleRequestDelete}
           deleting={deleting}
-          imageUrl={imageUrl}
+          imageUrl={imageUrl || emptyThumbnail}
         />
       </div>
 

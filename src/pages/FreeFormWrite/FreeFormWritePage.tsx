@@ -242,6 +242,18 @@ export default function FreeFormWritePage() {
       if (!isResume || !resumePostId) return;
       try {
         const d: any = await getPostDetail(resumePostId);
+        setTitle(d?.title ?? "");
+        const contents = Array.isArray(d?.contents) ? d.contents : [];
+        setBlocks(
+          contents.length > 0
+            ? contents.map((c: any, idx: number) => ({
+                id: c.id ?? idx,
+                title: c.subTitle ?? "",
+                content: c.body ?? "",
+                isSaved: true,
+              }))
+            : [{ id: Date.now(), title: "", content: "", isSaved: false }]
+        );
         setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
         const s = (d?.postStatus ?? d?.status) as
           | "WRITING"
@@ -1079,21 +1091,20 @@ export default function FreeFormWritePage() {
 
             {/* 제목/태그 + 상단 액션바 */}
             <div className="flex flex-col items-start gap-[40px]">
-              <div
-                contentEditable
-                spellCheck={false}
-                suppressContentEditableWarning
-                onInput={(e) => setTitle(e.currentTarget.textContent || "")}
-                data-placeholder="제목을 입력하세요."
+              <input
+                ref={titleInputRef}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="제목을 입력하세요."
                 className="
-    title-editable
     w-[1100px] md:w-[1030px]
     text-2xl sm:text-3xl md:text-4xl lg:text-5xl
     font-bold text-black outline-none leading-tight
     whitespace-pre-wrap break-words
     relative
+    border-none bg-transparent
   "
-              ></div>
+              />
               <div className="flex w-full max-w-[1200px] justify-between gap-3 flex-wrap">
                 <div className="flex flex-col gap-4 w-full">
                   <div className="flex items-end justify-between">

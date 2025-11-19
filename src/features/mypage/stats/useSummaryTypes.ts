@@ -11,7 +11,7 @@ type SummaryDatum = { label: string; value: number };
 const SUMMARY_LABEL_MAP: Record<string, string> = {
   RESUME: "자기소개서",
   INTERVIEW: "면접대비",
-  BLOG: "블로그",
+  BLOG: "회고록",
   ISSUE_MANAGEMENT: "이슈관리",
 };
 
