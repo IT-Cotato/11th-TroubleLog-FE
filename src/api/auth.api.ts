@@ -9,6 +9,7 @@ import type {
   EmailCheckResponse,
   OauthRegisterRequest,
   TermsLatestResponse,
+  OauthRegisterResponse,
 } from "@/models/auth.model";
 
 // 회원가입
@@ -55,7 +56,7 @@ export const postRefreshToken = () =>
 
 // 카카오 로그인 후 입력란
 export const postOauthRegister = (payload: OauthRegisterRequest) =>
-  getAPIResponseData<OauthRegisterRequest>({
+  getAPIResponseData<OauthRegisterResponse, OauthRegisterRequest>({
     url: "/auth/oauth-register",
     method: "POST",
     data: payload,

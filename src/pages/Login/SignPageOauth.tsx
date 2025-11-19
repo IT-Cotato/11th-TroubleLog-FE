@@ -4,8 +4,12 @@ import TermsField from "./TermsField";
 import onboarding_image from "../../assets/images/onboarding_image.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import { postOauthRegister } from "@/api/auth.api";
-import type { OauthRegisterRequest } from "@/models/auth.model";
+import type {
+  OauthRegisterRequest,
+  OauthRegisterResponse,
+} from "@/models/auth.model";
 import { PATH } from "@/shared/config/paths";
+import { handleLoginSuccess } from "@/utils/handleLoginSuccess";
 
 const DRAFT_KEY = "signOauthDraft"; // OAuth 전용 드래프트 키
 
@@ -185,13 +189,20 @@ const SignPageOauth = () => {
         termsAgreements: { ...agreeMap },
       };
 
-      await postOauthRegister(payload);
+      const data: OauthRegisterResponse = await postOauthRegister(payload);
 
-      // 가입 성공 시 드래프트 정리
+      if (!data.accessToken || data.userId == null) {
+        throw new Error("회원가입 응답에 토큰 또는 userId가 없습니다.");
+      }
+
+      // 드래프트 삭제
       sessionStorage.removeItem(DRAFT_KEY);
 
-      // 서버가 302로 리다이렉트할 수도 있으니 홈으로 이동 (next 처리 안전장치)
-      navigate(PATH.HOME, { replace: true });
+      handleLoginSuccess({
+        userId: data.userId,
+        accessToken: data.accessToken,
+        // redirectTo 생략 시 HOME
+      });
     } catch (error: any) {
       console.error("회원가입 실패:", error);
 

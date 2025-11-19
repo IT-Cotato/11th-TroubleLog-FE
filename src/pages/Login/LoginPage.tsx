@@ -7,6 +7,7 @@ import { postLogin } from "@/api/auth.api";
 import { PATH } from "@/shared/config/paths";
 import { useAuthStore } from "@/store/auth";
 import { applyAuth } from "@/utils/applyAuth";
+import { handleLoginSuccess } from "@/utils/handleLoginSuccess";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -107,19 +108,18 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const data = await postLogin(email, password);
-      localStorage.setItem("accessToken", data.accessToken);
+      if (!data.accessToken || data.userId == null) {
+        throw new Error("로그인 응답에 토큰 또는 userId가 없습니다.");
+      }
 
-      // 중앙 상태에 사용자 정보 저장
-      const { setUser } = useAuthStore.getState();
-      if (data.userId == null) throw new Error("userId가 없습니다.");
-      setUser({
-        userId: data.userId,
-      });
-
-      // next 또는 홈으로 이동
       const params = new URLSearchParams(location.search);
-      const next = params.get("next");
-      navigate(next || PATH.HOME, { replace: true });
+      const next = params.get("next") ?? undefined;
+
+      handleLoginSuccess({
+        userId: data.userId,
+        accessToken: data.accessToken,
+        redirectTo: next, // 없으면 HOME으로
+      });
     } catch (error: any) {
       console.error("로그인 실패:", error);
 

@@ -29,9 +29,9 @@ declare global {
     __authRefreshPromise?: Promise<string | null> | null;
   }
 }
-const getRefreshPromise = () => window.__authRefreshPromise ?? null;
-const setRefreshPromise = (p: Promise<string | null> | null) =>
-  (window.__authRefreshPromise = p);
+// const getRefreshPromise = () => window.__authRefreshPromise ?? null;
+// const setRefreshPromise = (p: Promise<string | null> | null) =>
+//   (window.__authRefreshPromise = p);
 
 const api = axios.create({
   baseURL: API_BASE_URL || undefined,
@@ -83,17 +83,17 @@ const setRecentRefreshOk = () => {
     //
   }
 };
-const hasRecentRefreshOk = (ms = 10_000) => {
-  try {
-    const raw =
-      localStorage.getItem(REFRESH_OK_KEY) ??
-      sessionStorage.getItem(REFRESH_OK_KEY);
-    const ts = raw ? Number(raw) : NaN;
-    return Number.isFinite(ts) && Date.now() - ts < ms;
-  } catch {
-    return false;
-  }
-};
+// const hasRecentRefreshOk = (ms = 10_000) => {
+//   try {
+//     const raw =
+//       localStorage.getItem(REFRESH_OK_KEY) ??
+//       sessionStorage.getItem(REFRESH_OK_KEY);
+//     const ts = raw ? Number(raw) : NaN;
+//     return Number.isFinite(ts) && Date.now() - ts < ms;
+//   } catch {
+//     return false;
+//   }
+// };
 
 // ----- 요청 인터셉터: 토큰/헤더 부착, 외부 절대 URL은 스킵 -----
 const reqId = api.interceptors.request.use((config) => {
@@ -270,55 +270,73 @@ const resId = api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // 401 → "무조건" 리프레시 먼저 시도, 성공 시 원요청 1회 재시도
+    // // 401 → "무조건" 리프레시 먼저 시도, 성공 시 원요청 1회 재시도
+    // if (status === 401 && !skipAuth && !isSSEAuth) {
+    //   let p = getRefreshPromise();
+    //   if (!p) {
+    //     p = startRefresh().finally(() =>
+    //       setTimeout(() => setRefreshPromise(null), 100)
+    //     );
+    //     setRefreshPromise(p);
+    //   }
+    //   const newToken = await p;
+
+    //   if (newToken) {
+    //     if (!cfg._retry) {
+    //       cfg._retry = true;
+    //       cfg.headers = cfg.headers ?? {};
+    //       (cfg.headers as any).Authorization = `Bearer ${newToken}`;
+    //       return api(cfg); // 재시도
+    //     }
+    //   }
+
+    //   localStorage.removeItem("accessToken");
+    //   await navigateToAuthGuardOnce(401);
+    //   return Promise.reject(error);
+    // }
+
+    // 401 → 토큰 제거 후 AuthGuard 로 이동 (refresh 자동 호출 없음)
     if (status === 401 && !skipAuth && !isSSEAuth) {
-      let p = getRefreshPromise();
-      if (!p) {
-        p = startRefresh().finally(() =>
-          setTimeout(() => setRefreshPromise(null), 100)
-        );
-        setRefreshPromise(p);
+      try {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+      } catch {
+        //
       }
-      const newToken = await p;
-
-      if (newToken) {
-        if (!cfg._retry) {
-          cfg._retry = true;
-          cfg.headers = cfg.headers ?? {};
-          (cfg.headers as any).Authorization = `Bearer ${newToken}`;
-          return api(cfg); // 재시도
-        }
-      }
-
-      localStorage.removeItem("accessToken");
       await navigateToAuthGuardOnce(401);
       return Promise.reject(error);
     }
 
     // 403 → 접근권한 없음 화면
+    // if (status === 403 && !skipAuth && !isSSEAuth) {
+    //   // 1) 리프레시 진행 중이면 완료까지 대기 후 재시도
+    //   const inflight = getRefreshPromise();
+    //   if (inflight && !cfg._retry) {
+    //     const t = await inflight;
+    //     if (t) {
+    //       cfg._retry = true;
+    //       cfg.headers = cfg.headers ?? {};
+    //       (cfg.headers as any).Authorization = `Bearer ${t}`;
+    //       return api(cfg);
+    //     }
+    //   }
+
+    //   // 2) 직전에 갱신 성공한 토큰이 있으면 1회 재시도 (선택적)
+    //   const latestToken = localStorage.getItem("accessToken");
+    //   if (hasRecentRefreshOk() && latestToken && !cfg._retry) {
+    //     cfg._retry = true;
+    //     cfg.headers = cfg.headers ?? {};
+    //     (cfg.headers as any).Authorization = `Bearer ${latestToken}`;
+    //     return api(cfg);
+    //   }
+
+    //   // 3) 실패 → 접근 권한 없음 화면
+    //   await navigateToAuthGuardOnce(403);
+    //   return Promise.reject(error);
+    // }
+
+    // 403 → 접근권한 없음 화면 (refresh 재시도 로직 제거)
     if (status === 403 && !skipAuth && !isSSEAuth) {
-      // 1) 리프레시 진행 중이면 완료까지 대기 후 재시도
-      const inflight = getRefreshPromise();
-      if (inflight && !cfg._retry) {
-        const t = await inflight;
-        if (t) {
-          cfg._retry = true;
-          cfg.headers = cfg.headers ?? {};
-          (cfg.headers as any).Authorization = `Bearer ${t}`;
-          return api(cfg);
-        }
-      }
-
-      // 2) 직전에 갱신 성공한 토큰이 있으면 1회 재시도 (선택적)
-      const latestToken = localStorage.getItem("accessToken");
-      if (hasRecentRefreshOk() && latestToken && !cfg._retry) {
-        cfg._retry = true;
-        cfg.headers = cfg.headers ?? {};
-        (cfg.headers as any).Authorization = `Bearer ${latestToken}`;
-        return api(cfg);
-      }
-
-      // 3) 실패 → 접근 권한 없음 화면
       await navigateToAuthGuardOnce(403);
       return Promise.reject(error);
     }
@@ -342,18 +360,18 @@ if (import.meta.env.DEV) {
   (window as any).__api = api;
   (window as any).__apiBase = API_BASE_URL;
   (window as any).__apiOrigin = API_ORIGIN;
-  (window as any).__forceRefresh = async () => {
-    console.groupCollapsed("[DEBUG] __forceRefresh()");
-    const t = await startRefresh();
-    console.log(
-      "startRefresh() returned:",
-      t ? `${t.slice(0, 8)}…(${t.length})` : t
-    );
-    console.log(
-      "localStorage.accessToken now:",
-      localStorage.getItem("accessToken")
-    );
-    console.groupEnd();
-    return t;
-  };
+  // (window as any).__forceRefresh = async () => {
+  //   console.groupCollapsed("[DEBUG] __forceRefresh()");
+  //   const t = await startRefresh();
+  //   console.log(
+  //     "startRefresh() returned:",
+  //     t ? `${t.slice(0, 8)}…(${t.length})` : t
+  //   );
+  //   console.log(
+  //     "localStorage.accessToken now:",
+  //     localStorage.getItem("accessToken")
+  //   );
+  //   console.groupEnd();
+  //   return t;
+  // };
 }
