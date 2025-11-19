@@ -8,6 +8,8 @@ import { PATH } from "@/shared/config/paths";
 import { useCallback, useState } from "react";
 import { hardDeletePost } from "@/api/post.api";
 
+import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
+
 export interface TroublogCardProps {
   id: number;
   isMine: boolean;
@@ -125,7 +127,7 @@ export default function TroublogCard({
           onAvatarClick={onAvatarClick}
           onRequestDelete={handleRequestDelete}
           deleting={deleting}
-          imageUrl={imageUrl}
+          imageUrl={imageUrl || emptyThumbnail}
         />
       </div>
 

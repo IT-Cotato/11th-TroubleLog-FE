@@ -12,6 +12,8 @@ import heartIcon from "@/assets/icons/heart.svg";
 import commentIcon from "@/assets/icons/comment.svg";
 import { hardDeletePost } from "@/api/post.api";
 
+import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
+
 export interface TroubleShootingCardProps {
   id: string;
   isMine: boolean;
@@ -235,13 +237,11 @@ const TroubleShootingCard = ({
 
       {/* 트러블로그 썸네일 */}
       <div className="mt-3 w-full md:w-[450px] h-[200px] rounded-[16px] bg-[#ECECEC] overflow-hidden">
-        {thumbnailUrl && (
-          <img
-            src={thumbnailUrl}
-            alt="thumbnail"
-            className="w-full h-full object-cover rounded-[16px]"
-          />
-        )}
+        <img
+          src={thumbnailUrl || emptyThumbnail}
+          alt="thumbnail"
+          className="w-full h-full object-cover rounded-[16px]"
+        />
       </div>
 
       {/* 케밥 메뉴 */}
