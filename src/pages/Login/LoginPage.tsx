@@ -122,8 +122,13 @@ const LoginPage = () => {
       navigate(next || PATH.HOME, { replace: true });
     } catch (error: any) {
       console.error("로그인 실패:", error);
-      if (error.response?.data?.message) {
-        setFormError(error.response.data.message);
+
+      // 서버 에러 메시지 우선 사용
+      const serverMessage =
+        error?.response?.data?.error?.message || error?.response?.data?.message;
+
+      if (serverMessage) {
+        setFormError(serverMessage);
       } else {
         setFormError("로그인 중 오류가 발생했습니다.");
       }
