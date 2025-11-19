@@ -39,6 +39,9 @@ import {
 import { uploadImage } from "@/api/image.api";
 import { isAxiosError } from "axios";
 import { startRefresh } from "@/api/axios";
+import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
+
+import { FiChevronUp } from "react-icons/fi";
 
 // ---------- 타입 ----------
 export type BlockData = {
@@ -238,6 +241,53 @@ export default function FreeFormWritePage() {
   const [detailPrefill, setDetailPrefill] = useState<PostSavePayload | null>(
     null
   );
+
+  // 블록 삭제용 상태
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // 상단 이동 플로팅 버튼 표시 여부
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // 블록 삭제 요청 → 모달 오픈
+  const handleRequestDeleteBlock = (id: number) => {
+    if (blocks.length <= 1) {
+      // 마지막 블록은 삭제하지 못하게 막기 (원하면 토스트 문구만 바꿔도 됨)
+      setShowBlockAlert(true);
+      setTimeout(() => setShowBlockAlert(false), 1000);
+      return;
+    }
+    setDeleteTargetId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  // 실제 블록 삭제
+  const handleConfirmDeleteBlock = () => {
+    if (deleteTargetId == null) return;
+    setBlocks((prev) => prev.filter((b) => b.id !== deleteTargetId));
+    setDeleteTargetId(null);
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteTargetId(null);
+    setIsDeleteModalOpen(false);
+  };
+
+  // 상단으로 스크롤
+  const handleScrollTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // 스크롤 위치에 따라 플로팅 버튼 노출
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", onScroll);
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // 수정 모드 초기 진입 시 상세 조회에서 가져오기
   const [detailLoaded, setDetailLoaded] = useState(!isResume);
@@ -1158,26 +1208,11 @@ export default function FreeFormWritePage() {
                     <div className="flex gap-2 w-full lg:w-auto">
                       <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                         <button
-                          onClick={async () => {
-                            if (!canSave) {
-                              setShowAlert(true);
-                              setTimeout(() => setShowAlert(false), 1000);
-                              return;
-                            }
-                            await handleGlobalSave();
-                          }}
-                          disabled={isSaving || (isResume && !detailLoaded)}
-                          className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-purple-500 hover:bg-gray-100 disabled:opacity-50 w-full sm:w-auto"
-                        >
-                          Save
-                        </button>
-
-                        <button
                           onClick={handleEnd}
                           disabled={isResume && !detailLoaded}
-                          className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600 w-full sm:w-auto"
+                          className="pt-2 pr-6 pb-2 pl-6 bg-primary text-white rounded-full text-head-16-semibold hover:bg-purple-600 w-full sm:w-auto"
                         >
-                          End
+                          작성 완료
                         </button>
                       </div>
                     </div>
@@ -1189,7 +1224,8 @@ export default function FreeFormWritePage() {
             {/* 블록 리스트 */}
             {blocks.map((block) => (
               <div key={block.id} className="w-full">
-                <div className="w-full flex items-end h-[50px] mb-2">
+                {/* 제목 + 삭제 버튼 라인 */}
+                <div className="w-full flex items-center justify-between h-[50px] mb-2">
                   <input
                     type="text"
                     value={block.title}
@@ -1199,6 +1235,15 @@ export default function FreeFormWritePage() {
                     placeholder="소제목을 입력하세요."
                     className="flex-1 px-0 py-2 border-none rounded font-bold text-black text-xl sm:text-2xl"
                   />
+                  {blocks.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRequestDeleteBlock(block.id)}
+                      className="ml-3 text-sm text-gray-400 hover:text-red-500"
+                    >
+                      삭제
+                    </button>
+                  )}
                 </div>
 
                 {/* 🔹 오토사이즈 래퍼 + height 주입 */}
@@ -1256,6 +1301,22 @@ export default function FreeFormWritePage() {
               className="border-2 border-dashed p-4 sm:p-6 rounded-xl w-full h-[80px] sm:h-[100px] mt-4 text-gray-500 text-lg sm:text-xl hover:bg-gray-50 disabled:opacity-50"
             >
               + 블록 추가하기 ({blocks.length}/20)
+            </button>
+
+            {/* 하단 저장하기 버튼 */}
+            <button
+              onClick={async () => {
+                if (!canSave) {
+                  setShowAlert(true);
+                  setTimeout(() => setShowAlert(false), 1000);
+                  return;
+                }
+                await handleGlobalSave();
+              }}
+              disabled={isSaving || (isResume && !detailLoaded)}
+              className="mt-6 w-full h-[56px] rounded-xl bg-purple-100 text-purple-700 text-base sm:text-lg font-semibold hover:bg-purple-200 disabled:opacity-50"
+            >
+              저장하기
             </button>
 
             {/* 모달들 */}
@@ -1346,6 +1407,26 @@ export default function FreeFormWritePage() {
                 summaryId={completedSummaryId}
                 postId={createdPostId ?? resumePostId ?? undefined}
               />
+            )}
+
+            {isDeleteModalOpen && (
+              <ConfirmDeleteModal
+                title="블록 삭제"
+                description="정말 삭제하시겠습니까?"
+                onClose={handleCloseDeleteModal}
+                onConfirm={handleConfirmDeleteBlock}
+              />
+            )}
+
+            {/* 우측 하단 상단 이동 플로팅 버튼 */}
+            {showScrollTop && (
+              <button
+                type="button"
+                onClick={handleScrollTop}
+                className="fixed bottom-10 right-20 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-white shadow-md hover:bg-gray-50"
+              >
+                <FiChevronUp className="w-8 h-8" />
+              </button>
             )}
           </div>
         </div>
