@@ -5,7 +5,7 @@ import SaveButton from "@/shared/ui/Button/SaveButton";
 import exitIcon from "@/assets/icons/exiticon.svg";
 import type { SummaryTypeParam } from "@/models/post.model";
 
-const templates = ["자기소개서", "면접 대비", "블로그", "Issue 관리"];
+const templates = ["자기소개서", "면접 대비", "회고록", "Issue 관리"];
 const TEMPLATE_TO_TYPE: Record<number, SummaryTypeParam> = {
   0: "RESUME",
   1: "INTERVIEW",

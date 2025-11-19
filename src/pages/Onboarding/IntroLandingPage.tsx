@@ -22,7 +22,7 @@ type TabKey = "resume" | "interview" | "blog" | "issue";
 const TABS: { key: TabKey; title: string; desc: string }[] = [
   { key: "resume", title: "자기소개서", desc: "직무 역량 중심으로" },
   { key: "interview", title: "면접대비", desc: "경험 기반 질문과 답변" },
-  { key: "blog", title: "블로그", desc: "개발 맥락과 배운 점을 담아" },
+  { key: "blog", title: "회고록", desc: "개발 맥락과 배운 점을 담아" },
   { key: "issue", title: "Issue 관리", desc: "문제 원인과 해결 방법" },
 ];
 
@@ -95,7 +95,7 @@ export default function IntroLandingPage() {
                 {`개발자의 문제 해결 기록이 성장으로 이어지는 곳
                 버그, 이슈, 막막했던 순간들...
                 그저 넘겼던 문제 해결 과정을 이제는 구조적으로 기록하고,
-                이력서, 면접, 블로그, 이슈관리에 바로 활용할 수 있는 요약본까지 자동 생성해드립니다.`}
+                이력서, 면접, 회고록, 이슈관리에 바로 활용할 수 있는 요약본까지 자동 생성해드립니다.`}
               </p>
 
               {/* 스크롤 버튼 (아랫단으로만 이동) */}

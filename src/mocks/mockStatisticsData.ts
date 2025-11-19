@@ -8,7 +8,7 @@ export const mockErrorCategoryData: ErrorCategoryPieChartProps = {
 export const mockSummaryTypeData = [
   { label: "자소서", value: 30 },
   { label: "면접대비", value: 80 },
-  { label: "블로그", value: 60 },
+  { label: "회고록", value: 60 },
   { label: "이슈관리", value: 20 },
 ];
 

@@ -44,14 +44,14 @@ export const mapSummaryType = (
   // 서버 enum 우선
   if (upper === "RESUME") return "자기소개서";
   if (upper === "INTERVIEW") return "면접대비";
-  if (upper === "BLOG") return "블로그";
+  if (upper === "BLOG") return "회고록";
   if (upper === "ISSUE_MANAGEMENT") return "이슈관리";
   if (upper === "NONE" || upper === "") return undefined;
 
   // 레거시 한글 라벨 지원
   if (v === "자기소개서 요약") return "자기소개서";
   if (v === "면접 요약") return "면접대비";
-  if (v === "블로그용 요약") return "블로그";
+  if (v === "회고록용 요약") return "회고록";
   if (v === "이슈 템플릿") return "이슈관리";
 
   // 알 수 없는 값이면 표시 생략

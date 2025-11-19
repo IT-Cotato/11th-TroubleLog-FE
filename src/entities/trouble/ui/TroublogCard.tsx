@@ -24,7 +24,7 @@ export interface TroublogCardProps {
   likeCount?: number;
   commentCount?: number;
   importance?: number;
-  summaryType?: "자기소개서" | "면접대비" | "블로그" | "이슈관리";
+  summaryType?: "자기소개서" | "면접대비" | "회고록" | "이슈관리";
   onClick?: (id: number) => void;
   onAvatarClick?: () => void;
   onDeleted?: (id: number) => void;
