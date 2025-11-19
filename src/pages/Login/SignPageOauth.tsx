@@ -15,9 +15,13 @@ const SignPageOauth = () => {
 
   // 카카오 인증 직후 전달되는 값
   const stateUserId = location?.state?.userId as number | undefined;
+  const stateKakaoNickname = location?.state?.nickname as string | undefined;
 
   // OAuth 원본 정보 (UI에 노출 X)
   const [userId, setUserId] = useState<number | null>(stateUserId ?? null);
+  const [kakaoNickname, setKakaoNickname] = useState<string | null>(
+    stateKakaoNickname ?? null
+  );
 
   // 사용자 입력
   const [nickname, setNickname] = useState("");
@@ -43,12 +47,17 @@ const SignPageOauth = () => {
 
   // 새로고침 폴백: oauth_payload에서 userId 복구
   useEffect(() => {
-    if (userId != null) return;
+    if (userId != null && kakaoNickname != null) return;
     try {
       const raw = sessionStorage.getItem("oauth_payload");
       if (raw) {
-        const p = JSON.parse(raw) as { userId?: number };
+        const p = JSON.parse(raw) as {
+          userId?: number;
+          kakaoNickname?: string;
+        };
         if (p?.userId && !userId) setUserId(p.userId);
+        if (p?.kakaoNickname && !kakaoNickname)
+          setKakaoNickname(p.kakaoNickname);
       }
     } catch {
       /* noop */
@@ -75,6 +84,9 @@ const SignPageOauth = () => {
         setBio(draft.bio ?? "");
         setGithubad(draft.githubad ?? "");
         if (typeof draft.userId === "number") setUserId(draft.userId);
+        if (typeof draft.kakaoNickname === "string") {
+          setKakaoNickname(draft.kakaoNickname);
+        }
         if (draft.termsAgreements) {
           setAgreeMap({
             "1": !!draft.termsAgreements["1"],
@@ -104,6 +116,7 @@ const SignPageOauth = () => {
   useEffect(() => {
     const draft = {
       userId,
+      kakaoNickname,
       nickname,
       field,
       bio,
@@ -111,7 +124,7 @@ const SignPageOauth = () => {
       termsAgreements: agreeMap,
     };
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  }, [userId, nickname, field, bio, githubad, agreeMap]);
+  }, [userId, kakaoNickname, nickname, field, bio, githubad, agreeMap]);
 
   // 폼 유효성
   const isFormValid =
@@ -164,7 +177,7 @@ const SignPageOauth = () => {
     try {
       const payload: OauthRegisterRequest = {
         userId: userId!, // 카카오에서 받은 필수 ID
-        kakaoNickname: nickname.trim(),
+        kakaoNickname: kakaoNickname ?? nickname.trim(),
         nickname: nickname.trim(),
         field: field.trim(),
         bio: bio.trim(),
