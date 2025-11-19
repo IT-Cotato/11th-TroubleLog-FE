@@ -95,3 +95,10 @@ export interface OauthRegisterRequest {
   githubUrl?: string;
   termsAgreements: { "1": boolean; "2": boolean };
 }
+
+export interface OauthRegisterResponse {
+  userId: number;
+  accessToken: string;
+  refreshToken: string;
+  localToken: string;
+}
