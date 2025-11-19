@@ -6,7 +6,7 @@ import type { ProjectTroubleSummaryType } from "@/entities/trouble/model";
 type Option = { label: string; value: ProjectTroubleSummaryType | null };
 
 const OPTIONS: Option[] = [
-  { label: "전체", value: null },
+  // { label: "전체", value: null },
   { label: "자기소개서", value: "RESUME" },
   { label: "면접대비", value: "INTERVIEW" },
   { label: "회고록", value: "BLOG" },
@@ -26,7 +26,7 @@ export default function SummaryTypeDropdown({
   const ref = useClickOutside(() => setOpen(false));
 
   const selectedLabel =
-    OPTIONS.find((o) => o.value === selected)?.label ?? "전체";
+    OPTIONS.find((o) => o.value === selected)?.label ?? "자기소개서";
 
   return (
     <div className="relative" ref={ref}>
