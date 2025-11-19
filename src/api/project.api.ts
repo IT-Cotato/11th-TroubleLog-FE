@@ -8,6 +8,11 @@ import type {
 } from "@/types/project.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "@/api/axios";
+import type {
+  GetProjectTroubleListResponse,
+  ProjectTroubleSort,
+  ProjectTroubleSummaryType,
+} from "@/entities/trouble";
 
 /// 프로젝트 생성
 export const postCreateProject = (payload: CreateProjectRequest) => {
@@ -37,6 +42,23 @@ export const getProjectDetail = (projectId: number) =>
   getAPIResponseData<ProjectDetail>({
     url: `/projects/${projectId}`,
     method: "GET",
+  });
+
+/// 프로젝트 요약본 목록 조회
+export const getProjectSummaries = (
+  projectId: number,
+  params: {
+    sort?: ProjectTroubleSort; // "LATEST" | "IMPORTANT" | "LIKES"
+    summaryType?: ProjectTroubleSummaryType; // "NONE" | "RESUME" | ...
+  }
+) =>
+  getAPIResponseData<GetProjectTroubleListResponse>({
+    url: `/projects/${projectId}/summaries`,
+    method: "GET",
+    params: {
+      ...(params.sort && { sort: params.sort }),
+      ...(params.summaryType && { summaryType: params.summaryType }),
+    },
   });
 
 /// 프로젝트 수정
