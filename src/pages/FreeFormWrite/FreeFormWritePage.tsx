@@ -17,7 +17,11 @@ import PostSuccessModal from "@/shared/ui/Modal/PostSuccessModal";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import { useProjectList } from "@/hooks/useProjectList";
-import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
+import type {
+  PostContentDto,
+  SummaryTypeParam,
+  StartLoadingResponse,
+} from "@/models/post.model";
 import {
   toCreatePostRequest,
   toEditPostRequest,
@@ -572,20 +576,20 @@ export default function FreeFormWritePage() {
   };
 
   // startSummary 파라미터 호환
-  const startSummaryCompat = async (postId: number, type: SummaryTypeParam) => {
-    try {
-      const res: any = await startSummary(postId, { type } as any);
-      const taskId = res?.taskId ?? res?.data?.taskId ?? res?.content?.taskId;
-      if (!taskId) throw new Error("No taskId (object signature)");
-      return taskId as string;
-    } catch {
-      const res2: any = await startSummary(postId, type as any);
-      const taskId2 =
-        res2?.taskId ?? res2?.data?.taskId ?? res2?.content?.taskId;
-      if (!taskId2) throw new Error("No taskId (positional signature)");
-      return taskId2 as string;
-    }
-  };
+  // const startSummaryCompat = async (postId: number, type: SummaryTypeParam) => {
+  //   try {
+  //     const res: any = await startSummary(postId, { type } as any);
+  //     const taskId = res?.taskId ?? res?.data?.taskId ?? res?.content?.taskId;
+  //     if (!taskId) throw new Error("No taskId (object signature)");
+  //     return taskId as string;
+  //   } catch {
+  //     const res2: any = await startSummary(postId, type as any);
+  //     const taskId2 =
+  //       res2?.taskId ?? res2?.data?.taskId ?? res2?.content?.taskId;
+  //     if (!taskId2) throw new Error("No taskId (positional signature)");
+  //     return taskId2 as string;
+  //   }
+  // };
 
   // 템플릿 확정 → 요약 시작
   const handleConfirmTemplate = async (
@@ -639,7 +643,13 @@ export default function FreeFormWritePage() {
       setStatusMessage("");
       setTemplateLabel(label);
 
-      const taskId = await startSummaryCompat(postId, type);
+      const res: StartLoadingResponse = await startSummary(postId, type);
+      const taskId =
+        (res as any).taskId ??
+        (res as any).data?.taskId ??
+        (res as any).content?.taskId;
+      if (!taskId) throw new Error("요약 작업 ID(taskId)를 찾을 수 없어요.");
+
       setSummaryTaskId(taskId);
     } catch (e) {
       console.error(e);
