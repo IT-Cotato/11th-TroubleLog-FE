@@ -89,11 +89,7 @@ const KakaoIntegration = () => {
     }
   };
 
-  const handleLoginWithExisting = () => {
-    navigate(PATH.LOGIN);
-  };
-
-  const handleGoLogin = () => {
+  const handleGoToLogin = () => {
     navigate(PATH.LOGIN);
   };
 
@@ -159,7 +155,7 @@ const KakaoIntegration = () => {
               <button
                 type="button"
                 className="mt-3 self-end text-body-16-regular text-primary underline"
-                onClick={handleLoginWithExisting}
+                onClick={handleGoToLogin}
               >
                 기존 계정으로 로그인하기
               </button>
@@ -229,7 +225,7 @@ const KakaoIntegration = () => {
 
               <button
                 type="button"
-                onClick={handleGoLogin}
+                onClick={handleGoToLogin}
                 className="flex justify-center items-center w-full h-12 bg-[#9737fd] rounded-lg"
               >
                 <span className="text-white text-head-20-semibold">
