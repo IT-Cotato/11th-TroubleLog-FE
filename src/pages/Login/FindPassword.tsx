@@ -45,6 +45,28 @@ const FindPassword = () => {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 붙여넣기 핸들러
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    resetErrors();
+
+    const pasted = e.clipboardData.getData("text").trim();
+    const digits = pasted.replace(/\D/g, "").slice(0, 6); // 숫자 6자리만 추출
+
+    if (!digits) return;
+
+    const next = [...codeDigits];
+    for (let i = 0; i < 6; i++) {
+      next[i] = digits[i] ?? "";
+    }
+
+    setCodeDigits(next);
+
+    // 마지막 자리에 포커스 이동
+    const lastIndex = Math.min(digits.length - 1, 5);
+    codeInputsRef.current[lastIndex]?.focus();
+  };
+
   // 이미 로그인된 경우 홈으로 보내는 로직이 필요하다면 여기서 처리
   useEffect(() => {
     if (localStorage.getItem("accessToken")) {
@@ -332,6 +354,7 @@ const FindPassword = () => {
                       value={digit}
                       onChange={(e) => handleCodeChange(idx, e.target.value)}
                       onKeyDown={(e) => handleCodeKeyDown(idx, e)}
+                      onPaste={handlePaste}
                       maxLength={1}
                       className={[
                         "w-full h-20 rounded-lg text-center text-head-32-semibold",
