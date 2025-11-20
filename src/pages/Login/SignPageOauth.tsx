@@ -191,8 +191,8 @@ const SignPageOauth = () => {
 
       const data: OauthRegisterResponse = await postOauthRegister(payload);
 
-      if (!data.accessToken || data.userId == null) {
-        throw new Error("회원가입 응답에 토큰 또는 userId가 없습니다.");
+      if (data.userId == null) {
+        throw new Error("회원가입 응답에 userId가 없습니다.");
       }
 
       // 드래프트 삭제
@@ -200,7 +200,7 @@ const SignPageOauth = () => {
 
       handleLoginSuccess({
         userId: data.userId,
-        accessToken: data.accessToken,
+        accessToken: data.accessToken!,
         // redirectTo 생략 시 HOME
       });
     } catch (error: any) {

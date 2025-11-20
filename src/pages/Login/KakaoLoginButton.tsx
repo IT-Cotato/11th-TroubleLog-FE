@@ -1,17 +1,17 @@
 import { useMemo } from "react";
 import kakaoLogoIcon from "@/assets/icons/kakaologo.svg";
-import { PATH } from "@/shared/config/paths";
+// import { PATH } from "@/shared/config/paths";
 
 const AUTH_SERVER_ORIGIN = "https://troublog.shop"; // 백엔드 고정
 
 export default function KakaoLoginButton() {
   const AUTH_START_URL = useMemo(() => {
-    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+    // const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
     // 현재 프론트(origin)에 맞는 콜백 URL 생성
-    const returnTo = `${window.location.origin}${base}${PATH.OAUTH_REGISTER}`;
+    // const returnTo = `${window.location.origin}${base}${PATH.OAUTH_REGISTER}`;
 
     const url = new URL(`${AUTH_SERVER_ORIGIN}/oauth2/authorization/kakao`);
-    url.searchParams.set("return_to", returnTo);
+    // url.searchParams.set("return_to", returnTo);
 
     return url.toString();
   }, []);
