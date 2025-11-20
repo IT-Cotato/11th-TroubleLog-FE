@@ -11,6 +11,7 @@ import type {
   TermsLatestResponse,
   OauthRegisterResponse,
 } from "@/models/auth.model";
+import api from "./axios";
 
 // 회원가입
 export const postRegister = (payload: RegisterRequest) =>
@@ -55,13 +56,23 @@ export const postRefreshToken = () =>
   });
 
 // 카카오 로그인 후 입력란
-export const postOauthRegister = (payload: OauthRegisterRequest) =>
-  getAPIResponseData<OauthRegisterResponse, OauthRegisterRequest>({
-    url: "/auth/oauth-register",
-    method: "POST",
-    data: payload,
-    headers: getAuthHeaders(),
-  });
+export async function postOauthRegister(
+  payload: OauthRegisterRequest
+): Promise<OauthRegisterResponse> {
+  const res = await api.post("/auth/oauth-register", payload);
+
+  // 1) body 에서 userId만 꺼내기
+  const userId: number | undefined = res.data?.data?.userId;
+
+  // 2) 필요하면 헤더에서 accessToken 꺼내기
+  const accessToken =
+    res.headers["accesstoken"] ?? res.headers["authorization"];
+
+  return {
+    userId: userId!,
+    accessToken,
+  };
+}
 
 export const postLogout = () => {
   const access = localStorage.getItem("accessToken") ?? "";

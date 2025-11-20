@@ -98,7 +98,5 @@ export interface OauthRegisterRequest {
 
 export interface OauthRegisterResponse {
   userId: number;
-  accessToken: string;
-  refreshToken: string;
-  localToken: string;
+  accessToken?: string;
 }
