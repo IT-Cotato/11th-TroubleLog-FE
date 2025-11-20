@@ -100,3 +100,23 @@ export interface OauthRegisterResponse {
   userId: number;
   accessToken?: string;
 }
+
+// --- 비밀번호 재설정 ---
+export interface FindPasswordRequest {
+  email: string;
+}
+export interface FindPasswordResponse {
+  randomString: string;
+}
+
+export interface CheckCodeRequest {
+  authCode: string;
+  randomString: string;
+}
+
+export interface ChangePasswordRequest {
+  authCode: string;
+  randomString: string;
+  email: string;
+  password: string;
+}

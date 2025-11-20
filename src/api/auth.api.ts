@@ -1,15 +1,19 @@
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import { getAuthHeaders } from "@/api/apiHeaders";
-import type {
-  RegisterRequest,
-  RegisterResponse,
-  RefreshResponse,
-  LogoutResponse,
-  LoginResponse,
-  EmailCheckResponse,
-  OauthRegisterRequest,
-  TermsLatestResponse,
-  OauthRegisterResponse,
+import {
+  type RegisterRequest,
+  type RegisterResponse,
+  type RefreshResponse,
+  type LogoutResponse,
+  type LoginResponse,
+  type EmailCheckResponse,
+  type OauthRegisterRequest,
+  type TermsLatestResponse,
+  type OauthRegisterResponse,
+  type FindPasswordRequest,
+  type FindPasswordResponse,
+  type CheckCodeRequest,
+  type ChangePasswordRequest,
 } from "@/models/auth.model";
 import api from "./axios";
 
@@ -88,3 +92,30 @@ export const postLogout = () => {
     data: refresh ? { refreshToken: refresh } : undefined,
   });
 };
+
+// 비밀번호 찾기 이메일 인증
+export const postFindPassword = (payload: FindPasswordRequest) =>
+  getAPIResponseData<FindPasswordResponse, FindPasswordRequest>({
+    url: "/auth/find-password",
+    method: "POST",
+    data: payload,
+    headers: getAuthHeaders(),
+  });
+
+// 비밀번호 찾기 인증번호 검증
+export const postCheckCode = (payload: CheckCodeRequest) =>
+  getAPIResponseData<string, CheckCodeRequest>({
+    url: "/auth/check-code",
+    method: "POST",
+    data: payload,
+    headers: getAuthHeaders(),
+  });
+
+// 비밀번호 재설정
+export const postChangePassword = (payload: ChangePasswordRequest) =>
+  getAPIResponseData<string, ChangePasswordRequest>({
+    url: "/auth/change-password",
+    method: "POST",
+    data: payload,
+    headers: getAuthHeaders(),
+  });

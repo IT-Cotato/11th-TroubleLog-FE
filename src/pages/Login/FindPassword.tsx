@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import onboarding_image from "../../assets/images/onboarding_image.png";
 import { PATH } from "@/shared/config/paths";
+import {
+  postChangePassword,
+  postCheckCode,
+  postFindPassword,
+} from "@/api/auth.api";
+import { isAxiosError } from "axios";
 
 type Step = "email" | "code" | "reset";
 
@@ -26,6 +32,10 @@ const FindPassword = () => {
   ]);
   const codeInputsRef = useRef<Array<HTMLInputElement | null>>([]);
   const [codeError, setCodeError] = useState("");
+  // 서버에서 받은 UUID (randomString)
+  const [randomString, setRandomString] = useState<string | null>(null);
+  // 인증이 성공한 코드(비밀번호 재설정 요청에 사용)
+  const [verifiedCode, setVerifiedCode] = useState<string | null>(null);
 
   // 3단계: 비밀번호 재설정
   const [password, setPassword] = useState("");
@@ -75,16 +85,33 @@ const FindPassword = () => {
     try {
       setLoading(true);
 
-      // TODO: 실제 이메일 인증코드 전송 API로 교체
-      // await postSendResetPasswordCode(email);
+      await requestCode(email);
 
       setStep("code");
     } catch (err) {
       console.error(err);
-      setFormError("인증코드 전송 중 오류가 발생했습니다.");
+      if (isAxiosError(err)) {
+        const msg =
+          (err.response?.data as any)?.error?.message ??
+          "인증코드 전송 중 오류가 발생했습니다.";
+        setFormError(msg);
+      } else {
+        setFormError("인증코드 전송 중 오류가 발생했습니다.");
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const requestCode = async (targetEmail: string) => {
+    const trimmed = targetEmail.trim();
+
+    const res = await postFindPassword({ email: trimmed });
+    // 응답이 { randomString: "..." } 형식이라고 가정
+    setRandomString(res.randomString);
+    // 새 코드 발급 시, 이전 코드/에러 초기화
+    setCodeDigits(["", "", "", "", "", ""]);
+    setVerifiedCode(null);
   };
 
   // ----- 2단계: 인증코드 입력 -----
@@ -119,16 +146,33 @@ const FindPassword = () => {
       return;
     }
 
+    if (!randomString) {
+      setFormError("인증 정보를 찾을 수 없습니다. 처음부터 다시 진행해주세요.");
+      setStep("email");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // TODO: 실제 인증번호 검증 API로 교체
-      // await postVerifyResetPasswordCode({ email, code });
+      await postCheckCode({
+        authCode: code,
+        randomString,
+      });
 
+      // 인증 성공 → 이 코드로 change-password 호출
+      setVerifiedCode(code);
       setStep("reset");
     } catch (err) {
       console.error(err);
-      setFormError("인증번호 확인 중 오류가 발생했습니다.");
+      if (isAxiosError(err)) {
+        const msg =
+          (err.response?.data as any)?.error?.message ??
+          "인증번호 확인 중 오류가 발생했습니다.";
+        setFormError(msg);
+      } else {
+        setFormError("인증번호 확인 중 오류가 발생했습니다.");
+      }
     } finally {
       setLoading(false);
     }
@@ -141,11 +185,17 @@ const FindPassword = () => {
     try {
       setLoading(true);
 
-      // TODO: 재전송 API로 교체
-      // await postResendResetPasswordCode(email);
+      await requestCode(email);
     } catch (err) {
       console.error(err);
-      setFormError("인증번호 재전송 중 오류가 발생했습니다.");
+      if (isAxiosError(err)) {
+        const msg =
+          (err.response?.data as any)?.error?.message ??
+          "인증번호 재전송 중 오류가 발생했습니다.";
+        setFormError(msg);
+      } else {
+        setFormError("인증번호 재전송 중 오류가 발생했습니다.");
+      }
     } finally {
       setLoading(false);
     }
@@ -165,19 +215,33 @@ const FindPassword = () => {
       return;
     }
 
+    if (!randomString || !verifiedCode) {
+      setFormError("이메일 인증 및 인증번호 확인을 먼저 완료해주세요.");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      //   const code = codeDigits.join("");
-
-      // TODO: 실제 비밀번호 재설정 API로 교체
-      // await postResetPassword({ email, code, newPassword: password });
+      await postChangePassword({
+        authCode: verifiedCode,
+        randomString,
+        email: email.trim(),
+        password,
+      });
 
       // 완료 후 로그인 페이지로 이동
       navigate(PATH.LOGIN, { replace: true });
     } catch (err) {
       console.error(err);
-      setFormError("비밀번호 재설정 중 오류가 발생했습니다.");
+      if (isAxiosError(err)) {
+        const msg =
+          (err.response?.data as any)?.error?.message ??
+          "비밀번호 재설정 중 오류가 발생했습니다.";
+        setFormError(msg);
+      } else {
+        setFormError("비밀번호 재설정 중 오류가 발생했습니다.");
+      }
     } finally {
       setLoading(false);
     }
