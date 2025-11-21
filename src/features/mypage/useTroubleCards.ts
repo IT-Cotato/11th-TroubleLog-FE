@@ -324,8 +324,18 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
 
       if (seqRef.current !== mySeq) return;
 
-      idSetRef.current = new Set(list.map((x) => x.id));
-      setCards(toTroublogCardVMs(list));
+      // 원본 탭(COMPLETED)에서 받은 리스트라면
+      // 서버 status "SUMMARIZED" → 클라에서는 "COMPLETED"로 정규화
+      const normalizedList =
+        source.type === "project" && source.query.status === "COMPLETED"
+          ? list.map((item) => ({
+              ...item,
+              status: item.status === "SUMMARIZED" ? "COMPLETED" : item.status,
+            }))
+          : list;
+
+      idSetRef.current = new Set(normalizedList.map((x) => x.id));
+      setCards(toTroublogCardVMs(normalizedList)); // ← 여기서부터는 항상 VMs만 봄
       setHasNext(false); // 페이징 없음
       setPage(1);
     } catch (e: any) {
