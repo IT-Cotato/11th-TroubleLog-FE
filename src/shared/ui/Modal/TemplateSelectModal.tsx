@@ -9,7 +9,7 @@ const templates = ["자기소개서", "면접 대비", "회고록", "Issue 관�
 const TEMPLATE_TO_TYPE: Record<number, SummaryTypeParam> = {
   0: "RESUME",
   1: "INTERVIEW",
-  2: "BLOG",
+  2: "MEMOIRS",
   3: "ISSUE_MANAGEMENT",
 };
 

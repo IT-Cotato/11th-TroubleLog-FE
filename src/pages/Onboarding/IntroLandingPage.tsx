@@ -17,19 +17,19 @@ import SampleDocIssue from "@/assets/images/intro/sample_doc_issue.png";
 import LaptopSide from "@/assets/images/intro/laptop_side.png";
 import Footer from "@/layouts/Footer/Footer";
 
-type TabKey = "resume" | "interview" | "blog" | "issue";
+type TabKey = "resume" | "interview" | "memoirs" | "issue";
 
 const TABS: { key: TabKey; title: string; desc: string }[] = [
   { key: "resume", title: "자기소개서", desc: "직무 역량 중심으로" },
   { key: "interview", title: "면접대비", desc: "경험 기반 질문과 답변" },
-  { key: "blog", title: "회고록", desc: "개발 맥락과 배운 점을 담아" },
+  { key: "memoirs", title: "회고록", desc: "개발 맥락과 배운 점을 담아" },
   { key: "issue", title: "Issue 관리", desc: "문제 원인과 해결 방법" },
 ];
 
 const SAMPLE_BY_TAB: Record<TabKey, string> = {
   resume: SampleDocResume,
   interview: SampleDocInterview,
-  blog: SampleDocBlog,
+  memoirs: SampleDocBlog,
   issue: SampleDocIssue,
 };
 

@@ -1,7 +1,7 @@
 export const SUMMARY_TYPES = [
   "NONE",
   "RESUME",
-  "BLOG",
+  "MEMOIRS",
   "INTERVIEW",
   "ISSUE_MANAGEMENT",
 ] as const;

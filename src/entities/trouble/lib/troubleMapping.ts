@@ -44,7 +44,7 @@ export const mapSummaryType = (
   // 서버 enum 우선
   if (upper === "RESUME") return "자기소개서";
   if (upper === "INTERVIEW") return "면접대비";
-  if (upper === "BLOG") return "회고록";
+  if (upper === "MEMOIRS") return "회고록";
   if (upper === "ISSUE_MANAGEMENT") return "이슈관리";
   if (upper === "NONE" || upper === "") return undefined;
 

@@ -35,7 +35,7 @@ export type ProjectTroubleSort = "LATEST" | "IMPORTANT" | "LIKES";
 export type ProjectTroubleVisibility = "ALL" | "PUBLIC" | "PRIVATE";
 export type ProjectTroubleSummaryType =
   // | "NONE"
-  "RESUME" | "INTERVIEW" | "BLOG" | "ISSUE_MANAGEMENT";
+  "RESUME" | "INTERVIEW" | "MEMOIRS" | "ISSUE_MANAGEMENT";
 
 // 프로젝트 전용 쿼리 파라미터
 export interface ProjectTroubleQuery {
