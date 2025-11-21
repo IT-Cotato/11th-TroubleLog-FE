@@ -15,6 +15,7 @@ export interface TroublogCardProps {
   isMine: boolean;
   status: StatusType;
   visibility?: VisibilityType;
+  isVisible?: boolean;
   errorCategory: string;
   title: string;
   createdAt: string;

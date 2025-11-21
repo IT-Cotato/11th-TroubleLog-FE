@@ -23,6 +23,19 @@ export interface CommunityServerCard {
   postTags: string[];
   likeCount: number;
   commentCount: number;
+
+  // /community/recent 전용 필드
+  isVisible?: boolean;
+  isSummaryCreated?: boolean;
+  isDeleted?: boolean;
+  postStatus?: string; // "작성 완료", "요약 완료" 등
+  starRating?: string | null;
+  templateType?: string | null;
+  checklistError?: number[];
+  checklistReason?: number[];
+  updatedAt?: string;
+  projectId?: number;
+  contents?: TroubleContentBlock[];
 }
 
 export type GetCommunityListResponse = PaginatedResponse<CommunityServerCard>;
