@@ -4,6 +4,8 @@ export interface ProfileData {
   field: string;
   bio: string;
   githubUrl: string;
+  profileUrl?: string | null;
+  profileImageUrl?: string | null;
 }
 
 export interface UpdatedProfileData {
@@ -19,6 +21,7 @@ export interface UserInfoData {
   userId: number;
   nickname: string;
   profileUrl: string;
+  profileImgUrl?: string | null;
   bio: string;
   followerNum: number;
   followingNum: number;
