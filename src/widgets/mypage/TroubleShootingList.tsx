@@ -61,13 +61,19 @@ const TroubleShootingList = () => {
     [base, isMyPage, selectedTag]
   );
 
-  const statusFiltered = useMemo(
-    () =>
-      isMyPage && selectedStatus !== "all"
-        ? tagFiltered.filter((c) => c.status === selectedStatus)
-        : tagFiltered,
-    [tagFiltered, isMyPage, selectedStatus]
-  );
+  const statusFiltered = useMemo(() => {
+    if (!isMyPage || selectedStatus === "all") return tagFiltered;
+
+    // '원본' 탭: COMPLETED + SUMMARIZED 모두 포함
+    if (selectedStatus === "complete") {
+      return tagFiltered.filter(
+        (c) => c.status === "complete" || c.status === "created"
+      );
+    }
+
+    // 나머지(inProgress, created)는 기존 방식 유지
+    return tagFiltered.filter((c) => c.status === selectedStatus);
+  }, [tagFiltered, isMyPage, selectedStatus]);
 
   const sortedCards = statusFiltered;
 
@@ -125,7 +131,7 @@ const TroubleShootingList = () => {
         )}
 
         {sortedCards.map((card) => {
-          const vm = mapToTroubleShootingCard(card); // 한 번만 만들고 아래에서 재사용
+          const vm = mapToTroubleShootingCard(card);
 
           return (
             <TroubleShootingCard
@@ -133,11 +139,6 @@ const TroubleShootingList = () => {
               {...vm}
               onDeleted={handleDeleted}
               onClick={() => {
-                // 1) 합본 분기(기존 유지)
-                const { goCombined, summaryId } = decideCombined(
-                  card,
-                  viewerId
-                );
                 const ownerIdForState = isMyPage
                   ? viewerId != null
                     ? Number(viewerId)
@@ -146,26 +147,42 @@ const TroubleShootingList = () => {
                   ? Number(card.authorId)
                   : undefined;
 
-                if (goCombined && summaryId != null) {
-                  navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
-                    state: { from: "mypage", ownerId: ownerIdForState },
-                  });
-                  return;
-                }
-
-                // 2) CPD 힌트(state)로 확정값 전달
-                const statusFromList = vm.status; // 'inProgress' | 'complete' | 'created'
+                const statusFromList = vm.status;
                 const isVisibleFromList = vm.visibility === "public";
                 const summaryIdFromList = vm.summaryId ?? undefined;
                 const isMineFromList = !!vm.isMine || !!isMyPage;
 
                 const qs = new URLSearchParams({ from: "mypage" });
-                if (ownerIdForState != null)
+                if (ownerIdForState != null) {
                   qs.set("ownerId", String(ownerIdForState));
+                }
 
-                // 슬러그 생성
                 const slug = makePostSlug(vm.title, card.id);
 
+                // 1) 내 마이페이지 + '원본+요약본' 탭일 때만 합본 라우팅
+                if (isMyPage && selectedStatus === "created") {
+                  const { goCombined, summaryId } = decideCombined(
+                    card,
+                    viewerId
+                  );
+
+                  if (goCombined && summaryId != null) {
+                    navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                      state: { from: "mypage", ownerId: ownerIdForState },
+                    });
+                    return;
+                  }
+
+                  // (옵션) 합본 실패 시 요약본 상세로 보내고 싶다면:
+                  if (summaryIdFromList != null) {
+                    navigate(PATH.POST_SUMMARY(summaryIdFromList), {
+                      state: { from: "mypage", ownerId: ownerIdForState },
+                    });
+                    return;
+                  }
+                }
+
+                // 2) 그 외 탭(전체/작성중/원본)은 항상 원본 상세로 이동
                 navigate(`${PATH.COMMUNITY_POST_SLUG(slug)}?${qs.toString()}`, {
                   state: {
                     from: "mypage",

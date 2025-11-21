@@ -83,11 +83,20 @@ const MyPageLayout = () => {
 
   const counts = useMemo(() => {
     const mine = cards.filter((c) => c.isMine);
+
+    const inProgress = mine.filter((c) => c.status === "inProgress").length;
+    const complete = mine.filter(
+      (c) => c.status === "complete" || c.status === "created"
+    ).length;
+    const created = mine.filter((c) => c.status === "created").length;
+
+    const allForSidebar = inProgress + complete + created;
+
     return {
-      all: mine.length,
-      inProgress: mine.filter((c) => c.status === "inProgress").length,
-      complete: mine.filter((c) => c.status === "complete").length,
-      created: mine.filter((c) => c.status === "created").length,
+      all: allForSidebar,
+      inProgress,
+      complete,
+      created,
     };
   }, [cards]);
 
