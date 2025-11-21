@@ -1,13 +1,24 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Input from "./Input";
 import onboarding_image from "../../assets/images/onboarding_image.png";
 import { PATH } from "@/shared/config/paths";
+import { postKakaoIntegration } from "@/api/auth.api";
 
 type Step = "confirm" | "input" | "complete";
 
+interface KakaoIntegrationLocationState {
+  socialId?: string;
+  profileImgUrl?: string;
+}
+
 const KakaoIntegration = () => {
   const navigate = useNavigate();
+  const location = useLocation() as { state?: KakaoIntegrationLocationState };
+
+  // 카카오 로그인 단계어서 넘겨주는 정보
+  const socialId: string = location?.state?.socialId ?? "";
+  const profileImgUrl: string = location?.state?.profileImgUrl ?? "";
 
   const [step, setStep] = useState<Step>("confirm");
 
@@ -73,17 +84,30 @@ const KakaoIntegration = () => {
     const pwValid = validatePassword(password);
     if (!emailValid || !pwValid) return;
 
+    if (!socialId) {
+      setFormError("카카오 계정 정보가 유효하지 않습니다. 다시 시도해주세요.");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // TODO: 이메일 + 비밀번호 검증 및 실제 연동 API
-      // await postCheckAccountAndIntegrate({ email, password });
+      await postKakaoIntegration({
+        email,
+        password,
+        socialId,
+        proflImgUrl: profileImgUrl,
+      });
 
       // 검증/연동 성공 시 3단계로 이동
       setStep("complete");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setFormError("계정 확인 중 오류가 발생했습니다.");
+
+      const message =
+        error?.response?.data?.error?.message ??
+        "계정 확인 중 오류가 발생했습니다.";
+      setFormError(message);
     } finally {
       setLoading(false);
     }

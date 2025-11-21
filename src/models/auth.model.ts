@@ -120,3 +120,11 @@ export interface ChangePasswordRequest {
   email: string;
   password: string;
 }
+
+// 카카오 통합
+export interface KakaoIntegrationRequest {
+  email: string;
+  password: string;
+  socialId: string;
+  proflImgUrl: string;
+}

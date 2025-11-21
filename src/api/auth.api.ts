@@ -14,6 +14,7 @@ import {
   type FindPasswordResponse,
   type CheckCodeRequest,
   type ChangePasswordRequest,
+  type KakaoIntegrationRequest,
 } from "@/models/auth.model";
 import api from "./axios";
 
@@ -115,6 +116,15 @@ export const postCheckCode = (payload: CheckCodeRequest) =>
 export const postChangePassword = (payload: ChangePasswordRequest) =>
   getAPIResponseData<string, ChangePasswordRequest>({
     url: "/auth/change-password",
+    method: "POST",
+    data: payload,
+    headers: getAuthHeaders(),
+  });
+
+// 카카오 통합 연동 API
+export const postKakaoIntegration = (payload: KakaoIntegrationRequest) =>
+  getAPIResponseData<string, KakaoIntegrationRequest>({
+    url: "/auth/integration/kakao",
     method: "POST",
     data: payload,
     headers: getAuthHeaders(),
