@@ -1,12 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./Input";
 import onboarding_image from "../../assets/images/onboarding_image.png";
 import { postEmailCheck } from "@/api/auth.api";
 import { PATH } from "@/shared/config/paths";
-
-const EMAIL_DUP_MSG = "이미 가입된 이메일 입니다!";
-const KAKAO_COMBINE_LINK = "카카오로 로그인하기";
 
 const SignPageOne = () => {
   const [email, setEmail] = useState("");
@@ -23,18 +20,6 @@ const SignPageOne = () => {
   const [formError, setFormError] = useState("");
   const [isFormValid, setIsFormValid] = useState(false);
   const navigate = useNavigate();
-
-  const AUTH_START_URL = useMemo(() => {
-    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-    const callback = `${window.location.origin}${base}${PATH.OAUTH_REGISTER}`;
-    return `https://troublog.shop/oauth2/authorization/kakao?return_to=${encodeURIComponent(
-      callback
-    )}`;
-  }, []);
-
-  const handleKakaoLogin = () => {
-    window.location.href = AUTH_START_URL;
-  };
 
   // 폼 전체 유효성 체크
   useEffect(() => {
@@ -99,11 +84,13 @@ const SignPageOne = () => {
       await postEmailCheck(trimmedEmail);
       setEmailError(null); // 중복 아님
     } catch (error: any) {
-      if (error.response?.status === 409) {
-        setEmailError({
-          message: EMAIL_DUP_MSG,
-          action: KAKAO_COMBINE_LINK, // 우측 버튼 label
-        });
+      const status = error?.response?.status;
+      const serverMessage =
+        error?.response?.data?.error?.message ||
+        "이메일 확인 중 오류가 발생했습니다.";
+
+      if (status === 409) {
+        setEmailError({ message: serverMessage });
       } else {
         setEmailError({ message: "이메일 확인 중 오류가 발생했습니다." });
       }
@@ -141,9 +128,6 @@ const SignPageOne = () => {
     });
   };
 
-  // 중복 이메일 여부 판별 (message 기반)
-  const isEmailDuplicate = emailError?.message === EMAIL_DUP_MSG;
-
   return (
     <div className="flex w-screen h-screen overflow-hidden">
       <img src={onboarding_image} className="w-1/2 h-full object-fill" />
@@ -167,12 +151,6 @@ const SignPageOne = () => {
                 onBlur={handleEmailBlur}
                 placeholder="이메일을 입력해주세요."
                 error={emailError?.message} // 문자열만 전달
-                errorActionLabel={
-                  isEmailDuplicate ? KAKAO_COMBINE_LINK : undefined
-                }
-                onErrorActionClick={
-                  isEmailDuplicate ? handleKakaoLogin : undefined
-                }
               />
 
               <Input
