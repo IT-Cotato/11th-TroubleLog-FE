@@ -7,9 +7,14 @@ import { postKakaoIntegration } from "@/api/auth.api";
 
 type Step = "confirm" | "input" | "complete";
 
+interface KakaoIntegrationLocationState {
+  socialId?: string;
+  profileImgUrl?: string;
+}
+
 const KakaoIntegration = () => {
   const navigate = useNavigate();
-  const location = useLocation() as any;
+  const location = useLocation() as { state?: KakaoIntegrationLocationState };
 
   // 카카오 로그인 단계어서 넘겨주는 정보
   const socialId: string = location?.state?.socialId ?? "";
