@@ -57,7 +57,7 @@ export const getProjectSummaries = (
     method: "GET",
     params: {
       sort: params.sort,
-      summaryType: params.summaryType ?? "RESUME",
+      summaryType: params.summaryType ?? "NONE",
     },
   });
 
