@@ -7,18 +7,15 @@ import { postKakaoIntegration } from "@/api/auth.api";
 
 type Step = "confirm" | "input" | "complete";
 
-interface KakaoIntegrationLocationState {
-  socialId?: string;
-  profileImgUrl?: string;
-}
-
 const KakaoIntegration = () => {
   const navigate = useNavigate();
-  const location = useLocation() as { state?: KakaoIntegrationLocationState };
+  const location = useLocation();
 
-  // 카카오 로그인 단계어서 넘겨주는 정보
-  const socialId: string = location?.state?.socialId ?? "";
-  const profileImgUrl: string = location?.state?.profileImgUrl ?? "";
+  const searchParams = new URLSearchParams(location.search);
+
+  const socialId = searchParams.get("socialId") ?? "";
+  const profileImgUrl = searchParams.get("profileImgUrl") ?? "";
+  // const userId = searchParams.get("userId") ?? "";
 
   const [step, setStep] = useState<Step>("confirm");
 

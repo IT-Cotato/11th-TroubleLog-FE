@@ -22,7 +22,7 @@ const KakaoIntegration = lazy(() => import("@/pages/Login/KakaoIntegration"));
 const TermsDetailPage = lazy(() => import("@/pages/Login/TermsDetailPage"));
 const SignPageOauth = lazy(() => import("@/pages/Login/SignPageOauth"));
 
-// const OAuthPopupKakao = lazy(() => import("@/pages/Login/OAuthPopupKakao"));
+const OAuthPopupKakao = lazy(() => import("@/pages/Login/OAuthPopupKakao"));
 
 const FindPassword = lazy(() => import("@/pages/Login/FindPassword"));
 
@@ -74,10 +74,10 @@ export const router = createBrowserRouter(
     { path: PATH.TERMS_FOOTER, element: <TermsPublicPage /> },
     { path: PATH.SIGNUP_OAUTH, element: <SignPageOauth /> },
     { path: PATH.COMBINE_SIGNUP, element: <CombineSignPage /> },
-    // { path: PATH.KAKAO_INTEGRATION, element: <KakaoIntegration /> },
+    { path: PATH.KAKAO_INTEGRATION, element: <KakaoIntegration /> },
 
     // 콜백 브릿지
-    { path: PATH.OAUTH_REGISTER, element: <KakaoIntegration /> },
+    { path: PATH.OAUTH_REGISTER, element: <OAuthPopupKakao /> },
 
     // 비밀번호 찾기
     { path: PATH.FIND_PASSWORD, element: <FindPassword /> },
