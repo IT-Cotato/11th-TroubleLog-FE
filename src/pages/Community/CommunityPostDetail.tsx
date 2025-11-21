@@ -510,6 +510,26 @@ export default function CommunityPostDetail() {
           from,
         } = detailCtx;
 
+        // 0. 목록 힌트 기준: 비공개로 내려온 글이면 무조건 내 상세 API 우선
+        if (isVisibleFromList === false) {
+          const myDetail = await getPostDetail(effectiveId);
+          const completedAt = (myDetail as any)?.completedAt ?? null;
+          const isDraft = completedAt == null;
+
+          if (isDraft) {
+            // 작성 중이면 기존 드래프트 로직 재사용
+            await loadMineDraft(effectiveId);
+          } else {
+            // 완료 문서 비공개 → 내 상세 화면으로만 세팅
+            const vmMine = toPostDetailVM(myDetail as any, viewerId);
+            setPost(vmMine);
+            setIsLiked(vmMine.isLiked);
+            setLikeCounts(vmMine.likeCounts);
+            setIsCommunitySource(false); // 좋아요/댓글 비활성
+          }
+          return;
+        }
+
         // ProjectDetail → 원본 탭에서 온 글은 항상 /troubles만
         if (from === "project") {
           const myDetail = await getPostDetail(effectiveId);
@@ -640,15 +660,19 @@ export default function CommunityPostDetail() {
 
   useEffect(() => {
     if (!post) return;
+
+    // 비공개/내 글(/troubles 기반)일 때는 slug 정규화 X
+    if (!isCommunitySource) return;
+
     const canonical =
       PATH.COMMUNITY_POST_SLUG(
         makePostSlug(post.title, postId ?? effectiveId)
       ) + window.location.search;
-    // slug 경로가 아니면 슬러그로 교체
+
     if (!slug || slug !== makePostSlug(post.title, effectiveId)) {
       navigate(canonical, { replace: true });
     }
-  }, [post, slug, effectiveId, navigate, postId]);
+  }, [post, slug, effectiveId, navigate, postId, isCommunitySource]);
 
   const navigatingRef = useRef(false);
 

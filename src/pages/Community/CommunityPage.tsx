@@ -129,18 +129,34 @@ export default function CommunityPage() {
                 const qs = new URLSearchParams({ from: "community" });
                 if (ownerId != null) qs.set("ownerId", String(ownerId));
 
+                const isVisibleFromList =
+                  typeof card.isVisible === "boolean"
+                    ? card.isVisible
+                    : card.visibility === "public"
+                    ? true
+                    : card.visibility === "private"
+                    ? false
+                    : undefined;
+
+                const statePayload = {
+                  from: "community" as const,
+                  ownerId,
+                  statusFromList: card.status,
+                  isVisibleFromList,
+                  isMineFromList: card.isMine,
+                };
+
                 const { goCombined, summaryId } = decideCombined(card);
                 if (goCombined && summaryId != null) {
                   navigate(PATH.COMBINED_DETAIL(id, summaryId), {
-                    state: { from: "community", ownerId },
+                    state: statePayload,
                   });
                 } else {
-                  // 제목 기반 슬러그 이동
                   const slug = makePostSlug(card.title, id);
                   navigate(
                     `${PATH.COMMUNITY_POST_SLUG(slug)}?${qs.toString()}`,
                     {
-                      state: { from: "community", ownerId },
+                      state: statePayload,
                     }
                   );
                 }

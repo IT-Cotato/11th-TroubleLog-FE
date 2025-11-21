@@ -8,11 +8,14 @@ import {
   mapVisibility,
 } from "@/entities/trouble/lib/troubleMapping";
 
-export type TroublogCardVM = TroublogCardProps & { createdAtIso: string };
+export type TroublogCardVM = TroublogCardProps & {
+  createdAtIso: string;
+  isVisible?: boolean;
+};
 
 type AnySummary = {
   summaryId?: number;
-  summaryType?: string; // "RESUME" | "INTERVIEW" | "BLOG" | "ISSUE_MANAGEMENT"
+  summaryType?: string; // "RESUME" | "INTERVIEW" | "MEMOIRS" | "ISSUE_MANAGEMENT"
   summaryCreatedAt?: string;
 };
 
@@ -54,7 +57,8 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => {
     id: t.id,
     isMine: true, // 서버에 소유자 정보가 오면 교체
     status: mapStatus(t.status),
-    visibility: mapVisibility(t.isVisible as any), // boolean 기반이지만 호환 고려
+    visibility: mapVisibility(t.isVisible as any),
+    isVisible: typeof t.isVisible === "boolean" ? t.isVisible : undefined,
     title: t.title ?? "",
     errorCategory: t.error ?? "",
     createdAt: iso ? formatYYMMDD(iso) : "",
