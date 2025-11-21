@@ -9,7 +9,7 @@ const OPTIONS: Option[] = [
   { label: "전체", value: null },
   { label: "자기소개서", value: "RESUME" },
   { label: "면접대비", value: "INTERVIEW" },
-  { label: "회고록", value: "BLOG" },
+  { label: "회고록", value: "MEMOIRS" },
   { label: "이슈관리", value: "ISSUE_MANAGEMENT" },
 ];
 

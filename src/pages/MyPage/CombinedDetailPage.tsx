@@ -243,7 +243,7 @@ export default function CombinedDetailPage() {
   const SUMMARY_TYPE_LABELS: Record<string, string> = {
     RESUME: "자기소개서",
     INTERVIEW: "면접 대비",
-    BLOG: "회고록",
+    MEMOIRS: "회고록",
     ISSUE_MANAGEMENT: "Issue 관리",
     SHORT: "짧은 요약",
     NONE: "없음",
