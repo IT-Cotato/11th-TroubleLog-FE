@@ -11,6 +11,7 @@ import {
 export type TroublogCardVM = TroublogCardProps & {
   createdAtIso: string;
   isVisible?: boolean;
+  hasSummary?: boolean;
 };
 
 type AnySummary = {
@@ -53,6 +54,11 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => {
   const enumType = pickDisplaySummaryType(t);
   const label = enumType ? mapSummaryType(enumType) : undefined;
 
+  // 요약 존재 여부 계산
+  const hasSummary =
+    t.status === "SUMMARIZED" ||
+    (Array.isArray(t.summaries) && t.summaries.length > 0);
+
   return {
     id: t.id,
     isMine: true, // 서버에 소유자 정보가 오면 교체
@@ -74,6 +80,8 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => {
     summaryId: pickLatestSummaryId(t) ?? undefined,
     postSummaryId: t.postSummaryId ?? undefined,
     summaries: t.summaries ?? [],
+
+    hasSummary,
   };
 };
 

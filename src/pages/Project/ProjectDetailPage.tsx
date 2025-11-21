@@ -257,37 +257,33 @@ export default function ProjectDetailPage() {
                       const qs = new URLSearchParams({ from: "project" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
 
-                      // '요약본'면 합본이 아니라 요약본 상세로 이동
-                      // - 현재 탭이 'created'이거나, 카드 자체 상태가 created인 경우
-                      // - summaryId 가 있을 때만 동작
-                      if (
-                        (selectedStatus === "created" ||
-                          card.status === "created") &&
-                        card.summaryId
-                      ) {
+                      // 1) '요약본' 탭인 경우에만 → 요약본 상세로 이동
+                      if (selectedStatus === "created" && card.summaryId) {
                         navigate(PATH.POST_SUMMARY(card.summaryId), {
                           state: { from: "project", ownerId },
                         });
                         return;
                       }
 
-                      // 요약본가 아닌 경우에는 합본 분기/커뮤 상세/힌트 전달
-                      const { goCombined, summaryId } = decideCombined(
-                        card,
-                        viewerId
-                      );
-                      if (goCombined && summaryId != null) {
-                        navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
-                          state: { from: "project", ownerId },
-                        });
-                        return;
+                      // 2) **원본 탭이 아닐 때만** 합본 여부 판단
+                      if (selectedStatus !== "complete") {
+                        const { goCombined, summaryId } = decideCombined(
+                          card,
+                          viewerId
+                        );
+                        if (goCombined && summaryId != null) {
+                          navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                            state: { from: "project", ownerId },
+                          });
+                          return;
+                        }
                       }
 
-                      // 홈 화면과 동일한 힌트 전달 (비공개/작성중 분기용)
+                      // 3) 나머지는 무조건 원본 상세로 이동
                       const statusFromList = card.status; // 'inProgress' | 'complete' | 'created'
-                      const isVisibleFromList = card.visibility === "public"; // boolean
-                      const summaryIdFromList = card.summaryId ?? undefined; // number | undefined
-                      const isMineFromList = true; // 항상 true
+                      const isVisibleFromList = card.visibility === "public";
+                      const summaryIdFromList = card.summaryId ?? undefined;
+                      const isMineFromList = true;
 
                       navigate(
                         `${PATH.COMMUNITY_POST_ID(
