@@ -4,7 +4,12 @@ import type { TroubleContentBlock } from "./troubles.server";
 export type CommunitySort = "latest" | "likes";
 
 export interface CommunityServerCard {
-  postCardUserInfoResDto: {
+  postCardUserInfoResDto?: {
+    userId: number;
+    nickname: string;
+    profileImageUrl: string | null;
+  } | null;
+  userInfo?: {
     userId: number;
     nickname: string;
     profileImageUrl: string | null;
@@ -12,7 +17,8 @@ export interface CommunityServerCard {
   id: number;
   title: string;
   thumbnailUrl: string | null;
-  completedAt: string;
+  completedAt?: string;
+  createdAt?: string;
   errorTag: string | null;
   postTags: string[];
   likeCount: number;
