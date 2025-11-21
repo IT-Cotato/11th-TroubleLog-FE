@@ -9,7 +9,7 @@ export const PATH = {
   SIGNUP_OAUTH: "/signup/oauth",
   OAUTH_REGISTER: "/auth/oauth-register",
   COMBINE_SIGNUP: "/signup/combine",
-  KAKAO_INTEGRATION: "/kakao-integration",
+  // KAKAO_INTEGRATION: "/kakao-integration",
   FIND_PASSWORD: "/find-password",
 
   USER: "/user",
