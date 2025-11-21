@@ -29,9 +29,10 @@ declare global {
     __authRefreshPromise?: Promise<string | null> | null;
   }
 }
-// const getRefreshPromise = () => window.__authRefreshPromise ?? null;
-// const setRefreshPromise = (p: Promise<string | null> | null) =>
-//   (window.__authRefreshPromise = p);
+
+const getRefreshPromise = () => window.__authRefreshPromise ?? null;
+const setRefreshPromise = (p: Promise<string | null> | null) =>
+  (window.__authRefreshPromise = p);
 
 const api = axios.create({
   baseURL: API_BASE_URL || undefined,
@@ -83,17 +84,6 @@ const setRecentRefreshOk = () => {
     //
   }
 };
-// const hasRecentRefreshOk = (ms = 10_000) => {
-//   try {
-//     const raw =
-//       localStorage.getItem(REFRESH_OK_KEY) ??
-//       sessionStorage.getItem(REFRESH_OK_KEY);
-//     const ts = raw ? Number(raw) : NaN;
-//     return Number.isFinite(ts) && Date.now() - ts < ms;
-//   } catch {
-//     return false;
-//   }
-// };
 
 // ----- 요청 인터셉터: 토큰/헤더 부착, 외부 절대 URL은 스킵 -----
 const reqId = api.interceptors.request.use((config) => {
@@ -113,9 +103,9 @@ const reqId = api.interceptors.request.use((config) => {
   }
 
   // 2) 외부 절대 URL → 토큰/쿠키 금지
-  const isAbsolute = isAbsoluteUrl(url);
-  const reqOrigin = isAbsolute ? getOriginSafely(url) : API_ORIGIN;
-  const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
+  const isAbs = isAbsoluteUrl(url);
+  const reqOrigin = isAbs ? getOriginSafely(url) : API_ORIGIN;
+  const isExternalAbsolute = isAbs && reqOrigin !== API_ORIGIN;
   if (isExternalAbsolute) {
     delete (config.headers as any).Authorization;
     config.withCredentials = false;
@@ -158,6 +148,18 @@ export const startRefresh = async (): Promise<string | null> => {
   } catch {
     return null;
   }
+};
+
+// ----- helper: "토큰이 만료되었습니다." 인 401 인지 판별 -----
+export const isTokenExpiredError = (error: AxiosError) => {
+  const status = error.response?.status;
+  const data: any = error.response?.data;
+  const msg: string | undefined = data?.error?.message ?? data?.message;
+  return (
+    status === 401 &&
+    typeof msg === "string" &&
+    msg.includes("토큰이 만료되었습니다")
+  );
 };
 
 // ----- 응답 인터셉터 -----
@@ -211,9 +213,9 @@ const resId = api.interceptors.response.use(
     const reqUrl = cfg.url ?? "";
 
     // 외부 절대 URL 에러는 간섭하지 않음
-    const isAbsolute = /^https?:\/\//i.test(reqUrl);
-    const reqOrigin = isAbsolute ? getOriginSafely(String(reqUrl)) : API_ORIGIN;
-    const isExternalAbsolute = isAbsolute && reqOrigin !== API_ORIGIN;
+    const isAbs = /^https?:\/\//i.test(reqUrl);
+    const reqOrigin = isAbs ? getOriginSafely(String(reqUrl)) : API_ORIGIN;
+    const isExternalAbsolute = isAbs && reqOrigin !== API_ORIGIN;
     if (isExternalAbsolute) return Promise.reject(error);
 
     // 콜백 라우트에서는 전역 404/401/403/리프레시 모두 스킵
@@ -270,33 +272,44 @@ const resId = api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // // 401 → "무조건" 리프레시 먼저 시도, 성공 시 원요청 1회 재시도
-    // if (status === 401 && !skipAuth && !isSSEAuth) {
-    //   let p = getRefreshPromise();
-    //   if (!p) {
-    //     p = startRefresh().finally(() =>
-    //       setTimeout(() => setRefreshPromise(null), 100)
-    //     );
-    //     setRefreshPromise(p);
-    //   }
-    //   const newToken = await p;
-
-    //   if (newToken) {
-    //     if (!cfg._retry) {
-    //       cfg._retry = true;
-    //       cfg.headers = cfg.headers ?? {};
-    //       (cfg.headers as any).Authorization = `Bearer ${newToken}`;
-    //       return api(cfg); // 재시도
-    //     }
-    //   }
-
-    //   localStorage.removeItem("accessToken");
-    //   await navigateToAuthGuardOnce(401);
-    //   return Promise.reject(error);
-    // }
-
-    // 401 → 토큰 제거 후 AuthGuard 로 이동 (refresh 자동 호출 없음)
+    // ----- 401 처리: "토큰이 만료되었습니다." → 전역 리프레시 + 재시도 -----
     if (status === 401 && !skipAuth && !isSSEAuth) {
+      const tokenExpired = isTokenExpiredError(error);
+
+      if (tokenExpired) {
+        // 1) 이미 리프레시 중이면 그거 먼저 기다림
+        let p = getRefreshPromise();
+        if (!p) {
+          p = startRefresh().finally(() =>
+            setTimeout(() => setRefreshPromise(null), 100)
+          );
+          setRefreshPromise(p);
+        }
+
+        const newToken = await p;
+
+        // 1-1) 리프레시 성공 → 원 요청 1회 재시도
+        if (newToken) {
+          if (!cfg._retry) {
+            cfg._retry = true;
+            cfg.headers = cfg.headers ?? {};
+            (cfg.headers as any).Authorization = `Bearer ${newToken}`;
+            return api(cfg); // 재시도
+          }
+        }
+
+        // 1-2) 리프레시 실패 or 이미 재시도 한 요청 → 토큰 제거 + AuthGuard
+        try {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+        } catch {
+          //
+        }
+        await navigateToAuthGuardOnce(401);
+        return Promise.reject(error);
+      }
+
+      // ----- 토큰 만료 외의 401 → 기존 로직대로 AuthGuard 이동 -----
       try {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
@@ -306,34 +319,6 @@ const resId = api.interceptors.response.use(
       await navigateToAuthGuardOnce(401);
       return Promise.reject(error);
     }
-
-    // 403 → 접근권한 없음 화면
-    // if (status === 403 && !skipAuth && !isSSEAuth) {
-    //   // 1) 리프레시 진행 중이면 완료까지 대기 후 재시도
-    //   const inflight = getRefreshPromise();
-    //   if (inflight && !cfg._retry) {
-    //     const t = await inflight;
-    //     if (t) {
-    //       cfg._retry = true;
-    //       cfg.headers = cfg.headers ?? {};
-    //       (cfg.headers as any).Authorization = `Bearer ${t}`;
-    //       return api(cfg);
-    //     }
-    //   }
-
-    //   // 2) 직전에 갱신 성공한 토큰이 있으면 1회 재시도 (선택적)
-    //   const latestToken = localStorage.getItem("accessToken");
-    //   if (hasRecentRefreshOk() && latestToken && !cfg._retry) {
-    //     cfg._retry = true;
-    //     cfg.headers = cfg.headers ?? {};
-    //     (cfg.headers as any).Authorization = `Bearer ${latestToken}`;
-    //     return api(cfg);
-    //   }
-
-    //   // 3) 실패 → 접근 권한 없음 화면
-    //   await navigateToAuthGuardOnce(403);
-    //   return Promise.reject(error);
-    // }
 
     // 403 → 접근권한 없음 화면 (refresh 재시도 로직 제거)
     if (status === 403 && !skipAuth && !isSSEAuth) {
