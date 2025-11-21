@@ -93,8 +93,13 @@ const EditProfile = () => {
           getMyProfile(),
           id ? getUserInfo(Number(id)) : Promise.resolve(null as any),
         ]);
+
         const serverProfileUrl =
-          (userInfo && userInfo.profileUrl) || (me as any)?.profileUrl || "";
+          userInfo?.profileImgUrl ||
+          userInfo?.profileUrl ||
+          (me as any)?.profileImgUrl ||
+          (me as any)?.profileUrl ||
+          "";
 
         if (!alive) return;
 
@@ -106,6 +111,7 @@ const EditProfile = () => {
           githubUrl: me.githubUrl,
           profileUrl: serverProfileUrl,
         });
+
         setProfileImage(serverProfileUrl || userIcon);
       } catch (error) {
         console.error("정보를 불러오는 데 실패했습니다", error);
