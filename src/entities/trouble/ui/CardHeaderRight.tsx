@@ -13,6 +13,10 @@ interface CardHeaderRightProps {
   onAvatarClick?: () => void;
   onDelete?: () => void;
   deleting?: boolean;
+
+  hasSummary?: boolean;
+  onDeleteSummary?: () => void;
+  summaryDeleting?: boolean;
 }
 
 export default function CardHeaderRight({
@@ -22,6 +26,9 @@ export default function CardHeaderRight({
   onAvatarClick,
   onDelete,
   deleting = false,
+  hasSummary,
+  onDeleteSummary,
+  summaryDeleting = false,
 }: CardHeaderRightProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
@@ -55,23 +62,37 @@ export default function CardHeaderRight({
     );
   }
 
+  const options: { label: string; onClick: () => void }[] = [];
+
+  if (hasSummary && onDeleteSummary) {
+    options.push({
+      label: summaryDeleting ? "요약본 삭제 중..." : "요약본 삭제",
+      onClick: () => {
+        if (!summaryDeleting) onDeleteSummary();
+      },
+    });
+  }
+
+  options.push({
+    label: deleting ? "삭제 중..." : "삭제",
+    onClick: () => {
+      if (!deleting) onDelete?.();
+    },
+  });
+
   return (
     <div className="relative flex gap-1 sm:gap-2" ref={menuRef}>
       <StatusDot status={status} />
       <div className="relative" {...stopCardClick}>
-        <KebabMenuButton onClick={() => setShowMenu((v) => !v)} />
+        <KebabMenuButton
+          onClick={() => {
+            if (deleting || summaryDeleting) return;
+            setShowMenu((v) => !v);
+          }}
+        />
         {showMenu && (
           <div {...stopCardClick}>
-            <KebabDropdown
-              options={[
-                {
-                  label: deleting ? "삭제 중..." : "삭제",
-                  onClick: () => {
-                    if (!deleting) onDelete?.();
-                  },
-                },
-              ]}
-            />
+            <KebabDropdown options={options} />
           </div>
         )}
       </div>

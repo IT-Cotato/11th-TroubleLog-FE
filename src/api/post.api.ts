@@ -110,6 +110,13 @@ export const getPostSummary = (summaryId: number) =>
     method: "GET",
   });
 
+// 요약본 영구 삭제
+export const hardDeleteSummary = (summaryId: number) =>
+  getAPIResponseData<void>({
+    url: `/troubles/summary/${summaryId}`,
+    method: "DELETE",
+  });
+
 // 합본 상세 (postId + summaryId)
 export const getCombinedDetail = (postId: number, summaryId: number) =>
   getAPIResponseData<ViewCombinedResponse>({

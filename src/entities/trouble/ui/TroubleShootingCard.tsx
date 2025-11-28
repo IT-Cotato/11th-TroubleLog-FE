@@ -10,7 +10,7 @@ import privateIcon from "@/assets/icons/private.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import commentIcon from "@/assets/icons/comment.svg";
-import { hardDeletePost } from "@/api/post.api";
+import { hardDeletePost, hardDeleteSummary } from "@/api/post.api";
 
 import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
 
@@ -38,6 +38,8 @@ export interface TroubleShootingCardProps {
   summaryId?: number | null;
   postSummaryId?: number | null;
   summaries?: any[];
+
+  onSummaryDeleted?: (summaryId: number) => void;
 }
 
 const TroubleShootingCard = ({
@@ -60,9 +62,12 @@ const TroubleShootingCard = ({
   onDeleted,
   onClick,
   disabled,
+  summaryId,
+  onSummaryDeleted,
 }: TroubleShootingCardProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [summaryDeleting, setSummaryDeleting] = useState(false);
   const handleCloseMenu = useCallback(() => setShowMenu(false), []);
   const menuRef = useClickOutside(handleCloseMenu);
 
@@ -102,6 +107,34 @@ const TroubleShootingCard = ({
       );
     } finally {
       setDeleting(false);
+      setShowMenu(false);
+    }
+  };
+
+  // 요약본 삭제 핸들러
+  const handleDeleteSummary = async () => {
+    if (!summaryId) return;
+
+    if (
+      !window.confirm(
+        "이 문서의 요약본을 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
+      )
+    )
+      return;
+
+    try {
+      setSummaryDeleting(true);
+      await hardDeleteSummary(summaryId);
+      onSummaryDeleted?.(summaryId);
+      console.log("요약본이 영구 삭제되었습니다.");
+    } catch (err: any) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message ??
+          "요약본 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+      );
+    } finally {
+      setSummaryDeleting(false);
       setShowMenu(false);
     }
   };
@@ -253,16 +286,28 @@ const TroubleShootingCard = ({
           onKeyDown={(e) => e.stopPropagation()}
         >
           <KebabMenuButton
-            onClick={() => !deleting && setShowMenu(!showMenu)}
+            onClick={() =>
+              !(deleting || summaryDeleting) && setShowMenu(!showMenu)
+            }
           />
           {showMenu && (
             <KebabDropdown
-              options={[
-                {
-                  label: deleting ? "삭제 중..." : "삭제",
-                  onClick: deleting ? () => {} : handleDelete,
-                },
-              ]}
+              options={
+                [
+                  // 요약본이 있고, 내가 쓴 글이면서 요약 상태일 때만 요약 삭제 노출
+                  summaryId &&
+                    shouldShowSummaryType && {
+                      label: summaryDeleting
+                        ? "요약본 삭제 중..."
+                        : "요약본 삭제",
+                      onClick: summaryDeleting ? () => {} : handleDeleteSummary,
+                    },
+                  {
+                    label: deleting ? "삭제 중..." : "문서 삭제",
+                    onClick: deleting ? () => {} : handleDelete,
+                  },
+                ].filter(Boolean) as { label: string; onClick: () => void }[]
+              }
             />
           )}
         </div>
