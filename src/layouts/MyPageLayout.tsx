@@ -85,15 +85,28 @@ const MyPageLayout = () => {
     const mine = cards.filter((c) => c.isMine);
 
     const inProgress = mine.filter((c) => c.status === "inProgress").length;
-    const complete = mine.filter(
-      (c) => c.status === "complete" || c.status === "created"
-    ).length;
-    const created = mine.filter((c) => c.status === "created").length;
 
-    const allForSidebar = inProgress + complete + created;
+    // created 중에서 요약본이 정말 존재하는 것만
+    const created = mine.filter((c) => {
+      if (c.status !== "created") return false;
+      const summaries = Array.isArray(c.summaries) ? c.summaries : [];
+      return summaries.length > 0;
+    }).length;
+
+    // complete = "원본만" + "요약본 없는 created"
+    const complete = mine.filter((c) => {
+      if (c.status === "complete") return true;
+      if (c.status === "created") {
+        const summaries = Array.isArray(c.summaries) ? c.summaries : [];
+        return summaries.length === 0; // 요약본이 없으면 complete로 포함
+      }
+      return false;
+    }).length;
+
+    const all = inProgress + complete + created;
 
     return {
-      all: allForSidebar,
+      all,
       inProgress,
       complete,
       created,
