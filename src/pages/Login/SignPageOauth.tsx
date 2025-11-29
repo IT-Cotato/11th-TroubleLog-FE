@@ -49,24 +49,28 @@ const SignPageOauth = () => {
   const [submitting, setSubmitting] = useState(false);
   const hydratedRef = useRef(false);
 
-  // 새로고침 폴백: oauth_payload에서 userId 복구
   useEffect(() => {
     if (userId != null && kakaoNickname != null) return;
     try {
       const raw = sessionStorage.getItem("oauth_payload");
-      if (raw) {
-        const p = JSON.parse(raw) as {
-          userId?: number;
-          kakaoNickname?: string;
-        };
-        if (p?.userId && !userId) setUserId(p.userId);
-        if (p?.kakaoNickname && !kakaoNickname)
-          setKakaoNickname(p.kakaoNickname);
+      if (!raw) return;
+
+      const p = JSON.parse(raw) as {
+        userId?: number;
+        nickname?: string;
+      };
+
+      if (p.userId && !userId) {
+        setUserId(p.userId);
+      }
+      if (p.nickname && !kakaoNickname) {
+        // oauth_payload.nickname 을 카카오 원본 닉네임으로 사용
+        setKakaoNickname(p.nickname);
       }
     } catch {
       /* noop */
     }
-  }, [userId]);
+  }, [userId, kakaoNickname]);
 
   // 약관 상세 → 복귀 시 상태 반영 + 최초 진입 시 draft 복구
   useEffect(() => {
