@@ -10,6 +10,10 @@ interface CardPreviewAreaProps {
   onRequestDelete?: () => void;
   deleting?: boolean;
   imageUrl?: string;
+
+  hasSummary?: boolean;
+  onRequestDeleteSummary?: () => void;
+  summaryDeleting?: boolean;
 }
 
 export default function CardPreviewArea({
@@ -21,6 +25,9 @@ export default function CardPreviewArea({
   onRequestDelete,
   deleting,
   imageUrl,
+  hasSummary,
+  onRequestDeleteSummary,
+  summaryDeleting,
 }: CardPreviewAreaProps) {
   const hasImage = !!imageUrl;
 
@@ -43,6 +50,9 @@ export default function CardPreviewArea({
           onAvatarClick={onAvatarClick}
           onDelete={onRequestDelete}
           deleting={deleting}
+          hasSummary={hasSummary}
+          onDeleteSummary={onRequestDeleteSummary}
+          summaryDeleting={summaryDeleting}
         />
       </div>
     </div>

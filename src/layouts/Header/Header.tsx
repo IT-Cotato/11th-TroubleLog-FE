@@ -108,6 +108,7 @@ const Header = () => {
 
   useEffect(() => {
     const path = location.pathname;
+
     if (path.startsWith(PATH.SEARCH)) {
       const sp = new URLSearchParams(location.search);
       const scope = sp.get("scope");
@@ -132,31 +133,62 @@ const Header = () => {
       return;
     }
 
-    const mypageMatch = path.match(/^\/user\/mypage\/([^/]+)/);
-    const pageUserId = mypageMatch?.[1];
+    // 마이페이지 경로 처리
+    if (path.startsWith(PATH.MYPAGE_BASE)) {
+      const segments = path.split("/").filter(Boolean);
+      const third = segments[2];
 
-    if (path === PATH.MYPAGE_BASE) {
-      setPlaceholder(
-        "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
-      );
-    } else if (path.startsWith(PATH.MYPAGE_BASE + "/")) {
+      // 내 닉네임 (viewedUser가 나 자신일 때)
+      const myDisplayName =
+        viewerId != null &&
+        viewedUser?.id === Number(viewerId) &&
+        viewedUser?.nickname
+          ? viewedUser.nickname
+          : null;
+
+      // 1) 내 마이페이지
       if (
-        (pageUserId && myUserIdStr && pageUserId === myUserIdStr) ||
-        path.endsWith("editprofile")
+        !third ||
+        third === "statistics" ||
+        third === "troubles" ||
+        third === "likes" ||
+        third === "editprofile"
       ) {
-        setPlaceholder(
-          "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
-        );
-      } else {
+        if (myDisplayName) {
+          setPlaceholder(
+            `키워드나 태그 등의 검색어를 통해 ${myDisplayName}님의 트러블슈팅을 검색해보세요!`
+          );
+        } else {
+          setPlaceholder(
+            "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
+          );
+        }
+        return;
+      }
+
+      // 2) 다른 사용자의 마이페이지
+      if (/^\d+$/.test(third)) {
+        const pageUserId = third;
         const displayName =
           viewedUser?.id === Number(pageUserId) && viewedUser?.nickname
             ? viewedUser.nickname
-            : pageUserId ?? "사용자";
+            : pageUserId;
+
         setPlaceholder(
           `키워드나 태그 등의 검색어를 통해 ${displayName}님의 트러블슈팅을 검색해보세요!`
         );
+        return;
       }
-    } else if (
+
+      // 3) 그 외 예외적인 경로는 일단 "다른 사람들"로 처리
+      setPlaceholder(
+        "키워드나 태그 등의 검색어를 통해 다른 사람들의 트러블슈팅을 검색해보세요!"
+      );
+      return;
+    }
+
+    // 홈 / 프로젝트 상세 → '내 트러블슈팅' 위주
+    if (
       path.startsWith(PATH.HOME) ||
       path.startsWith(PATH.PROJECT_DETAIL(""))
     ) {
@@ -164,15 +196,16 @@ const Header = () => {
         "키워드나 태그 등의 검색어를 통해 내 트러블슈팅을 검색해보세요!"
       );
     } else {
+      // 그 외 페이지: 커뮤니티 등
       setPlaceholder(
         "키워드나 태그 등의 검색어를 통해 다른 사람들의 트러블슈팅을 검색해보세요!"
       );
     }
   }, [
     location.pathname,
-    setPlaceholder,
-    myUserIdStr,
     location.search,
+    setPlaceholder,
+    viewerId,
     viewedUser?.id,
     viewedUser?.nickname,
   ]);

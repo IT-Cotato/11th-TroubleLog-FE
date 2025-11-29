@@ -6,7 +6,7 @@ import TagList from "@/entities/trouble/ui/TagList";
 import type { StatusType, VisibilityType } from "@/types/project";
 import { PATH } from "@/shared/config/paths";
 import { useCallback, useState } from "react";
-import { hardDeletePost } from "@/api/post.api";
+import { hardDeletePost, hardDeleteSummary } from "@/api/post.api";
 
 import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
 
@@ -35,6 +35,7 @@ export interface TroublogCardProps {
   summaries?: object[];
   imageUrl?: string;
   compact?: boolean;
+  onSummaryDeleted?: (summaryId: number) => void;
 }
 
 export default function TroublogCard({
@@ -56,9 +57,13 @@ export default function TroublogCard({
   onDeleted,
   imageUrl,
   compact = false,
+  summaryId,
+  onSummaryDeleted,
 }: TroublogCardProps) {
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
+  const [summaryDeleting, setSummaryDeleting] = useState(false);
+  const hasSummary = typeof summaryId === "number";
 
   const handleRootClick = () => {
     if (typeof onClick === "function") onClick(id);
@@ -96,6 +101,32 @@ export default function TroublogCard({
     }
   }, [id, isMine, onDeleted]);
 
+  const handleRequestDeleteSummary = useCallback(async () => {
+    if (!isMine) return;
+    if (!summaryId) return;
+
+    if (
+      !window.confirm(
+        "이 문서의 요약본을 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
+      )
+    )
+      return;
+
+    try {
+      setSummaryDeleting(true);
+      await hardDeleteSummary(summaryId);
+      onSummaryDeleted?.(summaryId);
+    } catch (err: any) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message ??
+          "요약본 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+      );
+    } finally {
+      setSummaryDeleting(false);
+    }
+  }, [isMine, summaryId, onSummaryDeleted]);
+
   const rootSizeClass = compact
     ? // 10% 축소: 300→270, 330→297, 384→346 근사
       "max-w-[346px] h-[270px] sm:h-[297px]"
@@ -129,6 +160,9 @@ export default function TroublogCard({
           onRequestDelete={handleRequestDelete}
           deleting={deleting}
           imageUrl={imageUrl || emptyThumbnail}
+          hasSummary={hasSummary}
+          onRequestDeleteSummary={handleRequestDeleteSummary}
+          summaryDeleting={summaryDeleting}
         />
       </div>
 

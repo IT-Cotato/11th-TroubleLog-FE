@@ -71,6 +71,16 @@ const TroubleShootingList = () => {
       );
     }
 
+    // '원본+요약본' 탭: status === "created" 이면서 summaries가 비어있지 않은 것만
+    if (selectedStatus === "created") {
+      return tagFiltered.filter((c) => {
+        if (c.status !== "created") return false;
+
+        const summaries = (c as any).summaries;
+        return Array.isArray(summaries) && summaries.length > 0;
+      });
+    }
+
     // 나머지(inProgress, created)는 기존 방식 유지
     return tagFiltered.filter((c) => c.status === selectedStatus);
   }, [tagFiltered, isMyPage, selectedStatus]);
