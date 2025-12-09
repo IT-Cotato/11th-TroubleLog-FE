@@ -4,7 +4,7 @@ interface LazyImageProps {
   src: string;
   alt?: string;
   className?: string;
-  placeholder?: string;
+  placeholder?: React.ReactNode;
   onError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
 }
 
