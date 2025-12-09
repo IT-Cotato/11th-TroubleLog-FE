@@ -23,6 +23,8 @@ export function LazyImage({
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
+    if (!imgRef.current) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -37,9 +39,7 @@ export function LazyImage({
       }
     );
 
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
-    }
+    observer.observe(imgRef.current);
 
     return () => {
       observer.disconnect();
