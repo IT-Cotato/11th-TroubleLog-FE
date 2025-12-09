@@ -84,26 +84,22 @@ const MyPageLayout = () => {
   const counts = useMemo(() => {
     const mine = cards.filter((c) => c.isMine);
 
+    // 1) 작성 중: 그대로
     const inProgress = mine.filter((c) => c.status === "inProgress").length;
 
-    // created 중에서 요약본이 정말 존재하는 것만
-    const created = mine.filter((c) => {
-      if (c.status !== "created") return false;
+    // 2) 원본: complete + created 전부 포함
+    const complete = mine.filter(
+      (c) => c.status === "complete" || c.status === "created"
+    ).length;
+
+    // 3) 요약본: summaries 전체 개수(포스트 단위 X)
+    const created = mine.reduce((acc, c) => {
       const summaries = Array.isArray(c.summaries) ? c.summaries : [];
-      return summaries.length > 0;
-    }).length;
+      return acc + summaries.length;
+    }, 0);
 
-    // complete = "원본만" + "요약본 없는 created"
-    const complete = mine.filter((c) => {
-      if (c.status === "complete") return true;
-      if (c.status === "created") {
-        const summaries = Array.isArray(c.summaries) ? c.summaries : [];
-        return summaries.length === 0; // 요약본이 없으면 complete로 포함
-      }
-      return false;
-    }).length;
-
-    const all = inProgress + complete + created;
+    // 4) 전체: “포스트 개수” 기준 유지
+    const all = mine.length;
 
     return {
       all,

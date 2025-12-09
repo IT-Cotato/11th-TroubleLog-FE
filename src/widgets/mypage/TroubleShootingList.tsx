@@ -8,6 +8,7 @@ import { PATH } from "@/shared/config/paths";
 import { useViewerId } from "@/store/auth";
 import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 import { makePostSlug } from "@/shared/lib/slug";
+import { mapSummaryType } from "@/entities/trouble/lib/troubleMapping";
 
 interface OutletContextType {
   isMyPage: boolean;
@@ -85,7 +86,35 @@ const TroubleShootingList = () => {
     return tagFiltered.filter((c) => c.status === selectedStatus);
   }, [tagFiltered, isMyPage, selectedStatus]);
 
-  const sortedCards = statusFiltered;
+  const sortedCards = useMemo(() => {
+    // 요약본 탭 + 내 마이페이지일 때만 flatten
+    if (isMyPage && selectedStatus === "created") {
+      const flat: any[] = [];
+
+      for (const post of statusFiltered) {
+        const summaries = Array.isArray((post as any).summaries)
+          ? (post as any).summaries
+          : [];
+
+        // summaries가 여러 개면 post를 복제해서 summaryId/summaryType만 바꿔줌
+        for (const summary of summaries) {
+          flat.push({
+            ...post,
+            summaryId: summary.summaryId,
+            summaryType: summary.summaryType,
+            summaryCreatedAt: summary.summaryCreatedAt,
+            // 필요하면 summary 자체를 붙여놓을 수도 있음
+            summary,
+          });
+        }
+      }
+
+      return flat;
+    }
+
+    // 그 외 탭은 포스트 단위 그대로
+    return statusFiltered;
+  }, [statusFiltered, isMyPage, selectedStatus]);
 
   const emptyMessage = useMemo(() => {
     if (isLoading) return null;
@@ -141,11 +170,23 @@ const TroubleShootingList = () => {
         )}
 
         {sortedCards.map((card) => {
-          const vm = mapToTroubleShootingCard(card);
+          // 1) 기본 VM 생성
+          const baseVm = mapToTroubleShootingCard(card);
+
+          // 2) summaryType을 서버 raw 값(or 기존 값)에서 한글 라벨로 매핑
+          const summaryTypeLabel = mapSummaryType(
+            // flatten된 요약본 카드라면 card.summaryType에 서버 enum(RESUME 등)이 들어있음
+            (card as any).summaryType ?? baseVm.summaryType
+          );
+
+          const vm = {
+            ...baseVm,
+            summaryType: summaryTypeLabel,
+          };
 
           return (
             <TroubleShootingCard
-              key={card.id}
+              key={(card as any).summaryId ?? card.id} // 요약본 탭에서 summaryId 기준으로 유니크 키 주면 더 안전
               {...vm}
               onDeleted={handleDeleted}
               onClick={() => {
@@ -183,7 +224,7 @@ const TroubleShootingList = () => {
                     return;
                   }
 
-                  // (옵션) 합본 실패 시 요약본 상세로 보내고 싶다면:
+                  // (옵션) 합본 실패 시 요약본 상세로
                   if (summaryIdFromList != null) {
                     navigate(PATH.POST_SUMMARY(summaryIdFromList), {
                       state: { from: "mypage", ownerId: ownerIdForState },
@@ -192,7 +233,7 @@ const TroubleShootingList = () => {
                   }
                 }
 
-                // 2) 그 외 탭(전체/작성중/원본)은 항상 원본 상세로 이동
+                // 2) 그 외 탭은 항상 원본 상세
                 navigate(`${PATH.COMMUNITY_POST_SLUG(slug)}?${qs.toString()}`, {
                   state: {
                     from: "mypage",
