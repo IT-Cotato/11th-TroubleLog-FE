@@ -165,16 +165,8 @@ const CategoryTagModal: React.FC<CategoryTagModalProps> = ({
   const displayList = usingServer ? remoteTags : localFiltered;
 
   return !isOpen ? null : (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        className="w-[694px] h-[564px] bg-white rounded-[20px] shadow-md flex flex-col relative"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-[694px] h-[564px] bg-white rounded-[20px] shadow-md flex flex-col relative">
         {/* 헤더 */}
         <div className="flex justify-between items-center p-5 pb-0">
           <h2 className="text-xl font-bold">기술 태그 검색</h2>
