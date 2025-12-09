@@ -4,7 +4,6 @@ import ConfirmDeleteModal from "../../../shared/ui/Modal/ConfirmDeleteModal";
 import replyIcon from "@/assets/icons/reply_icon.svg";
 import image from "@/assets/icons/image.svg";
 import { PATH } from "@/shared/config/paths";
-import { LazyImage } from "@/shared/utils/imageOptimization";
 import { usePrefetch } from "@/shared/hooks/usePrefetch";
 
 export interface PostCommentProps {
@@ -80,7 +79,7 @@ function PostComment({
                   }
                   className={userId ? "cursor-pointer" : ""}
                 >
-                  <LazyImage
+                  <img
                     src={profile || image}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
