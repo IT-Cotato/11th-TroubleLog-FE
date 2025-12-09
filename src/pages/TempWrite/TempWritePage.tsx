@@ -1086,21 +1086,19 @@ const TempWritePage = () => {
           )}
 
           <div className="flex flex-col gap-6 sm:gap-10">
-            <div
-              contentEditable
-              spellCheck={false}
-              suppressContentEditableWarning
-              onInput={(e) => setTitle(e.currentTarget.textContent || "")}
-              data-placeholder="제목을 입력하세요."
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="제목을 입력하세요."
               className="
-    title-editable
     w-[1100px] md:w-[870px]
     text-2xl sm:text-3xl md:text-4xl lg:text-5xl
     font-bold text-black outline-none leading-tight
     whitespace-pre-wrap break-words
     relative
+    border-none bg-transparent
   "
-            ></div>
+            />
 
             <div className="flex gap-3 items-center flex-wrap max-w-[1100px] md:max-w-[900px] lg:w-auto ">
               <DropDownButton
