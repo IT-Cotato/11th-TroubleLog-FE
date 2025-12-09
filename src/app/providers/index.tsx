@@ -3,7 +3,6 @@ import type { PropsWithChildren } from "react";
 import AlertSSEProvider from "./sse";
 import { startRefresh } from "@/api/axios";
 import { useAuthHydrated } from "@/store/auth";
-import { LoadingSkeleton } from "@/shared/ui/LoadingSkeleton";
 
 /**
  * 전역 부트스트랩:
