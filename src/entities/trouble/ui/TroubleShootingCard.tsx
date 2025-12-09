@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import type { StatusType, VisibilityType } from "@/types/project";
 import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
 import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
@@ -316,4 +316,5 @@ const TroubleShootingCard = ({
   );
 };
 
-export default TroubleShootingCard;
+// React.memo로 불필요한 리렌더링 방지
+export default memo(TroubleShootingCard);

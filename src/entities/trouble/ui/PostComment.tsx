@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import ConfirmDeleteModal from "../../../shared/ui/Modal/ConfirmDeleteModal";
 import replyIcon from "@/assets/icons/reply_icon.svg";
 import image from "@/assets/icons/image.svg";
 import { PATH } from "@/shared/config/paths";
+import { LazyImage } from "@/shared/utils/imageOptimization";
 
 export interface PostCommentProps {
   id: string;
@@ -20,7 +21,7 @@ export interface PostCommentProps {
   onReply?: (replyContent: string) => Promise<void> | void;
 }
 
-export default function PostComment({
+function PostComment({
   profile,
   name,
   date,
@@ -70,20 +71,22 @@ export default function PostComment({
             <div className="flex w-full justify-between">
               <div className="flex items-center gap-3 sm:gap-[11px]">
                 {/* 프로필 이미지 */}
-                <img
-                  src={profile || image}
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = image;
-                  }}
-                  alt="profile"
+                <div
                   onClick={handleProfileClick}
-                  className={`w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-full object-cover ${
-                    userId
-                      ? "cursor-pointer hover:opacity-80 transition-opacity"
-                      : ""
-                  }`}
-                />
+                  className={userId ? "cursor-pointer" : ""}
+                >
+                  <LazyImage
+                    src={profile || image}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = image;
+                    }}
+                    alt="profile"
+                    className={`w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-full object-cover ${
+                      userId ? "hover:opacity-80 transition-opacity" : ""
+                    }`}
+                  />
+                </div>
 
                 <div className="flex flex-col items-start gap-[2px]">
                   {/* 작성자명 */}
@@ -231,3 +234,6 @@ export default function PostComment({
     </div>
   );
 }
+
+// React.memo로 불필요한 리렌더링 방지
+export default memo(PostComment);

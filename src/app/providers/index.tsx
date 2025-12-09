@@ -3,6 +3,7 @@ import type { PropsWithChildren } from "react";
 import AlertSSEProvider from "./sse";
 import { startRefresh } from "@/api/axios";
 import { useAuthHydrated } from "@/store/auth";
+import { LoadingSkeleton } from "@/shared/ui/LoadingSkeleton";
 
 /**
  * 전역 부트스트랩:
@@ -41,9 +42,23 @@ function AuthBootstrap({ children }: PropsWithChildren) {
   return <>{children}</>;
 }
 
+/**
+ * 전역 로딩 fallback
+ */
+function GlobalLoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-body-16-regular text-gray-600">로딩 중...</p>
+      </div>
+    </div>
+  );
+}
+
 export function AppProviders({ children }: PropsWithChildren) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<GlobalLoadingFallback />}>
       <AuthBootstrap>
         <AlertSSEProvider>{children}</AlertSSEProvider>
       </AuthBootstrap>
