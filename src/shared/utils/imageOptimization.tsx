@@ -20,10 +20,10 @@ export function LazyImage({
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!imgRef.current) return;
+    if (!containerRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -39,7 +39,7 @@ export function LazyImage({
       }
     );
 
-    observer.observe(imgRef.current);
+    observer.observe(containerRef.current);
 
     return () => {
       observer.disconnect();
@@ -47,7 +47,7 @@ export function LazyImage({
   }, []);
 
   return (
-    <div className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative ${className}`}>
       {!isLoaded && placeholder && (
         <div className="absolute inset-0 animate-pulse bg-gray-200 flex items-center justify-center">
           {placeholder}
@@ -55,7 +55,6 @@ export function LazyImage({
       )}
       {isInView && (
         <img
-          ref={imgRef}
           src={src}
           alt={alt}
           className={`${className} ${
