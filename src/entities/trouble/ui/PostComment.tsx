@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ConfirmDeleteModal from "../../../shared/ui/Modal/ConfirmDeleteModal";
 import replyIcon from "@/assets/icons/reply_icon.svg";
 import image from "@/assets/icons/image.svg";
+import { PATH } from "@/shared/config/paths";
 
 export interface PostCommentProps {
   id: string;
@@ -12,6 +14,7 @@ export interface PostCommentProps {
   isMine: boolean;
   isReply: boolean;
   parentId?: string; // 대댓글일 경우
+  userId?: number; // 댓글 작성자 ID
   onEdit?: (newContent: string) => void;
   onDelete?: () => void;
   onReply?: (replyContent: string) => Promise<void> | void;
@@ -24,10 +27,12 @@ export default function PostComment({
   content,
   isMine,
   isReply,
+  userId,
   onEdit,
   onDelete,
   onReply,
 }: PostCommentProps) {
+  const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [editContent, setEditContent] = useState(content);
   const [editPosting, setEditPosting] = useState(false);
@@ -38,6 +43,12 @@ export default function PostComment({
 
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [deletePosting, setDeletePosting] = useState(false);
+
+  const handleProfileClick = () => {
+    if (userId) {
+      navigate(PATH.MYPAGE_ID(String(userId)));
+    }
+  };
 
   return (
     <div className="flex w-full max-w-[1200px]">
@@ -66,12 +77,26 @@ export default function PostComment({
                     e.currentTarget.src = image;
                   }}
                   alt="profile"
-                  className="w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-full object-cover"
+                  onClick={handleProfileClick}
+                  className={`w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-full object-cover ${
+                    userId
+                      ? "cursor-pointer hover:opacity-80 transition-opacity"
+                      : ""
+                  }`}
                 />
 
                 <div className="flex flex-col items-start gap-[2px]">
                   {/* 작성자명 */}
-                  <div className="text-head-20-semibold">{name}</div>
+                  <div
+                    onClick={handleProfileClick}
+                    className={`text-head-20-semibold ${
+                      userId
+                        ? "cursor-pointer hover:opacity-80 transition-opacity"
+                        : ""
+                    }`}
+                  >
+                    {name}
+                  </div>
                   {/* 작성일 */}
                   <div className="text-body-16-regular text-gray3">{date}</div>
                 </div>

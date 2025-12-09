@@ -21,7 +21,10 @@ export const toPostComment = (
   c: CommunityCommentServerItem,
   viewerId: number | string | null,
   override?: Partial<
-    Pick<PostCommentProps, "isReply" | "parentId" | "name" | "profile">
+    Pick<
+      PostCommentProps,
+      "isReply" | "parentId" | "name" | "profile" | "userId"
+    >
   >
 ): PostCommentProps => {
   const base: PostCommentProps = {
@@ -34,6 +37,7 @@ export const toPostComment = (
     isMine: isMine(c.userId, viewerId),
     isReply: c.parentCommentId != null,
     parentId: c.parentCommentId != null ? String(c.parentCommentId) : undefined,
+    userId: c.userId ?? undefined,
   };
   return { ...base, ...override };
 };
@@ -44,7 +48,12 @@ export const toPostComments = (
   viewerId: number | string | null,
   overrides?: Record<
     number,
-    Partial<Pick<PostCommentProps, "isReply" | "parentId" | "name" | "profile">>
+    Partial<
+      Pick<
+        PostCommentProps,
+        "isReply" | "parentId" | "name" | "profile" | "userId"
+      >
+    >
   >
 ) =>
   (list ?? []).map((c) => toPostComment(c, viewerId, overrides?.[c.commentId]));
