@@ -1086,54 +1086,54 @@ const TempWritePage = () => {
           )}
 
           <div className="flex flex-col gap-6 sm:gap-10">
-            <div
-              contentEditable
-              spellCheck={false}
-              suppressContentEditableWarning
-              onInput={(e) => setTitle(e.currentTarget.textContent || "")}
-              data-placeholder="제목을 입력하세요."
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="제목을 입력하세요."
               className="
-    title-editable
     w-[1100px] md:w-[870px]
     text-2xl sm:text-3xl md:text-4xl lg:text-5xl
     font-bold text-black outline-none leading-tight
     whitespace-pre-wrap break-words
     relative
+    border-none bg-transparent
   "
-            ></div>
+            />
 
-            <div className="flex gap-3 items-center flex-wrap max-w-[1100px] md:max-w-[900px] lg:w-auto ">
-              <DropDownButton
-                options={projectNames}
-                placeholder={
-                  projectsLoading
-                    ? "프로젝트 불러오는 중..."
-                    : projectNameById(selectedProjectIdPage) ||
-                      "프로젝트를 선택하세요"
-                }
-                width="w-full sm:w-[170px] md:w-[190px]"
-                onSelect={(name: string) =>
-                  setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                }
-              />
+            <div className="flex flex-col gap-3 max-w-[1100px] md:max-w-[900px] lg:w-auto">
+              <div className="flex gap-3 items-center flex-wrap">
+                <DropDownButton
+                  options={projectNames}
+                  placeholder={
+                    projectsLoading
+                      ? "프로젝트 불러오는 중..."
+                      : projectNameById(selectedProjectIdPage) ||
+                        "프로젝트를 선택하세요"
+                  }
+                  width="w-full sm:w-[170px] md:w-[190px]"
+                  onSelect={(name: string) =>
+                    setSelectedProjectIdPage(nameToId.get(name) ?? null)
+                  }
+                />
 
-              <DropDownButton
-                options={[
-                  "Build/Compile Error",
-                  "Runtime Error",
-                  "Dependency/Version Error",
-                  "Network/API Error",
-                  "Authentication/Authorization Error",
-                  "Database Error",
-                  "UI/Rendering Error",
-                  "Configuration Error",
-                  "Timeout/Error Handling",
-                  "Third-Party Library Error",
-                ]}
-                placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
-                width="w-full sm:w-[180px] lg:w-[220px]"
-                onSelect={(v: string) => setSelectedErrorType(v)}
-              />
+                <DropDownButton
+                  options={[
+                    "Build/Compile Error",
+                    "Runtime Error",
+                    "Dependency/Version Error",
+                    "Network/API Error",
+                    "Authentication/Authorization Error",
+                    "Database Error",
+                    "UI/Rendering Error",
+                    "Configuration Error",
+                    "Timeout/Error Handling",
+                    "Third-Party Library Error",
+                  ]}
+                  placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
+                  width="w-full sm:w-[180px] lg:w-[220px]"
+                  onSelect={(v: string) => setSelectedErrorType(v)}
+                />
+              </div>
 
               <div className="w-full sm:w-auto min-w-[180px]">
                 <CategoryTag value={selectedTags} onChange={setSelectedTags} />

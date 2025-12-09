@@ -1168,33 +1168,35 @@ export default function FreeFormWritePage() {
               <div className="flex w-full max-w-[1200px] justify-between gap-3 flex-wrap">
                 <div className="flex flex-col gap-4 w-full">
                   <div className="flex items-end justify-between">
-                    <div className="flex gap-3 items-center flex-wrap max-w-[1100px] md:max-w-[900px] lg:w-auto">
-                      {/* 프로젝트 선택 */}
-                      <DropDownButton
-                        options={projectNames}
-                        placeholder={
-                          projectsLoading
-                            ? "프로젝트 불러오는 중..."
-                            : projectNameById(selectedProjectIdPage) ||
-                              "프로젝트를 선택하세요"
-                        }
-                        width="w-full sm:w-[170px] md:w-[190px]"
-                        onSelect={(name: string) =>
-                          setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                        }
-                      />
+                    <div className="flex flex-col gap-3 max-w-[1100px] md:max-w-[900px] lg:w-auto">
+                      <div className="flex gap-3 items-center flex-wrap">
+                        {/* 프로젝트 선택 */}
+                        <DropDownButton
+                          options={projectNames}
+                          placeholder={
+                            projectsLoading
+                              ? "프로젝트 불러오는 중..."
+                              : projectNameById(selectedProjectIdPage) ||
+                                "프로젝트를 선택하세요"
+                          }
+                          width="w-full sm:w-[170px] md:w-[190px]"
+                          onSelect={(name: string) =>
+                            setSelectedProjectIdPage(nameToId.get(name) ?? null)
+                          }
+                        />
 
-                      {/* 에러 종류 */}
-                      <DropDownButton
-                        options={errorOptions}
-                        placeholder={
-                          selectedErrorType ?? "에러 종류를 선택하세요"
-                        }
-                        width="w-full sm:w-[180px] lg:w-[220px]"
-                        onSelect={(selectedError) =>
-                          setSelectedErrorType(selectedError)
-                        }
-                      />
+                        {/* 에러 종류 */}
+                        <DropDownButton
+                          options={errorOptions}
+                          placeholder={
+                            selectedErrorType ?? "에러 종류를 선택하세요"
+                          }
+                          width="w-full sm:w-[180px] lg:w-[220px]"
+                          onSelect={(selectedError) =>
+                            setSelectedErrorType(selectedError)
+                          }
+                        />
+                      </div>
 
                       {/* 태그 */}
                       <div className="w-full sm:w-auto min-w-[200px]">

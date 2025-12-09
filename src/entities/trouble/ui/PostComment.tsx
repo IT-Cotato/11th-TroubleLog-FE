@@ -137,7 +137,7 @@ export default function PostComment({
                 </div>
               </div>
             ) : (
-              <div className="text-body-20-regular break-words w-full">
+              <div className="text-body-20-regular break-words whitespace-pre-wrap w-full">
                 {content}
               </div>
             )}
