@@ -5,6 +5,7 @@ import replyIcon from "@/assets/icons/reply_icon.svg";
 import image from "@/assets/icons/image.svg";
 import { PATH } from "@/shared/config/paths";
 import { LazyImage } from "@/shared/utils/imageOptimization";
+import { usePrefetch } from "@/shared/hooks/usePrefetch";
 
 export interface PostCommentProps {
   id: string;
@@ -34,6 +35,7 @@ function PostComment({
   onReply,
 }: PostCommentProps) {
   const navigate = useNavigate();
+  const prefetch = usePrefetch();
   const [editMode, setEditMode] = useState(false);
   const [editContent, setEditContent] = useState(content);
   const [editPosting, setEditPosting] = useState(false);
@@ -73,6 +75,9 @@ function PostComment({
                 {/* 프로필 이미지 */}
                 <div
                   onClick={handleProfileClick}
+                  onMouseEnter={() =>
+                    userId && prefetch(PATH.MYPAGE_ID(String(userId)))
+                  }
                   className={userId ? "cursor-pointer" : ""}
                 >
                   <LazyImage
