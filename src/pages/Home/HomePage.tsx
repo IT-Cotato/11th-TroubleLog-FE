@@ -461,8 +461,6 @@ export default function HomePage() {
                 const kind = (card as any)._kind as
                   | "draft"
                   | "original"
-                  | "originalAfter"
-                  | "summary"
                   | "combined"
                   | undefined;
 
@@ -500,14 +498,6 @@ export default function HomePage() {
                       const summaryIdFromList = card.summaryId ?? undefined;
                       const isMineFromList = card.isMine === true;
 
-                      // 요약본 카드: 요약 상세로 이동
-                      if (kind === "summary" && summaryIdFromList != null) {
-                        navigate(PATH.POST_SUMMARY(summaryIdFromList), {
-                          state: { from: "home", ownerId },
-                        });
-                        return;
-                      }
-
                       // 원본+요약본 카드: 합본 상세로 이동
                       if (kind === "combined") {
                         const { goCombined, summaryId } = decideCombined(
@@ -532,7 +522,7 @@ export default function HomePage() {
                         }
                       }
 
-                      // 나머지(원본 전/후, 기타)는 항상 원본 상세로 이동
+                      // 나머지(원본, 기타)는 항상 원본 상세로 이동
                       const slug = makePostSlug(card.title, card.id);
                       navigate(
                         `${PATH.COMMUNITY_POST_SLUG(slug)}?${qs.toString()}`,
