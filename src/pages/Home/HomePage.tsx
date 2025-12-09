@@ -330,7 +330,7 @@ export default function HomePage() {
         ) : projects.length === 0 ? (
           <div className="w-full flex h-[132px] justify-center items-center self-stretch rounded-[8px] bg-white shadow-card">
             <span className="text-body-20-regular">
-              아직 요약하신 폴더가 없어요.
+              아직 생성하신 폴더가 없어요.
             </span>
           </div>
         ) : (
