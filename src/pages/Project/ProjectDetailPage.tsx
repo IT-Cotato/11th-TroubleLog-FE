@@ -6,7 +6,12 @@ import SortButtonGroup from "@/entities/project/ui/SortButtonGroup";
 import StatusFilterButton from "@/entities/project/ui/StatusFilterButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import GenericDropdown from "@/shared/ui/Dropdown/GenericDropdown";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import useTroubleCards from "@/features/mypage/useTroubleCards";
 import { getProjectDetail } from "@/api/project.api";
 import type {
@@ -85,7 +90,7 @@ export default function ProjectDetailPage() {
   }, [projectId, isInvalid, hasProjectName]);
 
   const visibilityOptions: VisibilityOption[] = ["전체", "공개", "비공개"];
-  
+
   // URL 쿼리 파라미터에서 상태 복원
   const getStatusFromUrl = (): StatusType => {
     const statusParam = searchParams.get("status");
@@ -111,10 +116,7 @@ export default function ProjectDetailPage() {
   // URL 쿼리 파라미터와 상태 동기화 (뒤로가기/앞으로가기 대응)
   useEffect(() => {
     const urlStatus = getStatusFromUrl();
-    if (urlStatus !== selectedStatus) {
-      setSelectedStatus(urlStatus);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setSelectedStatus(urlStatus);
   }, [searchParams.toString()]);
 
   // 상태 변경 시 URL 업데이트
