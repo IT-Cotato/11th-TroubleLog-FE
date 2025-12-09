@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import PostButton from "@/shared/ui/Button/PostButton";
 import Snackbar from "@/shared/ui/Feedback/Snackbar";
 import TroublogCard from "@/entities/trouble/ui/TroublogCard";
@@ -18,6 +18,7 @@ import plusIcon from "@/assets/icons/plus.svg";
 import { useAuthHydrated, useIsLoggedIn, useViewerId } from "@/store/auth";
 import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 import { makePostSlug } from "@/shared/lib/slug";
+import { mapSummaryType } from "@/entities/trouble/lib/troubleMapping";
 
 const PAGE_SIZE = 10;
 
@@ -117,6 +118,72 @@ export default function HomePage() {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const idSetRef = useRef<Set<number>>(new Set());
+
+  const expandedRecentCards = useMemo(() => {
+    // 먼저 삭제된 카드(postId 기준)는 모두 제외
+    const base = recentCards.filter((c) => !removedRecentIds.has(c.id));
+    const result: any[] = [];
+
+    for (const card of base) {
+      const summaries = Array.isArray((card as any).summaries)
+        ? (card as any).summaries
+        : [];
+      const hasSummaries = summaries.length > 0;
+      const originalStatus =
+        card.status === "created" ? "complete" : card.status;
+
+      // 1) 작성중(inProgress): "작성중(클릭 시 이어서 작성)"
+      if (card.status === "inProgress") {
+        result.push({
+          ...card,
+          _kind: "draft", // 작성중
+        });
+        continue;
+      }
+
+      // 2) 요약본이 하나도 없는 원본
+      //    → "원본(요약 전)" 1개만
+      if (!hasSummaries) {
+        result.push({
+          ...card,
+          status: originalStatus, // SUMMARIZED 이면서 요약본이 없는 경우도 완료로 처리
+          _kind: "original", // 원본(요약 전)
+        });
+        continue;
+      }
+
+      // 3) 요약본이 있는 포스트(status: created)
+      //    - 원본(요약 후) 1개 (작성 완료 표시, 요약 타입 표시는 제거)
+      //    - 원본+요약본 N개 (요약 타입 표시, 상태는 created)
+      result.push({
+        ...card,
+        status: originalStatus,
+        summaryType: undefined,
+        _kind: "original", // 원본(요약 후)
+      });
+
+      for (const summary of summaries) {
+        const summaryTypeLabel =
+          mapSummaryType(summary.summaryType) ?? card.summaryType;
+
+        const common = {
+          ...card,
+          summaryId: summary.summaryId,
+          summaryType: summaryTypeLabel,
+          summaryCreatedAt: summary.summaryCreatedAt,
+          summary,
+          status: "created",
+        };
+
+        result.push({
+          ...common,
+          _kind: "combined", // 원본+요약본
+        });
+      }
+    }
+
+    return result;
+  }, [recentCards, removedRecentIds]);
 
   const loadPage = useCallback(
     async (nextPage: number, { append = true, useOnce = true } = {}) => {
@@ -390,17 +457,40 @@ export default function HomePage() {
           <>
             {/* 1 / 2 / 3 / 4 컬럼 그리드 (카드 4개 한 줄 기준) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-              {recentCards
-                .filter((c) => !removedRecentIds.has(c.id))
-                .map((card) => (
+              {expandedRecentCards.map((card) => {
+                const kind = (card as any)._kind as
+                  | "draft"
+                  | "original"
+                  | "originalAfter"
+                  | "summary"
+                  | "combined"
+                  | undefined;
+
+                return (
                   <TroublogCard
-                    key={card.id}
+                    key={`${card.id}-${kind ?? "default"}-${
+                      card.summaryId ?? "none"
+                    }`}
                     {...card}
                     compact
                     onDeleted={handleRecentDeleted}
                     onClick={() => {
                       const ownerId = card.authorId ?? undefined;
 
+                      // 작성중 카드: 이어서 작성하기 (템플릿에 맞게 수정 가능)
+                      if (kind === "draft") {
+                        // TODO: 실제 이어쓰기 라우팅 규칙에 맞게 조정
+                        navigate(PATH.TEMP_WRITING, {
+                          state: {
+                            from: "home",
+                            projectId: card.projectId,
+                            postId: card.id,
+                          },
+                        });
+                        return;
+                      }
+
+                      // 공통 쿼리스트링
                       const qs = new URLSearchParams({ from: "home" });
                       if (ownerId != null) qs.set("ownerId", String(ownerId));
 
@@ -410,19 +500,39 @@ export default function HomePage() {
                       const summaryIdFromList = card.summaryId ?? undefined;
                       const isMineFromList = card.isMine === true;
 
-                      // 요약본는 합본으로 바로 라우팅(기존 로직 유지)
-                      const { goCombined, summaryId } = decideCombined(
-                        card,
-                        viewerId
-                      );
-                      if (goCombined && summaryId != null) {
-                        navigate(PATH.COMBINED_DETAIL(card.id, summaryId), {
+                      // 요약본 카드: 요약 상세로 이동
+                      if (kind === "summary" && summaryIdFromList != null) {
+                        navigate(PATH.POST_SUMMARY(summaryIdFromList), {
                           state: { from: "home", ownerId },
                         });
                         return;
                       }
 
-                      // 제목 기반 슬러그 경로로 이동
+                      // 원본+요약본 카드: 합본 상세로 이동
+                      if (kind === "combined") {
+                        const { goCombined, summaryId } = decideCombined(
+                          card,
+                          viewerId
+                        );
+                        const sid = summaryId ?? summaryIdFromList;
+
+                        if (goCombined && sid != null) {
+                          navigate(PATH.COMBINED_DETAIL(card.id, sid), {
+                            state: { from: "home", ownerId },
+                          });
+                          return;
+                        }
+
+                        // 합본 불가하면 요약 상세로 폴백
+                        if (summaryIdFromList != null) {
+                          navigate(PATH.POST_SUMMARY(summaryIdFromList), {
+                            state: { from: "home", ownerId },
+                          });
+                          return;
+                        }
+                      }
+
+                      // 나머지(원본 전/후, 기타)는 항상 원본 상세로 이동
                       const slug = makePostSlug(card.title, card.id);
                       navigate(
                         `${PATH.COMMUNITY_POST_SLUG(slug)}?${qs.toString()}`,
@@ -443,7 +553,8 @@ export default function HomePage() {
                       else navigate(PATH.LOGIN);
                     }}
                   />
-                ))}
+                );
+              })}
             </div>
             {hasNextRecents && !isLoadingRecents && (
               <div ref={recentsSentinel} className="h-6 w-full" />
