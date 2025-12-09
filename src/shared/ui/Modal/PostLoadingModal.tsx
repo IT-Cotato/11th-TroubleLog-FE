@@ -137,7 +137,7 @@ export default function PostLoadingModal({
       {/* 본문 */}
       <div className="mx-auto w-full max-w-[460px] flex flex-col items-center text-center gap-5 sm:gap-6">
         <span className="text-head-24-bold">
-          트러블로그를 {templateLabel} 양식으로 요약합니다!
+          트러블슈팅을 {templateLabel} 양식으로 요약합니다!
         </span>
 
         <div className="w-24 h-24 sm:w-[110px] sm:h-[110px]">

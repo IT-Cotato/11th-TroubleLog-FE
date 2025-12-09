@@ -3,6 +3,8 @@ import { PATH } from "@/shared/config/paths";
 import useLikedCommunityPosts from "@/hooks/useLikedCommunityPosts";
 import { useNavigate } from "react-router-dom";
 
+import { CardListSkeleton } from "@/shared/ui/LoadingSkeleton";
+
 const LikedPostsPage = () => {
   const { items, loading, error, hasNext, sentinelRef, removeById } =
     useLikedCommunityPosts(10);
@@ -49,12 +51,7 @@ const LikedPostsPage = () => {
           ))}
 
         {/* 로딩 스켈레톤 */}
-        {loading && (
-          <>
-            <div className="w-full h-[96px] sm:h-[120px] bg-gray-100 rounded mb-3" />
-            <div className="w-full h-[96px] sm:h-[120px] bg-gray-100 rounded mb-3" />
-          </>
-        )}
+        {loading && <CardListSkeleton count={3} />}
 
         {/* 무한 스크롤 센티널 */}
         {!showEmpty && hasNext && !loading && (

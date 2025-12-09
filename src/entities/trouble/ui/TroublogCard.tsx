@@ -7,6 +7,7 @@ import type { StatusType, VisibilityType } from "@/types/project";
 import { PATH } from "@/shared/config/paths";
 import { useCallback, useState } from "react";
 import { hardDeletePost, hardDeleteSummary } from "@/api/post.api";
+import { usePrefetch } from "@/shared/hooks/usePrefetch";
 
 import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
 
@@ -61,6 +62,7 @@ export default function TroublogCard({
   onSummaryDeleted,
 }: TroublogCardProps) {
   const navigate = useNavigate();
+  const prefetch = usePrefetch();
   const [deleting, setDeleting] = useState(false);
   const [summaryDeleting, setSummaryDeleting] = useState(false);
   const hasSummary = typeof summaryId === "number";
@@ -141,6 +143,7 @@ export default function TroublogCard({
       aria-label={`${title} 상세 페이지로 이동`}
       onClick={handleRootClick}
       onKeyDown={handleRootKeyDown}
+      onMouseEnter={() => prefetch(PATH.COMMUNITY_POST_ID(String(id)))}
       className={`
         group w-full ${rootSizeClass}
         shrink-0 rounded-2xl bg-white shadow-card cursor-pointer

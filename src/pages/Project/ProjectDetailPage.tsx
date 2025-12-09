@@ -6,7 +6,12 @@ import SortButtonGroup from "@/entities/project/ui/SortButtonGroup";
 import StatusFilterButton from "@/entities/project/ui/StatusFilterButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import GenericDropdown from "@/shared/ui/Dropdown/GenericDropdown";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import useTroubleCards from "@/features/mypage/useTroubleCards";
 import { getProjectDetail } from "@/api/project.api";
 import type {
@@ -44,6 +49,7 @@ export default function ProjectDetailPage() {
 
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const dropdownRef = useClickOutside(() => setShowDropdown(false));
 
   const goGuide = useCallback(
@@ -84,13 +90,45 @@ export default function ProjectDetailPage() {
   }, [projectId, isInvalid, hasProjectName]);
 
   const visibilityOptions: VisibilityOption[] = ["전체", "공개", "비공개"];
-  const [selectedStatus, setSelectedStatus] =
-    useState<StatusType>("inProgress");
+
+  // URL 쿼리 파라미터에서 상태 복원
+  const getStatusFromUrl = (): StatusType => {
+    const statusParam = searchParams.get("status");
+    if (
+      statusParam === "inProgress" ||
+      statusParam === "complete" ||
+      statusParam === "created"
+    ) {
+      return statusParam;
+    }
+    return "inProgress";
+  };
+
+  const [selectedStatus, setSelectedStatus] = useState<StatusType>(() =>
+    getStatusFromUrl()
+  );
   const [selectedSort, setSelectedSort] = useState<SortUI>("latest");
   const [selectedVisibility, setSelectedVisibility] =
     useState<VisibilityOption>("전체");
   const [selectedSummaryType, setSelectedSummaryType] =
     useState<ProjectTroubleSummaryType | null>(null);
+
+  // URL 쿼리 파라미터와 상태 동기화 (뒤로가기/앞으로가기 대응)
+  useEffect(() => {
+    const urlStatus = getStatusFromUrl();
+    setSelectedStatus(urlStatus);
+  }, [searchParams.toString()]);
+
+  // 상태 변경 시 URL 업데이트
+  const handleStatusChange = useCallback(
+    (status: StatusType) => {
+      setSelectedStatus(status);
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set("status", status);
+      setSearchParams(newSearchParams, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
 
   const toApiStatus = (s: StatusType) =>
     s === "complete"
@@ -188,19 +226,19 @@ export default function ProjectDetailPage() {
                 label="작성 중"
                 statusKey="inProgress"
                 isSelected={selectedStatus === "inProgress"}
-                onClick={() => setSelectedStatus("inProgress")}
+                onClick={() => handleStatusChange("inProgress")}
               />
               <StatusFilterButton
                 label="원본"
                 statusKey="complete"
                 isSelected={selectedStatus === "complete"}
-                onClick={() => setSelectedStatus("complete")}
+                onClick={() => handleStatusChange("complete")}
               />
               <StatusFilterButton
                 label="요약본"
                 statusKey="created"
                 isSelected={selectedStatus === "created"}
-                onClick={() => setSelectedStatus("created")}
+                onClick={() => handleStatusChange("created")}
               />
             </div>
 

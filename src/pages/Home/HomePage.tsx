@@ -18,6 +18,7 @@ import plusIcon from "@/assets/icons/plus.svg";
 import { useAuthHydrated, useIsLoggedIn, useViewerId } from "@/store/auth";
 import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 import { makePostSlug } from "@/shared/lib/slug";
+import { CardListSkeleton } from "@/shared/ui/LoadingSkeleton";
 import { mapSummaryType } from "@/entities/trouble/lib/troubleMapping";
 
 const PAGE_SIZE = 10;
@@ -385,8 +386,8 @@ export default function HomePage() {
         }
       >
         {isLoading && projects.length === 0 ? (
-          <div className="w-full flex h-[132px] justify-center items-center rounded-[8px] bg-white shadow-card">
-            <span className="text-body-20-regular">불러오는 중...</span>
+          <div className="w-full flex flex-wrap gap-6">
+            <CardListSkeleton count={3} />
           </div>
         ) : loadError ? (
           <div className="w-full flex h-[132px] justify-center items-center rounded-[8px] bg-white shadow-card">
@@ -397,7 +398,7 @@ export default function HomePage() {
         ) : projects.length === 0 ? (
           <div className="w-full flex h-[132px] justify-center items-center self-stretch rounded-[8px] bg-white shadow-card">
             <span className="text-body-20-regular">
-              아직 요약하신 폴더가 없어요.
+              아직 생성하신 폴더가 없어요.
             </span>
           </div>
         ) : (
@@ -438,8 +439,8 @@ export default function HomePage() {
       {/* Recents 영역 */}
       <ProjectAccordion title="Recents" persistKey="home:recents">
         {isLoadingRecents && recentCards.length === 0 ? (
-          <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">
-            <span className="text-body-20-regular">불러오는 중…</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+            <CardListSkeleton count={4} />
           </div>
         ) : recentsError ? (
           <div className="w-full flex h-[330px] justify-center items-center rounded-[16px] bg-white shadow-card">

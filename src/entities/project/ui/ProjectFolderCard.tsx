@@ -8,6 +8,8 @@ import ConfirmDeleteModal from "../../../shared/ui/Modal/ConfirmDeleteModal";
 import type { UpdateProjectRequest } from "@/types/project.model";
 import { deleteProject, putUpdateProject } from "@/api/project.api";
 import { Link } from "react-router-dom";
+import { PATH } from "@/shared/config/paths";
+import { usePrefetch } from "@/shared/hooks/usePrefetch";
 
 import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
 
@@ -34,6 +36,7 @@ export default function ProjectFolderCard({
   to,
   linkState,
 }: ProjectFolderCardProps) {
+  const prefetch = usePrefetch();
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -173,6 +176,7 @@ export default function ProjectFolderCard({
               state={linkState}
               className="flex-1 min-w-0"
               aria-label={`${name} 프로젝트로 이동`}
+              onMouseEnter={() => prefetch(PATH.PROJECT_DETAIL(String(id)))}
             >
               {CardMain}
             </Link>

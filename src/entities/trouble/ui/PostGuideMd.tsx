@@ -2,6 +2,7 @@ import MDEditor from "@uiw/react-md-editor";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
+import { LazyImage } from "@/shared/utils/imageOptimization";
 
 type ImageItem = { type: "image"; src: string; alt?: string };
 type GuideContent = string | ImageItem;
@@ -59,7 +60,7 @@ export default function PostGuideMd({
           }
 
           return (
-            <img
+            <LazyImage
               key={i}
               src={item.src}
               alt={item.alt ?? ""}
