@@ -82,47 +82,49 @@ const EditorBlock = ({
   const removeDefaultText = useRemoveDefaultText(block.content);
 
   // ref 콜백을 useCallback으로 고정하여 불필요한 detach/attach 방지
-  const editorRefCallback = useCallback((editor: any) => {
-    if (editor) {
-      editorRef.current = editor.getInstance();
-    } else {
-      editorRef.current = null;
-    }
-  }, []);
+  const handleEditorRef = useCallback(
+    (editor: any | null) => {
+      if (!editor) {
+        editorRef.current = null;
+        return;
+      }
+      const instance = editor.getInstance();
+      editorRef.current = instance;
 
+      // 인스턴스당 1회만 hook 등록
+      if (hookedEditor.current === instance) return;
+      hookedEditor.current = instance;
+
+      // 이미지 업로드 훅 설정
+      instance.addHook(
+        "addImageBlobHook",
+        async (blob: Blob, callback: (url: string, altText?: string) => void) => {
+          try {
+            const file = blob as File;
+            const url = await uploadImage(file);
+            callback(url, "image");
+          } catch {
+            console.error("이미지 업로드에 실패했습니다.");
+          }
+        }
+      );
+
+      // 최초 세팅 시에만(또는 block.content가 비어있을 때만) 기본 텍스트 제거
+      setTimeout(() => removeDefaultText(instance), 0);
+    },
+    [removeDefaultText]
+  );
+
+  // 외부 content 변경 동기화 (block.content가 외부에서 변경될 때)
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
 
-    // 인스턴스당 1회만 hook 등록
-    if (hookedEditor.current === editor) return;
-    hookedEditor.current = editor;
-
-    // 이미지 업로드 훅 설정
-    editor.addHook(
-      "addImageBlobHook",
-      async (blob: Blob, callback: (url: string, altText?: string) => void) => {
-        try {
-          const file = blob as File;
-          const url = await uploadImage(file);
-          callback(url, "image");
-        } catch {
-          console.error("이미지 업로드에 실패했습니다.");
-        }
-      }
-    );
-
-    // 초기 실행 및 지연 실행 (에디터 렌더링 완료 대기)
-    // 초기값이 비어있을 때만 실행되며, 1회만 실행됨
-    removeDefaultText(editor);
-    const timer = setTimeout(() => removeDefaultText(editor), 100);
-    const timer2 = setTimeout(() => removeDefaultText(editor), 500);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(timer2);
-    };
-  }, [removeDefaultText]);
+    const currentMarkdown = editor.getMarkdown();
+    if (currentMarkdown !== block.content) {
+      editor.setMarkdown(block.content);
+    }
+  }, [block.content]);
 
   return (
     <div
@@ -186,7 +188,7 @@ const EditorBlock = ({
         {/* 편집 / 프리뷰 분리 */}
         <div className="w-full rounded-md border border-gray-200">
           <Editor
-            ref={editorRefCallback}
+            ref={handleEditorRef}
             initialValue={block.content || ""}
             onChange={() => {
               const editor = editorRef.current;

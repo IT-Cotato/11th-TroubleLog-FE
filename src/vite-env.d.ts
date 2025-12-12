@@ -25,7 +25,6 @@ interface ImportMeta {
 }
 
 declare module "@toast-ui/editor" {
-  export type { Editor };
   export default class Editor {
     constructor(options: any);
     getMarkdown(): string;
