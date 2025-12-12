@@ -910,9 +910,14 @@ export default function FreeFormWritePage() {
 
   // ---------- Toast UI Editor refs ----------
   const editorRefs = useRef<Map<number, EditorInstance>>(new Map());
+  const hookedEditors = useRef<WeakSet<object>>(new WeakSet());
 
   // 이미지 업로드 - Toast UI Editor hook 설정
   const setupImageUploadHook = useCallback((editor: EditorInstance) => {
+    // 인스턴스당 1회만 hook 등록
+    if (hookedEditors.current.has(editor as unknown as object)) return;
+    hookedEditors.current.add(editor as unknown as object);
+
     editor.addHook(
       "addImageBlobHook",
       async (blob: Blob, callback: (url: string, altText?: string) => void) => {

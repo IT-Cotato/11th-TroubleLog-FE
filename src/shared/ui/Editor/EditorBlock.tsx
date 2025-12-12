@@ -78,6 +78,7 @@ const EditorBlock = ({
   void _onDropImage;
 
   const editorRef = useRef<EditorInstance | null>(null);
+  const hookedEditor = useRef<EditorInstance | null>(null);
   const removeDefaultText = useRemoveDefaultText(block.content);
 
   // ref 콜백을 useCallback으로 고정하여 불필요한 detach/attach 방지
@@ -92,6 +93,10 @@ const EditorBlock = ({
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
+
+    // 인스턴스당 1회만 hook 등록
+    if (hookedEditor.current === editor) return;
+    hookedEditor.current = editor;
 
     // 이미지 업로드 훅 설정
     editor.addHook(
