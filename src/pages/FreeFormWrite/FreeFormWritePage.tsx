@@ -978,37 +978,41 @@ export default function FreeFormWritePage() {
     [blocks]
   );
 
-  // 각 블록별 ref 콜백을 메모이제이션하여 불필요한 detach/attach 방지
-  const editorRefCallbacks = useMemo(() => {
-    const callbacks = new Map<number, (editor: any) => void>();
-    blocks.forEach((block) => {
-      callbacks.set(block.id, (editor: any) => {
-        if (editor) {
-          const instance = editor.getInstance();
-          editorRefs.current.set(block.id, instance);
-          setupImageUploadHook(instance);
+  // 각 블록별 ref 콜백을 useCallback으로 고정하여 불필요한 detach/attach 방지
+  const createEditorRefCallback = useCallback(
+    (blockId: number) => (editor: any | null) => {
+      if (!editor) {
+        editorRefs.current.delete(blockId);
+        return;
+      }
+      const instance = editor.getInstance();
+      editorRefs.current.set(blockId, instance);
+      setupImageUploadHook(instance);
 
-          // 에디터 인스턴스가 처음 생성될 때만 기본 텍스트 제거 (1회만 실행)
-          // 초기값이 비어있을 때만 실행 (데이터 손실 방지)
-          if (
-            !processedBlocks.current.has(block.id) &&
-            (block.content ?? "").trim().length === 0
-          ) {
-            // 즉시 실행 및 지연 실행 (에디터 렌더링 완료 대기)
-            removeDefaultTextForBlock(block.id);
-            setTimeout(() => removeDefaultTextForBlock(block.id), 100);
-            setTimeout(() => removeDefaultTextForBlock(block.id), 500);
-          } else if (!processedBlocks.current.has(block.id)) {
-            // 초기값이 있으면 처리 완료로 표시
-            processedBlocks.current.add(block.id);
-          }
-        } else {
-          editorRefs.current.delete(block.id);
-        }
-      });
+      // 최초 세팅 시에만(또는 block.content가 비어있을 때만) 기본 텍스트 제거
+      const block = blocks.find((b) => b.id === blockId);
+      if (
+        block &&
+        !processedBlocks.current.has(blockId) &&
+        (block.content ?? "").trim().length === 0
+      ) {
+        setTimeout(() => removeDefaultTextForBlock(blockId), 0);
+      } else if (block && !processedBlocks.current.has(blockId)) {
+        // 초기값이 있으면 처리 완료로 표시
+        processedBlocks.current.add(blockId);
+      }
+    },
+    [blocks, setupImageUploadHook, removeDefaultTextForBlock]
+  );
+
+  // 각 블록별 ref 콜백을 메모이제이션
+  const editorRefCallbacks = useMemo(() => {
+    const callbacks = new Map<number, (editor: any | null) => void>();
+    blocks.forEach((block) => {
+      callbacks.set(block.id, createEditorRefCallback(block.id));
     });
     return callbacks;
-  }, [blocks, setupImageUploadHook, removeDefaultTextForBlock]);
+  }, [blocks, createEditorRefCallback]);
 
   // Editor content 동기화
   useEffect(() => {

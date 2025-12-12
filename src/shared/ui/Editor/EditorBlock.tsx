@@ -98,7 +98,10 @@ const EditorBlock = ({
       // 이미지 업로드 훅 설정
       instance.addHook(
         "addImageBlobHook",
-        async (blob: Blob, callback: (url: string, altText?: string) => void) => {
+        async (
+          blob: Blob,
+          callback: (url: string, altText?: string) => void
+        ) => {
           try {
             const file = blob as File;
             const url = await uploadImage(file);
