@@ -202,6 +202,9 @@ ${urls.join("\n")}
 
 // 실행
 generateSitemap().catch((error) => {
-  console.error("Sitemap 생성 실패:", error);
-  process.exit(1);
+  console.error("⚠️  Sitemap 생성 실패:", error.message);
+  console.log("정적 sitemap.xml을 사용하여 빌드를 계속 진행합니다...");
+  // 빌드 실패를 방지하기 위해 exit(0)으로 변경
+  // 대신 경고만 출력하고 빌드는 계속 진행
+  process.exit(0);
 });
