@@ -2,12 +2,9 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
 import DropDownButton from "@/shared/ui/Button/DropDownButton";
 import CategoryTag from "@/shared/ui/Editor/CategoryTag";
-import MDEditor, {
-  commands,
-  TextAreaTextApi,
-  type ICommand,
-  type TextState,
-} from "@uiw/react-md-editor";
+import "@toast-ui/editor/dist/toastui-editor.css";
+import { Editor } from "@toast-ui/react-editor";
+import type EditorInstance from "@toast-ui/editor";
 import PostSaveModal, {
   type PostSavePayload,
 } from "@/shared/ui/Modal/PostSaveModal";
@@ -911,187 +908,137 @@ export default function FreeFormWritePage() {
     );
   };
 
-  // ---------- (추가) 오토사이즈 상태/로직 ----------
-  const [editorHeights, setEditorHeights] = useState<Record<number, number>>(
-    {}
-  );
-  const editorWrapRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  // ---------- Toast UI Editor refs ----------
+  const editorRefs = useRef<Map<number, EditorInstance>>(new Map());
+  const hookedEditors = useRef<WeakSet<object>>(new WeakSet());
 
-  const autosizeFor = useCallback((blockId: number) => {
-    const root = editorWrapRefs.current.get(blockId);
-    if (!root) return;
+  // 이미지 업로드 - Toast UI Editor hook 설정
+  const setupImageUploadHook = useCallback((editor: EditorInstance) => {
+    // 인스턴스당 1회만 hook 등록
+    if (hookedEditors.current.has(editor as unknown as object)) return;
+    hookedEditors.current.add(editor as unknown as object);
 
-    const ta = root.querySelector("textarea") as HTMLTextAreaElement | null;
-    if (!ta) return;
-
-    // textarea 실제 내용 높이 측정
-    const prev = ta.style.height;
-    ta.style.height = "auto";
-    const taScrollH = ta.scrollHeight;
-
-    // 크롬(툴바/바텀바/패딩/보더) 높이 합산
-    const editorRoot = ta.closest(".w-md-editor") as HTMLElement | null;
-    const toolbar = editorRoot?.querySelector(
-      ".w-md-editor-toolbar"
-    ) as HTMLElement | null;
-    const bottombar = editorRoot?.querySelector(
-      ".w-md-editor-bar"
-    ) as HTMLElement | null;
-
-    const toolbarH = toolbar?.offsetHeight ?? 0;
-    const bottombarH = bottombar?.offsetHeight ?? 0;
-
-    const taCS = getComputedStyle(ta);
-    const taVPad =
-      (parseFloat(taCS.paddingTop || "0") || 0) +
-      (parseFloat(taCS.paddingBottom || "0") || 0);
-
-    const taWrap = ta.parentElement as HTMLElement | null;
-    const wrapCS = taWrap ? getComputedStyle(taWrap) : null;
-    const wrapVPad = wrapCS
-      ? (parseFloat(wrapCS.paddingTop || "0") || 0) +
-        (parseFloat(wrapCS.paddingBottom || "0") || 0)
-      : 0;
-
-    const rootCS = editorRoot ? getComputedStyle(editorRoot) : null;
-    const rootVPad =
-      (rootCS ? parseFloat(rootCS.paddingTop || "0") : 0) +
-      (rootCS ? parseFloat(rootCS.paddingBottom || "0") : 0);
-    const rootVBorder =
-      (rootCS ? parseFloat(rootCS.borderTopWidth || "0") : 0) +
-      (rootCS ? parseFloat(rootCS.borderBottomWidth || "0") : 0);
-
-    const chrome =
-      toolbarH + bottombarH + taVPad + wrapVPad + rootVPad + rootVBorder + 16;
-
-    const next = Math.max(300, Math.min(30000, taScrollH + chrome));
-    setEditorHeights((prevHeights) =>
-      prevHeights[blockId] === next
-        ? prevHeights
-        : { ...prevHeights, [blockId]: next }
+    editor.addHook(
+      "addImageBlobHook",
+      async (blob: Blob, callback: (url: string, altText?: string) => void) => {
+        try {
+          const file = blob as File;
+          const url = await uploadImage(file);
+          callback(url, "image");
+        } catch {
+          setStatusMessage("이미지 업로드에 실패했어요.");
+        }
+      }
     );
-
-    ta.style.height = prev;
   }, []);
 
-  useEffect(() => {
-    const recalcAll = () => {
-      for (const b of blocks) requestAnimationFrame(() => autosizeFor(b.id));
-    };
-    window.addEventListener("resize", recalcAll);
-    return () => window.removeEventListener("resize", recalcAll);
-  }, [blocks, autosizeFor]);
+  // 각 블록별로 기본 텍스트 제거 처리 여부 추적
+  const processedBlocks = useRef<Set<number>>(new Set());
 
-  useEffect(() => {
-    // 블록 개수 변경 시 1프레임 뒤 초기 계산
-    for (const b of blocks) requestAnimationFrame(() => autosizeFor(b.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks.length]);
+  // 기본 텍스트 제거 함수 (에디터 인스턴스가 처음 생성될 때만 실행)
+  const removeDefaultTextForBlock = useCallback(
+    (blockId: number) => {
+      // 이미 처리한 블록은 건너뛰기
+      if (processedBlocks.current.has(blockId)) return;
 
-  // 이미지 업로드 - 드래그 앤 드롭
-  const insertImageMarkdown = (blockId: number, url: string) => {
-    setBlocks((prev) =>
-      prev.map((b) =>
-        b.id === blockId
-          ? { ...b, content: `${b.content?.trim()}\n\n![image](${url})` }
-          : b
-      )
-    );
-  };
+      const block = blocks.find((b) => b.id === blockId);
+      if (!block) return;
 
-  const handlePasteImage = async (
-    blockId: number,
-    e: React.ClipboardEvent<HTMLTextAreaElement>
-  ) => {
-    const files = e.clipboardData?.files;
-    const file = files && files[0];
-    if (file && file.type.startsWith("image/")) {
-      e.preventDefault();
-      try {
-        const url = await uploadImage(file); // onProgress 필요하면 2번째 인자 사용 가능
-        insertImageMarkdown(blockId, url);
-      } catch {
-        setStatusMessage("이미지 업로드에 실패했어요.");
-      } finally {
-        requestAnimationFrame(() => autosizeFor(blockId));
+      const editor = editorRefs.current.get(blockId);
+      if (!editor) return;
+
+      // 이미 초기값이 있으면 절대 지우지 않기 (데이터 손실 방지)
+      if ((block.content ?? "").trim().length > 0) {
+        processedBlocks.current.add(blockId); // 처리 완료로 표시
+        return;
       }
-    }
-  };
 
-  const handleDropImage = async (
-    blockId: number,
-    e: React.DragEvent<HTMLTextAreaElement>
-  ) => {
-    const file = e.dataTransfer?.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      e.preventDefault();
       try {
-        const url = await uploadImage(file);
-        insertImageMarkdown(blockId, url);
-      } catch {
-        setStatusMessage("이미지 업로드에 실패했어요.");
-      } finally {
-        requestAnimationFrame(() => autosizeFor(blockId));
-      }
-    }
-  };
+        const currentMarkdown = editor.getMarkdown();
+        const defaultTexts = ["Write", "Preview", "Markdown", "WYSIWYG"];
+        const trimmedMarkdown = currentMarkdown.trim();
 
-  // 이미지 업로드 - 파일 선택
-  const fileRef = useRef<HTMLInputElement | null>(null);
+        // 기본 텍스트만 있거나, 기본 텍스트로 시작하는 경우 제거
+        const isDefaultText =
+          defaultTexts.some((defaultText) => trimmedMarkdown === defaultText) ||
+          (defaultTexts.some((defaultText) =>
+            trimmedMarkdown.startsWith(defaultText)
+          ) &&
+            trimmedMarkdown.split("\n").length > 0 &&
+            defaultTexts.includes(trimmedMarkdown.split("\n")[0].trim()));
 
-  // 선택 텍스트를 alt로 쓰고, 없으면 기본 "image" 사용
-  const insertImage = (state: TextState, api: TextAreaTextApi, url: string) => {
-    const alt = state.selectedText?.trim() || "image";
-    const md = `![${alt}](${url})`;
-    api.replaceSelection(md);
-
-    const pos = state.selection.start + md.length;
-    api.setSelectionRange({ start: pos, end: pos });
-  };
-
-  const imageUploadCmd: ICommand = {
-    name: "imageUpload",
-    keyCommand: "image",
-    icon: commands.image.icon, // 기본 이미지 아이콘 재사용
-    buttonProps: { "aria-label": "이미지 업로드" },
-    execute: (state, api) => {
-      const input = fileRef.current;
-      if (!input) return;
-
-      const onPick = async (e: Event) => {
-        input.removeEventListener("change", onPick);
-        const file = (e.target as HTMLInputElement).files?.[0];
-        (e.target as HTMLInputElement).value = ""; // 같은 파일 재선택 허용
-        if (!file) return;
-
-        try {
-          const url = await uploadImage(file);
-          insertImage(state, api, url);
-        } catch {
-          // 필요시 상태 메시지/토스트 처리
+        if (isDefaultText) {
+          editor.setMarkdown("");
         }
-      };
-
-      input.accept = "image/*";
-      input.addEventListener("change", onPick, { once: true });
-      input.click();
+        processedBlocks.current.add(blockId); // 처리 완료로 표시
+      } catch {
+        // 에러 발생 시 무시
+      }
     },
-  };
+    [blocks]
+  );
+
+  // 각 블록별 ref 콜백을 useCallback으로 고정하여 불필요한 detach/attach 방지
+  const createEditorRefCallback = useCallback(
+    (blockId: number) => (editor: any | null) => {
+      if (!editor) {
+        editorRefs.current.delete(blockId);
+        return;
+      }
+      const instance = editor.getInstance();
+      editorRefs.current.set(blockId, instance);
+      setupImageUploadHook(instance);
+
+      // 최초 세팅 시에만(또는 block.content가 비어있을 때만) 기본 텍스트 제거
+      const block = blocks.find((b) => b.id === blockId);
+      if (
+        block &&
+        !processedBlocks.current.has(blockId) &&
+        (block.content ?? "").trim().length === 0
+      ) {
+        setTimeout(() => removeDefaultTextForBlock(blockId), 0);
+      } else if (block && !processedBlocks.current.has(blockId)) {
+        // 초기값이 있으면 처리 완료로 표시
+        processedBlocks.current.add(blockId);
+      }
+    },
+    [blocks, setupImageUploadHook, removeDefaultTextForBlock]
+  );
+
+  // 각 블록별 ref 콜백을 메모이제이션
+  const editorRefCallbacks = useMemo(() => {
+    const callbacks = new Map<number, (editor: any | null) => void>();
+    blocks.forEach((block) => {
+      callbacks.set(block.id, createEditorRefCallback(block.id));
+    });
+    return callbacks;
+  }, [blocks, createEditorRefCallback]);
+
+  // Editor content 동기화
+  useEffect(() => {
+    blocks.forEach((block) => {
+      const editor = editorRefs.current.get(block.id);
+      if (editor) {
+        const currentMarkdown = editor.getMarkdown();
+        if (currentMarkdown !== block.content) {
+          editor.setMarkdown(block.content);
+        }
+      }
+    });
+  }, [blocks]);
 
   // (기존 함수들 아래에 추가)
 
   const buildEditFormFromMeta = async (
     meta: PostSavePayload,
-    opts?: { mode?: "temp" | "final" | "summary" } // temp: 임시 저장, final: 최종 저장, summary: 요약 시작 직전 저장
+    opts?: { mode?: "temp" | "final" | "summary" }
   ) => {
     const tags = await canonicalizeTags(selectedTags);
     const mode = opts?.mode ?? "temp";
     const nextStatus: "WRITING" | "COMPLETED" | "SUMMARIZED" = (() => {
-      // 최종 저장이거나 요약 시작 직전에는 COMPLETED로 고정(단, 기존이 SUMMARIZED면 유지)
       if (mode === "final" || mode === "summary") {
         return initialPostStatus === "SUMMARIZED" ? "SUMMARIZED" : "COMPLETED";
       }
-      // 임시 저장은 기존 정책 유지
       return wasEverCompleted ? initialPostStatus ?? "COMPLETED" : "WRITING";
     })();
     return buildForm(nextStatus, meta, tags);
@@ -1104,7 +1051,7 @@ export default function FreeFormWritePage() {
       const form = await buildEditFormFromMeta(previewMeta, { mode: "final" });
       await editPost(resumePostId, toEditPostRequest(form) as any);
       setDraftPostId(resumePostId);
-      setCreatedPostId(resumePostId); // 이후 미리보기/네비에 활용
+      setCreatedPostId(resumePostId);
       setShowSaveAlert(true);
       setTimeout(() => setShowSaveAlert(false), 1000);
     } catch (e) {
@@ -1248,51 +1195,22 @@ export default function FreeFormWritePage() {
                   )}
                 </div>
 
-                {/* 🔹 오토사이즈 래퍼 + height 주입 */}
-                <div
-                  ref={(el) => {
-                    if (el) editorWrapRefs.current.set(block.id, el);
-                    else editorWrapRefs.current.delete(block.id);
-                    requestAnimationFrame(() => autosizeFor(block.id));
-                  }}
-                  className="mt-2"
-                >
-                  <div data-color-mode="light">
-                    <MDEditor
-                      value={block.content}
-                      onChange={(val?: string) => {
-                        handleChangeBlock(block.id, "content", val ?? "");
-                        requestAnimationFrame(() => autosizeFor(block.id));
-                      }}
-                      preview="edit"
-                      height={editorHeights[block.id] ?? 300}
-                      textareaProps={{
-                        onPaste: (
-                          e: React.ClipboardEvent<HTMLTextAreaElement>
-                        ) => {
-                          handlePasteImage(block.id, e);
-                          requestAnimationFrame(() => autosizeFor(block.id));
-                        },
-                        onDrop: (e: React.DragEvent<HTMLTextAreaElement>) => {
-                          handleDropImage(block.id, e);
-                          requestAnimationFrame(() => autosizeFor(block.id));
-                        },
-                        onInput: () =>
-                          requestAnimationFrame(() => autosizeFor(block.id)),
-                        onDragOver: (
-                          e: React.DragEvent<HTMLTextAreaElement>
-                        ) => {
-                          if (e.dataTransfer?.types?.includes("Files")) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }
-                        },
-                      }}
-                      commandsFilter={(cmd: ICommand): ICommand =>
-                        cmd.keyCommand === "image" ? imageUploadCmd : cmd
+                <div className="mt-2">
+                  <Editor
+                    ref={editorRefCallbacks.get(block.id)}
+                    initialValue={block.content || ""}
+                    onChange={() => {
+                      const editor = editorRefs.current.get(block.id);
+                      if (editor) {
+                        const markdown = editor.getMarkdown();
+                        handleChangeBlock(block.id, "content", markdown);
                       }
-                    />
-                  </div>
+                    }}
+                    height="300px"
+                    initialEditType="markdown"
+                    previewStyle="vertical"
+                    usageStatistics={false}
+                  />
                 </div>
               </div>
             ))}
@@ -1433,8 +1351,6 @@ export default function FreeFormWritePage() {
           </div>
         </div>
       </div>
-
-      <input ref={fileRef} type="file" hidden />
     </div>
   );
 }

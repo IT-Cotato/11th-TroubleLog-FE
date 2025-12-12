@@ -1,4 +1,9 @@
-import MDEditor from "@uiw/react-md-editor";
+import "@toast-ui/editor/dist/toastui-editor.css";
+import { Editor } from "@toast-ui/react-editor";
+import type EditorInstance from "@toast-ui/editor";
+import { useRef, useEffect, useCallback } from "react";
+import { uploadImage } from "@/api/image.api";
+import { useRemoveDefaultText } from "@/shared/hooks/useRemoveDefaultText";
 
 export interface BlockData {
   id: number;
@@ -30,6 +35,58 @@ const EditorBlock = ({
   onEnd,
   isEndDisabled = false,
 }: Props) => {
+  const editorRef = useRef<EditorInstance | null>(null);
+  const hookedEditor = useRef<EditorInstance | null>(null);
+  const removeDefaultText = useRemoveDefaultText(block.content);
+
+  // ref 콜백을 useCallback으로 고정하여 불필요한 detach/attach 방지
+  const handleEditorRef = useCallback(
+    (editor: any | null) => {
+      if (!editor) {
+        editorRef.current = null;
+        return;
+      }
+      const instance = editor.getInstance();
+      editorRef.current = instance;
+
+      // 인스턴스당 1회만 hook 등록
+      if (hookedEditor.current === instance) return;
+      hookedEditor.current = instance;
+
+      // 이미지 업로드 훅 설정
+      instance.addHook(
+        "addImageBlobHook",
+        async (
+          blob: Blob,
+          callback: (url: string, altText?: string) => void
+        ) => {
+          try {
+            const file = blob as File;
+            const url = await uploadImage(file);
+            callback(url, "image");
+          } catch {
+            console.error("이미지 업로드에 실패했습니다.");
+          }
+        }
+      );
+
+      // 최초 세팅 시에만(또는 block.content가 비어있을 때만) 기본 텍스트 제거
+      setTimeout(() => removeDefaultText(instance), 0);
+    },
+    [removeDefaultText]
+  );
+
+  // 외부 content 변경 동기화 (block.content가 외부에서 변경될 때)
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const currentMarkdown = editor.getMarkdown();
+    if (currentMarkdown !== block.content) {
+      editor.setMarkdown(block.content);
+    }
+  }, [block.content]);
+
   return (
     <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pb-6">
       <div className="flex flex-col gap-4 w-full max-w-screen-lg mx-auto">
@@ -74,14 +131,21 @@ const EditorBlock = ({
         </div>
 
         {/* 에디터 */}
-        <div data-color-mode="light" className="w-full">
-          <MDEditor
-            value={block.content}
-            onChange={(val) => onChange(index, { content: val || "" })}
-            preview={isActive ? "edit" : "preview"}
-            height={isActive ? 300 : 300}
-            autoFocus={isActive}
-            className="w-full"
+        <div className="w-full">
+          <Editor
+            ref={handleEditorRef}
+            initialValue={block.content || ""}
+            onChange={() => {
+              const editor = editorRef.current;
+              if (editor) {
+                const markdown = editor.getMarkdown();
+                onChange(index, { content: markdown });
+              }
+            }}
+            height="300px"
+            initialEditType="markdown"
+            previewStyle="vertical"
+            usageStatistics={false}
           />
         </div>
       </div>
