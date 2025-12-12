@@ -947,8 +947,8 @@ export default function FreeFormWritePage() {
       const editor = editorRefs.current.get(blockId);
       if (!editor) return;
 
-      // 초기값이 비어있지 않으면 실행하지 않음 (데이터 손실 방지)
-      if (block.content.trim() !== "") {
+      // 이미 초기값이 있으면 절대 지우지 않기 (데이터 손실 방지)
+      if ((block.content ?? "").trim().length > 0) {
         processedBlocks.current.add(blockId); // 처리 완료로 표시
         return;
       }
@@ -989,9 +989,10 @@ export default function FreeFormWritePage() {
           setupImageUploadHook(instance);
 
           // 에디터 인스턴스가 처음 생성될 때만 기본 텍스트 제거 (1회만 실행)
+          // 초기값이 비어있을 때만 실행 (데이터 손실 방지)
           if (
             !processedBlocks.current.has(block.id) &&
-            block.content.trim() === ""
+            (block.content ?? "").trim().length === 0
           ) {
             // 즉시 실행 및 지연 실행 (에디터 렌더링 완료 대기)
             removeDefaultTextForBlock(block.id);

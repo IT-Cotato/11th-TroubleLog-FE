@@ -13,8 +13,8 @@ export function useRemoveDefaultText(initialContent: string) {
 
   const removeDefaultText = useCallback(
     (editor: EditorInstance) => {
-      // 초기값이 비어있지 않으면 실행하지 않음 (데이터 손실 방지)
-      if (initialContent.trim() !== "") {
+      // 이미 초기값이 있으면 절대 지우지 않기 (데이터 손실 방지)
+      if ((initialContent ?? "").trim().length > 0) {
         return;
       }
 
