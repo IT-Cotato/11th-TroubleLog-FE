@@ -7,7 +7,7 @@ import { useRemoveDefaultText } from "@/shared/hooks/useRemoveDefaultText";
 import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 
 export interface BlockData {
   id: number;
@@ -79,6 +79,15 @@ const EditorBlock = ({
 
   const editorRef = useRef<EditorInstance | null>(null);
   const removeDefaultText = useRemoveDefaultText(block.content);
+
+  // ref 콜백을 useCallback으로 고정하여 불필요한 detach/attach 방지
+  const editorRefCallback = useCallback((editor: any) => {
+    if (editor) {
+      editorRef.current = editor.getInstance();
+    } else {
+      editorRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -172,13 +181,7 @@ const EditorBlock = ({
         {/* 편집 / 프리뷰 분리 */}
         <div className="w-full rounded-md border border-gray-200">
           <Editor
-            ref={(editor) => {
-              if (editor) {
-                editorRef.current = editor.getInstance();
-              } else {
-                editorRef.current = null;
-              }
-            }}
+            ref={editorRefCallback}
             initialValue={block.content || ""}
             onChange={() => {
               const editor = editorRef.current;

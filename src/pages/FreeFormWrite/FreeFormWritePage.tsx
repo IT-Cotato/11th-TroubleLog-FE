@@ -927,6 +927,23 @@ export default function FreeFormWritePage() {
     );
   }, []);
 
+  // 각 블록별 ref 콜백을 메모이제이션하여 불필요한 detach/attach 방지
+  const editorRefCallbacks = useMemo(() => {
+    const callbacks = new Map<number, (editor: any) => void>();
+    blocks.forEach((block) => {
+      callbacks.set(block.id, (editor: any) => {
+        if (editor) {
+          const instance = editor.getInstance();
+          editorRefs.current.set(block.id, instance);
+          setupImageUploadHook(instance);
+        } else {
+          editorRefs.current.delete(block.id);
+        }
+      });
+    });
+    return callbacks;
+  }, [blocks, setupImageUploadHook]);
+
   // 각 블록별로 기본 텍스트 제거 함수 생성 (초기값이 비어있을 때만 실행)
   const removeDefaultTextForBlock = useCallback(
     (blockId: number) => {
@@ -1178,14 +1195,7 @@ export default function FreeFormWritePage() {
 
                 <div className="mt-2">
                   <Editor
-                    ref={(editor) => {
-                      if (editor) {
-                        editorRefs.current.set(block.id, editor.getInstance());
-                        setupImageUploadHook(editor.getInstance());
-                      } else {
-                        editorRefs.current.delete(block.id);
-                      }
-                    }}
+                    ref={editorRefCallbacks.get(block.id)}
                     initialValue={block.content || ""}
                     onChange={() => {
                       const editor = editorRefs.current.get(block.id);

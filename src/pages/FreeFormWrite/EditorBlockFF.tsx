@@ -1,7 +1,7 @@
 import "@toast-ui/editor/dist/toastui-editor.css";
 import { Editor } from "@toast-ui/react-editor";
 import type EditorInstance from "@toast-ui/editor";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { uploadImage } from "@/api/image.api";
 import { useRemoveDefaultText } from "@/shared/hooks/useRemoveDefaultText";
 
@@ -37,6 +37,15 @@ const EditorBlock = ({
 }: Props) => {
   const editorRef = useRef<EditorInstance | null>(null);
   const removeDefaultText = useRemoveDefaultText(block.content);
+
+  // ref 콜백을 useCallback으로 고정하여 불필요한 detach/attach 방지
+  const editorRefCallback = useCallback((editor: any) => {
+    if (editor) {
+      editorRef.current = editor.getInstance();
+    } else {
+      editorRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -113,13 +122,7 @@ const EditorBlock = ({
         {/* 에디터 */}
         <div className="w-full">
           <Editor
-            ref={(editor) => {
-              if (editor) {
-                editorRef.current = editor.getInstance();
-              } else {
-                editorRef.current = null;
-              }
-            }}
+            ref={editorRefCallback}
             initialValue={block.content || ""}
             onChange={() => {
               const editor = editorRef.current;
