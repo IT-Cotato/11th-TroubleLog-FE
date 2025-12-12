@@ -120,22 +120,25 @@ async function generateSitemap() {
     }, 5); // 최대 5페이지 (250개 포스트)
 
     communityPosts.forEach((post) => {
-      if (post.postId) {
-        // ID 기반 URL
+      // Canonical URL 우선순위: slug > postId
+      // slug가 있으면 slug 기반 URL만 사용 (SEO 친화적, canonical URL)
+      // slug가 없으면 postId 기반 URL 사용 (하위 호환)
+      // 둘 다 있으면 slug만 사용하여 중복 방지
+      if (post.slug) {
+        // 슬러그 기반 URL (canonical, SEO 친화적)
         urls.push(
           createUrlEntry(
-            `${BASE_URL}/user/community/${post.postId}`,
+            `${BASE_URL}/user/community/p/${post.slug}`,
             post.createdAt ? formatDate(new Date(post.createdAt)) : null,
             "weekly",
             "0.8"
           )
         );
-      }
-      if (post.slug) {
-        // 슬러그 기반 URL
+      } else if (post.postId) {
+        // slug가 없는 경우에만 ID 기반 URL 사용 (하위 호환)
         urls.push(
           createUrlEntry(
-            `${BASE_URL}/user/community/p/${post.slug}`,
+            `${BASE_URL}/user/community/${post.postId}`,
             post.createdAt ? formatDate(new Date(post.createdAt)) : null,
             "weekly",
             "0.8"
