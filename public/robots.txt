@@ -1,0 +1,38 @@
+# 모든 검색 엔진 크롤러에 대한 기본 규칙
+User-agent: *
+Allow: /
+
+# 민감한 경로 및 인증이 필요한 페이지 차단
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+Disallow: /find-password
+Disallow: /auth/
+Disallow: /user/mypage/editprofile
+Disallow: /tempwriting
+Disallow: /freeformwriting
+Disallow: /troubles/
+Disallow: /post/summary/
+Disallow: /404
+Disallow: /auth-required
+
+# 공개 콘텐츠는 허용 (커뮤니티, 프로젝트, 공개 마이페이지)
+Allow: /user/community
+Allow: /user/project/
+Allow: /user/mypage/
+
+# 주요 검색 엔진별 최적화 설정
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: NaverBot
+Allow: /
+Crawl-delay: 1
+
+# Sitemap 위치 (실제 도메인으로 변경 필요)
+Sitemap: https://troublog.com/sitemap.xml

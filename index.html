@@ -1,11 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
     <link rel="icon" href="%VITE_FAVICON%" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>%VITE_APP_TITLE%</title>
+
+    <!-- SEO 메타 태그 -->
+    <meta
+      name="description"
+      content="Troublog - 개발자 트러블슈팅 기록 및 공유 플랫폼"
+    />
+    <meta
+      name="keywords"
+      content="트러블슈팅, 개발, 개발자, 문제해결, 커뮤니티, 프로젝트"
+    />
+    <meta name="author" content="Troublog" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://troublog.com/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://troublog.com/" />
+    <meta property="og:title" content="%VITE_APP_TITLE%" />
+    <meta
+      property="og:description"
+      content="Troublog - 개발자 트러블슈팅 기록 및 공유 플랫폼"
+    />
+    <meta
+      property="og:image"
+      content="https://troublog.com/logos/logo_png.png"
+    />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:site_name" content="Troublog" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://troublog.com/" />
+    <meta name="twitter:title" content="%VITE_APP_TITLE%" />
+    <meta
+      name="twitter:description"
+      content="Troublog - 개발자 트러블슈팅 기록 및 공유 플랫폼"
+    />
+    <meta
+      name="twitter:image"
+      content="https://troublog.com/logos/logo_png.png"
+    />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
+
+    <!-- 구조화된 데이터 (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Troublog",
+        "url": "https://troublog.com",
+        "description": "개발자 트러블슈팅 기록 및 공유 플랫폼",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://troublog.com/user/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
 
     <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
   </head>

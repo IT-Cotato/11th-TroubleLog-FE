@@ -1,0 +1,27 @@
+{
+  "name": "Troublog",
+  "short_name": "Troublog",
+  "description": "개발자 트러블슈팅 기록 및 공유 플랫폼",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logos/logo_png.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logos/logo_png.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["developer", "productivity", "education"],
+  "lang": "ko",
+  "dir": "ltr"
+}

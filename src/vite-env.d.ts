@@ -14,6 +14,10 @@ interface ImportMetaEnv {
   readonly VITE_BASE_URL?: string;
   // API 모킹 on/off
   readonly VITE_API_MOCKING?: "true" | "false";
+  // 앱 제목 (SEO용)
+  readonly VITE_APP_TITLE?: string;
+  // 파비콘 경로
+  readonly VITE_FAVICON?: string;
 }
 
 interface ImportMeta {
