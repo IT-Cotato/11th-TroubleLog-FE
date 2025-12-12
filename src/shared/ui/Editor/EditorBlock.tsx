@@ -1,17 +1,12 @@
-import MDEditor, { type ICommand } from "@uiw/react-md-editor";
-import "@uiw/react-md-editor/markdown-editor.css";
-import "@uiw/react-markdown-preview/markdown.css";
+import "@toast-ui/editor/dist/toastui-editor.css";
+import { Editor } from "@toast-ui/react-editor";
+import type EditorInstance from "@toast-ui/editor";
+import { uploadImage } from "@/api/image.api";
 
 import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
-import {
-  useLayoutEffect,
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import { useRef, useEffect, useCallback } from "react";
 
 export interface BlockData {
   id: number;
@@ -52,14 +47,7 @@ export type EditorBlockProps = {
     blockId: number,
     e: React.DragEvent<HTMLTextAreaElement>
   ) => void;
-
-  commandsFilter?: (command: ICommand, isExtra: boolean) => false | ICommand;
 };
-
-const MIN_H = 300;
-const MAX_H = 20000;
-const clamp = (n: number, lo: number, hi: number) =>
-  Math.max(lo, Math.min(hi, n));
 
 const EditorBlock = ({
   block,
@@ -78,106 +66,76 @@ const EditorBlock = ({
   onSave,
   isSaving,
   canSave,
-  onPasteImage,
-  onDropImage,
-  commandsFilter,
+  onPasteImage: _onPasteImage,
+  onDropImage: _onDropImage,
   checklistWidthClass,
   nowrapChecklistItems,
 }: EditorBlockProps) => {
-  const [editorHeight, setEditorHeight] = useState<number>(MIN_H);
+  // Toast UI Editor handles image uploads internally via addImageBlobHook
+  // These props are kept for type compatibility but are no longer used
+  void _onPasteImage;
+  void _onDropImage;
 
-  const taRef = useRef<HTMLTextAreaElement | null>(null);
-  const editorWrapRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<EditorInstance | null>(null);
 
-  const autosize = useCallback(() => {
-    const ta = taRef.current;
-    if (!ta) return;
-    const prevTaH = ta.style.height;
-    ta.style.height = "auto";
+  // 에디터 내부 기본 텍스트 제거 함수
+  const removeDefaultText = useCallback((editor: EditorInstance) => {
+    try {
+      const currentMarkdown = editor.getMarkdown();
+      const defaultTexts = ["Write", "Preview", "Markdown", "WYSIWYG"];
+      const trimmedMarkdown = currentMarkdown.trim();
 
-    const taScrollH = ta.scrollHeight;
-
-    const editorRoot = ta.closest(".w-md-editor") as HTMLElement | null;
-    const toolbar = editorRoot?.querySelector(
-      ".w-md-editor-toolbar"
-    ) as HTMLElement | null;
-    const bottombar = editorRoot?.querySelector(
-      ".w-md-editor-bar"
-    ) as HTMLElement | null;
-
-    const toolbarH = toolbar?.offsetHeight ?? 0;
-    const bottombarH = bottombar?.offsetHeight ?? 0;
-
-    // textarea
-    const taCS = getComputedStyle(ta);
-    const taVPad =
-      (parseFloat(taCS.paddingTop || "0") || 0) +
-      (parseFloat(taCS.paddingBottom || "0") || 0);
-
-    // textarea 부모
-    const taWrap = ta.parentElement as HTMLElement | null;
-    const wrapCS = taWrap ? getComputedStyle(taWrap) : null;
-    const wrapVPad = wrapCS
-      ? (parseFloat(wrapCS.paddingTop || "0") || 0) +
-        (parseFloat(wrapCS.paddingBottom || "0") || 0)
-      : 0;
-
-    // 에디터 루트 보더/패딩
-    const rootCS = editorRoot ? getComputedStyle(editorRoot) : null;
-    const rootVPad =
-      (rootCS ? parseFloat(rootCS.paddingTop || "0") : 0) +
-      (rootCS ? parseFloat(rootCS.paddingBottom || "0") : 0);
-    const rootVBorder =
-      (rootCS ? parseFloat(rootCS.borderTopWidth || "0") : 0) +
-      (rootCS ? parseFloat(rootCS.borderBottomWidth || "0") : 0);
-
-    // 여유분(렌더 오차/간격용)
-    const fudge = 16;
-
-    const chrome =
-      toolbarH +
-      bottombarH +
-      taVPad +
-      wrapVPad +
-      rootVPad +
-      rootVBorder +
-      fudge;
-
-    const next = clamp(taScrollH + chrome, MIN_H, MAX_H);
-    setEditorHeight((h) => (h === next ? h : next));
-
-    ta.style.height = prevTaH;
+      // 기본 텍스트만 있거나, 기본 텍스트로 시작하는 경우 제거
+      if (defaultTexts.some((defaultText) => trimmedMarkdown === defaultText)) {
+        editor.setMarkdown("");
+      } else if (
+        defaultTexts.some((defaultText) =>
+          trimmedMarkdown.startsWith(defaultText)
+        )
+      ) {
+        // 기본 텍스트로 시작하는 경우도 제거
+        const lines = trimmedMarkdown.split("\n");
+        if (lines.length > 0 && defaultTexts.includes(lines[0].trim())) {
+          editor.setMarkdown("");
+        }
+      }
+    } catch {
+      // 에러 발생 시 무시
+    }
   }, []);
 
-  const attachTextareaRef = useCallback(() => {
-    if (taRef.current) return;
-    const root = editorWrapRef.current;
-    if (!root) return;
-
-    const ta = root.querySelector("textarea") as HTMLTextAreaElement | null;
-
-    if (ta) {
-      taRef.current = ta;
-      requestAnimationFrame(autosize);
-    }
-  }, [autosize]);
-
-  useLayoutEffect(() => {
-    const id = requestAnimationFrame(() => {
-      attachTextareaRef();
-      autosize();
-    });
-    return () => cancelAnimationFrame(id);
-  }, [attachTextareaRef, autosize, isActive, block.content]);
-
   useEffect(() => {
-    const target = editorWrapRef.current;
-    if (!target || !("ResizeObserver" in window)) return;
+    const editor = editorRef.current;
+    if (!editor) return;
 
-    const ro = new ResizeObserver(() => requestAnimationFrame(autosize));
-    ro.observe(target);
-    return () => ro.disconnect();
-  }, [autosize]);
+    // 이미지 업로드 훅 설정
+    editor.addHook(
+      "addImageBlobHook",
+      async (blob: Blob, callback: (url: string, altText?: string) => void) => {
+        try {
+          const file = blob as File;
+          const url = await uploadImage(file);
+          callback(url, "image");
+        } catch {
+          console.error("이미지 업로드에 실패했습니다.");
+        }
+      }
+    );
+
+    // 초기 실행 및 지연 실행 (에디터 렌더링 완료 대기)
+    removeDefaultText(editor);
+    const timer = setTimeout(() => removeDefaultText(editor), 100);
+    const timer2 = setTimeout(() => removeDefaultText(editor), 500);
+    const timer3 = setTimeout(() => removeDefaultText(editor), 1000);
+    const timer4 = setTimeout(() => removeDefaultText(editor), 2000);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(timer4);
+    };
+  }, [removeDefaultText]);
 
   return (
     <div
@@ -239,58 +197,35 @@ const EditorBlock = ({
         </div>
 
         {/* 편집 / 프리뷰 분리 */}
-        {isActive ? (
-          <div
-            ref={editorWrapRef}
-            className="w-full overflow-visible rounded-md border border-gray-200"
-          >
-            <MDEditor
-              value={block.content}
-              data-color-mode="light"
-              onChange={(val) => {
-                onChange(index, { content: val || "" });
-                requestAnimationFrame(autosize);
-              }}
-              height={editorHeight}
-              preview="edit"
-              visibleDragbar={false}
-              style={{
-                width: "100%",
-                border: "none",
-                overflow: "visible",
-                minHeight: `${editorHeight}px`,
-                maxHeight: "none",
-              }}
-              autoFocus
-              commandsFilter={commandsFilter}
-              textareaProps={{
-                onInput: () => requestAnimationFrame(autosize),
-                onPaste: (e) => {
-                  onPasteImage?.(block.id, e);
-                  requestAnimationFrame(autosize);
-                },
-                onDrop: (e) => {
-                  onDropImage?.(block.id, e);
-                  requestAnimationFrame(autosize);
-                },
-                onDragOver: (e) => {
-                  if (e.dataTransfer?.types?.includes("Files"))
-                    e.preventDefault();
-                },
-              }}
-            />
-          </div>
-        ) : (
-          <div data-color-mode="light">
-            <div className="w-full rounded-md border border-gray-200 p-3 min-h-[250px]  ">
-              <MDEditor.Markdown
-                source={block.content || ""}
-                data-color-mode="light"
-                className="!bg-white !text-black wmde-markdown-light"
-              />
-            </div>
-          </div>
-        )}
+        <div className="w-full rounded-md border border-gray-200">
+          <Editor
+            ref={(editor) => {
+              if (editor) {
+                const instance = editor.getInstance();
+                editorRef.current = instance;
+
+                // 에디터 인스턴스가 설정되는 즉시 기본 텍스트 제거
+                setTimeout(() => {
+                  removeDefaultText(instance);
+                }, 0);
+              } else {
+                editorRef.current = null;
+              }
+            }}
+            initialValue={block.content || ""}
+            onChange={() => {
+              const editor = editorRef.current;
+              if (editor) {
+                const markdown = editor.getMarkdown();
+                onChange(index, { content: markdown });
+              }
+            }}
+            height="300px"
+            initialEditType="markdown"
+            previewStyle="vertical"
+            usageStatistics={false}
+          />
+        </div>
       </div>
 
       {/* 체크리스트 */}
