@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node scripts/generate-sitemap.js && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "tailwind:init": "tailwindcss init -p",
     "msw:init": "msw init public --save",
-    "postinstall": "msw init public --save --no-open || true"
+    "postinstall": "msw init public --save --no-open || true",
+    "generate-sitemap": "node scripts/generate-sitemap.js"
   },
   "dependencies": {
     "@microsoft/fetch-event-source": "^2.0.1",
