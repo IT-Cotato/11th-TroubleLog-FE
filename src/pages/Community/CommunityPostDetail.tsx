@@ -626,8 +626,22 @@ export default function CommunityPostDetail() {
           try {
             const myDetail = await getPostDetail(effectiveId);
             const isDraft = (myDetail as any)?.completedAt == null;
-            if (isDraft) await loadMineDraft(effectiveId);
-            else await loadCommunity();
+            if (isDraft) {
+              await loadMineDraft(effectiveId);
+              return;
+            }
+
+            // 완료 문서이지만 비공개라면 커뮤니티 UX를 비활성화
+            if ((myDetail as any)?.isVisible === false) {
+              const vmMine = toPostDetailVM(myDetail as any, viewerId);
+              setPost(vmMine);
+              setIsLiked(vmMine.isLiked);
+              setLikeCounts(vmMine.likeCounts);
+              setIsCommunitySource(false);
+              return;
+            }
+
+            await loadCommunity();
           } catch {
             await loadCommunity();
           }

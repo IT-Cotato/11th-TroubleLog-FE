@@ -16,6 +16,7 @@ export type PostDetailServer = {
   title: string;
   introduction: string | null;
 
+  isVisible?: boolean;
   likeCount: number;
   commentCount: number;
   liked?: boolean | null;

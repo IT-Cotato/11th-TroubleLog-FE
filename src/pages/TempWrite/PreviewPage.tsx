@@ -8,17 +8,11 @@ import {
 import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
 import TagList from "@/entities/trouble/ui/TagList";
 import PostGuideMd from "@/entities/trouble/ui/PostGuideMd";
-import PostComment, {
-  type PostCommentProps,
-} from "@/entities/trouble/ui/PostComment";
 import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
 import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
 import useClickOutside from "@/hooks/useClickOutside";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
-import heartIcon from "@/assets/icons/heart.svg";
-import likeEmptyIcon from "@/assets/icons/like_empty.svg";
-import shareIcon from "@/assets/icons/share.svg";
 import { PATH } from "@/shared/config/paths";
 import { getCombinedDetail, getPostDetail } from "@/api/post.api";
 import type {
@@ -44,10 +38,6 @@ type PreviewState = {
   importance?: number;
   questions?: string[];
   contents?: GuideContent[][];
-  isLiked?: boolean;
-  likeCounts?: number;
-  commentCounts?: number;
-  comments?: PostCommentProps[];
   savePrefill?: {
     importance?: number;
     description?: string;
@@ -128,15 +118,6 @@ export default function PreviewPage() {
   const hasAnySection = questions.length > 0 && contents.length > 0;
   const safeDate = data.date ? ymd(new Date(data.date)) : ymd(new Date());
 
-  const seedComments = (data.comments ?? []).map((c) => ({
-    ...c,
-    isReply: !!c.isReply,
-  }));
-  const [isLiked, setIsLiked] = useState<boolean>(data.isLiked ?? false);
-  const [likeCounts, setLikeCounts] = useState<number>(data.likeCounts ?? 0);
-  const [commentInput, setCommentInput] = useState("");
-  const [comments, setComments] = useState<PostCommentProps[]>(seedComments);
-
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
@@ -182,45 +163,6 @@ export default function PreviewPage() {
     if (t) window.scrollTo({ top: t.offsetTop - 180, behavior: "smooth" });
   };
 
-  // 인터랙션
-  const handleToggleLike = () => {
-    setIsLiked((v) => !v);
-    setLikeCounts((c) => (isLiked ? Math.max(0, c - 1) : c + 1));
-  };
-  const handleEdit = (id: string, newContent: string) => {
-    setComments((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, content: newContent } : c))
-    );
-  };
-  const handleDelete = (id: string) => {
-    setComments((prev) => prev.filter((c) => c.id !== id && c.parentId !== id));
-  };
-  const handleReply = (parentId: string, replyContent: string) => {
-    const r: PostCommentProps = {
-      id: `${Date.now()}-r`,
-      name: base.authorName,
-      date: ymd(new Date()),
-      content: replyContent,
-      isMine: true,
-      isReply: true,
-      parentId,
-    };
-    setComments((prev) => [...prev, r]);
-  };
-  const handleCreateComment = () => {
-    const content = commentInput.trim();
-    if (!content) return;
-    const c: PostCommentProps = {
-      id: String(Date.now()),
-      name: base.authorName,
-      date: ymd(new Date()),
-      content,
-      isMine: true,
-      isReply: false,
-    };
-    setComments((prev) => [c, ...prev]);
-    setCommentInput("");
-  };
   const handleProfileClick = () => navigate(PATH.MYPAGE_BASE ?? "/");
 
   // 로딩/에러/빈데이터 처리
@@ -439,92 +381,6 @@ export default function PreviewPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* 좋아요/공유 */}
-                <div className="flex pt-[52px] pb-[20px] items-center self-stretch border-b border-gray1">
-                  <div className="flex items-center gap-[20px]">
-                    <button
-                      className="flex items-center gap-[8px]"
-                      onClick={handleToggleLike}
-                      aria-pressed={isLiked}
-                    >
-                      <img
-                        src={isLiked ? heartIcon : likeEmptyIcon}
-                        alt="like"
-                        className="w-10 h-10"
-                      />
-                      <span className="text-body-20-regular text-gray3">
-                        {likeCounts}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigator.share?.()}
-                      aria-label="공유"
-                    >
-                      <img src={shareIcon} alt="share" className="w-10 h-10" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 댓글 입력 */}
-                <div className="flex flex-col items-end gap-[12px] self-stretch">
-                  <div className="flex flex-col items-start gap-[36px] self-stretch">
-                    <h2 className="text-head-32-semibold">
-                      {comments.filter((c) => !c.isReply).length}개의 댓글
-                    </h2>
-                    <textarea
-                      value={commentInput}
-                      onChange={(e) => setCommentInput(e.target.value)}
-                      placeholder="댓글을 작성해주세요."
-                      className="flex pt-[28px] pl-[32px] pb-[130px] w-full resize-none rounded-[24px] bg-white shadow-card text-body-20-regular text-[#757575] focus:outline-none"
-                    />
-                  </div>
-                  <button
-                    onClick={handleCreateComment}
-                    disabled={!commentInput.trim()}
-                    className={`flex pt-[8px] pl-[32px] pb-[12px] pr-[31px] justify-center items-center rounded-[100px] text-head-20-semibold text-white transition-colors ${
-                      commentInput.trim() ? "bg-primary" : "bg-subColor1"
-                    }`}
-                  >
-                    작성하기
-                  </button>
-                </div>
-
-                {/* 댓글 목록 */}
-                <div className="flex flex-col items-end self-stretch">
-                  {comments
-                    .filter((c) => !c.isReply)
-                    .map((parent) => (
-                      <div key={parent.id} className="w-full">
-                        <PostComment
-                          {...parent}
-                          onEdit={(newContent) =>
-                            handleEdit(parent.id, newContent)
-                          }
-                          onDelete={() => handleDelete(parent.id)}
-                          onReply={(replyContent) =>
-                            handleReply(parent.id, replyContent)
-                          }
-                        />
-                        {comments
-                          .filter((c) => c.parentId === parent.id)
-                          .map((reply) => (
-                            <PostComment
-                              key={reply.id}
-                              {...reply}
-                              onEdit={(newContent) =>
-                                handleEdit(reply.id, newContent)
-                              }
-                              onDelete={() => handleDelete(reply.id)}
-                              onReply={(replyContent) =>
-                                handleReply(reply.id, replyContent)
-                              }
-                            />
-                          ))}
-                      </div>
-                    ))}
-                </div>
               </div>
             </section>
           </main>
@@ -592,12 +448,8 @@ function mapCombinedToPreviewState(
     authorFollowers: toInt(u.followerNum),
     authorBio: u.bio ?? "",
     isMine: true,
-    isLiked: !!d.liked,
-    likeCounts: d.likeCount ?? 0,
-    commentCounts: d.commentCount ?? 0,
     questions: questions.length ? questions : [d.title ?? "내용"],
     contents: questions.length ? contents : [[d.introduction ?? ""]],
-    comments: [],
   };
 }
 function mapPostToPreviewState(d: ViewPostResponse | any): PreviewState {
@@ -615,12 +467,7 @@ function mapPostToPreviewState(d: ViewPostResponse | any): PreviewState {
     authorFollowers: toInt(u.followerNum),
     authorBio: u.bio ?? "",
     isMine: true,
-    isLiked: !!d.liked,
-    likeCounts: d.likeCount ?? 0,
-    commentCounts: d.commentCount ?? 0,
-
     questions: questions.length ? questions : [d.title ?? "내용"],
     contents: questions.length ? contents : [[d.introduction ?? ""]],
-    comments: [],
   };
 }
