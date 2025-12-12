@@ -932,26 +932,15 @@ export default function FreeFormWritePage() {
     );
   }, []);
 
-  // 각 블록별 ref 콜백을 메모이제이션하여 불필요한 detach/attach 방지
-  const editorRefCallbacks = useMemo(() => {
-    const callbacks = new Map<number, (editor: any) => void>();
-    blocks.forEach((block) => {
-      callbacks.set(block.id, (editor: any) => {
-        if (editor) {
-          const instance = editor.getInstance();
-          editorRefs.current.set(block.id, instance);
-          setupImageUploadHook(instance);
-        } else {
-          editorRefs.current.delete(block.id);
-        }
-      });
-    });
-    return callbacks;
-  }, [blocks, setupImageUploadHook]);
+  // 각 블록별로 기본 텍스트 제거 처리 여부 추적
+  const processedBlocks = useRef<Set<number>>(new Set());
 
-  // 각 블록별로 기본 텍스트 제거 함수 생성 (초기값이 비어있을 때만 실행)
+  // 기본 텍스트 제거 함수 (에디터 인스턴스가 처음 생성될 때만 실행)
   const removeDefaultTextForBlock = useCallback(
     (blockId: number) => {
+      // 이미 처리한 블록은 건너뛰기
+      if (processedBlocks.current.has(blockId)) return;
+
       const block = blocks.find((b) => b.id === blockId);
       if (!block) return;
 
@@ -960,6 +949,7 @@ export default function FreeFormWritePage() {
 
       // 초기값이 비어있지 않으면 실행하지 않음 (데이터 손실 방지)
       if (block.content.trim() !== "") {
+        processedBlocks.current.add(blockId); // 처리 완료로 표시
         return;
       }
 
@@ -980,6 +970,7 @@ export default function FreeFormWritePage() {
         if (isDefaultText) {
           editor.setMarkdown("");
         }
+        processedBlocks.current.add(blockId); // 처리 완료로 표시
       } catch {
         // 에러 발생 시 무시
       }
@@ -987,35 +978,36 @@ export default function FreeFormWritePage() {
     [blocks]
   );
 
-  useEffect(() => {
-    // 각 블록에 대해 초기값이 비어있을 때만 기본 텍스트 제거
+  // 각 블록별 ref 콜백을 메모이제이션하여 불필요한 detach/attach 방지
+  const editorRefCallbacks = useMemo(() => {
+    const callbacks = new Map<number, (editor: any) => void>();
     blocks.forEach((block) => {
-      if (block.content.trim() === "") {
-        removeDefaultTextForBlock(block.id);
-      }
+      callbacks.set(block.id, (editor: any) => {
+        if (editor) {
+          const instance = editor.getInstance();
+          editorRefs.current.set(block.id, instance);
+          setupImageUploadHook(instance);
+
+          // 에디터 인스턴스가 처음 생성될 때만 기본 텍스트 제거 (1회만 실행)
+          if (
+            !processedBlocks.current.has(block.id) &&
+            block.content.trim() === ""
+          ) {
+            // 즉시 실행 및 지연 실행 (에디터 렌더링 완료 대기)
+            removeDefaultTextForBlock(block.id);
+            setTimeout(() => removeDefaultTextForBlock(block.id), 100);
+            setTimeout(() => removeDefaultTextForBlock(block.id), 500);
+          } else if (!processedBlocks.current.has(block.id)) {
+            // 초기값이 있으면 처리 완료로 표시
+            processedBlocks.current.add(block.id);
+          }
+        } else {
+          editorRefs.current.delete(block.id);
+        }
+      });
     });
-
-    // 초기 실행 및 지연 실행 (에디터 렌더링 완료 대기)
-    const timer = setTimeout(() => {
-      blocks.forEach((block) => {
-        if (block.content.trim() === "") {
-          removeDefaultTextForBlock(block.id);
-        }
-      });
-    }, 100);
-    const timer2 = setTimeout(() => {
-      blocks.forEach((block) => {
-        if (block.content.trim() === "") {
-          removeDefaultTextForBlock(block.id);
-        }
-      });
-    }, 500);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(timer2);
-    };
-  }, [blocks, removeDefaultTextForBlock]);
+    return callbacks;
+  }, [blocks, setupImageUploadHook, removeDefaultTextForBlock]);
 
   // Editor content 동기화
   useEffect(() => {
