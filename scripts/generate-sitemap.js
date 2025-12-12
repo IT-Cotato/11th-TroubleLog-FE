@@ -53,12 +53,18 @@ function createUrlEntry(
 }
 
 // API 호출 헬퍼
-async function fetchWithRetry(url, retries = 3) {
+async function fetchWithRetry(url, retries = 3, timeoutMs = 10_000) {
   for (let i = 0; i < retries; i++) {
     try {
-      const response = await fetch(url);
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), timeoutMs);
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(t);
       if (response.ok) {
         return await response.json();
+      }
+      if (i < retries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
       }
     } catch (error) {
       if (i === retries - 1) throw error;
