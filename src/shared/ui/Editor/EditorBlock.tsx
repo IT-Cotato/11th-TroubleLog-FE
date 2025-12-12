@@ -2,11 +2,12 @@ import "@toast-ui/editor/dist/toastui-editor.css";
 import { Editor } from "@toast-ui/react-editor";
 import type EditorInstance from "@toast-ui/editor";
 import { uploadImage } from "@/api/image.api";
+import { useRemoveDefaultText } from "@/shared/hooks/useRemoveDefaultText";
 
 import alertIcon from "@/assets/icons/alerticon.svg";
 import checkBoxIcon from "@/assets/icons/checkedbox.svg";
 import nonCheckBoxIcon from "@/assets/icons/noncheckedbox.svg";
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 
 export interface BlockData {
   id: number;
@@ -77,32 +78,7 @@ const EditorBlock = ({
   void _onDropImage;
 
   const editorRef = useRef<EditorInstance | null>(null);
-
-  // 에디터 내부 기본 텍스트 제거 함수
-  const removeDefaultText = useCallback((editor: EditorInstance) => {
-    try {
-      const currentMarkdown = editor.getMarkdown();
-      const defaultTexts = ["Write", "Preview", "Markdown", "WYSIWYG"];
-      const trimmedMarkdown = currentMarkdown.trim();
-
-      // 기본 텍스트만 있거나, 기본 텍스트로 시작하는 경우 제거
-      if (defaultTexts.some((defaultText) => trimmedMarkdown === defaultText)) {
-        editor.setMarkdown("");
-      } else if (
-        defaultTexts.some((defaultText) =>
-          trimmedMarkdown.startsWith(defaultText)
-        )
-      ) {
-        // 기본 텍스트로 시작하는 경우도 제거
-        const lines = trimmedMarkdown.split("\n");
-        if (lines.length > 0 && defaultTexts.includes(lines[0].trim())) {
-          editor.setMarkdown("");
-        }
-      }
-    } catch {
-      // 에러 발생 시 무시
-    }
-  }, []);
+  const removeDefaultText = useRemoveDefaultText(block.content);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -123,17 +99,14 @@ const EditorBlock = ({
     );
 
     // 초기 실행 및 지연 실행 (에디터 렌더링 완료 대기)
+    // 초기값이 비어있을 때만 실행되며, 1회만 실행됨
     removeDefaultText(editor);
     const timer = setTimeout(() => removeDefaultText(editor), 100);
     const timer2 = setTimeout(() => removeDefaultText(editor), 500);
-    const timer3 = setTimeout(() => removeDefaultText(editor), 1000);
-    const timer4 = setTimeout(() => removeDefaultText(editor), 2000);
 
     return () => {
       clearTimeout(timer);
       clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
     };
   }, [removeDefaultText]);
 
@@ -201,13 +174,7 @@ const EditorBlock = ({
           <Editor
             ref={(editor) => {
               if (editor) {
-                const instance = editor.getInstance();
-                editorRef.current = instance;
-
-                // 에디터 인스턴스가 설정되는 즉시 기본 텍스트 제거
-                setTimeout(() => {
-                  removeDefaultText(instance);
-                }, 0);
+                editorRef.current = editor.getInstance();
               } else {
                 editorRef.current = null;
               }

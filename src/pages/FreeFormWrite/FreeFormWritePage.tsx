@@ -927,67 +927,73 @@ export default function FreeFormWritePage() {
     );
   }, []);
 
-  // 에디터 내부 기본 텍스트 제거
-  const removeDefaultText = useCallback((editor: EditorInstance) => {
-    try {
-      const currentMarkdown = editor.getMarkdown();
-      const defaultTexts = ["Write", "Preview", "Markdown", "WYSIWYG"];
-      const trimmedMarkdown = currentMarkdown.trim();
+  // 각 블록별로 기본 텍스트 제거 함수 생성 (초기값이 비어있을 때만 실행)
+  const removeDefaultTextForBlock = useCallback(
+    (blockId: number) => {
+      const block = blocks.find((b) => b.id === blockId);
+      if (!block) return;
 
-      // 기본 텍스트만 있거나, 기본 텍스트로 시작하는 경우 제거
-      if (defaultTexts.some((defaultText) => trimmedMarkdown === defaultText)) {
-        editor.setMarkdown("");
-      } else if (
-        defaultTexts.some((defaultText) =>
-          trimmedMarkdown.startsWith(defaultText)
-        )
-      ) {
-        // 기본 텍스트로 시작하는 경우도 제거
-        const lines = trimmedMarkdown.split("\n");
-        if (lines.length > 0 && defaultTexts.includes(lines[0].trim())) {
+      const editor = editorRefs.current.get(blockId);
+      if (!editor) return;
+
+      // 초기값이 비어있지 않으면 실행하지 않음 (데이터 손실 방지)
+      if (block.content.trim() !== "") {
+        return;
+      }
+
+      try {
+        const currentMarkdown = editor.getMarkdown();
+        const defaultTexts = ["Write", "Preview", "Markdown", "WYSIWYG"];
+        const trimmedMarkdown = currentMarkdown.trim();
+
+        // 기본 텍스트만 있거나, 기본 텍스트로 시작하는 경우 제거
+        const isDefaultText =
+          defaultTexts.some((defaultText) => trimmedMarkdown === defaultText) ||
+          (defaultTexts.some((defaultText) =>
+            trimmedMarkdown.startsWith(defaultText)
+          ) &&
+            trimmedMarkdown.split("\n").length > 0 &&
+            defaultTexts.includes(trimmedMarkdown.split("\n")[0].trim()));
+
+        if (isDefaultText) {
           editor.setMarkdown("");
         }
+      } catch {
+        // 에러 발생 시 무시
       }
-    } catch {
-      // 에러 발생 시 무시
-    }
-  }, []);
+    },
+    [blocks]
+  );
 
   useEffect(() => {
-    // 모든 에디터 인스턴스에 대해 기본 텍스트 제거
-    editorRefs.current.forEach((editor) => {
-      removeDefaultText(editor);
+    // 각 블록에 대해 초기값이 비어있을 때만 기본 텍스트 제거
+    blocks.forEach((block) => {
+      if (block.content.trim() === "") {
+        removeDefaultTextForBlock(block.id);
+      }
     });
 
     // 초기 실행 및 지연 실행 (에디터 렌더링 완료 대기)
     const timer = setTimeout(() => {
-      editorRefs.current.forEach((editor) => {
-        removeDefaultText(editor);
+      blocks.forEach((block) => {
+        if (block.content.trim() === "") {
+          removeDefaultTextForBlock(block.id);
+        }
       });
     }, 100);
     const timer2 = setTimeout(() => {
-      editorRefs.current.forEach((editor) => {
-        removeDefaultText(editor);
+      blocks.forEach((block) => {
+        if (block.content.trim() === "") {
+          removeDefaultTextForBlock(block.id);
+        }
       });
     }, 500);
-    const timer3 = setTimeout(() => {
-      editorRefs.current.forEach((editor) => {
-        removeDefaultText(editor);
-      });
-    }, 1000);
-    const timer4 = setTimeout(() => {
-      editorRefs.current.forEach((editor) => {
-        removeDefaultText(editor);
-      });
-    }, 2000);
 
     return () => {
       clearTimeout(timer);
       clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
     };
-  }, [blocks, removeDefaultText]);
+  }, [blocks, removeDefaultTextForBlock]);
 
   // Editor content 동기화
   useEffect(() => {
@@ -1174,14 +1180,8 @@ export default function FreeFormWritePage() {
                   <Editor
                     ref={(editor) => {
                       if (editor) {
-                        const instance = editor.getInstance();
-                        editorRefs.current.set(block.id, instance);
-                        setupImageUploadHook(instance);
-
-                        // 에디터 인스턴스가 설정되는 즉시 기본 텍스트 제거
-                        setTimeout(() => {
-                          removeDefaultText(instance);
-                        }, 0);
+                        editorRefs.current.set(block.id, editor.getInstance());
+                        setupImageUploadHook(editor.getInstance());
                       } else {
                         editorRefs.current.delete(block.id);
                       }
