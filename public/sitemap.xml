@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  
+  <!-- 랜딩 페이지 (최우선) -->
+  <url>
+    <loc>https://troublog.com/</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- 커뮤니티 메인 페이지 -->
+  <url>
+    <loc>https://troublog.com/user/community</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 
+    동적 경로들은 빌드 시 또는 API를 통해 동적으로 생성해야 합니다.
+    
+    동적 경로 예시 (실제 데이터로 교체 필요):
+    - /user/project/{projectId} - 프로젝트 상세 페이지
+    - /user/community/{postId} - 커뮤니티 포스트 (ID 기반)
+    - /user/community/p/{slug} - 커뮤니티 포스트 (슬러그 기반)
+    - /user/mypage/{userId} - 사용자 마이페이지
+    
+    동적 생성 방법:
+    1. 빌드 스크립트로 API 호출하여 생성 (scripts/generate-sitemap.js 참고)
+    2. 서버 사이드에서 런타임 생성
+    3. 정기적으로 업데이트하는 크론 작업
+  -->
+
+</urlset>
+

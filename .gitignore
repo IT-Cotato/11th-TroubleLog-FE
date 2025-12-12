@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .env*
+
+# 빌드 시 동적으로 생성되는 파일
+public/sitemap.xml
