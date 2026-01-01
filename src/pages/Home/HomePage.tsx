@@ -12,7 +12,7 @@ import { getProjectList, postCreateProject } from "@/api/project.api";
 import type {
   ProjectListItem,
   CreateProjectRequest,
-} from "@/types/project.model";
+} from "@/models/project.model";
 import useTroubleCards from "@/features/mypage/useTroubleCards";
 import { PATH } from "@/shared/config/paths";
 import { useNavigate } from "react-router-dom";
@@ -216,7 +216,7 @@ export default function HomePage() {
         setPage(nextPage);
 
         if (!append || nextPage === 1) {
-          idSetRef.current = new Set(list.map((x) => x.id));
+          idSetRef.current = new Set(list.map((x: ProjectListItem) => x.id));
           setProjects(list);
         } else {
           const acc: ProjectListItem[] = [];

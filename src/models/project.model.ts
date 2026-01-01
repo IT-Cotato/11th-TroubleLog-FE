@@ -1,4 +1,4 @@
-import type { ApiResponse, PaginatedResponse } from "./common.model";
+import type { ApiResponse, PaginatedResponse } from "@/types/common.model";
 
 export interface CreateProjectRequest {
   name: string;

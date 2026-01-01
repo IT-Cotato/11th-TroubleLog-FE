@@ -2,7 +2,7 @@ import { useCallback, useRef } from "react";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import type { UserInfoData } from "@/models/user.model";
 import type { CommunityPostDetailServer } from "@/types/community.model";
-import type { ProjectDetail } from "@/types/project.model";
+import type { ProjectDetail } from "@/models/project.model";
 import { devLog } from "@/shared/utils/logger";
 
 /**

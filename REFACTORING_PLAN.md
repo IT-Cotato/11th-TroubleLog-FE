@@ -103,9 +103,13 @@
 현재 구조는 FSD (Feature-Sliced Design)를 따르고 있으나 일관성 개선 필요
 
 개선 사항:
-- [ ] 공통 타입 정의 위치 통일 (types/ vs models/)
-- [ ] API 응답 모델과 도메인 모델 분리 명확화
-- [ ] 컴포넌트 분리 기준 문서화
+- [x] 공통 타입 정의 위치 통일 (types/ vs models/)
+  - types/: 공통 타입, API 응답 타입, Navigation 타입, UI 타입
+  - models/: 도메인 모델 (비즈니스 로직 관련)
+- [x] API 응답 모델과 도메인 모델 분리 명확화
+  - 문서화 완료: docs/FOLDER_STRUCTURE.md
+- [x] 컴포넌트 분리 기준 문서화
+  - 폴더 구조 가이드 작성 완료
 ```
 
 ---
