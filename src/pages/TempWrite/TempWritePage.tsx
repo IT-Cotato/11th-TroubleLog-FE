@@ -1021,17 +1021,17 @@ const TempWritePage = () => {
       <div className="w-full max-w-[1680px] sm:pl-64 lg:pl-64 pt-8 sm:pt-12">
         <div className="mx-auto w-full max-w-[1680px] flex flex-col gap-8 sm:gap-9">
           {showAlert && (
-            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
               제목, 프로젝트, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요.
             </div>
           )}
           {showSaveAlert && (
-            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[92vw] bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
               저장되었습니다.
             </div>
           )}
           {showCancelAlert && (
-            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow">
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
               요약 작업이 중단되었어요.
             </div>
           )}
