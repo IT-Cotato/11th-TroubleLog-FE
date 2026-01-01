@@ -3,6 +3,7 @@ import getAPIResponseData from "@/utils/getAPIResponseData";
 import type { UserInfoData } from "@/models/user.model";
 import type { CommunityPostDetailServer } from "@/types/community.model";
 import type { ProjectDetail } from "@/types/project.model";
+import { devLog } from "@/shared/utils/logger";
 
 /**
  * 링크 hover 시 데이터 프리페칭을 위한 훅
@@ -80,7 +81,7 @@ export function usePrefetch() {
       }
     } catch (error) {
       // 프리페치 실패는 조용히 무시 (선택적 기능)
-      console.debug("Prefetch failed for path:", path, error);
+      devLog.debug("Prefetch failed for path:", path, error);
     }
   }, []);
 

@@ -476,9 +476,10 @@ export default function HomePage() {
                     onClick={() => {
                       const ownerId = card.authorId ?? undefined;
 
-                      // 작성중 카드: 이어서 작성하기 (템플릿에 맞게 수정 가능)
+                      // 작성중 카드: 이어서 작성하기
+                      // 템플릿 타입에 따라 TEMP_WRITING 또는 FREEFORM_WRITING으로 이동
+                      // 현재는 TEMP_WRITING으로 이동하며, 상세 페이지에서 템플릿 타입에 따라 분기 처리됨
                       if (kind === "draft") {
-                        // TODO: 실제 이어쓰기 라우팅 규칙에 맞게 조정
                         navigate(PATH.TEMP_WRITING, {
                           state: {
                             from: "home",

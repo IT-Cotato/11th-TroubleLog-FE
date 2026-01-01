@@ -8,6 +8,7 @@ import { PATH } from "@/shared/config/paths";
 import { useAuthStore } from "@/store/auth";
 import { applyAuth } from "@/utils/applyAuth";
 import { handleLoginSuccess } from "@/utils/handleLoginSuccess";
+import { devLog, errorLog } from "@/shared/utils/logger";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -31,13 +32,13 @@ const LoginPage = () => {
 
         // 보안: 다른 오리진은 무시
         if (u.origin !== window.location.origin) {
-          console.debug("[LoginPage] next origin mismatch:", u.origin);
+          devLog.debug("[LoginPage] next origin mismatch:", u.origin);
         } else {
           const accessToken = u.searchParams.get("accessToken");
           const userIdStr = u.searchParams.get("userId");
 
           if (accessToken && userIdStr) {
-            console.debug("[LoginPage] applying token from next");
+            devLog.debug("[LoginPage] applying token from next");
             applyAuth(accessToken);
             const { setUser } = useAuthStore.getState();
             setUser({ userId: Number(userIdStr) });
@@ -53,7 +54,7 @@ const LoginPage = () => {
           }
         }
       } catch (err) {
-        console.debug("[LoginPage] next parse failed:", err);
+        devLog.debug("[LoginPage] next parse failed:", err);
       }
     }
 
@@ -121,7 +122,7 @@ const LoginPage = () => {
         redirectTo: next, // 없으면 HOME으로
       });
     } catch (error: any) {
-      console.error("로그인 실패:", error);
+      errorLog.error("로그인 실패:", error);
 
       // 서버 에러 메시지 우선 사용
       const serverMessage =

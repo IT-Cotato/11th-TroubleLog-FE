@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
+import { devLog, errorLog } from "@/shared/utils/logger";
 import {
   KAKAO_REST_KEY,
   KAKAO_REDIRECT_URI,
@@ -51,21 +52,21 @@ const Oauth = () => {
         });
 
         const profile = userRes.data;
-        console.log("카카오 사용자 정보:", profile);
+        devLog.log("카카오 사용자 정보:", profile);
 
         // 필요하면 사용자 정보 저장..?
         localStorage.setItem("kakao_user", JSON.stringify(profile));
 
         navigate(PATH.SIGNUP_OAUTH);
       } catch (error) {
-        console.error("카카오 로그인 오류:", error);
+        errorLog.error("카카오 로그인 오류:", error);
         navigate("/");
       }
     };
     if (code) {
       getTokenAndUserInfo();
     } else {
-      console.error("Authorization code not found in URL");
+      errorLog.error("Authorization code not found in URL");
       navigate("/");
     }
   }, [navigate]);

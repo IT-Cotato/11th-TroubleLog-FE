@@ -4,6 +4,7 @@ import { useAuthHydrated, useIsLoggedIn, useViewerId } from "@/store/auth";
 import { startRefresh } from "@/api/axios";
 import { useNotificationStore } from "@/store/notification";
 import { isAuthCallbackPath } from "@/shared/lib/auth-route";
+import { devLog } from "@/shared/utils/logger";
 
 // 1회 리프레시(전역 가드/404 네비 방지 플래그 부여)
 async function tryRefreshOnce() {
@@ -48,8 +49,10 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
         clearTimeout(connectTimerRef.current);
         connectTimerRef.current = null;
       }
-      if (import.meta.env.DEV)
+      // 개발 환경에서만 디버그 로그 출력
+      if (import.meta.env.DEV) {
         console.debug("[SSE] skipped on auth callback:", pathname);
+      }
       return;
     }
 
@@ -90,14 +93,14 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
         {
           onOpen: () => {
             connectedRef.current = true;
-            console.log("[SSE] connected");
+            devLog.log("[SSE] connected");
           },
           onMessage: (payload) => {
             // if (!isAlertPayload(payload)) return;
             useNotificationStore.getState().pushFromSSE(payload);
           },
           onError: (e) => {
-            console.warn("[SSE] error", e);
+            devLog.warn("[SSE] error", e);
             connectedRef.current = false;
           },
           onUnauthorized: async () => {

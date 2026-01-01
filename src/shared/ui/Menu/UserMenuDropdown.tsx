@@ -15,7 +15,7 @@ export default function UserMenuDropdown({
   const handleLogout = async () => {
     try {
       const result = await postLogout();
-      console.log("로그아웃 응답:", result);
+      // 로그아웃 성공
     } catch (error) {
       console.error("로그아웃 실패:", error);
     } finally {
