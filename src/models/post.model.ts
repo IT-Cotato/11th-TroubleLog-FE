@@ -58,6 +58,17 @@ export interface PostContentDto {
   sequence: number;
 }
 
+// 사용자 정보 DTO (상세 응답에 포함될 수 있음)
+export interface UserInfoResDto {
+  userId: number;
+  nickname: string;
+  profileUrl: string | null;
+  bio: string | null;
+  followerNum: number;
+  followingNum: number;
+  isFollowed: boolean;
+}
+
 // 상세 응답(원본)
 export interface ViewPostResponse extends PostBasicResFields, PostServerMeta {
   isDeleted: boolean;
@@ -65,6 +76,10 @@ export interface ViewPostResponse extends PostBasicResFields, PostServerMeta {
   contents: PostContent[];
   checkListError: number[];
   checkListReason: number[];
+  // 선택적 필드 (API 응답에 따라 포함될 수 있음)
+  userInfoResDto?: UserInfoResDto | null;
+  liked?: boolean | null;
+  thumbnailUrl?: string | null;
 }
 
 // 생성/수정

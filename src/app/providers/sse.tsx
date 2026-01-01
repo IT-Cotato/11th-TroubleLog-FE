@@ -86,7 +86,7 @@ export default function AlertSSEProvider({ children }: PropsWithChildren) {
       const curToken = localStorage.getItem("accessToken") ?? "";
       const envType =
         localStorage.getItem("EnvType") ??
-        (import.meta as any)?.env?.VITE_ENV_TYPE ??
+        import.meta.env.VITE_ENV_TYPE ??
         "LOCAL";
 
       const close = connectAlertSSE(

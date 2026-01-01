@@ -1,50 +1,10 @@
 import type { CommunityPostDetailProps } from "@/pages/Community/CommunityPostDetail";
+import type { ViewPostResponse } from "@/models/post.model";
 
 // getPostDetail의 data 형태(래퍼 제거 후)
-export type PostDetailServer = {
-  userInfoResDto?: {
-    userId: number;
-    nickname: string;
-    profileUrl: string | null;
-    bio: string | null;
-    followerNum: number;
-    followingNum: number;
-    isFollowed: boolean;
-  } | null;
-
-  id: number;
-  title: string;
-  introduction: string | null;
-
-  isVisible?: boolean;
-  likeCount: number;
-  commentCount: number;
-  liked?: boolean | null;
-
-  isSummaryCreated: boolean;
-  postStatus: string;
-  starRating: number | string;
-  templateType?: "FREE_FORM" | "GUIDELINE" | string;
-
-  checklistError: number[];
-  checklistReason: number[];
-
-  createdAt: string;
-  updatedAt: string;
-  completedAt: string | null;
-
-  errorTag: string;
-  postTags: string[];
-
-  contents: Array<{
-    id: number;
-    subTitle: string;
-    body: string;
-    sequence: number;
-  }>;
-
-  thumbnailUrl?: string | null;
-};
+// ViewPostResponse와 호환되는 타입이지만, mapper에서 사용하기 위해 별도로 정의
+// 실제로는 ViewPostResponse를 사용하지만, 하위 호환성을 위해 유지
+export type PostDetailServer = ViewPostResponse;
 
 // ISO -> "YY.MM.DD"
 const isoToYYMMDD = (iso?: string) => {
@@ -124,7 +84,7 @@ export function toPostDetailVM(
 
     isFollowed: author?.isFollowed ?? false,
 
-    checklistError: src.checklistError ?? [],
-    checklistReason: src.checklistReason ?? [],
+    checklistError: src.checkListError ?? [],
+    checklistReason: src.checkListReason ?? [],
   };
 }

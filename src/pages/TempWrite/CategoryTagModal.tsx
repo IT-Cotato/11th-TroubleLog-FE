@@ -33,17 +33,27 @@ const UI_TO_API: Record<UiTagCategory, ApiTagCategory> = {
 };
 
 // string[]
-function normalizeTagList(data: any): string[] {
+function normalizeTagList(data: unknown): string[] {
   if (!data) return [];
   if (Array.isArray(data)) {
     if (data.length === 0) return [];
     if (typeof data[0] === "string") return data as string[];
-    return data.map((t: any) => t?.label ?? t?.name ?? String(t));
+    return data.map((t: unknown) => {
+      if (typeof t === "object" && t !== null) {
+        const obj = t as { label?: string; name?: string };
+        return obj?.label ?? obj?.name ?? String(t);
+      }
+      return String(t);
+    });
   }
-  if (Array.isArray((data as any).tags))
-    return normalizeTagList((data as any).tags);
-  if (Array.isArray((data as any).data))
-    return normalizeTagList((data as any).data);
+
+  // 객체 형태의 응답 처리
+  if (typeof data === "object" && data !== null) {
+    const obj = data as { tags?: unknown; data?: unknown };
+    if (Array.isArray(obj.tags)) return normalizeTagList(obj.tags);
+    if (Array.isArray(obj.data)) return normalizeTagList(obj.data);
+  }
+
   return [];
 }
 

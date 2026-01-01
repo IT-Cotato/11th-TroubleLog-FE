@@ -63,7 +63,7 @@ export const toTroublogCardVM = (t: TroubleListItem): TroublogCardVM => {
     id: t.id,
     isMine: true, // 서버에 소유자 정보가 오면 교체
     status: mapStatus(t.status),
-    visibility: mapVisibility(t.isVisible as any),
+    visibility: mapVisibility(t.isVisible),
     isVisible: typeof t.isVisible === "boolean" ? t.isVisible : undefined,
     title: t.title ?? "",
     errorCategory: t.error ?? "",
