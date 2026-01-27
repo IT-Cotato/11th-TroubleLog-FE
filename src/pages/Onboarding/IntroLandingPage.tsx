@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import HeaderLogoOnly from "@/layouts/Header/HeaderLogoOnly";
 import { FiChevronDown } from "react-icons/fi";
+import { AnswerBlock, FAQSection } from "@/shared/ui/GEO";
 
 import logo from "@/assets/icons/logo.svg";
 import HeroMock from "@/assets/images/intro/hero_mock.png";
@@ -97,6 +98,36 @@ export default function IntroLandingPage() {
                 그저 넘겼던 문제 해결 과정을 이제는 구조적으로 기록하고,
                 이력서, 면접, 회고록, 이슈관리에 바로 활용할 수 있는 요약본까지 자동 생성해드립니다.`}
               </p>
+
+              {/* GEO: Answer Block */}
+              <div className="mt-8 max-w-4xl mx-auto">
+                <AnswerBlock
+                  title="TrouBlog란?"
+                  summary="TrouBlog는 개발자가 트러블슈팅 경험을 체계적으로 기록하고, 이를 다양한 형식(이력서, 면접 준비, 회고록, 이슈 관리)으로 자동 요약해주는 플랫폼입니다. 문제 해결 과정을 단순히 기록하는 것을 넘어, 성장으로 이어지는 가치 있는 문서로 변환합니다."
+                  keyPoints={[
+                    "트러블슈팅 경험을 구조적으로 기록",
+                    "가이드 템플릿과 자유 템플릿으로 다양한 형식 지원",
+                    "이력서, 면접, 회고록, 이슈 관리용 자동 요약 생성",
+                    "커뮤니티를 통한 지식 공유 및 학습",
+                    "프로젝트별 트러블슈팅 관리 및 통계 제공",
+                  ]}
+                  lastUpdatedISO={new Date().toISOString()}
+                  author={{
+                    name: "TrouBlog Team",
+                    organization: "TrouBlog",
+                  }}
+                  sources={[
+                    {
+                      label: "커뮤니티 둘러보기",
+                      href: `${window.location.origin}/user/community`,
+                    },
+                    {
+                      label: "로그인",
+                      href: `${window.location.origin}/login`,
+                    },
+                  ]}
+                />
+              </div>
 
               {/* 스크롤 버튼 (아랫단으로만 이동) */}
               <div className="mt-8">
@@ -208,6 +239,42 @@ export default function IntroLandingPage() {
               alt="노트북 목업"
               className="w-30 h-auto pb-20"
               loading="lazy"
+            />
+          </div>
+        </section>
+
+        {/* ================== 5) GEO: FAQ Section ================== */}
+        <section className="py-16 sm:py-20 lg:py-28 bg-gray-50">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 md:px-8">
+            <FAQSection
+              title="TrouBlog에 대해 자주 묻는 질문"
+              items={[
+                {
+                  question: "TrouBlog는 무엇인가요?",
+                  answer:
+                    "TrouBlog는 개발자가 트러블슈팅 경험을 체계적으로 기록하고, 이를 다양한 형식으로 자동 요약해주는 플랫폼입니다. 문제 해결 과정을 기록하여 이력서, 면접 준비, 회고록, 이슈 관리 등에 바로 활용할 수 있습니다.",
+                },
+                {
+                  question: "어떤 형식으로 기록할 수 있나요?",
+                  answer:
+                    "가이드 템플릿과 자유 템플릿 두 가지 형식을 제공합니다. 가이드 템플릿은 체크리스트와 질문-답변 형식으로 구조화된 기록을, 자유 템플릿은 자유로운 형식의 글 작성을 지원합니다.",
+                },
+                {
+                  question: "자동 요약 기능은 어떻게 작동하나요?",
+                  answer:
+                    "기록한 트러블슈팅을 기반으로 이력서용, 면접 준비용, 회고록용, 이슈 관리용 등 다양한 형식의 요약본을 자동으로 생성해드립니다. 각 형식에 맞는 핵심 내용을 추출하여 정리합니다.",
+                },
+                {
+                  question: "기록한 내용을 공유할 수 있나요?",
+                  answer:
+                    "네, 커뮤니티 기능을 통해 다른 개발자들과 트러블슈팅 경험을 공유할 수 있습니다. 공개 설정을 통해 원하는 포스트만 공유할 수 있으며, 좋아요와 댓글 기능으로 소통할 수 있습니다.",
+                },
+                {
+                  question: "프로젝트별로 관리할 수 있나요?",
+                  answer:
+                    "프로젝트 폴더를 생성하여 관련된 트러블슈팅을 그룹화하여 관리할 수 있습니다. 프로젝트별 통계와 필터링 기능을 제공하여 효율적으로 관리할 수 있습니다.",
+                },
+              ]}
             />
           </div>
         </section>
