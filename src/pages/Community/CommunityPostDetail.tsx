@@ -34,7 +34,6 @@ import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
 import { postFollow, postUnfollow } from "@/api/user.api";
 import { extractIdFromSlug, makePostSlug } from "@/shared/lib/slug";
-import { AnswerBlock, FAQSection } from "@/shared/ui/GEO";
 
 export interface CommunityPostDetailProps {
   errorType: string;
@@ -70,7 +69,6 @@ export default function CommunityPostDetail() {
   const navigate = useNavigate();
 
   const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
-  const [postCompletedAtISO, setPostCompletedAtISO] = useState<string>("");
   const [loading, setLoading] = useState(true);
   type LoadErr = { status?: number; message: string };
   const [loadError, setLoadError] = useState<LoadErr | null>(null);
@@ -257,7 +255,7 @@ export default function CommunityPostDetail() {
       .slice()
       .sort(
         (a: DetailContentItem, b: DetailContentItem) =>
-          (a.sequence ?? 0) - (b.sequence ?? 0),
+          (a.sequence ?? 0) - (b.sequence ?? 0)
       )
       .map((c: DetailContentItem, i: number) => ({
         id: c.id ?? i,
@@ -294,7 +292,7 @@ export default function CommunityPostDetail() {
       .slice()
       .sort(
         (a: DetailContentItem, b: DetailContentItem) =>
-          (a.sequence ?? 0) - (b.sequence ?? 0),
+          (a.sequence ?? 0) - (b.sequence ?? 0)
       )
       .map((c: DetailContentItem, i: number) => ({
         id: c.id ?? i,
@@ -378,7 +376,7 @@ export default function CommunityPostDetail() {
       showToast(
         ok
           ? "링크가 복사되었어요!"
-          : "복사에 실패했어요. 주소창에서 복사해주세요.",
+          : "복사에 실패했어요. 주소창에서 복사해주세요."
       );
     } catch {
       showToast("복사에 실패했어요. 주소창에서 복사해주세요.");
@@ -389,7 +387,7 @@ export default function CommunityPostDetail() {
   const loadComments = async (
     id: number,
     page1: number,
-    currentViewerId: number | null,
+    currentViewerId: number | null
   ) => {
     setCLoading(true);
     try {
@@ -405,7 +403,7 @@ export default function CommunityPostDetail() {
       setPost((prev) =>
         prev
           ? { ...prev, commentCounts: resp.totalElements ?? prev.commentCounts }
-          : prev,
+          : prev
       );
     } finally {
       setCLoading(false);
@@ -436,9 +434,6 @@ export default function CommunityPostDetail() {
       if (!communityData) throw new Error("빈 응답입니다.");
       const vm = toCommunityPostVM(communityData, detailCtx.viewerId);
       setPost(vm);
-      setPostCompletedAtISO(
-        communityData.completedAt || new Date().toISOString(),
-      );
       setIsLiked(vm.isLiked);
       setLikeCounts(vm.likeCounts);
       setIsCommunitySource(true);
@@ -459,7 +454,6 @@ export default function CommunityPostDetail() {
       // 내 상세로 화면 세팅
       const vmMine = toPostDetailVM(myDetail as any, detailCtx.viewerId);
       setPost(vmMine);
-      setPostCompletedAtISO(myDetail.completedAt || new Date().toISOString());
       setIsLiked(vmMine.isLiked);
       setLikeCounts(vmMine.likeCounts);
       setIsCommunitySource(false);
@@ -475,7 +469,7 @@ export default function CommunityPostDetail() {
         const ok = window.confirm(
           tt === "FREE_FORM" || tt === "FREEFORM"
             ? "이 문서는 자유형식 글 작성 중이에요. 이어서 작성할까요?"
-            : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?",
+            : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?"
         );
 
         if (ok) {
@@ -529,9 +523,6 @@ export default function CommunityPostDetail() {
             // 완료 문서 비공개 → 내 상세 화면으로만 세팅
             const vmMine = toPostDetailVM(myDetail as any, viewerId);
             setPost(vmMine);
-            setPostCompletedAtISO(
-              myDetail.completedAt || new Date().toISOString(),
-            );
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
             setIsCommunitySource(false); // 좋아요/댓글 비활성
@@ -552,9 +543,6 @@ export default function CommunityPostDetail() {
             // 완료 문서면 내 상세 화면으로만 세팅
             const vmMine = toPostDetailVM(myDetail as any, viewerId);
             setPost(vmMine);
-            setPostCompletedAtISO(
-              myDetail.completedAt || new Date().toISOString(),
-            );
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
             setIsCommunitySource(false); // 좋아요/댓글 비활성
@@ -626,9 +614,6 @@ export default function CommunityPostDetail() {
             const myDetail = await getPostDetail(effectiveId);
             const vmMine = toPostDetailVM(myDetail as any, viewerId);
             setPost(vmMine);
-            setPostCompletedAtISO(
-              myDetail.completedAt || new Date().toISOString(),
-            );
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
             setIsCommunitySource(false);
@@ -695,7 +680,7 @@ export default function CommunityPostDetail() {
 
     const canonical =
       PATH.COMMUNITY_POST_SLUG(
-        makePostSlug(post.title, postId ?? effectiveId),
+        makePostSlug(post.title, postId ?? effectiveId)
       ) + window.location.search;
 
     if (!slug || slug !== makePostSlug(post.title, effectiveId)) {
@@ -738,7 +723,7 @@ export default function CommunityPostDetail() {
     } catch (err) {
       console.error(err);
       alert(
-        "수정 화면으로 이동하기 위한 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
+        "수정 화면으로 이동하기 위한 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
       );
       navigatingRef.current = false; // 실패 시에만 잠금 해제
     }
@@ -816,7 +801,7 @@ export default function CommunityPostDetail() {
     const optimistic = makeOptimisticComment({ contents });
     setComments((prev) => [optimistic, ...prev]);
     setPost((p) =>
-      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p,
+      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p
     );
     setCommentInput("");
 
@@ -838,9 +823,7 @@ export default function CommunityPostDetail() {
     } catch {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       setPost((p) =>
-        p
-          ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) }
-          : p,
+        p ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) } : p
       );
       setCommentInput(contents);
     } finally {
@@ -861,7 +844,7 @@ export default function CommunityPostDetail() {
       const created = await replyCommunityComment(
         effectiveId,
         Number(parentId),
-        { contents },
+        { contents }
       );
       const mapped = toPostComment(created, detailCtx.viewerId, {
         isReply: true,
@@ -895,8 +878,8 @@ export default function CommunityPostDetail() {
       const vm = toPostComment(updated, detailCtx.viewerId);
       setComments((prev) =>
         prev.map((c) =>
-          c.id === id ? { ...c, content: vm.content, date: vm.date } : c,
-        ),
+          c.id === id ? { ...c, content: vm.content, date: vm.date } : c
+        )
       );
     } catch (e) {
       console.error(e);
@@ -912,7 +895,7 @@ export default function CommunityPostDetail() {
       setPost((prev) =>
         prev
           ? { ...prev, commentCounts: Math.max(0, prev.commentCounts - 1) }
-          : prev,
+          : prev
       );
     } catch (e) {
       console.error(e);
@@ -924,7 +907,7 @@ export default function CommunityPostDetail() {
     if (!Number.isFinite(effectiveId)) return;
     if (
       !window.confirm(
-        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다.",
+        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
       )
     )
       return;
@@ -943,7 +926,7 @@ export default function CommunityPostDetail() {
       console.error(err);
       alert(
         err?.response?.data?.message ??
-          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
       );
     } finally {
       setDeleting(false);
@@ -988,7 +971,7 @@ export default function CommunityPostDetail() {
             isFollowed: true,
             authorFollowers: (prev.authorFollowers ?? 0) + 1,
           }
-        : prev,
+        : prev
     );
 
     try {
@@ -1001,7 +984,7 @@ export default function CommunityPostDetail() {
               isFollowed: false,
               authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1),
             }
-          : prev,
+          : prev
       );
       console.error("팔로우 실패", e);
     }
@@ -1016,7 +999,7 @@ export default function CommunityPostDetail() {
             isFollowed: false,
             authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1),
           }
-        : prev,
+        : prev
     );
 
     try {
@@ -1029,7 +1012,7 @@ export default function CommunityPostDetail() {
               isFollowed: true,
               authorFollowers: (prev.authorFollowers ?? 0) + 1,
             }
-          : prev,
+          : prev
       );
       console.error("언팔로우 실패", e);
     }
@@ -1183,33 +1166,6 @@ export default function CommunityPostDetail() {
                   <div className="text-head-48 break-words">{post.title}</div>
                 </div>
 
-                {/* GEO: Answer Block */}
-                {post.questions.length > 0 && (
-                  <div className="w-full mt-6">
-                    <AnswerBlock
-                      title={post.title}
-                      summary={`${post.errorType} 관련 문제를 해결하기 위한 트러블슈팅 가이드입니다. ${post.questions[0] ? `${post.questions[0]}에 대한 해결 방법과 과정을 상세히 기록했습니다.` : "단계별 문제 해결 과정을 제공합니다."}`}
-                      keyPoints={post.questions
-                        .slice(0, 5)
-                        .map((q, idx) => `${idx + 1}. ${q}`)}
-                      lastUpdatedISO={
-                        postCompletedAtISO || new Date().toISOString()
-                      }
-                      author={{
-                        name: post.authorName,
-                      }}
-                      sources={
-                        post.tags.length > 0
-                          ? post.tags.slice(0, 3).map((tag) => ({
-                              label: `${tag} 관련 문서`,
-                              href: `${window.location.origin}/user/community?tag=${encodeURIComponent(tag)}`,
-                            }))
-                          : []
-                      }
-                    />
-                  </div>
-                )}
-
                 {/* 태그 & 작성일 */}
                 <div className="flex flex-wrap items-center gap-[12px] sm:gap-[16px]">
                   <TagList tags={post.tags} variant="post" />
@@ -1276,43 +1232,6 @@ export default function CommunityPostDetail() {
                     />
                   </div>
                 ))}
-
-                {/* GEO: FAQ Section */}
-                {post.questions.length > 0 && (
-                  <FAQSection
-                    title="이 트러블슈팅에 대한 질문"
-                    items={post.questions.map((question, idx) => {
-                      // 해당 질문의 내용 추출 (텍스트만)
-                      const content = post.contents[idx];
-                      const textContent = Array.isArray(content)
-                        ? content
-                            .map((item) => {
-                              if (typeof item === "string") return item;
-                              if (
-                                typeof item === "object" &&
-                                item.type === "image"
-                              ) {
-                                return ""; // 이미지는 제외
-                              }
-                              return "";
-                            })
-                            .filter(Boolean)
-                            .join(" ")
-                        : "";
-
-                      // 첫 200자만 추출
-                      const answer =
-                        textContent.length > 200
-                          ? `${textContent.slice(0, 200)}...`
-                          : textContent || "상세 내용은 본문을 참고해주세요.";
-
-                      return {
-                        question: `${question}에 대한 해결 방법은 무엇인가요?`,
-                        answer: answer,
-                      };
-                    })}
-                  />
-                )}
 
                 {/* 작성자 정보 카드 */}
                 <div className="flex py-[24px] sm:py-[32px] px-5 sm:px-[40px] flex-col items-start gap-[10px] self-stretch rounded-[24px] sm:rounded-[36px] bg-[#F2F2F2]">
@@ -1477,7 +1396,7 @@ export default function CommunityPostDetail() {
                       loadComments(
                         effectiveId,
                         cPage,
-                        detailCtx.viewerId ?? null,
+                        detailCtx.viewerId ?? null
                       )
                     }
                     className={`mt-4 px-6 py-2 rounded-full text-white ${
