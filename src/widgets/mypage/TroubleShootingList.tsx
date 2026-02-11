@@ -10,9 +10,17 @@ import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 import { makePostSlug } from "@/shared/lib/slug";
 import { mapSummaryType } from "@/entities/trouble/lib/troubleMapping";
 
+import type { TroubleShootingCardProps } from "@/entities/trouble/ui/TroubleShootingCard";
+import type { TroublogCardProps } from "@/entities/trouble/ui/TroublogCard";
+
 interface OutletContextType {
   isMyPage: boolean;
-  cards: any[];
+  cards: (TroubleShootingCardProps & {
+    summaries?: Array<{
+      summaryId?: number;
+      summaryType?: string;
+    }>;
+  })[];
   isLoading: boolean;
   error: string | null;
   hasNext: boolean;
@@ -77,7 +85,7 @@ const TroubleShootingList = () => {
       return tagFiltered.filter((c) => {
         if (c.status !== "created") return false;
 
-        const summaries = (c as any).summaries;
+        const summaries = c.summaries;
         return Array.isArray(summaries) && summaries.length > 0;
       });
     }
@@ -89,23 +97,26 @@ const TroubleShootingList = () => {
   const sortedCards = useMemo(() => {
     // 요약본 탭 + 내 마이페이지일 때만 flatten
     if (isMyPage && selectedStatus === "created") {
-      const flat: any[] = [];
+      const flat: TroubleShootingCardProps[] = [];
 
       for (const post of statusFiltered) {
-        const summaries = Array.isArray((post as any).summaries)
-          ? (post as any).summaries
-          : [];
+        const summaries = Array.isArray(post.summaries) ? post.summaries : [];
 
         // summaries가 여러 개면 post를 복제해서 summaryId/summaryType만 바꿔줌
         for (const summary of summaries) {
-          flat.push({
-            ...post,
-            summaryId: summary.summaryId,
-            summaryType: summary.summaryType,
-            summaryCreatedAt: summary.summaryCreatedAt,
-            // 필요하면 summary 자체를 붙여놓을 수도 있음
-            summary,
-          });
+          if (summary && typeof summary === "object") {
+            const summaryObj = summary as {
+              summaryId?: number;
+              summaryType?: string;
+              summaryCreatedAt?: string;
+            };
+            flat.push({
+              ...post,
+              summaryId: summaryObj.summaryId,
+              summaryType: summaryObj.summaryType,
+              // summaryCreatedAt은 TroubleShootingCardProps에 없으므로 제거
+            });
+          }
         }
       }
 
@@ -170,13 +181,15 @@ const TroubleShootingList = () => {
         )}
 
         {sortedCards.map((card) => {
-          // 1) 기본 VM 생성
-          const baseVm = mapToTroubleShootingCard(card);
+          // 1) 기본 VM 생성 - card는 TroublogCardProps 타입이므로 변환 필요
+          const baseVm = mapToTroubleShootingCard(
+            card as unknown as TroublogCardProps
+          );
 
           // 2) summaryType을 서버 raw 값(or 기존 값)에서 한글 라벨로 매핑
           const summaryTypeLabel = mapSummaryType(
             // flatten된 요약본 카드라면 card.summaryType에 서버 enum(RESUME 등)이 들어있음
-            (card as any).summaryType ?? baseVm.summaryType
+            card.summaryType ?? baseVm.summaryType
           );
 
           const vm = {
@@ -186,7 +199,7 @@ const TroubleShootingList = () => {
 
           return (
             <TroubleShootingCard
-              key={(card as any).summaryId ?? card.id} // 요약본 탭에서 summaryId 기준으로 유니크 키 주면 더 안전
+              key={card.summaryId ?? String(card.id)} // 요약본 탭에서 summaryId 기준으로 유니크 키 주면 더 안전
               {...vm}
               onDeleted={handleDeleted}
               onClick={() => {
@@ -194,8 +207,8 @@ const TroubleShootingList = () => {
                   ? viewerId != null
                     ? Number(viewerId)
                     : undefined
-                  : card.authorId != null
-                  ? Number(card.authorId)
+                  : (card as unknown as { authorId?: number }).authorId != null
+                  ? Number((card as unknown as { authorId: number }).authorId)
                   : undefined;
 
                 const statusFromList = vm.status;

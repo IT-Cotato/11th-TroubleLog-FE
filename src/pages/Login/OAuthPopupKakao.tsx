@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import { applyAuth } from "@/utils/applyAuth";
+import { devLog } from "@/shared/utils/logger";
 
 type SocialPayload = {
   userId?: number;
@@ -23,7 +24,7 @@ export default function OAuthPopupKakao() {
   useEffect(() => {
     const href = window.location.href;
     const isPopup = !!window.opener && !window.opener.closed;
-    console.debug("[OAuthPopupKakao] mounted @", href, "isPopup:", isPopup);
+    devLog.debug("[OAuthPopupKakao] mounted @", href, "isPopup:", isPopup);
 
     // payload 파싱
     const uid = getParam("userId") ?? getParam("userid");
@@ -34,14 +35,14 @@ export default function OAuthPopupKakao() {
       userStatus: getParam("userStatus") ?? getParam("status") ?? undefined,
       accessToken: getParam("accessToken") ?? undefined,
     };
-    console.debug("[OAuthPopupKakao] parsed payload:", payload);
+    devLog.debug("[OAuthPopupKakao] parsed payload:", payload);
 
     // 임시 저장(새로고침 대비)
     try {
       sessionStorage.setItem("oauth_payload", JSON.stringify(payload));
-      console.debug("[OAuthPopupKakao] session saved");
+      devLog.debug("[OAuthPopupKakao] session saved");
     } catch (err) {
-      console.debug("[OAuthPopupKakao] session save failed:", err);
+      devLog.debug("[OAuthPopupKakao] session save failed:", err);
     }
 
     if (isPopup) {
@@ -52,29 +53,29 @@ export default function OAuthPopupKakao() {
           { type: "SOCIAL_LOGIN_DONE", payload },
           TARGET
         );
-        console.debug("[OAuthPopupKakao] postMessage sent →", TARGET);
+        devLog.debug("[OAuthPopupKakao] postMessage sent →", TARGET);
       } catch (err) {
-        console.debug("[OAuthPopupKakao] postMessage failed:", err);
+        devLog.debug("[OAuthPopupKakao] postMessage failed:", err);
       }
 
       try {
         if ("replaceState" in window.history) {
           window.history.replaceState(null, "", "/");
-          console.debug("[OAuthPopupKakao] URL cleaned");
+          devLog.debug("[OAuthPopupKakao] URL cleaned");
         }
       } catch (err) {
-        console.debug("[OAuthPopupKakao] replaceState failed:", err);
+        devLog.debug("[OAuthPopupKakao] replaceState failed:", err);
       }
 
       try {
-        console.debug("[OAuthPopupKakao] closing popup");
+        devLog.debug("[OAuthPopupKakao] closing popup");
         window.close();
       } catch (err) {
-        console.debug("[OAuthPopupKakao] window.close failed:", err);
+        devLog.debug("[OAuthPopupKakao] window.close failed:", err);
       }
     } else {
       // 🧩 직접 진입(새 탭/리다이렉트로 열림) 처리: SPA 내에서 마무리
-      console.debug("[OAuthPopupKakao] opened directly — handling in-page");
+      devLog.debug("[OAuthPopupKakao] opened directly — handling in-page");
 
       const status = payload.userStatus ?? getParam("status") ?? undefined;
       if (payload.accessToken) {

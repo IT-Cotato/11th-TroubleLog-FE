@@ -1,4 +1,4 @@
-import type { ProjectData, ProjectListItem } from "@/types/project.model";
+import type { ProjectData, ProjectListItem } from "@/models/project.model";
 
 /// 프로젝트 생성
 

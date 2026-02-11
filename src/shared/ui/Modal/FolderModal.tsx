@@ -6,7 +6,7 @@ import { getProjectDetail } from "@/api/project.api";
 import type {
   CreateProjectRequest,
   ProjectDetail,
-} from "@/types/project.model";
+} from "@/models/project.model";
 import exitIcon from "@/assets/icons/exiticon.svg";
 import addImageIcon from "@/assets/icons/add_image.svg";
 import useImageUpload from "@/utils/useImageUpload";

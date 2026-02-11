@@ -237,10 +237,12 @@ const EditorBlock = ({
                   }
                 />
                 <span
-                  style={{
-                    ["--icon-unchecked" as any]: `url("${nonCheckBoxIcon}")`,
-                    ["--icon-checked" as any]: `url("${checkBoxIcon}")`,
-                  }}
+                  style={
+                    {
+                      "--icon-unchecked": `url("${nonCheckBoxIcon}")`,
+                      "--icon-checked": `url("${checkBoxIcon}")`,
+                    } as React.CSSProperties
+                  }
                   className="inline-block w-4 h-4 bg-no-repeat bg-center bg-contain
                              [background-image:var(--icon-unchecked)]
                              peer-checked:[background-image:var(--icon-checked)]"

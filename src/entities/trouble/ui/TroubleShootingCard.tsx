@@ -98,7 +98,7 @@ const TroubleShootingCard = ({
       const postId = Number(id);
       await hardDeletePost(postId);
       onDeleted?.(postId);
-      console.log("문서가 영구 삭제되었습니다.");
+      // 문서 삭제 성공 (사용자에게는 alert로 이미 안내됨)
     } catch (err: any) {
       console.error(err);
       alert(
@@ -126,7 +126,7 @@ const TroubleShootingCard = ({
       setSummaryDeleting(true);
       await hardDeleteSummary(summaryId);
       onSummaryDeleted?.(summaryId);
-      console.log("요약본이 영구 삭제되었습니다.");
+      // 요약본 삭제 성공 (사용자에게는 alert로 이미 안내됨)
     } catch (err: any) {
       console.error(err);
       alert(
