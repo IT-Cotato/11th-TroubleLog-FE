@@ -5,6 +5,7 @@ import PostComment, {
 import PostGuideMd from "@/entities/trouble/ui/PostGuideMd";
 import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
 import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
+import ReportModal from "@/shared/ui/Modal/ReportModal";
 import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -92,6 +93,14 @@ export default function CommunityPostDetail() {
   // 케밥 메뉴
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // 신고 모달 (포스트 또는 댓글)
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<
+    | { type: "post"; postId: number }
+    | { type: "comment"; commentId: string }
+    | null
+  >(null);
   const closeMenu = useCallback(() => setShowMenu(false), []);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
@@ -255,7 +264,7 @@ export default function CommunityPostDetail() {
       .slice()
       .sort(
         (a: DetailContentItem, b: DetailContentItem) =>
-          (a.sequence ?? 0) - (b.sequence ?? 0)
+          (a.sequence ?? 0) - (b.sequence ?? 0),
       )
       .map((c: DetailContentItem, i: number) => ({
         id: c.id ?? i,
@@ -292,7 +301,7 @@ export default function CommunityPostDetail() {
       .slice()
       .sort(
         (a: DetailContentItem, b: DetailContentItem) =>
-          (a.sequence ?? 0) - (b.sequence ?? 0)
+          (a.sequence ?? 0) - (b.sequence ?? 0),
       )
       .map((c: DetailContentItem, i: number) => ({
         id: c.id ?? i,
@@ -376,7 +385,7 @@ export default function CommunityPostDetail() {
       showToast(
         ok
           ? "링크가 복사되었어요!"
-          : "복사에 실패했어요. 주소창에서 복사해주세요."
+          : "복사에 실패했어요. 주소창에서 복사해주세요.",
       );
     } catch {
       showToast("복사에 실패했어요. 주소창에서 복사해주세요.");
@@ -387,7 +396,7 @@ export default function CommunityPostDetail() {
   const loadComments = async (
     id: number,
     page1: number,
-    currentViewerId: number | null
+    currentViewerId: number | null,
   ) => {
     setCLoading(true);
     try {
@@ -403,7 +412,7 @@ export default function CommunityPostDetail() {
       setPost((prev) =>
         prev
           ? { ...prev, commentCounts: resp.totalElements ?? prev.commentCounts }
-          : prev
+          : prev,
       );
     } finally {
       setCLoading(false);
@@ -469,7 +478,7 @@ export default function CommunityPostDetail() {
         const ok = window.confirm(
           tt === "FREE_FORM" || tt === "FREEFORM"
             ? "이 문서는 자유형식 글 작성 중이에요. 이어서 작성할까요?"
-            : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?"
+            : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?",
         );
 
         if (ok) {
@@ -680,7 +689,7 @@ export default function CommunityPostDetail() {
 
     const canonical =
       PATH.COMMUNITY_POST_SLUG(
-        makePostSlug(post.title, postId ?? effectiveId)
+        makePostSlug(post.title, postId ?? effectiveId),
       ) + window.location.search;
 
     if (!slug || slug !== makePostSlug(post.title, effectiveId)) {
@@ -723,7 +732,7 @@ export default function CommunityPostDetail() {
     } catch (err) {
       console.error(err);
       alert(
-        "수정 화면으로 이동하기 위한 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+        "수정 화면으로 이동하기 위한 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
       );
       navigatingRef.current = false; // 실패 시에만 잠금 해제
     }
@@ -801,7 +810,7 @@ export default function CommunityPostDetail() {
     const optimistic = makeOptimisticComment({ contents });
     setComments((prev) => [optimistic, ...prev]);
     setPost((p) =>
-      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p
+      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p,
     );
     setCommentInput("");
 
@@ -823,7 +832,9 @@ export default function CommunityPostDetail() {
     } catch {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       setPost((p) =>
-        p ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) } : p
+        p
+          ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) }
+          : p,
       );
       setCommentInput(contents);
     } finally {
@@ -844,7 +855,7 @@ export default function CommunityPostDetail() {
       const created = await replyCommunityComment(
         effectiveId,
         Number(parentId),
-        { contents }
+        { contents },
       );
       const mapped = toPostComment(created, detailCtx.viewerId, {
         isReply: true,
@@ -878,8 +889,8 @@ export default function CommunityPostDetail() {
       const vm = toPostComment(updated, detailCtx.viewerId);
       setComments((prev) =>
         prev.map((c) =>
-          c.id === id ? { ...c, content: vm.content, date: vm.date } : c
-        )
+          c.id === id ? { ...c, content: vm.content, date: vm.date } : c,
+        ),
       );
     } catch (e) {
       console.error(e);
@@ -895,7 +906,7 @@ export default function CommunityPostDetail() {
       setPost((prev) =>
         prev
           ? { ...prev, commentCounts: Math.max(0, prev.commentCounts - 1) }
-          : prev
+          : prev,
       );
     } catch (e) {
       console.error(e);
@@ -907,7 +918,7 @@ export default function CommunityPostDetail() {
     if (!Number.isFinite(effectiveId)) return;
     if (
       !window.confirm(
-        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다."
+        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다.",
       )
     )
       return;
@@ -926,7 +937,7 @@ export default function CommunityPostDetail() {
       console.error(err);
       alert(
         err?.response?.data?.message ??
-          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
       );
     } finally {
       setDeleting(false);
@@ -971,7 +982,7 @@ export default function CommunityPostDetail() {
             isFollowed: true,
             authorFollowers: (prev.authorFollowers ?? 0) + 1,
           }
-        : prev
+        : prev,
     );
 
     try {
@@ -984,7 +995,7 @@ export default function CommunityPostDetail() {
               isFollowed: false,
               authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1),
             }
-          : prev
+          : prev,
       );
       console.error("팔로우 실패", e);
     }
@@ -999,7 +1010,7 @@ export default function CommunityPostDetail() {
             isFollowed: false,
             authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1),
           }
-        : prev
+        : prev,
     );
 
     try {
@@ -1012,7 +1023,7 @@ export default function CommunityPostDetail() {
               isFollowed: true,
               authorFollowers: (prev.authorFollowers ?? 0) + 1,
             }
-          : prev
+          : prev,
       );
       console.error("언팔로우 실패", e);
     }
@@ -1135,31 +1146,44 @@ export default function CommunityPostDetail() {
               <div className="flex flex-col items-start gap-8 sm:gap-[53px] w-full">
                 <div className="flex flex-col items-start gap-[10px] w-full">
                   {/* 에러 종류 & (케밥 버튼) */}
-                  <div className="flex w-full justify-between items-start">
+                  <div className="flex w-full justify-between items-start gap-2">
                     <span className="text-head-20-semibold">
                       {post.errorType}
                     </span>
-                    {post.isMine && (
-                      <div className="relative" ref={menuRef}>
-                        <KebabMenuButton
-                          onClick={() => setShowMenu(!showMenu)}
+                    <div className="relative shrink-0" ref={menuRef}>
+                      <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
+                      {showMenu && (
+                        <KebabDropdown
+                          options={
+                            post.isMine
+                              ? [
+                                  {
+                                    label: "포스트 수정",
+                                    onClick: () => void goEditWithPrefill(),
+                                  },
+                                  {
+                                    label: deleting ? "삭제 중..." : "삭제",
+                                    onClick: () =>
+                                      !deleting && handleDeletePost(),
+                                  },
+                                ]
+                              : [
+                                  {
+                                    label: "신고하기",
+                                    onClick: () => {
+                                      setShowMenu(false);
+                                      setReportTarget({
+                                        type: "post",
+                                        postId: effectiveId,
+                                      });
+                                      setReportModalOpen(true);
+                                    },
+                                  },
+                                ]
+                          }
                         />
-                        {showMenu && (
-                          <KebabDropdown
-                            options={[
-                              {
-                                label: "포스트 수정",
-                                onClick: () => void goEditWithPrefill(),
-                              },
-                              {
-                                label: deleting ? "삭제 중..." : "삭제",
-                                onClick: () => !deleting && handleDeletePost(),
-                              },
-                            ]}
-                          />
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   {/* 포스트 제목 */}
@@ -1373,6 +1397,13 @@ export default function CommunityPostDetail() {
                         onReply={(replyContent) =>
                           handleReply(parent.id, replyContent)
                         }
+                        onReport={(commentId) => {
+                          setReportTarget({
+                            type: "comment",
+                            commentId,
+                          });
+                          setReportModalOpen(true);
+                        }}
                       />
                       {comments
                         .filter((c) => c.parentId === parent.id)
@@ -1384,6 +1415,13 @@ export default function CommunityPostDetail() {
                               handleEdit(reply.id, newContent)
                             }
                             onDelete={() => handleDelete(reply.id)}
+                            onReport={(commentId) => {
+                              setReportTarget({
+                                type: "comment",
+                                commentId,
+                              });
+                              setReportModalOpen(true);
+                            }}
                           />
                         ))}
                     </div>
@@ -1396,7 +1434,7 @@ export default function CommunityPostDetail() {
                       loadComments(
                         effectiveId,
                         cPage,
-                        detailCtx.viewerId ?? null
+                        detailCtx.viewerId ?? null,
                       )
                     }
                     className={`mt-4 px-6 py-2 rounded-full text-white ${
@@ -1441,6 +1479,25 @@ export default function CommunityPostDetail() {
         >
           {toast.message}
         </div>
+      )}
+
+      {/* 신고 모달 */}
+      {reportModalOpen && (
+        <ReportModal
+          onClose={() => {
+            setReportModalOpen(false);
+            setReportTarget(null);
+          }}
+          onSubmit={(reason) => {
+            // TODO: 신고 API 연동
+            void reason;
+            void reportTarget;
+
+            showToast("신고가 접수되었습니다.");
+            setReportModalOpen(false);
+            setReportTarget(null);
+          }}
+        />
       )}
     </div>
   );
