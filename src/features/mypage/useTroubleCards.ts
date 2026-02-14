@@ -134,12 +134,12 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
     }|${q.summaryType ?? ""}`;
   }, [
     source.type,
-    source.type === "user" ? source.userId : undefined,
-    source.type === "project" ? source.projectId : undefined,
-    source.type === "project" ? source.query?.status : undefined,
-    source.type === "project" ? source.query?.sort : undefined,
-    source.type === "project" ? source.query?.visibility : undefined,
-    source.type === "project" ? source.query?.summaryType : undefined,
+    (source as any).userId,
+    (source as any).projectId,
+    (source as any).query?.status,
+    (source as any).query?.sort,
+    (source as any).query?.visibility,
+    (source as any).query?.summaryType,
     sortBy,
   ]);
 
@@ -242,19 +242,19 @@ export default function useTroubleCards(source: Source, options: Options = {}) {
         const list = Array.isArray(resp.content) ? resp.content : [];
         const listLen = list.length;
 
+        const anyResp = resp as any;
         const isLast =
-          typeof resp.isLast === "boolean"
-            ? resp.isLast
-            : typeof (resp as unknown as { last?: boolean }).last === "boolean"
-            ? (resp as unknown as { last: boolean }).last
+          typeof anyResp?.isLast === "boolean"
+            ? anyResp.isLast
+            : typeof anyResp?.last === "boolean"
+            ? anyResp.last
             : undefined;
 
         const hasNextFromServer =
-          typeof resp.hasNext === "boolean"
-            ? resp.hasNext
-            : typeof (resp as unknown as { hasNextPage?: boolean })
-                .hasNextPage === "boolean"
-            ? (resp as unknown as { hasNextPage: boolean }).hasNextPage
+          typeof anyResp?.hasNext === "boolean"
+            ? anyResp.hasNext
+            : typeof anyResp?.hasNextPage === "boolean"
+            ? anyResp.hasNextPage
             : undefined;
 
         let nextByServer: boolean | undefined;

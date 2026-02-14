@@ -18,7 +18,7 @@ import {
   hardDeletePost,
   getPostDetail,
 } from "@/api/post.api";
-import type { ViewPostResponse } from "@/models/post.model";
+import type { ViewCombinedResponse } from "@/models/post.model";
 import { toTwoPaneVM } from "@/entities/trouble/mappers/combinedDetail.mapper";
 import { useViewerId } from "@/store/auth";
 import PostComment, {
@@ -164,7 +164,7 @@ export default function CombinedDetailPage() {
     sequence?: number;
   };
 
-  function buildFreeformPrefill(detail: ViewPostResponse) {
+  function buildFreeformPrefill(detail: any) {
     const contents: DetailContentItem[] = Array.isArray(detail?.contents)
       ? detail.contents
       : [];
@@ -197,7 +197,7 @@ export default function CombinedDetailPage() {
     };
   }
 
-  function buildTemplatePrefill(detail: ViewPostResponse) {
+  function buildTemplatePrefill(detail: any) {
     const contents: DetailContentItem[] = Array.isArray(detail?.contents)
       ? detail.contents
       : [];
@@ -231,11 +231,11 @@ export default function CombinedDetailPage() {
       },
       projectId: detail?.projectId ?? undefined,
       // TempWritePage가 그대로 받아 쓰는 키
-      checklistError: Array.isArray(detail?.checkListError)
-        ? detail.checkListError
+      checklistError: Array.isArray(detail?.checklistError)
+        ? detail.checklistError
         : [],
-      checklistReason: Array.isArray(detail?.checkListReason)
-        ? detail.checkListReason
+      checklistReason: Array.isArray(detail?.checklistReason)
+        ? detail.checklistReason
         : [],
     };
   }
@@ -262,28 +262,25 @@ export default function CombinedDetailPage() {
           throw new Error("잘못된 경로 파라미터");
 
         const data = await getCombinedDetail(pid, sid);
-        setVm(toTwoPaneVM(data, viewerId ?? null));
+        setVm(toTwoPaneVM(data as ViewCombinedResponse, viewerId ?? null));
 
-        const post = data.postResDto;
-        const user = post.userInfoResDto;
+        const post = (data as any)?.postResDto;
+        const user = post?.userInfo ?? {};
         const mine =
-          viewerId != null &&
-          user !== null &&
-          user !== undefined &&
-          String(user.userId) === String(viewerId);
+          viewerId != null && String(user?.userId) === String(viewerId);
 
         if (!cancelled) {
           setIsMine(mine);
-          setImportance(parseStar(post.starRating));
+          setImportance(parseStar(post?.starRating));
           setAuthorId(user?.userId ?? null);
           setAuthorName(user?.nickname ?? "");
-          setAuthorProfile(user?.profileUrl ?? null);
-          setIsVisible(post.isVisible ?? false);
-          setLikeCounts(post.likeCount ?? 0);
-          setCommentCounts(post.commentCount ?? 0);
+          setAuthorProfile(user?.profileImageUrl || null);
+          setIsVisible(!!post?.isVisible);
+          setLikeCounts(Number(post?.likeCount ?? 0));
+          setCommentCounts(Number(post?.commentCount ?? 0));
         }
 
-        if (post.isVisible && Number.isFinite(pid)) {
+        if (post?.isVisible && Number.isFinite(pid)) {
           try {
             const community = await getCommunityPostDetail(pid);
             const initLiked = !!community?.liked;
@@ -500,7 +497,7 @@ export default function CombinedDetailPage() {
       if (!Number.isFinite(pid)) throw new Error("잘못된 포스트 ID");
 
       const detail = await getPostDetail(pid);
-      const tt = String(detail.templateType ?? "").toUpperCase();
+      const tt = String((detail as any)?.templateType ?? "").toUpperCase();
       const isFreeform = tt === "FREE_FORM" || tt === "FREEFORM";
 
       const prefill = isFreeform

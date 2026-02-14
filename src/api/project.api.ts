@@ -5,7 +5,7 @@ import type {
   GetProjectListResponse,
   UpdateProjectRequest,
   ProjectDetail,
-} from "@/models/project.model";
+} from "@/types/project.model";
 import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "@/api/axios";
 import type {

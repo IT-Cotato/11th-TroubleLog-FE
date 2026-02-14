@@ -14,7 +14,6 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
-import type { CommunityPostDetailState } from "@/types/navigation.model";
 import {
   createCommunityComment,
   getCommunityComments,
@@ -33,7 +32,6 @@ import {
 import { useViewerId } from "@/store/auth";
 import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
-import type { ViewPostResponse } from "@/models/post.model";
 import { postFollow, postUnfollow } from "@/api/user.api";
 import { extractIdFromSlug, makePostSlug } from "@/shared/lib/slug";
 
@@ -183,9 +181,8 @@ export default function CommunityPostDetail() {
     const location = useLocation();
     const viewerIdInStore = useViewerId();
 
-    const state = location.state as CommunityPostDetailState | null | undefined;
-    const stateFrom = state?.from;
-    const stateOwnerId = state?.ownerId;
+    const stateFrom = (location.state as any)?.from as FromSource | undefined;
+    const stateOwnerId = (location.state as any)?.ownerId as number | undefined;
 
     const qs = new URLSearchParams(location.search);
     const qsFrom = (qs.get("from") as FromSource) || undefined;
@@ -193,15 +190,27 @@ export default function CommunityPostDetail() {
     const ownerId = stateOwnerId ?? (qsOwnerId ? Number(qsOwnerId) : undefined);
     const from = stateFrom ?? qsFrom;
 
-    const stateScope = state?.searchScope;
+    const stateScope = (location.state as any)?.searchScope as
+      | SearchScope
+      | undefined;
     const qsScope = (qs.get("scope") as SearchScope) || undefined;
     const searchScope = stateScope ?? qsScope;
 
     // 목록에서 실어온 힌트
-    const statusFromList = state?.statusFromList;
-    const isVisibleFromList = state?.isVisibleFromList;
-    const summaryIdFromList = state?.summaryIdFromList;
-    const isMineFromList = state?.isMineFromList;
+    const statusFromList = (location.state as any)?.statusFromList as
+      | "inProgress"
+      | "complete"
+      | "created"
+      | undefined;
+    const isVisibleFromList = (location.state as any)?.isVisibleFromList as
+      | boolean
+      | undefined;
+    const summaryIdFromList = (location.state as any)?.summaryIdFromList as
+      | number
+      | undefined;
+    const isMineFromList = (location.state as any)?.isMineFromList as
+      | boolean
+      | undefined;
 
     return {
       from,
@@ -237,7 +246,7 @@ export default function CommunityPostDetail() {
   };
 
   // 상세 응답 → FREEFORM 프리필 state
-  function buildFreeformPrefill(detail: ViewPostResponse) {
+  function buildFreeformPrefill(detail: any) {
     const contents: DetailContentItem[] = Array.isArray(detail?.contents)
       ? detail.contents
       : [];
@@ -274,7 +283,7 @@ export default function CommunityPostDetail() {
   }
 
   // 상세 응답 → TEMPLATE 프리필 state
-  function buildTemplatePrefill(detail: ViewPostResponse) {
+  function buildTemplatePrefill(detail: any) {
     const contents: DetailContentItem[] = Array.isArray(detail?.contents)
       ? detail.contents
       : [];
@@ -311,11 +320,11 @@ export default function CommunityPostDetail() {
       },
       projectId: detail?.projectId ?? undefined,
       // TempWritePage에서 기대하는 키 이름으로 전달
-      checklistError: Array.isArray(detail?.checkListError)
-        ? detail.checkListError
+      checklistError: Array.isArray(detail?.checklistError)
+        ? detail.checklistError
         : [],
-      checklistReason: Array.isArray(detail?.checkListReason)
-        ? detail.checkListReason
+      checklistReason: Array.isArray(detail?.checklistReason)
+        ? detail.checklistReason
         : [],
     };
   }
@@ -435,7 +444,7 @@ export default function CommunityPostDetail() {
       const myDetail = await getPostDetail(id);
 
       // 작성 중 여부
-      const completedAt = myDetail.completedAt ?? null;
+      const completedAt = (myDetail as any)?.completedAt ?? null;
       const isDraft = completedAt == null;
 
       if (!isDraft) {
@@ -443,7 +452,7 @@ export default function CommunityPostDetail() {
       }
 
       // 내 상세로 화면 세팅
-      const vmMine = toPostDetailVM(myDetail, detailCtx.viewerId);
+      const vmMine = toPostDetailVM(myDetail as any, detailCtx.viewerId);
       setPost(vmMine);
       setIsLiked(vmMine.isLiked);
       setLikeCounts(vmMine.likeCounts);
@@ -453,7 +462,8 @@ export default function CommunityPostDetail() {
       if (!resumePromptShownRef.current[id]) {
         resumePromptShownRef.current[id] = true;
 
-        const ttRaw = myDetail.templateType ?? undefined;
+        const ttRaw =
+          (myDetail as any)?.templateType ?? (vmMine as any)?.templateType;
         const tt = String(ttRaw ?? "").toUpperCase(); // FREE_FORM | FREEFORM | GUIDELINE
 
         const ok = window.confirm(
@@ -480,8 +490,8 @@ export default function CommunityPostDetail() {
               postId: id,
               mode: "edit",
               from: "community-detail",
-              projectId: myDetail.projectId ?? undefined,
-              savePrefill: baseState.savePrefill,
+              projectId: (myDetail as any)?.projectId ?? undefined,
+              savePrefill: { ...(baseState as any).savePrefill },
             },
           });
         }
@@ -503,7 +513,7 @@ export default function CommunityPostDetail() {
         // 0. 목록 힌트 기준: 비공개로 내려온 글이면 무조건 내 상세 API 우선
         if (isVisibleFromList === false) {
           const myDetail = await getPostDetail(effectiveId);
-          const completedAt = myDetail.completedAt ?? null;
+          const completedAt = (myDetail as any)?.completedAt ?? null;
           const isDraft = completedAt == null;
 
           if (isDraft) {
@@ -511,7 +521,7 @@ export default function CommunityPostDetail() {
             await loadMineDraft(effectiveId);
           } else {
             // 완료 문서 비공개 → 내 상세 화면으로만 세팅
-            const vmMine = toPostDetailVM(myDetail, viewerId);
+            const vmMine = toPostDetailVM(myDetail as any, viewerId);
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
@@ -523,7 +533,7 @@ export default function CommunityPostDetail() {
         // ProjectDetail → 원본 탭에서 온 글은 항상 /troubles만
         if (from === "project") {
           const myDetail = await getPostDetail(effectiveId);
-          const completedAt = myDetail.completedAt ?? null;
+          const completedAt = (myDetail as any)?.completedAt ?? null;
           const isDraft = completedAt == null;
 
           if (isDraft) {
@@ -531,7 +541,7 @@ export default function CommunityPostDetail() {
             await loadMineDraft(effectiveId);
           } else {
             // 완료 문서면 내 상세 화면으로만 세팅
-            const vmMine = toPostDetailVM(myDetail, viewerId);
+            const vmMine = toPostDetailVM(myDetail as any, viewerId);
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
@@ -565,8 +575,28 @@ export default function CommunityPostDetail() {
             });
             return;
           }
-          // 힌트에 summaryId가 없으면 커뮤니티 상세로 이동
-          // ViewPostResponse에는 summaryId가 없으므로 커뮤니티 API를 사용해야 함
+          // 힌트에 summaryId가 없으면 한 번만 내 상세 조회로 보강
+          try {
+            const myDetail = await getPostDetail(effectiveId);
+            const sid =
+              (typeof (myDetail as any)?.postSummaryId === "number" &&
+                (myDetail as any).postSummaryId) ||
+              (typeof (myDetail as any)?.summaryId === "number" &&
+                (myDetail as any).summaryId) ||
+              null;
+            if (sid != null) {
+              navigate(PATH.COMBINED_DETAIL(effectiveId, sid), {
+                replace: true,
+                state: {
+                  from: "community-detail",
+                  ownerId: viewerId ?? undefined,
+                },
+              });
+              return;
+            }
+          } catch {
+            /* 무시하고 커뮤 상세로 폴백 */
+          }
           await loadCommunity();
           return;
         }
@@ -582,7 +612,7 @@ export default function CommunityPostDetail() {
           } else {
             // 비공개 완료 → 내 상세만
             const myDetail = await getPostDetail(effectiveId);
-            const vmMine = toPostDetailVM(myDetail, viewerId);
+            const vmMine = toPostDetailVM(myDetail as any, viewerId);
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
@@ -595,15 +625,15 @@ export default function CommunityPostDetail() {
         if (isMine) {
           try {
             const myDetail = await getPostDetail(effectiveId);
-            const isDraft = myDetail.completedAt == null;
+            const isDraft = (myDetail as any)?.completedAt == null;
             if (isDraft) {
               await loadMineDraft(effectiveId);
               return;
             }
 
             // 완료 문서이지만 비공개라면 커뮤니티 UX를 비활성화
-            if (myDetail.isVisible === false) {
-              const vmMine = toPostDetailVM(myDetail, viewerId);
+            if ((myDetail as any)?.isVisible === false) {
+              const vmMine = toPostDetailVM(myDetail as any, viewerId);
               setPost(vmMine);
               setIsLiked(vmMine.isLiked);
               setLikeCounts(vmMine.likeCounts);

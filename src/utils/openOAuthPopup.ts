@@ -1,5 +1,3 @@
-import { devLog, errorLog } from "@/shared/utils/logger";
-
 export function openOAuthPopup(
   authUrl: string,
   targetOrigin: string,
@@ -11,7 +9,7 @@ export function openOAuthPopup(
     const left = window.screenX + (window.outerWidth - w) / 2;
     const top = window.screenY + (window.outerHeight - h) / 2;
 
-    devLog.debug("[openOAuthPopup] opening:", authUrl);
+    console.debug("[openOAuthPopup] opening:", authUrl);
     const opened = window.open(
       authUrl,
       "oauth_popup",
@@ -20,7 +18,7 @@ export function openOAuthPopup(
 
     if (!opened) {
       const err = new Error("팝업 차단");
-      errorLog.error("[openOAuthPopup]", err);
+      console.error("[openOAuthPopup]", err);
       reject(err);
       return;
     }
@@ -32,11 +30,11 @@ export function openOAuthPopup(
       window.removeEventListener("message", onMessage);
       clearInterval(closeWatch);
       clearTimeout(timeoutTimer);
-      devLog.debug("[openOAuthPopup] cleaned up");
+      console.debug("[openOAuthPopup] cleaned up");
     };
 
     function onMessage(e: MessageEvent) {
-      devLog.debug("[openOAuthPopup] message:", {
+      console.debug("[openOAuthPopup] message:", {
         origin: e.origin,
         data: e.data,
       });
@@ -57,7 +55,7 @@ export function openOAuthPopup(
       if (popup.closed && !done) {
         cleanup();
         const err = new Error("팝업이 닫힘");
-        devLog.warn("[openOAuthPopup]", err);
+        console.warn("[openOAuthPopup]", err);
         reject(err);
       }
     }, 400);
@@ -71,7 +69,7 @@ export function openOAuthPopup(
           //
         }
         const err = new Error("로그인 타임아웃");
-        errorLog.error("[openOAuthPopup]", err);
+        console.error("[openOAuthPopup]", err);
         reject(err);
       }
     }, timeoutMs);

@@ -16,15 +16,12 @@ import { PATH } from "@/shared/config/paths";
 import {
   toCreatePostRequest,
   toEditPostRequest,
-  type PostForm,
 } from "@/entities/trouble/mappers/postMapper";
 
 import type {
   PostContentDto,
   SummaryTypeParam,
   StartLoadingResponse,
-  ViewPostResponse,
-  WaitLoadingResponse,
 } from "@/models/post.model";
 import { useProjectList } from "@/hooks/useProjectList";
 import {
@@ -55,8 +52,10 @@ function encodeChecklistToNumbers(bs: BlockData[]) {
   const rea = new Set<number>();
 
   for (const b of bs) {
-    const q = String(b.question ?? "");
-    const selected: string[] = Array.isArray(b.checklist) ? b.checklist : [];
+    const q = String((b as any).question ?? "");
+    const selected: string[] = Array.isArray((b as any).checklist)
+      ? (b as any).checklist
+      : [];
     if (!selected.length) continue;
 
     if (q === Q_ERROR) {
@@ -107,8 +106,6 @@ type IncomingTemplateState = {
   projectId?: number;
   postId?: number; // 수정 식별용
   mode?: "edit" | "create";
-  checklistError?: number[]; // 프리필용
-  checklistReason?: number[]; // 프리필용
 };
 
 // ---------- 에러 라벨/코드  ----------
@@ -142,13 +139,17 @@ const enrichBlocksWithChecklist = (
   return blocks.map((b, i) => {
     const matched =
       questionData.find(
-        (q) => q.question === b.question || q.question === b.checklistTitle
+        (q) =>
+          q.question === (b as any).question ||
+          q.question === (b as any).checklistTitle
       ) ?? questionData[i];
 
-    const q = b.question ?? matched?.question ?? `질문 ${i + 1}`;
+    const q = (b as any).question ?? matched?.question ?? `질문 ${i + 1}`;
 
     // 기본 체크리스트(문자열) 확보
-    let checklist: string[] = Array.isArray(b.checklist) ? b.checklist : [];
+    let checklist: string[] = Array.isArray((b as any).checklist)
+      ? (b as any).checklist
+      : [];
 
     // 숫자 프리필이 있으면 Q1/Q2에 주입
     if (q === Q_ERROR && decodedError) checklist = decodedError;
@@ -157,11 +158,12 @@ const enrichBlocksWithChecklist = (
     return {
       ...b,
       question: q,
-      checklistItems: b.checklistItems?.length ? b.checklistItems
+      checklistItems: (b as any).checklistItems?.length
+        ? (b as any).checklistItems
         : matched?.checklistItems ?? [],
-      checklistTitle: b.checklistTitle ?? matched?.title ?? "",
+      checklistTitle: (b as any).checklistTitle ?? matched?.title ?? "",
       checklist,
-      isSaved: b.isSaved ?? false,
+      isSaved: (b as any).isSaved ?? false,
     } as BlockData;
   });
 };
@@ -287,19 +289,23 @@ const TempWritePage = () => {
     (async () => {
       if (!isResume || !resumePostId) return;
       try {
-        const d = await getPostDetail(resumePostId);
-        setCurrentThumbnail(d.thumbnailImageUrl ?? null);
-        // 서버 필드명: postStatus 사용
-        const s = d.postStatus as "WRITING" | "COMPLETED" | "SUMMARIZED" | undefined;
+        const d: any = await getPostDetail(resumePostId);
+        setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
+        // 서버 필드명 상이할 수 있어 둘 다 고려
+        const s = (d?.postStatus ?? d?.status) as
+          | "WRITING"
+          | "COMPLETED"
+          | "SUMMARIZED"
+          | undefined;
         setInitialPostStatus(s ?? null);
         // ← 기존 introduction / starRating / visibility / projectId 등을 프리필에 저장
         setDetailPrefill({
-          importance: typeof d.starRating === "number" ? d.starRating : 0,
-          description: String(d.introduction ?? ""),
-          visibility: d.isVisible ? "public" : "private",
-          projectId: Number.isFinite(d.projectId) ? d.projectId : null,
+          importance: Number(d?.starRating ?? 0),
+          description: String(d?.introduction ?? ""),
+          visibility: d?.isVisible ? "public" : "private",
+          projectId: Number.isFinite(d?.projectId) ? Number(d.projectId) : null,
           projectName: "", // 필요시 후속 조회로 채워도 무방
-          thumbnail: d.thumbnailImageUrl ?? null,
+          thumbnail: d?.thumbnailImageUrl ?? null,
         });
       } catch {
         /* ignore */
@@ -321,8 +327,8 @@ const TempWritePage = () => {
       if (location.state.blocks?.length) {
         setBlocks(
           enrichBlocksWithChecklist(location.state.blocks, {
-            error: location.state.checklistError, // number[]
-            reason: location.state.checklistReason, // number[]
+            error: (location.state as any)?.checklistError, // number[]
+            reason: (location.state as any)?.checklistReason, // number[]
           })
         );
       }
@@ -353,7 +359,7 @@ const TempWritePage = () => {
         checklistTitle: questionData[0].title ?? "",
         question: questionData[0].question,
         isSaved: false,
-      };
+      } as any;
       setBlocks([firstBlock]);
     }
   }, [blocks.length, location.state]);
@@ -362,13 +368,15 @@ const TempWritePage = () => {
   const toContentDtoList = (bs: BlockData[]): PostContentDto[] =>
     bs
       .filter((b) => (b.content ?? "").trim().length > 0)
-      .map((b, i) => ({
-        subTitle: b.question,
-        body: b.content,
-        sequence: i + 1,
-        authorType: "USER_WRITTEN",
-        summaryType: "NONE",
-      }))
+      .map(
+        (b, i) =>
+          ({
+            subTitle: (b as any).question,
+            body: b.content,
+            sequence: i + 1,
+            authorType: "USER_WRITTEN",
+            summaryType: "NONE",
+          } as any)
       );
 
   // ---------- 태그 정규화 ----------
@@ -441,18 +449,20 @@ const TempWritePage = () => {
   const persistEditsIfEditMode = async () => {
     if (!isResume || !resumePostId || !previewMeta) return;
     const form = await buildEditFormFromMeta(previewMeta, { mode: "final" });
-    await editPost(resumePostId, toEditPostRequest(form));
+    await editPost(resumePostId, toEditPostRequest(form) as any);
     setDraftPostId(resumePostId);
   };
 
   // ---------- upsert ----------
-  const upsertPost = async (maybeId: number | null, form: PostForm) => {
+  const upsertPost = async (maybeId: number | null, form: any) => {
     if (maybeId) {
-      await editPost(maybeId, toEditPostRequest(form));
+      await editPost(maybeId, toEditPostRequest(form) as any);
       return maybeId;
     }
-    const created = await createPost(toCreatePostRequest(form));
-    const newId = created.id;
+    const created: any = await createPost(toCreatePostRequest(form) as any);
+    const newId = Number(
+      created?.id ?? created?.data?.id ?? created?.content?.id
+    );
     if (!Number.isFinite(newId)) throw new Error("생성된 포스트 ID 누락");
     return newId;
   };
@@ -589,7 +599,7 @@ const TempWritePage = () => {
       const editForm = await buildEditFormFromMeta(effectiveMeta, {
         mode: "summary",
       });
-      await editPost(postId, toEditPostRequest(editForm));
+      await editPost(postId, toEditPostRequest(editForm) as any);
 
       // 2) 수정 성공 후에만 요약 로딩 UI 오픈 및 요약 시작
       setIsTemplateSelectModalOpen(false);
@@ -601,7 +611,10 @@ const TempWritePage = () => {
 
       const res: StartLoadingResponse = await startSummary(postId, type);
 
-      const taskId = res.taskId;
+      const taskId =
+        (res as any).taskId ??
+        (res as any).data?.taskId ??
+        (res as any).content?.taskId;
 
       if (!taskId) throw new Error("요약 작업 ID(taskId)를 찾을 수 없어요.");
 
@@ -634,7 +647,9 @@ const TempWritePage = () => {
 
     const tick = async () => {
       const awaitRefreshIfAny = async () => {
-        const p = window.__authRefreshPromise;
+        const p = (window as any).__authRefreshPromise as Promise<
+          string | null
+        > | null;
         if (p) {
           try {
             await p;
@@ -645,8 +660,7 @@ const TempWritePage = () => {
       };
 
       try {
-        const targetId = createdPostId ?? resumePostId;
-        if (!targetId) return;
+        const targetId = (createdPostId ?? resumePostId) as number;
 
         await awaitRefreshIfAny();
 
@@ -655,12 +669,14 @@ const TempWritePage = () => {
             __skipGlobalAuthGuard: true,
           });
 
-        let data: WaitLoadingResponse;
+        let data: any;
         try {
           data = await fetchOnce();
         } catch (e) {
           if (isAxiosError(e) && e.response?.status === 401) {
-            const inflight = window.__authRefreshPromise;
+            const inflight = (window as any).__authRefreshPromise as Promise<
+              string | null
+            > | null;
             const token = inflight ? await inflight : await startRefresh();
             if (!token) throw e;
 
@@ -684,11 +700,9 @@ const TempWritePage = () => {
         else if (
           data?.result &&
           typeof data.result === "object" &&
-          "message" in data.result
+          "message" in (data.result as any)
         ) {
-          setStatusMessage(
-            (data.result as { message?: string }).message ?? ""
-          );
+          setStatusMessage((data.result as any).message ?? "");
         }
 
         if (data?.status === "COMPLETED" || p >= 100) {
@@ -731,7 +745,7 @@ const TempWritePage = () => {
     isMine: true,
     importance: Number(previewMeta?.importance ?? 0),
     savePrefill: previewMeta ?? undefined,
-    questions: blocks.map((b) => b.question),
+    questions: blocks.map((b) => (b as any).question),
     contents: blocks.map((b) => [b.content]),
   });
 
@@ -895,12 +909,10 @@ const TempWritePage = () => {
     (index: number, item: string, checked: boolean) => {
       setBlocks((prev) => {
         const next = [...prev];
-        const block = next[index];
-        if (!block) return prev;
-        const checklist = new Set<string>(block.checklist ?? []);
+        const checklist = new Set<string>((next[index] as any).checklist ?? []);
         if (checked) checklist.add(item);
         else checklist.delete(item);
-        next[index] = { ...block, checklist: Array.from(checklist) };
+        (next[index] as any).checklist = Array.from(checklist);
         return next;
       });
     },
@@ -922,7 +934,7 @@ const TempWritePage = () => {
           checklistTitle: stepData.title ?? "",
           question: stepData.question,
           isSaved: false,
-        };
+        } as any;
 
         const next = [...prev, newBlock];
         setActiveIndex(next.length - 1); // 새 블록으로 포커싱
