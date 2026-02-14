@@ -1,10 +1,13 @@
 import { useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import ConfirmDeleteModal from "../../../shared/ui/Modal/ConfirmDeleteModal";
+import KebabMenuButton from "../../../shared/ui/Menu/KebabMenuButton";
+import KebabDropdown from "../../../shared/ui/Menu/KebabDropdown";
 import replyIcon from "@/assets/icons/reply_icon.svg";
 import image from "@/assets/icons/image.svg";
 import { PATH } from "@/shared/config/paths";
 import { usePrefetch } from "@/shared/hooks/usePrefetch";
+import useClickOutside from "@/hooks/useClickOutside";
 
 export interface PostCommentProps {
   id: string;
@@ -19,9 +22,11 @@ export interface PostCommentProps {
   onEdit?: (newContent: string) => void;
   onDelete?: () => void;
   onReply?: (replyContent: string) => Promise<void> | void;
+  onReport?: (commentId: string) => void;
 }
 
 function PostComment({
+  id,
   profile,
   name,
   date,
@@ -32,6 +37,7 @@ function PostComment({
   onEdit,
   onDelete,
   onReply,
+  onReport,
 }: PostCommentProps) {
   const navigate = useNavigate();
   const prefetch = usePrefetch();
@@ -45,6 +51,9 @@ function PostComment({
 
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [deletePosting, setDeletePosting] = useState(false);
+
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useClickOutside(() => setShowMenu(false));
 
   const handleProfileClick = () => {
     if (userId) {
@@ -109,8 +118,8 @@ function PostComment({
                 </div>
               </div>
 
-              {/* 수정, 삭제 버튼 (작성자 본인일 경우) */}
-              {isMine && (
+              {/* 수정, 삭제 (본인) / 신고하기 (타인) */}
+              {isMine ? (
                 <div className="flex items-center gap-[8px] text-body-16-regular text-gray3">
                   <div
                     className="cursor-pointer"
@@ -126,6 +135,27 @@ function PostComment({
                     삭제
                   </div>
                 </div>
+              ) : (
+                onReport && (
+                  <div className="relative shrink-0" ref={menuRef}>
+                    <KebabMenuButton
+                      onClick={() => setShowMenu(!showMenu)}
+                    />
+                    {showMenu && (
+                      <KebabDropdown
+                        options={[
+                          {
+                            label: "신고하기",
+                            onClick: () => {
+                              setShowMenu(false);
+                              onReport(id);
+                            },
+                          },
+                        ]}
+                      />
+                    )}
+                  </div>
+                )
               )}
             </div>
 
