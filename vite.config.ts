@@ -21,27 +21,24 @@ export default defineConfig(({ command, mode }) => {
           // /api/auth/refresh  ->  /auth/refresh 로 백엔드에 전달
           rewrite: (path) => path.replace(/^\/api/, ""),
           configure: (proxy, options) => {
-            // 개발 환경에서만 프록시 로그 출력
-            if (command === "serve") {
-              proxy.on("proxyReq", (proxyReq, req) => {
-                // dev 서버 콘솔에 경로와 Host 찍히게
-                console.log(
-                  "[proxyReq]",
-                  req.method,
-                  req.url,
-                  "->",
-                  options.target + (proxyReq as any).path
-                );
-              });
-              proxy.on("proxyRes", (proxyRes, req) => {
-                console.log(
-                  "[proxyRes]",
-                  req.method,
-                  req.url,
-                  proxyRes.statusCode
-                );
-              });
-            }
+            proxy.on("proxyReq", (proxyReq, req) => {
+              // dev 서버 콘솔에 경로와 Host 찍히게
+              console.log(
+                "[proxyReq]",
+                req.method,
+                req.url,
+                "->",
+                options.target + (proxyReq as any).path
+              );
+            });
+            proxy.on("proxyRes", (proxyRes, req) => {
+              console.log(
+                "[proxyRes]",
+                req.method,
+                req.url,
+                proxyRes.statusCode
+              );
+            });
           },
         },
       },

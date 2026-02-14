@@ -5,7 +5,7 @@ import KebabMenuButton from "../../../shared/ui/Menu/KebabMenuButton";
 import KebabDropdown from "../../../shared/ui/Menu/KebabDropdown";
 import FolderModal from "../../../shared/ui/Modal/FolderModal";
 import ConfirmDeleteModal from "../../../shared/ui/Modal/ConfirmDeleteModal";
-import type { UpdateProjectRequest } from "@/models/project.model";
+import type { UpdateProjectRequest } from "@/types/project.model";
 import { deleteProject, putUpdateProject } from "@/api/project.api";
 import { Link } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";

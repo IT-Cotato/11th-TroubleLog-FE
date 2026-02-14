@@ -1,9 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import PostButton from "@/shared/ui/Button/PostButton";
 import Snackbar from "@/shared/ui/Feedback/Snackbar";
-import TroublogCard, {
-  type TroublogCardProps,
-} from "@/entities/trouble/ui/TroublogCard";
+import TroublogCard from "@/entities/trouble/ui/TroublogCard";
 import ProjectAccordion from "@/entities/project/ui/ProjectAccordion";
 import ProjectFolderCard from "@/entities/project/ui/ProjectFolderCard";
 import FolderModal from "@/shared/ui/Modal/FolderModal";
@@ -12,7 +10,7 @@ import { getProjectList, postCreateProject } from "@/api/project.api";
 import type {
   ProjectListItem,
   CreateProjectRequest,
-} from "@/models/project.model";
+} from "@/types/project.model";
 import useTroubleCards from "@/features/mypage/useTroubleCards";
 import { PATH } from "@/shared/config/paths";
 import { useNavigate } from "react-router-dom";
@@ -22,8 +20,6 @@ import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
 import { makePostSlug } from "@/shared/lib/slug";
 import { CardListSkeleton } from "@/shared/ui/LoadingSkeleton";
 import { mapSummaryType } from "@/entities/trouble/lib/troubleMapping";
-import type { ExpandedTroublogCard } from "@/types/card.model";
-import type { StatusType } from "@/types/project";
 
 const PAGE_SIZE = 10;
 
@@ -127,10 +123,12 @@ export default function HomePage() {
   const expandedRecentCards = useMemo(() => {
     // 먼저 삭제된 카드(postId 기준)는 모두 제외
     const base = recentCards.filter((c) => !removedRecentIds.has(c.id));
-    const result: ExpandedTroublogCard[] = [];
+    const result: any[] = [];
 
     for (const card of base) {
-      const summaries = Array.isArray(card.summaries) ? card.summaries : [];
+      const summaries = Array.isArray((card as any).summaries)
+        ? (card as any).summaries
+        : [];
       const hasSummaries = summaries.length > 0;
       const originalStatus =
         card.status === "created" ? "complete" : card.status;
@@ -166,29 +164,22 @@ export default function HomePage() {
       });
 
       for (const summary of summaries) {
-        if (summary && typeof summary === "object") {
-          const summaryObj = summary as {
-            summaryId?: number;
-            summaryType?: string;
-            summaryCreatedAt?: string;
-          };
-          const summaryTypeLabel =
-            mapSummaryType(summaryObj.summaryType) ?? card.summaryType;
+        const summaryTypeLabel =
+          mapSummaryType(summary.summaryType) ?? card.summaryType;
 
-          const common = {
-            ...card,
-            summaryId: summaryObj.summaryId,
-            summaryType: summaryTypeLabel,
-            summaryCreatedAt: summaryObj.summaryCreatedAt,
-            summary,
-            status: "created" as const,
-          };
+        const common = {
+          ...card,
+          summaryId: summary.summaryId,
+          summaryType: summaryTypeLabel,
+          summaryCreatedAt: summary.summaryCreatedAt,
+          summary,
+          status: "created",
+        };
 
-          result.push({
-            ...common,
-            _kind: "combined", // 원본+요약본
-          });
-        }
+        result.push({
+          ...common,
+          _kind: "combined", // 원본+요약본
+        });
       }
     }
 
@@ -216,7 +207,7 @@ export default function HomePage() {
         setPage(nextPage);
 
         if (!append || nextPage === 1) {
-          idSetRef.current = new Set(list.map((x: ProjectListItem) => x.id));
+          idSetRef.current = new Set(list.map((x) => x.id));
           setProjects(list);
         } else {
           const acc: ProjectListItem[] = [];
@@ -468,7 +459,11 @@ export default function HomePage() {
             {/* 1 / 2 / 3 / 4 컬럼 그리드 (카드 4개 한 줄 기준) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
               {expandedRecentCards.map((card) => {
-                const kind = card._kind;
+                const kind = (card as any)._kind as
+                  | "draft"
+                  | "original"
+                  | "combined"
+                  | undefined;
 
                 return (
                   <TroublogCard
@@ -476,19 +471,14 @@ export default function HomePage() {
                       card.summaryId ?? "none"
                     }`}
                     {...card}
-                    status={(card.status ?? "complete") as StatusType}
-                    summaryType={
-                      card.summaryType as TroublogCardProps["summaryType"]
-                    }
                     compact
                     onDeleted={handleRecentDeleted}
                     onClick={() => {
                       const ownerId = card.authorId ?? undefined;
 
-                      // 작성중 카드: 이어서 작성하기
-                      // 템플릿 타입에 따라 TEMP_WRITING 또는 FREEFORM_WRITING으로 이동
-                      // 현재는 TEMP_WRITING으로 이동하며, 상세 페이지에서 템플릿 타입에 따라 분기 처리됨
+                      // 작성중 카드: 이어서 작성하기 (템플릿에 맞게 수정 가능)
                       if (kind === "draft") {
+                        // TODO: 실제 이어쓰기 라우팅 규칙에 맞게 조정
                         navigate(PATH.TEMP_WRITING, {
                           state: {
                             from: "home",

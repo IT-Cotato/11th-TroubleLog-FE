@@ -7,11 +7,7 @@ import FollowButton from "@/shared/ui/Button/FollowButton";
 import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
 import WithdrawCompleteModal from "@/shared/ui/Modal/WithdrawCompleteModal";
-import type {
-  ProfileData,
-  UpdatedProfileData,
-  UserInfoData,
-} from "@/models/user.model";
+import type { ProfileData, UpdatedProfileData } from "@/models/user.model";
 import {
   deleteUser,
   getMyProfile,
@@ -95,16 +91,14 @@ const EditProfile = () => {
       try {
         const [me, userInfo] = await Promise.all([
           getMyProfile(),
-          id
-            ? getUserInfo(Number(id))
-            : Promise.resolve<UserInfoData | null>(null),
+          id ? getUserInfo(Number(id)) : Promise.resolve(null as any),
         ]);
 
         const serverProfileUrl =
           userInfo?.profileImgUrl ||
           userInfo?.profileUrl ||
-          me.profileImageUrl ||
-          me.profileUrl ||
+          (me as any)?.profileImgUrl ||
+          (me as any)?.profileUrl ||
           "";
 
         if (!alive) return;

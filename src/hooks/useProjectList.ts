@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getProjectList } from "@/api/project.api";
-import type { ProjectListItem } from "@/models/project.model";
+import type { ProjectListItem } from "@/types/project.model";
 
 export function useProjectList() {
   const [data, setData] = useState<ProjectListItem[]>([]);

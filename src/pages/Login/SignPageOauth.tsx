@@ -13,14 +13,12 @@ import { handleLoginSuccess } from "@/utils/handleLoginSuccess";
 
 const DRAFT_KEY = "signOauthDraft"; // OAuth 전용 드래프트 키
 
-import type { SignPageOauthState } from "@/types/auth-navigation.model";
-
 const SignPageOauth = () => {
   const navigate = useNavigate();
-  const location = useLocation() as { state?: SignPageOauthState };
+  const location = useLocation() as any;
 
   // 카카오 인증 직후 전달되는 값
-  const stateUserId = location?.state?.userId;
+  const stateUserId = location?.state?.userId as number | undefined;
   const stateKakaoNickname = location?.state?.nickname as string | undefined;
 
   // OAuth 원본 정보 (UI에 노출 X)

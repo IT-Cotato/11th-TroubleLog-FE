@@ -18,9 +18,6 @@ import type {
   PostContentDto,
   SummaryTypeParam,
   StartLoadingResponse,
-  ViewPostResponse,
-  TagsByKeywordResponse,
-  WaitLoadingResponse,
 } from "@/models/post.model";
 import {
   toCreatePostRequest,
@@ -295,12 +292,12 @@ export default function FreeFormWritePage() {
     (async () => {
       if (!isResume || !resumePostId) return;
       try {
-        const d = await getPostDetail(resumePostId);
-        setTitle(d.title ?? "");
-        const contents = Array.isArray(d.contents) ? d.contents : [];
+        const d: any = await getPostDetail(resumePostId);
+        setTitle(d?.title ?? "");
+        const contents = Array.isArray(d?.contents) ? d.contents : [];
         setBlocks(
           contents.length > 0
-            ? contents.map((c, idx) => ({
+            ? contents.map((c: any, idx: number) => ({
                 id: c.id ?? idx,
                 title: c.subTitle ?? "",
                 content: c.body ?? "",
@@ -308,16 +305,20 @@ export default function FreeFormWritePage() {
               }))
             : [{ id: Date.now(), title: "", content: "", isSaved: false }]
         );
-        setCurrentThumbnail(d.thumbnailImageUrl ?? null);
-        const s = d.postStatus as "WRITING" | "COMPLETED" | "SUMMARIZED" | undefined;
+        setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
+        const s = (d?.postStatus ?? d?.status) as
+          | "WRITING"
+          | "COMPLETED"
+          | "SUMMARIZED"
+          | undefined;
         setInitialPostStatus(s ?? null);
         setDetailPrefill({
-          importance: typeof d.starRating === "number" ? d.starRating : 0,
-          description: String(d.introduction ?? ""),
-          visibility: d.isVisible ? "public" : "private",
-          projectId: Number.isFinite(d.projectId) ? d.projectId : null,
+          importance: Number(d?.starRating ?? 0),
+          description: String(d?.introduction ?? ""),
+          visibility: d?.isVisible ? "public" : "private",
+          projectId: Number.isFinite(d?.projectId) ? Number(d.projectId) : null,
           projectName: "", // 필요시 후속 조회로 채워도 무방
-          thumbnail: d.thumbnailImageUrl ?? null,
+          thumbnail: d?.thumbnailImageUrl ?? null,
         });
       } catch {
         /* ignore */
@@ -349,13 +350,16 @@ export default function FreeFormWritePage() {
   const toContentDtoList = (items: BlockData[]): PostContentDto[] =>
     items
       .filter((b) => (b.content ?? "").trim().length > 0)
-      .map((b, i) => ({
-        subTitle: (b.title ?? "").trim() || `Section ${i + 1}`,
-        body: b.content,
-        sequence: i + 1,
-        authorType: "USER_WRITTEN",
-        summaryType: "NONE",
-      }));
+      .map(
+        (b, i) =>
+          ({
+            subTitle: (b.title ?? "").trim() || `Section ${i + 1}`,
+            body: b.content,
+            sequence: i + 1,
+            authorType: "USER_WRITTEN",
+            summaryType: "NONE",
+          } as any)
+      );
 
   // ------------ 태그 정규화 ------------
   const canonicalizeTags = async (rawTags: string[]) => {
@@ -365,9 +369,10 @@ export default function FreeFormWritePage() {
       const q = String(raw).replace(/^#\s*/, "").trim();
       if (!q) continue;
 
-      const res = await getTagsByKeyword({ tagName: q });
-      // TagsByKeywordResponse는 string[] 형태로 반환됨
-      const list: string[] = Array.isArray(res) ? res : [];
+      const res: any = await getTagsByKeyword({ tagName: q });
+      const list: any[] = Array.isArray(res)
+        ? res
+        : res?.data ?? res?.content ?? res?.results ?? [];
 
       const names = list
         .map((t) => (typeof t === "string" ? t : t?.name ?? t))
@@ -434,12 +439,14 @@ export default function FreeFormWritePage() {
       : maybeId;
 
     if (resolvedId) {
-      await editPost(resolvedId, toEditPostRequest(form));
+      await editPost(resolvedId, toEditPostRequest(form) as any);
       return resolvedId;
     }
 
-    const created = await createPost(toCreatePostRequest(form));
-    const newId = created.id;
+    const created: any = await createPost(toCreatePostRequest(form) as any);
+    const newId = Number(
+      created?.id ?? created?.data?.id ?? created?.content?.id
+    );
     if (!Number.isFinite(newId)) throw new Error("생성된 포스트 ID 누락");
     return newId;
   };
@@ -673,7 +680,7 @@ export default function FreeFormWritePage() {
       const editForm = await buildEditFormFromMeta(effectiveMeta, {
         mode: "summary",
       });
-      await editPost(postId, toEditPostRequest(editForm));
+      await editPost(postId, toEditPostRequest(editForm) as any);
 
       // 2) 수정 성공 후에만 요약 로딩 UI 오픈 및 요약 시작
       setIsTemplateSelectModalOpen(false);
@@ -684,7 +691,10 @@ export default function FreeFormWritePage() {
       setTemplateLabel(label);
 
       const res: StartLoadingResponse = await startSummary(postId, type);
-      const taskId = res.taskId;
+      const taskId =
+        (res as any).taskId ??
+        (res as any).data?.taskId ??
+        (res as any).content?.taskId;
       if (!taskId) throw new Error("요약 작업 ID(taskId)를 찾을 수 없어요.");
 
       setSummaryTaskId(taskId);
@@ -717,7 +727,9 @@ export default function FreeFormWritePage() {
     const tick = async () => {
       // 리프레시 진행 중이면 먼저 대기
       const awaitRefreshIfAny = async () => {
-        const p = window.__authRefreshPromise;
+        const p = (window as any).__authRefreshPromise as Promise<
+          string | null
+        > | null;
         if (p) {
           try {
             await p;
@@ -737,13 +749,15 @@ export default function FreeFormWritePage() {
             __skipGlobalAuthGuard: true, // 전역 가드 스킵(자체 처리)
           });
 
-        let data: WaitLoadingResponse;
+        let data: any;
         try {
           data = await fetchOnce();
         } catch (e) {
           // 401이면 리프레시 후 1회 재시도
           if (isAxiosError(e) && e.response?.status === 401) {
-            const inflight = window.__authRefreshPromise;
+            const inflight = (window as any).__authRefreshPromise as Promise<
+              string | null
+            > | null;
             const token = inflight ? await inflight : await startRefresh();
             if (!token) throw e; // 실패 → 상위에서 처리(모달 닫기 등)
 
@@ -767,11 +781,9 @@ export default function FreeFormWritePage() {
         else if (
           data?.result &&
           typeof data.result === "object" &&
-          "message" in data.result
+          "message" in (data.result as any)
         ) {
-          setStatusMessage(
-            (data.result as { message?: string }).message ?? ""
-          );
+          setStatusMessage((data.result as any).message ?? "");
         }
 
         if (data?.status === "COMPLETED" || p >= 100) {
@@ -1037,7 +1049,7 @@ export default function FreeFormWritePage() {
     if (!isResume || !resumePostId || !previewMeta) return;
     try {
       const form = await buildEditFormFromMeta(previewMeta, { mode: "final" });
-      await editPost(resumePostId, toEditPostRequest(form));
+      await editPost(resumePostId, toEditPostRequest(form) as any);
       setDraftPostId(resumePostId);
       setCreatedPostId(resumePostId);
       setShowSaveAlert(true);

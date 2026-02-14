@@ -22,7 +22,6 @@ import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useViewerId } from "@/store/auth";
 import { decideCombined } from "@/entities/trouble/lib/combinedRoute";
-import type { ProjectDetailState } from "@/types/project-navigation.model";
 
 type VisibilityOption = "전체" | "공개" | "비공개";
 type StatusType = "inProgress" | "complete" | "created";
@@ -38,7 +37,7 @@ export default function ProjectDetailPage() {
     new Set()
   );
 
-  const location = useLocation() as { state?: ProjectDetailState };
+  const location = useLocation() as { state?: { projectName?: string } };
   const [projectName, setProjectName] = useState<string>(
     location.state?.projectName ?? "프로젝트"
   );

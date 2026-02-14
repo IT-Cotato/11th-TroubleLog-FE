@@ -208,7 +208,7 @@ export default function TroublogCard({
             <CardFooterInfo
               isMine={isMine}
               status={status}
-              visibility={visibility}
+              visibility={visibility as any}
               likeCount={likeCount}
               commentCount={commentCount}
               importance={importance}

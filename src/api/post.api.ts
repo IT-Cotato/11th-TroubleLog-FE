@@ -23,7 +23,7 @@ import getAPIResponseData from "@/utils/getAPIResponseData";
 import api from "./axios";
 import type { AxiosRequestConfig } from "axios";
 
-const inflightMineDetail = new Map<number, Promise<ViewPostResponse>>();
+const inflightMineDetail = new Map<number, Promise<any>>();
 
 // 상세
 export function getPostDetail(postId: number) {
