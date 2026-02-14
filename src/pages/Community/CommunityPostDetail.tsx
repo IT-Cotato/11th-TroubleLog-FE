@@ -1121,9 +1121,7 @@ export default function CommunityPostDetail() {
                       {post.errorType}
                     </span>
                     <div className="relative shrink-0" ref={menuRef}>
-                      <KebabMenuButton
-                        onClick={() => setShowMenu(!showMenu)}
-                      />
+                      <KebabMenuButton onClick={() => setShowMenu(!showMenu)} />
                       {showMenu && (
                         <KebabDropdown
                           options={
@@ -1139,19 +1137,19 @@ export default function CommunityPostDetail() {
                                       !deleting && handleDeletePost(),
                                   },
                                 ]
-                                : [
-                                    {
-                                      label: "신고하기",
-                                      onClick: () => {
-                                        setShowMenu(false);
-                                        setReportTarget({
-                                          type: "post",
-                                          postId: effectiveId,
-                                        });
-                                        setReportModalOpen(true);
-                                      },
+                              : [
+                                  {
+                                    label: "신고하기",
+                                    onClick: () => {
+                                      setShowMenu(false);
+                                      setReportTarget({
+                                        type: "post",
+                                        postId: effectiveId,
+                                      });
+                                      setReportModalOpen(true);
                                     },
-                                  ]
+                                  },
+                                ]
                           }
                         />
                       )}
@@ -1461,7 +1459,11 @@ export default function CommunityPostDetail() {
             setReportTarget(null);
           }}
           onSubmit={(reason) => {
-            console.log("신고 사유:", reason, "대상:", reportTarget);
+            // TODO: 신고 API 연동
+            void reason;
+            void reportTarget;
+
+            showToast("신고가 접수되었습니다.");
             setReportModalOpen(false);
             setReportTarget(null);
           }}

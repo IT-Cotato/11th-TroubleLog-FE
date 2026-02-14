@@ -18,7 +18,7 @@ export type ReportReason = (typeof REPORT_REASONS)[number];
 interface ReportModalProps {
   onClose: () => void;
   onSubmit?: (reason: ReportReason) => void;
-  /** 권리침해 신고 페이지 URL (미제공 시 링크 비활성화 또는 #) */
+  /** 권리침해 신고 페이지 URL (미제공 시 링크 비활성화) */
   rightsViolationReportUrl?: string;
   loading?: boolean;
 }
@@ -26,7 +26,7 @@ interface ReportModalProps {
 export default function ReportModal({
   onClose,
   onSubmit,
-  rightsViolationReportUrl = "#",
+  rightsViolationReportUrl,
   loading = false,
 }: ReportModalProps) {
   const [selectedReason, setSelectedReason] = useState<ReportReason>(
@@ -99,17 +99,24 @@ export default function ReportModal({
 추가 서류가 접수되지 않을 경우, 신고 건이 처리되지 않습니다.`}
       </p>
 
-      {/* 권리침해 신고하기 링크 */}
-
-      <a
-        href={rightsViolationReportUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-body-16-regular text-[#525252] hover:opacity-90 mt-3 mb-8 inline-flex items-center gap-0.5 px-8 sm:px-12"
-      >
-        <p className="underline">권리침해 신고하기</p>
-        &gt;
-      </a>
+      {/* 권리침해 신고하기 링크 (URL 제공 시에만 렌더링) */}
+      {rightsViolationReportUrl &&
+      rightsViolationReportUrl !== "#" &&
+      rightsViolationReportUrl.trim() !== "" ? (
+        <a
+          href={rightsViolationReportUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-body-16-regular text-[#525252] hover:opacity-90 mt-3 mb-8 inline-flex items-center gap-0.5 px-8 sm:px-12"
+        >
+          <span className="underline">권리침해 신고하기</span>
+          &gt;
+        </a>
+      ) : (
+        <span className="text-body-16-regular text-gray2 mt-3 mb-8 inline-flex items-center gap-0.5 px-8 sm:px-12 cursor-default">
+          권리침해 신고하기 &gt;
+        </span>
+      )}
 
       {/* 신고하기 버튼 */}
       <div className="flex justify-center w-full">
