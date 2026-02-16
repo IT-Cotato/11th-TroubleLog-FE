@@ -9,9 +9,14 @@ export default defineConfig(({ command, mode }) => {
   const normalizedBase = rawBase.endsWith("/") ? rawBase : `${rawBase}/`;
   const base = command === "serve" ? "/" : normalizedBase;
 
+  const isBuild = command === "build";
+
   return {
     base,
     plugins: [react()],
+    esbuild: {
+      drop: isBuild ? ["console", "debugger"] : [],
+    },
     server: {
       proxy: {
         "/api": {

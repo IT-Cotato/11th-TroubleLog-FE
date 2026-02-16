@@ -345,18 +345,4 @@ if (import.meta.env.DEV) {
   (window as any).__api = api;
   (window as any).__apiBase = API_BASE_URL;
   (window as any).__apiOrigin = API_ORIGIN;
-  // (window as any).__forceRefresh = async () => {
-  //   console.groupCollapsed("[DEBUG] __forceRefresh()");
-  //   const t = await startRefresh();
-  //   console.log(
-  //     "startRefresh() returned:",
-  //     t ? `${t.slice(0, 8)}…(${t.length})` : t
-  //   );
-  //   console.log(
-  //     "localStorage.accessToken now:",
-  //     localStorage.getItem("accessToken")
-  //   );
-  //   console.groupEnd();
-  //   return t;
-  // };
 }
