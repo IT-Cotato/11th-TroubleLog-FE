@@ -18,12 +18,12 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
-import { likeCommunityPost } from "@/api/community.api";
 import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { postFollow, postUnfollow } from "@/api/user.api";
 import { extractIdFromSlug, makePostSlug } from "@/shared/lib/slug";
 import { usePostDetail } from "./hooks/usePostDetail";
 import { usePostComments } from "./hooks/usePostComments";
+import { usePostLike } from "./hooks/usePostLike";
 
 export type { CommunityPostDetailProps } from "./types";
 
@@ -95,8 +95,14 @@ export default function CommunityPostDetail() {
     handleDelete,
   } = commentsApi;
 
-  const [isLiking, setIsLiking] = useState(false);
-  const likeLockRef = useRef(false);
+  const { isLiking, handleToggleLike } = usePostLike({
+    effectiveId,
+    isCommunitySource,
+    isLiked,
+    likeCounts,
+    setIsLiked,
+    setLikeCounts,
+  });
 
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -265,55 +271,6 @@ export default function CommunityPostDetail() {
   const handleProfileClick = () => {
     if (!post || post.authorId == null) return;
     navigate(PATH.MYPAGE_ID(String(post.authorId)));
-  };
-
-  // 좋아요 토글(커뮤니티 글에서만)
-  const handleToggleLike = async () => {
-    if (!Number.isFinite(effectiveId)) return;
-    if (!isCommunitySource) {
-      alert("작성 중/비공개 문서는 좋아요를 사용할 수 없어요.");
-      return;
-    }
-    if (likeLockRef.current) return;
-    likeLockRef.current = true;
-    setIsLiking(true);
-
-    const pid = effectiveId;
-    const wasLiked = isLiked;
-    const prevCount = likeCounts;
-
-    if (wasLiked) {
-      setIsLiked(false);
-      setLikeCounts(Math.max(0, prevCount - 1));
-      try {
-        await likeCommunityPost(pid);
-      } catch {
-        setIsLiked(true);
-        setLikeCounts(prevCount);
-      } finally {
-        likeLockRef.current = false;
-        setIsLiking(false);
-      }
-    } else {
-      setIsLiked(true);
-      setLikeCounts(prevCount + 1);
-      try {
-        const res = await likeCommunityPost(pid);
-        setLikeCounts(res?.likeCount ?? prevCount + 1);
-      } catch (err: any) {
-        const status = err?.response?.status ?? err?.status;
-        if (status === 409) {
-          setIsLiked(true);
-          setLikeCounts(prevCount);
-        } else {
-          setIsLiked(false);
-          setLikeCounts(prevCount);
-        }
-      } finally {
-        likeLockRef.current = false;
-        setIsLiking(false);
-      }
-    }
   };
 
   // 포스트 삭제
