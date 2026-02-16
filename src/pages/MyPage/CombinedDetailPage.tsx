@@ -37,6 +37,11 @@ import {
   toPostComment,
   toPostComments,
 } from "@/entities/trouble/mappers/communityComment.mapper";
+import { parseStar } from "@/shared/utils/starParser";
+import {
+  buildFreeformPrefill,
+  buildTemplatePrefill,
+} from "@/shared/utils/prefillBuilder";
 
 export default function CombinedDetailPage() {
   const { postId, summaryId } = useParams<{
@@ -136,109 +141,6 @@ export default function CombinedDetailPage() {
         : "복사에 실패했어요. 주소창에서 복사해주세요."
     );
   };
-
-  const parseStar = (raw: unknown) => {
-    if (typeof raw === "number") return raw;
-    if (typeof raw !== "string") return 0;
-    const k = raw.toUpperCase();
-    const map: Record<string, number> = {
-      ONE_STAR: 1,
-      TWO_STARS: 2,
-      THREE_STARS: 3,
-      FOUR_STARS: 4,
-      FIVE_STARS: 5,
-      ONE: 1,
-      TWO: 2,
-      THREE: 3,
-      FOUR: 4,
-      FIVE: 5,
-      NONE: 0,
-    };
-    return map[k] ?? 0;
-  };
-
-  type DetailContentItem = {
-    id?: number;
-    subTitle?: string | null;
-    body?: string | null;
-    sequence?: number;
-  };
-
-  function buildFreeformPrefill(detail: any) {
-    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
-      ? detail.contents
-      : [];
-
-    const blocks = contents
-      .slice()
-      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
-      .map((c, i) => ({
-        id: c.id ?? i,
-        title: c.subTitle ?? "",
-        content: c.body ?? "",
-        isSaved: false,
-      }));
-
-    return {
-      editorType: "FREEFORM" as const,
-      title: detail?.title ?? "",
-      tags: detail?.postTags ?? [],
-      errorType: detail?.errorTag ?? null,
-      blocks,
-      savePrefill: {
-        importance: parseStar(detail?.starRating),
-        description: detail?.introduction ?? "",
-        visibility: detail?.isVisible ? "public" : "private",
-        projectId: detail?.projectId ?? null,
-        projectName: undefined,
-        thumbnail: detail?.thumbnailUrl ?? detail?.thumbnailImageUrl ?? null,
-      },
-      projectId: detail?.projectId ?? undefined,
-    };
-  }
-
-  function buildTemplatePrefill(detail: any) {
-    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
-      ? detail.contents
-      : [];
-
-    const blocks = contents
-      .slice()
-      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
-      .map((c, i) => ({
-        id: c.id ?? i,
-        content: c.body ?? "",
-        checklist: [],
-        checklistItems: [],
-        checklistTitle: c.subTitle ? `${c.subTitle} ` : "",
-        question: c.subTitle ?? `질문 ${i + 1}`,
-        isSaved: false,
-      }));
-
-    return {
-      editorType: "TEMPLATE" as const,
-      title: detail?.title ?? "",
-      tags: detail?.postTags ?? [],
-      errorType: detail?.errorTag ?? null,
-      blocks,
-      savePrefill: {
-        importance: parseStar(detail?.starRating),
-        description: detail?.introduction ?? "",
-        visibility: detail?.isVisible ? "public" : "private",
-        projectId: detail?.projectId ?? null,
-        projectName: undefined,
-        thumbnail: detail?.thumbnailUrl ?? detail?.thumbnailImageUrl ?? null,
-      },
-      projectId: detail?.projectId ?? undefined,
-      // TempWritePage가 그대로 받아 쓰는 키
-      checklistError: Array.isArray(detail?.checklistError)
-        ? detail.checklistError
-        : [],
-      checklistReason: Array.isArray(detail?.checklistReason)
-        ? detail.checklistReason
-        : [],
-    };
-  }
 
   const SUMMARY_TYPE_LABELS: Record<string, string> = {
     RESUME: "자기소개서",

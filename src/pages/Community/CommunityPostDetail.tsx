@@ -8,8 +8,14 @@ import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
 import ReportModal from "@/shared/ui/Modal/ReportModal";
 import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
+import { useDetailContext } from "@/hooks/useDetailContext";
+import { parseApiError } from "@/shared/utils/apiErrorParser";
+import {
+  buildFreeformPrefill,
+  buildTemplatePrefill,
+} from "@/shared/utils/prefillBuilder";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
@@ -30,7 +36,6 @@ import {
   toPostComment,
   toPostComments,
 } from "@/entities/trouble/mappers/communityComment.mapper";
-import { useViewerId } from "@/store/auth";
 import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
 import { postFollow, postUnfollow } from "@/api/user.api";
@@ -71,8 +76,7 @@ export default function CommunityPostDetail() {
 
   const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
   const [loading, setLoading] = useState(true);
-  type LoadErr = { status?: number; message: string };
-  const [loadError, setLoadError] = useState<LoadErr | null>(null);
+  const [loadError, setLoadError] = useState<ReturnType<typeof parseApiError> | null>(null);
 
   // 좋아요/댓글 로컬 상태
   const [isLiked, setIsLiked] = useState(false);
@@ -111,17 +115,6 @@ export default function CommunityPostDetail() {
   const [asideOffset, setAsideOffset] = useState(0);
   // 섹션 refs는 HTMLDivElement로 구체화
   const sectionRefs = useRef<Array<HTMLDivElement | null>>([]);
-
-  // 서버 에러 응답 파싱
-  const parseApiError = (err: any): LoadErr => {
-    const status = err?.response?.status;
-    const message =
-      err?.response?.data?.error?.message ??
-      err?.response?.data?.message ??
-      err?.message ??
-      "요청 처리 중 오류가 발생했어요.";
-    return { status, message };
-  };
 
   // 유효 ID 계산
   const effectiveId = useMemo(() => {
@@ -169,174 +162,7 @@ export default function CommunityPostDetail() {
   // 이어서 작성 안내 경고창
   const resumePromptShownRef = useRef<Record<number, boolean>>({});
 
-  // 컨텍스트/판정 유틸
-  type FromSource =
-    | "home"
-    | "community"
-    | "search"
-    | "mypage"
-    | "project"
-    | undefined;
-  type SearchScope = "my" | "community" | undefined;
-
-  type DetailContentItem = {
-    id?: number;
-    subTitle?: string | null;
-    body?: string | null;
-    sequence?: number;
-  };
-
-  function useDetailContext() {
-    const location = useLocation();
-    const viewerIdInStore = useViewerId();
-
-    const stateFrom = (location.state as any)?.from as FromSource | undefined;
-    const stateOwnerId = (location.state as any)?.ownerId as number | undefined;
-
-    const qs = new URLSearchParams(location.search);
-    const qsFrom = (qs.get("from") as FromSource) || undefined;
-    const qsOwnerId = qs.get("ownerId");
-    const ownerId = stateOwnerId ?? (qsOwnerId ? Number(qsOwnerId) : undefined);
-    const from = stateFrom ?? qsFrom;
-
-    const stateScope = (location.state as any)?.searchScope as
-      | SearchScope
-      | undefined;
-    const qsScope = (qs.get("scope") as SearchScope) || undefined;
-    const searchScope = stateScope ?? qsScope;
-
-    // 목록에서 실어온 힌트
-    const statusFromList = (location.state as any)?.statusFromList as
-      | "inProgress"
-      | "complete"
-      | "created"
-      | undefined;
-    const isVisibleFromList = (location.state as any)?.isVisibleFromList as
-      | boolean
-      | undefined;
-    const summaryIdFromList = (location.state as any)?.summaryIdFromList as
-      | number
-      | undefined;
-    const isMineFromList = (location.state as any)?.isMineFromList as
-      | boolean
-      | undefined;
-
-    return {
-      from,
-      ownerId,
-      viewerId: viewerIdInStore,
-      searchScope,
-      statusFromList,
-      isVisibleFromList,
-      summaryIdFromList,
-      isMineFromList,
-    };
-  }
-
-  // 별점 enum/문자 → 숫자
-  const parseStar = (raw: unknown) => {
-    if (typeof raw === "number") return raw;
-    if (typeof raw !== "string") return 0;
-    const k = raw.toUpperCase();
-    const map: Record<string, number> = {
-      ONE_STAR: 1,
-      TWO_STARS: 2,
-      THREE_STARS: 3,
-      FOUR_STARS: 4,
-      FIVE_STARS: 5,
-      ONE: 1,
-      TWO: 2,
-      THREE: 3,
-      FOUR: 4,
-      FIVE: 5,
-      NONE: 0,
-    };
-    return map[k] ?? 0;
-  };
-
-  // 상세 응답 → FREEFORM 프리필 state
-  function buildFreeformPrefill(detail: any) {
-    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
-      ? detail.contents
-      : [];
-
-    const blocks = contents
-      .slice()
-      .sort(
-        (a: DetailContentItem, b: DetailContentItem) =>
-          (a.sequence ?? 0) - (b.sequence ?? 0),
-      )
-      .map((c: DetailContentItem, i: number) => ({
-        id: c.id ?? i,
-        title: c.subTitle ?? "",
-        content: c.body ?? "",
-        isSaved: false,
-      }));
-
-    return {
-      editorType: "FREEFORM" as const,
-      title: detail?.title ?? "",
-      tags: detail?.postTags ?? [],
-      errorType: detail?.errorTag ?? null,
-      blocks,
-      savePrefill: {
-        importance: parseStar(detail?.starRating),
-        description: detail?.introduction ?? "",
-        visibility: detail?.isVisible ? "public" : "private",
-        projectId: detail?.projectId ?? null,
-        projectName: undefined,
-        thumbnail: detail?.thumbnailUrl ?? null,
-      },
-      projectId: detail?.projectId ?? undefined,
-    };
-  }
-
-  // 상세 응답 → TEMPLATE 프리필 state
-  function buildTemplatePrefill(detail: any) {
-    const contents: DetailContentItem[] = Array.isArray(detail?.contents)
-      ? detail.contents
-      : [];
-
-    const blocks = contents
-      .slice()
-      .sort(
-        (a: DetailContentItem, b: DetailContentItem) =>
-          (a.sequence ?? 0) - (b.sequence ?? 0),
-      )
-      .map((c: DetailContentItem, i: number) => ({
-        id: c.id ?? i,
-        content: c.body ?? "",
-        checklist: [],
-        checklistItems: [],
-        checklistTitle: c.subTitle ? `${c.subTitle} 체크리스트` : "",
-        question: c.subTitle ?? `질문 ${i + 1}`,
-        isSaved: false,
-      }));
-
-    return {
-      editorType: "TEMPLATE" as const,
-      title: detail?.title ?? "",
-      tags: detail?.postTags ?? [],
-      errorType: detail?.errorTag ?? null,
-      blocks,
-      savePrefill: {
-        importance: parseStar(detail?.starRating),
-        description: detail?.introduction ?? "",
-        visibility: detail?.isVisible ? "public" : "private",
-        projectId: detail?.projectId ?? null,
-        projectName: undefined,
-        thumbnail: detail?.thumbnailUrl ?? null,
-      },
-      projectId: detail?.projectId ?? undefined,
-      // TempWritePage에서 기대하는 키 이름으로 전달
-      checklistError: Array.isArray(detail?.checklistError)
-        ? detail.checklistError
-        : [],
-      checklistReason: Array.isArray(detail?.checklistReason)
-        ? detail.checklistReason
-        : [],
-    };
-  }
+  const detailCtx = useDetailContext();
 
   // 공유 토스트
   const [toast, setToast] = useState<{ open: boolean; message: string }>({
@@ -419,8 +245,6 @@ export default function CommunityPostDetail() {
     }
   };
 
-  // 상세 로드
-  const detailCtx = useDetailContext();
   const [isCommunitySource, setIsCommunitySource] = useState(true); // 좋아요/댓글 표시 가드
 
   useEffect(() => {
