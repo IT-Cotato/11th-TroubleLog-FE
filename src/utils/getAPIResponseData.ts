@@ -27,7 +27,7 @@ async function getAPIResponseData<T, D = any>(
 
     // ApiResponse<T> 형태면 data.data 반환
     if (data && typeof data === "object" && "data" in data) {
-      return (data as any).data as T;
+      return (data as { data: T }).data;
     }
 
     return data as T;
