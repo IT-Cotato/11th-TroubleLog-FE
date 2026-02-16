@@ -5,12 +5,7 @@ import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
 import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
 import ReportModal from "@/shared/ui/Modal/ReportModal";
 import { PATH } from "@/shared/config/paths";
-import useClickOutside from "@/hooks/useClickOutside";
 import { useDetailContext } from "@/hooks/useDetailContext";
-import {
-  buildFreeformPrefill,
-  buildTemplatePrefill,
-} from "@/shared/utils/prefillBuilder";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import imageIcon from "@/assets/icons/image.svg";
@@ -18,12 +13,12 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
-import { getPostDetail, hardDeletePost } from "@/api/post.api";
-import { postFollow, postUnfollow } from "@/api/user.api";
 import { extractIdFromSlug, makePostSlug } from "@/shared/lib/slug";
 import { usePostDetail } from "./hooks/usePostDetail";
 import { usePostComments } from "./hooks/usePostComments";
 import { usePostLike } from "./hooks/usePostLike";
+import { usePostMenu } from "./hooks/usePostMenu";
+import { usePostNavigation } from "./hooks/usePostNavigation";
 
 export type { CommunityPostDetailProps } from "./types";
 
@@ -104,57 +99,48 @@ export default function CommunityPostDetail() {
     setLikeCounts,
   });
 
-  const [showMenu, setShowMenu] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [reportTarget, setReportTarget] = useState<
-    | { type: "post"; postId: number }
-    | { type: "comment"; commentId: string }
-    | null
-  >(null);
-  const closeMenu = useCallback(() => setShowMenu(false), []);
-  const menuRef = useClickOutside(() => setShowMenu(false));
+  const {
+    showMenu,
+    setShowMenu,
+    deleting,
+    reportModalOpen,
+    setReportModalOpen,
+    reportTarget,
+    setReportTarget,
+    closeMenu,
+    menuRef,
+    handleDeletePost,
+  } = usePostMenu({
+    effectiveId,
+    from: detailCtx.from,
+    navigate,
+  });
 
-  const [currentSection, setCurrentSection] = useState<number>(0);
-  const contentColRef = useRef<HTMLDivElement | null>(null);
-  const [asideOffset, setAsideOffset] = useState(0);
-  const sectionRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const nav = usePostNavigation({
+    effectiveId,
+    post,
+    setPost,
+    navigate,
+    closeMenu,
+    viewerId: detailCtx.viewerId ?? null,
+    headerOffset: HEADER_OFFSET,
+  });
 
-  useEffect(() => {
-    const updateAsideOffset = () => {
-      const first = sectionRefs.current[0];
-      const col = contentColRef.current;
-      if (!first || !col) {
-        setAsideOffset(0);
-        return;
-      }
-      const firstTop = first.getBoundingClientRect().top + window.scrollY;
-      const colTop = col.getBoundingClientRect().top + window.scrollY;
-      const gap = Math.max(0, Math.round(firstTop - colTop));
-      setAsideOffset(gap);
-    };
-
-    // 초기에 한 번, 레이아웃 안정화 직후 한 번
-    requestAnimationFrame(updateAsideOffset);
-
-    // 리사이즈/폰트/이미지 로딩 등 레이아웃 변화에 대응
-    const onResize = () => updateAsideOffset();
-    window.addEventListener("resize", onResize);
-    window.addEventListener("load", onResize);
-
-    // 본문 컬럼 변화를 관찰(높이/폭 변동)
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined" && contentColRef.current) {
-      ro = new ResizeObserver(updateAsideOffset);
-      ro.observe(contentColRef.current);
-    }
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("load", onResize);
-      ro?.disconnect();
-    };
-  }, [post]); // post가 로드된 뒤에 계산
+  const {
+    contentColRef,
+    sectionRefs,
+    currentSection,
+    asideOffset,
+    scrollToSection,
+    goEditWithPrefill,
+    handleProfileClick,
+    handleFollow,
+    handleUnfollow,
+    goBack,
+    goCommunity,
+    goHome,
+    goMyPage,
+  } = nav;
 
   // 공유 토스트
   const [toast, setToast] = useState<{ open: boolean; message: string }>({
@@ -212,182 +198,15 @@ export default function CommunityPostDetail() {
 
   useEffect(() => {
     if (!post) return;
-
-    // 비공개/내 글(/troubles 기반)일 때는 slug 정규화 X
     if (!isCommunitySource) return;
-
     const canonical =
       PATH.COMMUNITY_POST_SLUG(
-        makePostSlug(post.title, postId ?? effectiveId),
+        makePostSlug(post.title, postId ?? effectiveId)
       ) + window.location.search;
-
     if (!slug || slug !== makePostSlug(post.title, effectiveId)) {
       navigate(canonical, { replace: true });
     }
   }, [post, slug, effectiveId, navigate, postId, isCommunitySource]);
-
-  const navigatingRef = useRef(false);
-
-  const goEditWithPrefill = useCallback(async () => {
-    if (navigatingRef.current) return;
-    navigatingRef.current = true;
-
-    closeMenu();
-
-    try {
-      const pid = effectiveId;
-      if (!Number.isFinite(pid)) return;
-
-      const myDetail = await getPostDetail(pid);
-      const tt = String((myDetail as any)?.templateType ?? "").toUpperCase();
-      const isFreeform = tt === "FREE_FORM" || tt === "FREEFORM";
-      const editorPath = isFreeform ? PATH.FREEFORM_WRITING : PATH.TEMP_WRITING;
-      const prefill = isFreeform
-        ? buildFreeformPrefill(myDetail)
-        : buildTemplatePrefill(myDetail);
-
-      // 같은 페인트 사이클에서의 상태 폭주 방지
-      queueMicrotask(() => {
-        navigate(editorPath, {
-          replace: true,
-          state: {
-            ...prefill,
-            postId: pid,
-            mode: "edit",
-            from: "community-detail",
-          },
-        });
-      });
-    } catch (err) {
-      console.error(err);
-      alert(
-        "수정 화면으로 이동하기 위한 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
-      );
-      navigatingRef.current = false; // 실패 시에만 잠금 해제
-    }
-  }, [postId, navigate, closeMenu]);
-
-  // 작성자 프로필 클릭
-  const handleProfileClick = () => {
-    if (!post || post.authorId == null) return;
-    navigate(PATH.MYPAGE_ID(String(post.authorId)));
-  };
-
-  // 포스트 삭제
-  const handleDeletePost = useCallback(async () => {
-    if (!Number.isFinite(effectiveId)) return;
-    if (
-      !window.confirm(
-        "이 문서를 영구적으로 삭제할까요? 삭제 후에는 복구할 수 없습니다.",
-      )
-    )
-      return;
-
-    try {
-      setDeleting(true);
-      await hardDeletePost(effectiveId);
-      alert("문서가 영구 삭제되었습니다.");
-
-      if (detailCtx.from === "community") {
-        navigate(PATH.COMMUNITY, { replace: true });
-      } else {
-        navigate(-1);
-      }
-    } catch (err: any) {
-      console.error(err);
-      alert(
-        err?.response?.data?.message ??
-          "삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-      );
-    } finally {
-      setDeleting(false);
-      setShowMenu(false);
-    }
-  }, [postId, navigate, detailCtx.from]);
-
-  // 스크롤 감시
-  useEffect(() => {
-    const updateCurrentSection = () => {
-      // 화면의 현재 스크롤 위치에 오프셋을 더해 기준점을 맞춤
-      const y = window.scrollY + HEADER_OFFSET + 1;
-      let cur = 0;
-
-      sectionRefs.current.forEach((ref, idx) => {
-        if (!ref) return;
-        const top = ref.getBoundingClientRect().top + window.scrollY;
-        if (y >= top) cur = idx;
-      });
-
-      setCurrentSection(cur);
-    };
-
-    window.addEventListener("scroll", updateCurrentSection, { passive: true });
-    updateCurrentSection();
-
-    return () => window.removeEventListener("scroll", updateCurrentSection);
-  }, []);
-
-  const scrollToSection = (idx: number) => {
-    const target = sectionRefs.current[idx];
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  // 팔로우
-  const handleFollow = async () => {
-    setPost((prev) =>
-      prev
-        ? {
-            ...prev,
-            isFollowed: true,
-            authorFollowers: (prev.authorFollowers ?? 0) + 1,
-          }
-        : prev,
-    );
-
-    try {
-      await postFollow(Number(post?.authorId));
-    } catch (e) {
-      setPost((prev) =>
-        prev
-          ? {
-              ...prev,
-              isFollowed: false,
-              authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1),
-            }
-          : prev,
-      );
-      console.error("팔로우 실패", e);
-    }
-  };
-
-  // 언팔로우
-  const handleUnfollow = async () => {
-    setPost((prev) =>
-      prev
-        ? {
-            ...prev,
-            isFollowed: false,
-            authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1),
-          }
-        : prev,
-    );
-
-    try {
-      await postUnfollow(Number(post?.authorId));
-    } catch (e) {
-      setPost((prev) =>
-        prev
-          ? {
-              ...prev,
-              isFollowed: true,
-              authorFollowers: (prev.authorFollowers ?? 0) + 1,
-            }
-          : prev,
-      );
-      console.error("언팔로우 실패", e);
-    }
-  };
 
   // 로딩/에러 처리
   if (loading) {
@@ -405,24 +224,7 @@ export default function CommunityPostDetail() {
     );
   }
 
-  // CTA 핸들러들
   const viewerIdForCta = detailCtx.viewerId;
-  const goBack = () => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate(PATH.COMMUNITY, { replace: true });
-  };
-  const goCommunity = () => navigate(PATH.COMMUNITY, { replace: true });
-  const goHome = () => navigate(PATH.HOME, { replace: true });
-  const goLogin = () => {
-    const sp = new URLSearchParams();
-    sp.set("next", window.location.pathname + window.location.search);
-    navigate(`${PATH.ROOT}?${sp.toString()}`, { replace: true });
-  };
-  const goMyPage = () => {
-    if (viewerIdForCta != null) navigate(PATH.MYPAGE_BASE);
-    else goLogin();
-  };
-
   const err = loadError;
 
   // 1) 400 BAD_REQUEST이면 카드 UI
