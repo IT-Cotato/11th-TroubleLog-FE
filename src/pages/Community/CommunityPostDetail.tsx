@@ -1,7 +1,5 @@
 import TagList from "@/entities/trouble/ui/TagList";
-import PostComment, {
-  type PostCommentProps,
-} from "@/entities/trouble/ui/PostComment";
+import PostComment from "@/entities/trouble/ui/PostComment";
 import PostGuideMd from "@/entities/trouble/ui/PostGuideMd";
 import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
 import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
@@ -20,23 +18,12 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import likeEmptyIcon from "@/assets/icons/like_empty.svg";
 import shareIcon from "@/assets/icons/share.svg";
-import {
-  createCommunityComment,
-  getCommunityComments,
-  likeCommunityPost,
-  replyCommunityComment,
-  softDeleteCommunityComment,
-  updateCommunityComment,
-} from "@/api/community.api";
-import {
-  makeOptimisticComment,
-  toPostComment,
-  toPostComments,
-} from "@/entities/trouble/mappers/communityComment.mapper";
+import { likeCommunityPost } from "@/api/community.api";
 import { getPostDetail, hardDeletePost } from "@/api/post.api";
 import { postFollow, postUnfollow } from "@/api/user.api";
 import { extractIdFromSlug, makePostSlug } from "@/shared/lib/slug";
 import { usePostDetail } from "./hooks/usePostDetail";
+import { usePostComments } from "./hooks/usePostComments";
 
 export type { CommunityPostDetailProps } from "./types";
 
@@ -58,14 +45,6 @@ export default function CommunityPostDetail() {
 
   const detailCtx = useDetailContext();
   const resumePromptShownRef = useRef<Record<number, boolean>>({});
-
-  const [commentInput, setCommentInput] = useState("");
-  const [comments, setComments] = useState<PostCommentProps[]>([]);
-  const [isCommentPosting, setIsCommentPosting] = useState(false);
-  const [cPage, setCPage] = useState(1);
-  const [cHasNext, setCHasNext] = useState(false);
-  const [cLoading, setCLoading] = useState(false);
-
   const onLoadStartRef = useRef<() => void>(() => {});
   const onCommunityLoadedRef = useRef<(postId: number, viewerId: number | null) => void>(() => {});
 
@@ -89,36 +68,32 @@ export default function CommunityPostDetail() {
     resumePromptShownRef,
   });
 
-  onLoadStartRef.current = () => {
-    setComments([]);
-    setCPage(1);
-    setCHasNext(false);
+  const commentsApi = usePostComments({
+    effectiveId,
+    isCommunitySource,
+    viewerId: detailCtx.viewerId ?? null,
+    setPost,
+  });
+
+  onLoadStartRef.current = () => commentsApi.resetForNewPost();
+  onCommunityLoadedRef.current = (id: number, viewerId: number | null) => {
+    commentsApi.loadComments(id, 1, viewerId);
   };
 
-  const loadComments = useCallback(
-    async (id: number, page1: number, currentViewerId: number | null) => {
-      setCLoading(true);
-      try {
-        const resp = await getCommunityComments(id, page1, 10);
-        const mapped = toPostComments(resp.content, currentViewerId);
-        setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
-        const nextPage1 = typeof resp.page === "number" ? resp.page + 1 : page1;
-        setCPage(nextPage1);
-        setCHasNext(!!resp.hasNext);
-        setPost((prev) =>
-          prev
-            ? { ...prev, commentCounts: resp.totalElements ?? prev.commentCounts }
-            : prev
-        );
-      } finally {
-        setCLoading(false);
-      }
-    },
-    [setPost]
-  );
-  onCommunityLoadedRef.current = (id: number, viewerId: number | null) => {
-    loadComments(id, 1, viewerId);
-  };
+  const {
+    commentInput,
+    setCommentInput,
+    comments,
+    isCommentPosting,
+    cPage,
+    cHasNext,
+    cLoading,
+    loadComments,
+    handleSubmitComment,
+    handleReply,
+    handleEdit,
+    handleDelete,
+  } = commentsApi;
 
   const [isLiking, setIsLiking] = useState(false);
   const likeLockRef = useRef(false);
@@ -338,126 +313,6 @@ export default function CommunityPostDetail() {
         likeLockRef.current = false;
         setIsLiking(false);
       }
-    }
-  };
-
-  // 댓글 1페이지를 강제 새로고침(작성/삭제 직후 사용)
-  const reloadCommentsFirstPage = useCallback(async () => {
-    if (!Number.isFinite(effectiveId)) return;
-    await loadComments(effectiveId, 1, detailCtx.viewerId ?? null);
-  }, [postId, detailCtx.viewerId]);
-
-  // 댓글 제출(커뮤니티 글에서만)
-  const handleSubmitComment = async () => {
-    if (!Number.isFinite(effectiveId) || !isCommunitySource) return;
-    const contents = commentInput.trim();
-    if (!contents || isCommentPosting) return;
-
-    setIsCommentPosting(true);
-
-    const optimistic = makeOptimisticComment({ contents });
-    setComments((prev) => [optimistic, ...prev]);
-    setPost((p) =>
-      p ? { ...p, commentCounts: (p.commentCounts ?? 0) + 1 } : p,
-    );
-    setCommentInput("");
-
-    try {
-      const created = await createCommunityComment(effectiveId, {
-        contents,
-      });
-      const mapped = toPostComment(created, detailCtx.viewerId, {
-        isReply: false,
-      });
-      setComments((prev) => {
-        const i = prev.findIndex((c) => c.id === optimistic.id);
-        if (i === -1) return [mapped, ...prev];
-        const next = [...prev];
-        next[i] = mapped;
-        return next;
-      });
-      await reloadCommentsFirstPage();
-    } catch {
-      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
-      setPost((p) =>
-        p
-          ? { ...p, commentCounts: Math.max(0, (p.commentCounts ?? 1) - 1) }
-          : p,
-      );
-      setCommentInput(contents);
-    } finally {
-      setIsCommentPosting(false);
-    }
-  };
-
-  // 대댓글 제출
-  const handleReply = async (parentId: string, replyContent: string) => {
-    if (!Number.isFinite(effectiveId) || !isCommunitySource) return;
-    const contents = replyContent.trim();
-    if (!contents) return;
-
-    const optimistic = makeOptimisticComment({ contents, parentId });
-    setComments((prev) => [...prev, optimistic]);
-
-    try {
-      const created = await replyCommunityComment(
-        effectiveId,
-        Number(parentId),
-        { contents },
-      );
-      const mapped = toPostComment(created, detailCtx.viewerId, {
-        isReply: true,
-        parentId,
-      });
-      setComments((prev) => {
-        const i = prev.findIndex((c) => c.id === optimistic.id);
-        if (i === -1) return [...prev, mapped];
-        const next = [...prev];
-        next[i] = mapped;
-        return next;
-      });
-      await reloadCommentsFirstPage();
-    } catch {
-      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
-      console.error("대댓글 작성 실패");
-    }
-  };
-
-  // 댓글 내용 수정
-  const handleEdit = async (id: string, newContent: string) => {
-    if (!Number.isFinite(effectiveId) || !isCommunitySource) return;
-    const pid = effectiveId;
-    const cid = Number(id);
-    try {
-      const updated = await updateCommunityComment({
-        postId: pid,
-        commentId: cid,
-        contents: newContent,
-      });
-      const vm = toPostComment(updated, detailCtx.viewerId);
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === id ? { ...c, content: vm.content, date: vm.date } : c,
-        ),
-      );
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // 댓글 삭제 (soft)
-  const handleDelete = async (id: string) => {
-    if (!isCommunitySource) return;
-    try {
-      await softDeleteCommunityComment(Number(id));
-      setComments((prev) => prev.filter((c) => c.id !== id));
-      setPost((prev) =>
-        prev
-          ? { ...prev, commentCounts: Math.max(0, prev.commentCounts - 1) }
-          : prev,
-      );
-    } catch (e) {
-      console.error(e);
     }
   };
 
