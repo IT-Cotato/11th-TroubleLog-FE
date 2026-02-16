@@ -9,7 +9,6 @@ import ReportModal from "@/shared/ui/Modal/ReportModal";
 import { PATH } from "@/shared/config/paths";
 import useClickOutside from "@/hooks/useClickOutside";
 import { useDetailContext } from "@/hooks/useDetailContext";
-import { parseApiError } from "@/shared/utils/apiErrorParser";
 import {
   buildFreeformPrefill,
   buildTemplatePrefill,
@@ -24,45 +23,22 @@ import shareIcon from "@/assets/icons/share.svg";
 import {
   createCommunityComment,
   getCommunityComments,
-  getCommunityPostDetail,
   likeCommunityPost,
   replyCommunityComment,
   softDeleteCommunityComment,
   updateCommunityComment,
 } from "@/api/community.api";
-import { toCommunityPostVM } from "@/entities/trouble/mappers/communityPostDetail.mapper";
 import {
   makeOptimisticComment,
   toPostComment,
   toPostComments,
 } from "@/entities/trouble/mappers/communityComment.mapper";
 import { getPostDetail, hardDeletePost } from "@/api/post.api";
-import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
 import { postFollow, postUnfollow } from "@/api/user.api";
 import { extractIdFromSlug, makePostSlug } from "@/shared/lib/slug";
+import { usePostDetail } from "./hooks/usePostDetail";
 
-export interface CommunityPostDetailProps {
-  errorType: string;
-  title: string;
-  tags: string[];
-  date: string;
-  isMine: boolean;
-  authorId?: number;
-  authorProfile?: string;
-  authorName: string;
-  authorFollowers: number;
-  authorBio: string;
-  isFollowed: boolean;
-  importance: number;
-  questions: string[];
-  contents: (string | { type: "image"; src: string; alt?: string })[][];
-  isLiked: boolean;
-  likeCounts: number;
-  commentCounts: number;
-  comments: PostCommentProps[];
-  checklistError?: number[];
-  checklistReason?: number[];
-}
+export type { CommunityPostDetailProps } from "./types";
 
 export default function CommunityPostDetail() {
   const HEADER_OFFSET = 100;
@@ -74,31 +50,81 @@ export default function CommunityPostDetail() {
   const { postId, slug } = useParams<{ postId?: string; slug?: string }>();
   const navigate = useNavigate();
 
-  const [post, setPost] = useState<CommunityPostDetailProps | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<ReturnType<typeof parseApiError> | null>(null);
+  const effectiveId = useMemo(() => {
+    if (postId && Number.isFinite(Number(postId))) return Number(postId);
+    if (slug) return extractIdFromSlug(slug);
+    return NaN;
+  }, [postId, slug]);
 
-  // 좋아요/댓글 로컬 상태
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCounts, setLikeCounts] = useState(0);
-  const [isLiking, setIsLiking] = useState(false);
-  const likeLockRef = useRef(false);
+  const detailCtx = useDetailContext();
+  const resumePromptShownRef = useRef<Record<number, boolean>>({});
+
   const [commentInput, setCommentInput] = useState("");
   const [comments, setComments] = useState<PostCommentProps[]>([]);
-
-  // 댓글 작성 상태
   const [isCommentPosting, setIsCommentPosting] = useState(false);
-
-  // 댓글 페이징 상태
   const [cPage, setCPage] = useState(1);
   const [cHasNext, setCHasNext] = useState(false);
   const [cLoading, setCLoading] = useState(false);
 
-  // 케밥 메뉴
+  const onLoadStartRef = useRef<() => void>(() => {});
+  const onCommunityLoadedRef = useRef<(postId: number, viewerId: number | null) => void>(() => {});
+
+  const {
+    post,
+    setPost,
+    loading,
+    loadError,
+    isCommunitySource,
+    isLiked,
+    likeCounts,
+    setIsLiked,
+    setLikeCounts,
+  } = usePostDetail(effectiveId, detailCtx, navigate, {
+    onLoadStart: useCallback(() => {
+      onLoadStartRef.current();
+    }, []),
+    onCommunityLoaded: useCallback((id: number, viewerId: number | null) => {
+      onCommunityLoadedRef.current(id, viewerId);
+    }, []),
+    resumePromptShownRef,
+  });
+
+  onLoadStartRef.current = () => {
+    setComments([]);
+    setCPage(1);
+    setCHasNext(false);
+  };
+
+  const loadComments = useCallback(
+    async (id: number, page1: number, currentViewerId: number | null) => {
+      setCLoading(true);
+      try {
+        const resp = await getCommunityComments(id, page1, 10);
+        const mapped = toPostComments(resp.content, currentViewerId);
+        setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
+        const nextPage1 = typeof resp.page === "number" ? resp.page + 1 : page1;
+        setCPage(nextPage1);
+        setCHasNext(!!resp.hasNext);
+        setPost((prev) =>
+          prev
+            ? { ...prev, commentCounts: resp.totalElements ?? prev.commentCounts }
+            : prev
+        );
+      } finally {
+        setCLoading(false);
+      }
+    },
+    [setPost]
+  );
+  onCommunityLoadedRef.current = (id: number, viewerId: number | null) => {
+    loadComments(id, 1, viewerId);
+  };
+
+  const [isLiking, setIsLiking] = useState(false);
+  const likeLockRef = useRef(false);
+
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  // 신고 모달 (포스트 또는 댓글)
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<
     | { type: "post"; postId: number }
@@ -108,20 +134,10 @@ export default function CommunityPostDetail() {
   const closeMenu = useCallback(() => setShowMenu(false), []);
   const menuRef = useClickOutside(() => setShowMenu(false));
 
-  // 섹션 추적
   const [currentSection, setCurrentSection] = useState<number>(0);
-  // 본문 컬럼과 첫 섹션 기준 측정
   const contentColRef = useRef<HTMLDivElement | null>(null);
   const [asideOffset, setAsideOffset] = useState(0);
-  // 섹션 refs는 HTMLDivElement로 구체화
   const sectionRefs = useRef<Array<HTMLDivElement | null>>([]);
-
-  // 유효 ID 계산
-  const effectiveId = useMemo(() => {
-    if (postId && Number.isFinite(Number(postId))) return Number(postId);
-    if (slug) return extractIdFromSlug(slug);
-    return NaN;
-  }, [postId, slug]);
 
   useEffect(() => {
     const updateAsideOffset = () => {
@@ -158,11 +174,6 @@ export default function CommunityPostDetail() {
       ro?.disconnect();
     };
   }, [post]); // post가 로드된 뒤에 계산
-
-  // 이어서 작성 안내 경고창
-  const resumePromptShownRef = useRef<Record<number, boolean>>({});
-
-  const detailCtx = useDetailContext();
 
   // 공유 토스트
   const [toast, setToast] = useState<{ open: boolean; message: string }>({
@@ -217,293 +228,6 @@ export default function CommunityPostDetail() {
       showToast("복사에 실패했어요. 주소창에서 복사해주세요.");
     }
   };
-
-  // 댓글 로더
-  const loadComments = async (
-    id: number,
-    page1: number,
-    currentViewerId: number | null,
-  ) => {
-    setCLoading(true);
-    try {
-      const resp = await getCommunityComments(id, page1, 10);
-      const mapped = toPostComments(resp.content, currentViewerId);
-
-      setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
-
-      const nextPage1 = typeof resp.page === "number" ? resp.page + 1 : page1;
-      setCPage(nextPage1);
-      setCHasNext(!!resp.hasNext);
-
-      setPost((prev) =>
-        prev
-          ? { ...prev, commentCounts: resp.totalElements ?? prev.commentCounts }
-          : prev,
-      );
-    } finally {
-      setCLoading(false);
-    }
-  };
-
-  const [isCommunitySource, setIsCommunitySource] = useState(true); // 좋아요/댓글 표시 가드
-
-  useEffect(() => {
-    let cancelled = false;
-
-    setComments([]);
-    setCPage(1);
-    setCHasNext(false);
-    setLoading(true);
-    setLoadError(null);
-
-    if (!Number.isFinite(effectiveId)) {
-      setLoadError({ message: "잘못된 포스트 ID" });
-      setLoading(false);
-      return;
-    }
-
-    const loadCommunity = async () => {
-      const communityData = await getCommunityPostDetail(effectiveId);
-      if (!communityData) throw new Error("빈 응답입니다.");
-      const vm = toCommunityPostVM(communityData, detailCtx.viewerId);
-      setPost(vm);
-      setIsLiked(vm.isLiked);
-      setLikeCounts(vm.likeCounts);
-      setIsCommunitySource(true);
-      void loadComments(effectiveId, 1, detailCtx.viewerId ?? null);
-    };
-
-    const loadMineDraft = async (id: number) => {
-      const myDetail = await getPostDetail(id);
-
-      // 작성 중 여부
-      const completedAt = (myDetail as any)?.completedAt ?? null;
-      const isDraft = completedAt == null;
-
-      if (!isDraft) {
-        throw new Error("완료 문서입니다. 커뮤니티 상세로 이동해야 합니다.");
-      }
-
-      // 내 상세로 화면 세팅
-      const vmMine = toPostDetailVM(myDetail as any, detailCtx.viewerId);
-      setPost(vmMine);
-      setIsLiked(vmMine.isLiked);
-      setLikeCounts(vmMine.likeCounts);
-      setIsCommunitySource(false);
-
-      // 이어쓰기 안내(한 번만)
-      if (!resumePromptShownRef.current[id]) {
-        resumePromptShownRef.current[id] = true;
-
-        const ttRaw =
-          (myDetail as any)?.templateType ?? (vmMine as any)?.templateType;
-        const tt = String(ttRaw ?? "").toUpperCase(); // FREE_FORM | FREEFORM | GUIDELINE
-
-        const ok = window.confirm(
-          tt === "FREE_FORM" || tt === "FREEFORM"
-            ? "이 문서는 자유형식 글 작성 중이에요. 이어서 작성할까요?"
-            : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?",
-        );
-
-        if (ok) {
-          const baseState =
-            tt === "FREE_FORM" || tt === "FREEFORM"
-              ? buildFreeformPrefill(myDetail)
-              : buildTemplatePrefill(myDetail);
-
-          const editorPath =
-            tt === "FREE_FORM" || tt === "FREEFORM"
-              ? PATH.FREEFORM_WRITING
-              : PATH.TEMP_WRITING;
-
-          navigate(editorPath, {
-            replace: true,
-            state: {
-              ...baseState,
-              postId: id,
-              mode: "edit",
-              from: "community-detail",
-              projectId: (myDetail as any)?.projectId ?? undefined,
-              savePrefill: { ...(baseState as any).savePrefill },
-            },
-          });
-        }
-      }
-    };
-
-    (async () => {
-      try {
-        const {
-          viewerId,
-          ownerId,
-          statusFromList,
-          isVisibleFromList,
-          summaryIdFromList,
-          isMineFromList,
-          from,
-        } = detailCtx;
-
-        // 0. 목록 힌트 기준: 비공개로 내려온 글이면 무조건 내 상세 API 우선
-        if (isVisibleFromList === false) {
-          const myDetail = await getPostDetail(effectiveId);
-          const completedAt = (myDetail as any)?.completedAt ?? null;
-          const isDraft = completedAt == null;
-
-          if (isDraft) {
-            // 작성 중이면 기존 드래프트 로직 재사용
-            await loadMineDraft(effectiveId);
-          } else {
-            // 완료 문서 비공개 → 내 상세 화면으로만 세팅
-            const vmMine = toPostDetailVM(myDetail as any, viewerId);
-            setPost(vmMine);
-            setIsLiked(vmMine.isLiked);
-            setLikeCounts(vmMine.likeCounts);
-            setIsCommunitySource(false); // 좋아요/댓글 비활성
-          }
-          return;
-        }
-
-        // ProjectDetail → 원본 탭에서 온 글은 항상 /troubles만
-        if (from === "project") {
-          const myDetail = await getPostDetail(effectiveId);
-          const completedAt = (myDetail as any)?.completedAt ?? null;
-          const isDraft = completedAt == null;
-
-          if (isDraft) {
-            // 작성 중이면 기존 드래프트 처리 로직 재사용
-            await loadMineDraft(effectiveId);
-          } else {
-            // 완료 문서면 내 상세 화면으로만 세팅
-            const vmMine = toPostDetailVM(myDetail as any, viewerId);
-            setPost(vmMine);
-            setIsLiked(vmMine.isLiked);
-            setLikeCounts(vmMine.likeCounts);
-            setIsCommunitySource(false); // 좋아요/댓글 비활성
-          }
-          return;
-        }
-
-        // 내 글 여부 결정(힌트 우선)
-        const mineByIds =
-          viewerId != null &&
-          ownerId != null &&
-          String(ownerId) === String(viewerId);
-        const isMine = isMineFromList === true ? true : mineByIds;
-
-        // 1) 힌트가 있으면 즉시 분기 (중복 호출 차단)
-        if (isMine && statusFromList === "inProgress") {
-          // 작성 중 → 에디터(프리필 위해 1회 내 상세 호출)
-          await loadMineDraft(effectiveId);
-          return;
-        }
-
-        if (isMine && statusFromList === "created") {
-          if (summaryIdFromList != null) {
-            navigate(PATH.COMBINED_DETAIL(effectiveId, summaryIdFromList), {
-              replace: true,
-              state: {
-                from: "community-detail",
-                ownerId: viewerId ?? undefined,
-              },
-            });
-            return;
-          }
-          // 힌트에 summaryId가 없으면 한 번만 내 상세 조회로 보강
-          try {
-            const myDetail = await getPostDetail(effectiveId);
-            const sid =
-              (typeof (myDetail as any)?.postSummaryId === "number" &&
-                (myDetail as any).postSummaryId) ||
-              (typeof (myDetail as any)?.summaryId === "number" &&
-                (myDetail as any).summaryId) ||
-              null;
-            if (sid != null) {
-              navigate(PATH.COMBINED_DETAIL(effectiveId, sid), {
-                replace: true,
-                state: {
-                  from: "community-detail",
-                  ownerId: viewerId ?? undefined,
-                },
-              });
-              return;
-            }
-          } catch {
-            /* 무시하고 커뮤 상세로 폴백 */
-          }
-          await loadCommunity();
-          return;
-        }
-
-        if (
-          isMine &&
-          statusFromList === "complete" &&
-          typeof isVisibleFromList === "boolean"
-        ) {
-          if (isVisibleFromList) {
-            // 공개 완료 → 커뮤니티 상세만
-            await loadCommunity();
-          } else {
-            // 비공개 완료 → 내 상세만
-            const myDetail = await getPostDetail(effectiveId);
-            const vmMine = toPostDetailVM(myDetail as any, viewerId);
-            setPost(vmMine);
-            setIsLiked(vmMine.isLiked);
-            setLikeCounts(vmMine.likeCounts);
-            setIsCommunitySource(false);
-          }
-          return;
-        }
-
-        // 2) 힌트가 부족하면 기존 로직(내 상세로 판정 → 필요 시 커뮤) 실행
-        if (isMine) {
-          try {
-            const myDetail = await getPostDetail(effectiveId);
-            const isDraft = (myDetail as any)?.completedAt == null;
-            if (isDraft) {
-              await loadMineDraft(effectiveId);
-              return;
-            }
-
-            // 완료 문서이지만 비공개라면 커뮤니티 UX를 비활성화
-            if ((myDetail as any)?.isVisible === false) {
-              const vmMine = toPostDetailVM(myDetail as any, viewerId);
-              setPost(vmMine);
-              setIsLiked(vmMine.isLiked);
-              setLikeCounts(vmMine.likeCounts);
-              setIsCommunitySource(false);
-              return;
-            }
-
-            await loadCommunity();
-          } catch {
-            await loadCommunity();
-          }
-        } else {
-          await loadCommunity();
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          setLoadError(parseApiError(err));
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    effectiveId,
-    detailCtx.viewerId,
-    detailCtx.ownerId,
-    detailCtx.statusFromList,
-    detailCtx.isVisibleFromList,
-    detailCtx.summaryIdFromList,
-    detailCtx.isMineFromList,
-    detailCtx.from,
-    navigate,
-  ]);
 
   useEffect(() => {
     if (!post) return;
