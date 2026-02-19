@@ -64,10 +64,21 @@ export function usePostLike(options: UsePostLikeOptions): UsePostLikeReturn {
         const res = await likeCommunityPost(pid);
         setLikeCounts(res?.likeCount ?? prevCount + 1);
       } catch (err: unknown) {
-        const status = (err as { response?: { status?: number }; status?: number })?.response?.status ?? (err as { status?: number })?.status;
+        const axiosErr = err as {
+          response?: { status?: number; data?: { likeCount?: number } };
+          status?: number;
+        };
+        const status =
+          axiosErr?.response?.status ?? axiosErr?.status;
+        const likeCountFromBody = axiosErr?.response?.data?.likeCount;
+
         if (status === 409) {
           setIsLiked(true);
-          setLikeCounts(prevCount);
+          const count =
+            typeof likeCountFromBody === "number" && Number.isFinite(likeCountFromBody)
+              ? likeCountFromBody
+              : prevCount + 1;
+          setLikeCounts(count);
         } else {
           setIsLiked(false);
           setLikeCounts(prevCount);
