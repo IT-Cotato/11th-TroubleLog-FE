@@ -37,6 +37,7 @@ import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
 import { ERROR_OPTIONS, toErrorLabel } from "@/shared/utils/errorCodeLabel";
 import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
 import { useWriteModals } from "@/shared/hooks/useWriteModals";
+import { WriteToast } from "@/shared/ui/WriteToast";
 import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
 import { FiChevronUp } from "react-icons/fi";
@@ -914,31 +915,17 @@ export default function FreeFormWritePage() {
         <div className="container mx-auto px-8 sm:px-12 lg:px-16">
           <div className="flex-1 flex w-full max-w-[1200px] mx-auto flex-col gap-3">
             {/* Alerts */}
-            {showAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                제목, 프로젝트, 에러 종류, 첫 블록 내용을 모두 입력해주세요.
-              </div>
-            )}
-            {showBlockAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                첫 번째 블록의 내용이 비어있습니다.
-              </div>
-            )}
-            {showSaveAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                저장되었습니다.
-              </div>
-            )}
-            {showCancelAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                요약 작업이 중단되었어요.
-              </div>
-            )}
-            {showSubtitleAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                소제목을 입력해주세요.
-              </div>
-            )}
+            <WriteToast
+              show={showAlert}
+              message="제목, 프로젝트, 에러 종류, 첫 블록 내용을 모두 입력해주세요."
+            />
+            <WriteToast
+              show={showBlockAlert}
+              message="첫 번째 블록의 내용이 비어있습니다."
+            />
+            <WriteToast show={showSaveAlert} message="저장되었습니다." variant="success" />
+            <WriteToast show={showCancelAlert} message="요약 작업이 중단되었어요." />
+            <WriteToast show={showSubtitleAlert} message="소제목을 입력해주세요." />
 
             {/* 제목/태그 + 상단 액션바 */}
             <div className="flex flex-col items-start gap-[40px]">
