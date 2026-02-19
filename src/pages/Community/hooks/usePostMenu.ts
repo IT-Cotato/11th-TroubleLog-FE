@@ -41,7 +41,7 @@ export function usePostMenu(options: UsePostMenuOptions): UsePostMenuReturn {
   const [reportTarget, setReportTarget] = useState<ReportTarget>(null);
 
   const closeMenu = useCallback(() => setShowMenu(false), []);
-  const menuRef = useClickOutside<HTMLDivElement>(() => setShowMenu(false));
+  const menuRef = useClickOutside<HTMLDivElement>(closeMenu);
 
   const handleDeletePost = useCallback(async () => {
     if (!Number.isFinite(effectiveId)) return;
