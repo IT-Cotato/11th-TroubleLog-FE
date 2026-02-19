@@ -105,6 +105,26 @@ export function usePostDetail(
       onCommunityLoaded?.(effectiveId, detailCtx.viewerId ?? null);
     };
 
+    const applyMineView = (vm: CommunityPostDetailProps) => {
+      setPost(vm);
+      setIsLiked(vm.isLiked);
+      setLikeCounts(vm.likeCounts);
+      setIsCommunitySource(false);
+    };
+
+    const loadMyDetailOrDraft = async (id: number) => {
+      const myDetail: ViewPostResponse = await getPostDetail(id);
+      if (cancelled) return;
+      const isDraft = myDetail.completedAt == null;
+      if (isDraft) {
+        await loadMineDraft(id);
+      } else {
+        const vmMine = toPostDetailVM(myDetail, detailCtx.viewerId ?? null);
+        if (cancelled) return;
+        applyMineView(vmMine);
+      }
+    };
+
     const loadMineDraft = async (id: number) => {
       const myDetail: ViewPostResponse = await getPostDetail(id);
       if (cancelled) return;
@@ -117,10 +137,7 @@ export function usePostDetail(
 
       const vmMine = toPostDetailVM(myDetail, detailCtx.viewerId);
       if (cancelled) return;
-      setPost(vmMine);
-      setIsLiked(vmMine.isLiked);
-      setLikeCounts(vmMine.likeCounts);
-      setIsCommunitySource(false);
+      applyMineView(vmMine);
 
       if (!resumePromptShownRef.current[id]) {
         resumePromptShownRef.current[id] = true;
@@ -142,38 +159,12 @@ export function usePostDetail(
         } = detailCtx;
 
         if (isVisibleFromList === false) {
-          const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
-          if (cancelled) return;
-          const completedAt = myDetail.completedAt ?? null;
-          const isDraft = completedAt == null;
-          if (isDraft) {
-            await loadMineDraft(effectiveId);
-          } else {
-            const vmMine = toPostDetailVM(myDetail, viewerId);
-            if (cancelled) return;
-            setPost(vmMine);
-            setIsLiked(vmMine.isLiked);
-            setLikeCounts(vmMine.likeCounts);
-            setIsCommunitySource(false);
-          }
+          await loadMyDetailOrDraft(effectiveId);
           return;
         }
 
         if (from === "project") {
-          const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
-          if (cancelled) return;
-          const completedAt = myDetail.completedAt ?? null;
-          const isDraft = completedAt == null;
-          if (isDraft) {
-            await loadMineDraft(effectiveId);
-          } else {
-            const vmMine = toPostDetailVM(myDetail, viewerId);
-            if (cancelled) return;
-            setPost(vmMine);
-            setIsLiked(vmMine.isLiked);
-            setLikeCounts(vmMine.likeCounts);
-            setIsCommunitySource(false);
-          }
+          await loadMyDetailOrDraft(effectiveId);
           return;
         }
 
@@ -229,12 +220,7 @@ export function usePostDetail(
           } else {
             const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
             if (cancelled) return;
-            const vmMine = toPostDetailVM(myDetail, viewerId);
-            if (cancelled) return;
-            setPost(vmMine);
-            setIsLiked(vmMine.isLiked);
-            setLikeCounts(vmMine.likeCounts);
-            setIsCommunitySource(false);
+            applyMineView(toPostDetailVM(myDetail, viewerId));
           }
           return;
         }
@@ -249,12 +235,8 @@ export function usePostDetail(
               return;
             }
             if (myDetail.isVisible === false) {
-              const vmMine = toPostDetailVM(myDetail, viewerId);
               if (cancelled) return;
-              setPost(vmMine);
-              setIsLiked(vmMine.isLiked);
-              setLikeCounts(vmMine.likeCounts);
-              setIsCommunitySource(false);
+              applyMineView(toPostDetailVM(myDetail, viewerId));
               return;
             }
             await loadCommunity();
