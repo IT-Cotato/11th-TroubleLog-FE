@@ -14,29 +14,20 @@ import PostSuccessModal from "@/shared/ui/Modal/PostSuccessModal";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import { useProjectSelection } from "@/shared/hooks/useProjectSelection";
-import type {
-  PostContentDto,
-  SummaryTypeParam,
-  StartLoadingResponse,
-} from "@/models/post.model";
+import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
 import {
   toCreatePostRequest,
   toEditPostRequest,
   type PostForm,
 } from "@/entities/trouble/mappers/postMapper";
-import {
-  createPost,
-  startSummary,
-  cancelSummary,
-  editPost,
-  getPostDetail,
-} from "@/api/post.api";
+import { createPost, editPost, getPostDetail } from "@/api/post.api";
 import { uploadImage } from "@/api/image.api";
 import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
 import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
 import { ERROR_OPTIONS, toErrorLabel } from "@/shared/utils/errorCodeLabel";
 import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
 import { useWriteModals } from "@/shared/hooks/useWriteModals";
+import { useWriteSummaryFlow } from "@/shared/hooks/useWriteSummaryFlow";
 import { WriteToast } from "@/shared/ui/WriteToast";
 import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
@@ -565,7 +556,22 @@ export default function FreeFormWritePage() {
   //   }
   // };
 
-  // 템플릿 확정 → 요약 시작
+  const { runConfirmTemplate, closeLoadingModal } = useWriteSummaryFlow({
+    postId: createdPostId ?? resumePostId,
+    summaryTaskId,
+    summaryProgress,
+    setSummaryTaskId,
+    setSummaryProgress,
+    setSummaryStatus,
+    setStatusMessage,
+    setTemplateLabel,
+    setIsTemplateSelectModalOpen,
+    setIsLoadingModalOpen,
+    setCreatedPostId,
+    setShowCancelAlert,
+    cancelAlertDuration: 1000,
+  });
+
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
@@ -576,7 +582,6 @@ export default function FreeFormWritePage() {
       const postId = createdPostId ?? resumePostId;
       if (!postId) throw new Error("Post가 아직 생성되지 않았어요.");
 
-      // 1) 요약 시작 전, 최신 내용으로 반드시 수정 API 호출
       const effectiveMeta: PostSavePayload = {
         importance: previewMeta?.importance ?? detailPrefill?.importance ?? 0,
         description:
@@ -604,27 +609,12 @@ export default function FreeFormWritePage() {
         throw new Error("프로젝트를 선택해주세요.");
       }
 
-      const editForm = await buildEditFormFromMeta(effectiveMeta, {
-        mode: "summary",
+      await runConfirmTemplate(type, label, async () => {
+        const form = await buildEditFormFromMeta(effectiveMeta, {
+          mode: "summary",
+        });
+        return toEditPostRequest(form) as any;
       });
-      await editPost(postId, toEditPostRequest(editForm) as any);
-
-      // 2) 수정 성공 후에만 요약 로딩 UI 오픈 및 요약 시작
-      setIsTemplateSelectModalOpen(false);
-      setIsLoadingModalOpen(true);
-      setSummaryProgress(0);
-      setSummaryStatus(null);
-      setStatusMessage("");
-      setTemplateLabel(label);
-
-      const res: StartLoadingResponse = await startSummary(postId, type);
-      const taskId =
-        (res as any).taskId ??
-        (res as any).data?.taskId ??
-        (res as any).content?.taskId;
-      if (!taskId) throw new Error("요약 작업 ID(taskId)를 찾을 수 없어요.");
-
-      setSummaryTaskId(taskId);
     } catch (e) {
       console.error(e);
       setIsLoadingModalOpen(false);
@@ -687,28 +677,7 @@ export default function FreeFormWritePage() {
     setStatusMessage("프로젝트를 먼저 선택해주세요.");
   };
 
-  // 로딩 모달 닫기(요약 취소)
-  const handleCloseLoading = async () => {
-    if (closingRef.current) return;
-    closingRef.current = true;
-    try {
-      const targetId = createdPostId ?? resumePostId;
-      if (summaryProgress < 100 && targetId && summaryTaskId) {
-        try {
-          await cancelSummary(targetId, summaryTaskId);
-        } catch (e) {
-          console.error("요약 작업 취소 실패:", e);
-        }
-      }
-      setIsLoadingModalOpen(false);
-      setSummaryTaskId(null);
-      setSummaryProgress(0);
-      setShowCancelAlert(true);
-      setTimeout(() => setShowCancelAlert(false), 1000);
-    } finally {
-      closingRef.current = false;
-    }
-  };
+  const handleCloseLoading = () => closeLoadingModal(closingRef);
 
   // 저장 가능 여부(버튼 비활성화용)
   const canSave = useMemo(() => {
