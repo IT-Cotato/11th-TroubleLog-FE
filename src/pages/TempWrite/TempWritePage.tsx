@@ -38,6 +38,7 @@ import {
   toErrorLabel,
 } from "@/shared/utils/errorCodeLabel";
 import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
+import { useWriteModals } from "@/shared/hooks/useWriteModals";
 import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
 // ---- 숫자 인덱스 변환 유틸 ----
@@ -186,16 +187,22 @@ const TempWritePage = () => {
   const [draftPostId, setDraftPostId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 모달/알림
-  const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
-  const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
-    useState(false);
-  const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-
-  const [showAlert, setShowAlert] = useState(false);
-  const [showSaveAlert, setShowSaveAlert] = useState(false);
-  const [showCancelAlert, setShowCancelAlert] = useState(false);
+  const {
+    isPostSaveModalOpen,
+    setIsPostSaveModalOpen,
+    isTemplateSelectModalOpen,
+    setIsTemplateSelectModalOpen,
+    isLoadingModalOpen,
+    setIsLoadingModalOpen,
+    isSuccessModalOpen,
+    setIsSuccessModalOpen,
+    showAlert,
+    setShowAlert,
+    showSaveAlert,
+    setShowSaveAlert,
+    showCancelAlert,
+    setShowCancelAlert,
+  } = useWriteModals();
 
   // 요약 상태
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
