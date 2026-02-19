@@ -27,17 +27,16 @@ import {
 import {
   createPost,
   startSummary,
-  getSummaryStatus,
   cancelSummary,
   editPost,
   getPostDetail,
 } from "@/api/post.api";
 import { uploadImage } from "@/api/image.api";
-import { isAxiosError } from "axios";
-import { startRefresh } from "@/api/axios";
 import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
 import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
 import { ERROR_OPTIONS, toErrorLabel } from "@/shared/utils/errorCodeLabel";
+import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
+import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
 import { FiChevronUp } from "react-icons/fi";
 
@@ -68,17 +67,6 @@ type IncomingFreeformState = {
   postId?: number;
   mode?: "edit" | "create";
 };
-
-// 서버가 내려줄 수 있는 요약 상태들
-export type SummaryStatus =
-  | "PENDING"
-  | "STARTED"
-  | "PREPROCESSING"
-  | "ANALYZING"
-  | "POSTPROCESSING"
-  | "COMPLETED"
-  | "FAILED"
-  | "CANCELLED";
 
 export default function FreeFormWritePage() {
   // ------------ 기본 상태 ------------
@@ -657,110 +645,28 @@ export default function FreeFormWritePage() {
   };
 
   // 폴링
-  useEffect(() => {
-    if (
-      !isLoadingModalOpen ||
-      !(createdPostId ?? resumePostId) ||
-      !summaryTaskId
-    )
-      return;
-
-    let stopped = false;
-    let timer: number | null = null;
-
-    const tick = async () => {
-      // 리프레시 진행 중이면 먼저 대기
-      const awaitRefreshIfAny = async () => {
-        const p = (window as any).__authRefreshPromise as Promise<
-          string | null
-        > | null;
-        if (p) {
-          try {
-            await p;
-          } catch {
-            /* ignore */
-          }
-        }
-      };
-
-      try {
-        const targetId = (createdPostId ?? resumePostId) as number;
-
-        await awaitRefreshIfAny();
-
-        const fetchOnce = () =>
-          getSummaryStatus(targetId, summaryTaskId, {
-            __skipGlobalAuthGuard: true, // 전역 가드 스킵(자체 처리)
-          });
-
-        let data: any;
-        try {
-          data = await fetchOnce();
-        } catch (e) {
-          // 401이면 리프레시 후 1회 재시도
-          if (isAxiosError(e) && e.response?.status === 401) {
-            const inflight = (window as any).__authRefreshPromise as Promise<
-              string | null
-            > | null;
-            const token = inflight ? await inflight : await startRefresh();
-            if (!token) throw e; // 실패 → 상위에서 처리(모달 닫기 등)
-
-            data = await getSummaryStatus(targetId, summaryTaskId, {
-              __skipGlobalAuthGuard: true,
-              headers: { Authorization: `Bearer ${token}` },
-            });
-          } else {
-            throw e;
-          }
-        }
-
-        if (stopped) return;
-
-        const p = Math.max(0, Math.min(100, data?.progress ?? 0));
-        setSummaryProgress(p);
-        if (data?.status) setSummaryStatus(data.status as SummaryStatus);
-
-        if (data?.currentStep) setStatusMessage(data.currentStep);
-        else if (data?.message) setStatusMessage(data.message);
-        else if (
-          data?.result &&
-          typeof data.result === "object" &&
-          "message" in (data.result as any)
-        ) {
-          setStatusMessage((data.result as any).message ?? "");
-        }
-
-        if (data?.status === "COMPLETED" || p >= 100) {
-          setSummaryProgress(100);
-
-          if (typeof data?.postSummaryId === "number") {
-            setCompletedSummaryId(data.postSummaryId);
-            setIsLoadingModalOpen(false);
-            setIsSuccessModalOpen(true);
-          } else {
-            setIsLoadingModalOpen(false);
-          }
-          if (timer !== null) {
-            clearInterval(timer);
-            timer = null;
-          }
-        }
-      } catch (err) {
-        console.error("poll tick error:", err);
+  const handlePollComplete = useCallback(
+    (postSummaryId?: number) => {
+      if (typeof postSummaryId === "number") {
+        setCompletedSummaryId(postSummaryId);
+        setIsLoadingModalOpen(false);
+        setIsSuccessModalOpen(true);
+      } else {
+        setIsLoadingModalOpen(false);
       }
-    };
+    },
+    []
+  );
 
-    tick();
-    timer = window.setInterval(tick, 1200);
-
-    return () => {
-      stopped = true;
-      if (timer !== null) {
-        clearInterval(timer);
-        timer = null;
-      }
-    };
-  }, [isLoadingModalOpen, createdPostId, resumePostId, summaryTaskId]);
+  useSummaryPolling({
+    postId: createdPostId ?? resumePostId,
+    summaryTaskId,
+    isActive: !!isLoadingModalOpen,
+    onProgress: setSummaryProgress,
+    onStatus: setSummaryStatus,
+    onMessage: setStatusMessage,
+    onComplete: handlePollComplete,
+  });
 
   // 나중에 하기(요약 건너뛰고 미리보기/프로젝트로 이동)
   const handleLater = async () => {

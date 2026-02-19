@@ -27,19 +27,18 @@ import { useProjectList } from "@/hooks/useProjectList";
 import {
   createPost,
   startSummary,
-  getSummaryStatus,
   cancelSummary,
   editPost,
   getPostDetail,
 } from "@/api/post.api";
 import { uploadImage } from "@/api/image.api";
-import { isAxiosError } from "axios";
-import { startRefresh } from "@/api/axios";
 import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
 import {
   ERROR_OPTIONS,
   toErrorLabel,
 } from "@/shared/utils/errorCodeLabel";
+import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
+import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
 // ---- 숫자 인덱스 변환 유틸 ----
 const QI = { ERROR: 0, REASON: 1 } as const;
@@ -222,15 +221,6 @@ const TempWritePage = () => {
     null
   );
 
-  type SummaryStatus =
-    | "PENDING"
-    | "STARTED"
-    | "PREPROCESSING"
-    | "ANALYZING"
-    | "POSTPROCESSING"
-    | "COMPLETED"
-    | "FAILED"
-    | "CANCELLED";
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus | null>(
     null
   );
@@ -593,107 +583,28 @@ const TempWritePage = () => {
   };
 
   // ---------- 폴링 ----------
-  useEffect(() => {
-    if (
-      !isLoadingModalOpen ||
-      !(createdPostId ?? resumePostId) ||
-      !summaryTaskId
-    )
-      return;
-
-    let stopped = false;
-    let timer: number | null = null;
-
-    const tick = async () => {
-      const awaitRefreshIfAny = async () => {
-        const p = (window as any).__authRefreshPromise as Promise<
-          string | null
-        > | null;
-        if (p) {
-          try {
-            await p;
-          } catch {
-            /* ignore */
-          }
-        }
-      };
-
-      try {
-        const targetId = (createdPostId ?? resumePostId) as number;
-
-        await awaitRefreshIfAny();
-
-        const fetchOnce = () =>
-          getSummaryStatus(targetId, summaryTaskId, {
-            __skipGlobalAuthGuard: true,
-          });
-
-        let data: any;
-        try {
-          data = await fetchOnce();
-        } catch (e) {
-          if (isAxiosError(e) && e.response?.status === 401) {
-            const inflight = (window as any).__authRefreshPromise as Promise<
-              string | null
-            > | null;
-            const token = inflight ? await inflight : await startRefresh();
-            if (!token) throw e;
-
-            data = await getSummaryStatus(targetId, summaryTaskId, {
-              __skipGlobalAuthGuard: true,
-              headers: { Authorization: `Bearer ${token}` },
-            });
-          } else {
-            throw e;
-          }
-        }
-
-        const p = Math.max(0, Math.min(100, data?.progress ?? 0));
-        if (stopped) return;
-
-        setSummaryProgress(p);
-        if (data?.status) setSummaryStatus(data.status as SummaryStatus);
-
-        if (data?.currentStep) setStatusMessage(data.currentStep);
-        else if (data?.message) setStatusMessage(data.message);
-        else if (
-          data?.result &&
-          typeof data.result === "object" &&
-          "message" in (data.result as any)
-        ) {
-          setStatusMessage((data.result as any).message ?? "");
-        }
-
-        if (data?.status === "COMPLETED" || p >= 100) {
-          setSummaryProgress(100);
-          if (typeof data?.postSummaryId === "number") {
-            setCompletedSummaryId(data.postSummaryId);
-            setIsLoadingModalOpen(false);
-            setIsSuccessModalOpen(true);
-          } else {
-            setIsLoadingModalOpen(false);
-          }
-          if (timer !== null) {
-            clearInterval(timer);
-            timer = null;
-          }
-        }
-      } catch (err) {
-        console.error("poll tick error:", err);
+  const handlePollComplete = useCallback(
+    (postSummaryId?: number) => {
+      if (typeof postSummaryId === "number") {
+        setCompletedSummaryId(postSummaryId);
+        setIsLoadingModalOpen(false);
+        setIsSuccessModalOpen(true);
+      } else {
+        setIsLoadingModalOpen(false);
       }
-    };
+    },
+    []
+  );
 
-    tick();
-    timer = window.setInterval(tick, 1200);
-
-    return () => {
-      stopped = true;
-      if (timer !== null) {
-        clearInterval(timer);
-        timer = null;
-      }
-    };
-  }, [isLoadingModalOpen, createdPostId, resumePostId, summaryTaskId]);
+  useSummaryPolling({
+    postId: createdPostId ?? resumePostId,
+    summaryTaskId,
+    isActive: !!isLoadingModalOpen,
+    onProgress: setSummaryProgress,
+    onStatus: setSummaryStatus,
+    onMessage: setStatusMessage,
+    onComplete: handlePollComplete,
+  });
 
   const buildPreviewState = () => ({
     editorType: "TEMPLATE" as const,
