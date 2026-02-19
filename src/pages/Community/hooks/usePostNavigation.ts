@@ -136,6 +136,7 @@ export function usePostNavigation(
   }, [post, navigate]);
 
   const handleFollow = useCallback(async () => {
+    if (!post || post.authorId == null) return;
     setPost((prev) =>
       prev
         ? { ...prev, isFollowed: true, authorFollowers: (prev.authorFollowers ?? 0) + 1 }
@@ -157,6 +158,7 @@ export function usePostNavigation(
   }, [post?.authorId, setPost]);
 
   const handleUnfollow = useCallback(async () => {
+    if (!post || post.authorId == null) return;
     setPost((prev) =>
       prev
         ? { ...prev, isFollowed: false, authorFollowers: Math.max(0, (prev.authorFollowers ?? 1) - 1) }
