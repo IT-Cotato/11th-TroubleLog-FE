@@ -62,7 +62,7 @@ export function usePostComments(
         const resp = await getCommunityComments(postId, page1, 10);
         const mapped = toPostComments(resp.content, currentViewerId);
         setComments((prev) => (page1 === 1 ? mapped : [...prev, ...mapped]));
-        setCPage(typeof resp.page === "number" ? resp.page + 1 : page1);
+        setCPage(typeof resp.page === "number" ? resp.page + 1 : page1 + 1);
         setCHasNext(!!resp.hasNext);
         setPost((prev) =>
           prev
