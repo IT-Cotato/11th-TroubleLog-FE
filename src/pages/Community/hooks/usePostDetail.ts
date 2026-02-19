@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { getCommunityPostDetail } from "@/api/community.api";
 import { getPostDetail } from "@/api/post.api";
+import type { ViewPostResponse } from "@/models/post.model";
 import { toCommunityPostVM } from "@/entities/trouble/mappers/communityPostDetail.mapper";
 import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
 import { PATH } from "@/shared/config/paths";
@@ -83,16 +84,16 @@ export function usePostDetail(
     };
 
     const loadMineDraft = async (id: number) => {
-      const myDetail = await getPostDetail(id);
+      const myDetail: ViewPostResponse = await getPostDetail(id);
       if (cancelled) return;
-      const completedAt = (myDetail as { completedAt?: string | null })?.completedAt ?? null;
+      const completedAt = myDetail.completedAt ?? null;
       const isDraft = completedAt == null;
 
       if (!isDraft) {
         throw new Error("완료 문서입니다. 커뮤니티 상세로 이동해야 합니다.");
       }
 
-      const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], detailCtx.viewerId);
+      const vmMine = toPostDetailVM(myDetail, detailCtx.viewerId);
       if (cancelled) return;
       setPost(vmMine);
       setIsLiked(vmMine.isLiked);
@@ -101,9 +102,7 @@ export function usePostDetail(
 
       if (!resumePromptShownRef.current[id]) {
         resumePromptShownRef.current[id] = true;
-        const ttRaw =
-          (myDetail as { templateType?: string })?.templateType ??
-          (vmMine as { templateType?: string })?.templateType;
+        const ttRaw = myDetail.templateType;
         const tt = String(ttRaw ?? "").toUpperCase();
 
         const ok = window.confirm(
@@ -130,10 +129,10 @@ export function usePostDetail(
               postId: id,
               mode: "edit",
               from: "community-detail",
-              projectId: (myDetail as { projectId?: number })?.projectId ?? undefined,
+              projectId: myDetail.projectId ?? undefined,
               savePrefill:
-                (baseState as { savePrefill?: object }).savePrefill != null
-                  ? { ...(baseState as { savePrefill: object }).savePrefill }
+                baseState.savePrefill != null
+                  ? { ...baseState.savePrefill }
                   : undefined,
             },
           });
@@ -154,14 +153,14 @@ export function usePostDetail(
         } = detailCtx;
 
         if (isVisibleFromList === false) {
-          const myDetail = await getPostDetail(effectiveId);
+          const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
           if (cancelled) return;
-          const completedAt = (myDetail as { completedAt?: string | null })?.completedAt ?? null;
+          const completedAt = myDetail.completedAt ?? null;
           const isDraft = completedAt == null;
           if (isDraft) {
             await loadMineDraft(effectiveId);
           } else {
-            const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], viewerId);
+            const vmMine = toPostDetailVM(myDetail, viewerId);
             if (cancelled) return;
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
@@ -172,14 +171,14 @@ export function usePostDetail(
         }
 
         if (from === "project") {
-          const myDetail = await getPostDetail(effectiveId);
+          const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
           if (cancelled) return;
-          const completedAt = (myDetail as { completedAt?: string | null })?.completedAt ?? null;
+          const completedAt = myDetail.completedAt ?? null;
           const isDraft = completedAt == null;
           if (isDraft) {
             await loadMineDraft(effectiveId);
           } else {
-            const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], viewerId);
+            const vmMine = toPostDetailVM(myDetail, viewerId);
             if (cancelled) return;
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
@@ -210,12 +209,11 @@ export function usePostDetail(
             return;
           }
           try {
-            const myDetail = await getPostDetail(effectiveId);
+            const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
             if (cancelled) return;
-            const md = myDetail as { postSummaryId?: number; summaryId?: number };
             const sid =
-              (typeof md?.postSummaryId === "number" && md.postSummaryId) ||
-              (typeof md?.summaryId === "number" && md.summaryId) ||
+              (typeof myDetail.postSummaryId === "number" && myDetail.postSummaryId) ||
+              (typeof myDetail.summaryId === "number" && myDetail.summaryId) ||
               null;
             if (sid != null) {
               if (cancelled) return;
@@ -240,9 +238,9 @@ export function usePostDetail(
           if (isVisibleFromList) {
             await loadCommunity();
           } else {
-            const myDetail = await getPostDetail(effectiveId);
+            const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
             if (cancelled) return;
-            const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], viewerId);
+            const vmMine = toPostDetailVM(myDetail, viewerId);
             if (cancelled) return;
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
@@ -254,15 +252,15 @@ export function usePostDetail(
 
         if (isMine) {
           try {
-            const myDetail = await getPostDetail(effectiveId);
+            const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
             if (cancelled) return;
-            const isDraft = (myDetail as { completedAt?: string | null })?.completedAt == null;
+            const isDraft = myDetail.completedAt == null;
             if (isDraft) {
               await loadMineDraft(effectiveId);
               return;
             }
-            if ((myDetail as { isVisible?: boolean })?.isVisible === false) {
-              const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], viewerId);
+            if (myDetail.isVisible === false) {
+              const vmMine = toPostDetailVM(myDetail, viewerId);
               if (cancelled) return;
               setPost(vmMine);
               setIsLiked(vmMine.isLiked);

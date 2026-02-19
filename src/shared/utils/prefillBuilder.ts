@@ -7,7 +7,7 @@ export interface DetailContentItem {
   sequence?: number;
 }
 
-/** 상세 API 응답과 호환되는 객체 (필드 선택적) */
+/** 상세 API 응답과 호환되는 객체 (필드 선택적, checkListError/Reason은 ViewPostResponse 별칭) */
 export interface PostDetailLike {
   title?: string;
   postTags?: string[];
@@ -21,6 +21,8 @@ export interface PostDetailLike {
   thumbnailImageUrl?: string | null;
   checklistError?: number[];
   checklistReason?: number[];
+  checkListError?: number[];
+  checkListReason?: number[];
 }
 
 export interface FreeformPrefillState {
@@ -146,7 +148,15 @@ export function buildTemplatePrefill(detail: PostDetailLike | null | undefined):
       thumbnail: thumb,
     },
     projectId: detail?.projectId ?? undefined,
-    checklistError: Array.isArray(detail?.checklistError) ? detail.checklistError : [],
-    checklistReason: Array.isArray(detail?.checklistReason) ? detail.checklistReason : [],
+    checklistError: Array.isArray(detail?.checklistError)
+      ? detail.checklistError
+      : Array.isArray(detail?.checkListError)
+        ? detail.checkListError
+        : [],
+    checklistReason: Array.isArray(detail?.checklistReason)
+      ? detail.checklistReason
+      : Array.isArray(detail?.checkListReason)
+        ? detail.checkListReason
+        : [],
   };
 }

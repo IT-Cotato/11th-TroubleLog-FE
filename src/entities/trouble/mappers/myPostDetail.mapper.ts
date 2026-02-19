@@ -1,7 +1,8 @@
+import type { ViewPostResponse } from "@/models/post.model";
 import type { CommunityPostDetailProps } from "@/pages/Community/CommunityPostDetail";
 
-// getPostDetail의 data 형태(래퍼 제거 후)
-export type PostDetailServer = {
+/** ViewPostResponse와 호환되는 선택적 확장 (userInfoResDto, liked, checklistError/Reason 별칭) */
+export type PostDetailServerInput = ViewPostResponse & {
   userInfoResDto?: {
     userId: number;
     nickname: string;
@@ -11,39 +12,9 @@ export type PostDetailServer = {
     followingNum: number;
     isFollowed: boolean;
   } | null;
-
-  id: number;
-  title: string;
-  introduction: string | null;
-
-  isVisible?: boolean;
-  likeCount: number;
-  commentCount: number;
   liked?: boolean | null;
-
-  isSummaryCreated: boolean;
-  postStatus: string;
-  starRating: number | string;
-  templateType?: "FREE_FORM" | "GUIDELINE" | string;
-
-  checklistError: number[];
-  checklistReason: number[];
-
-  createdAt: string;
-  updatedAt: string;
-  completedAt: string | null;
-
-  errorTag: string;
-  postTags: string[];
-
-  contents: Array<{
-    id: number;
-    subTitle: string;
-    body: string;
-    sequence: number;
-  }>;
-
-  thumbnailUrl?: string | null;
+  checklistError?: number[];
+  checklistReason?: number[];
 };
 
 // ISO -> "YY.MM.DD"
@@ -84,12 +55,11 @@ const starToNumber = (v: string | number | undefined): number => {
 
 // getPostDetail(data) -> CommunityPostDetailProps
 export function toPostDetailVM(
-  src: PostDetailServer,
+  src: PostDetailServerInput,
   viewerId: number | string | null
 ): CommunityPostDetailProps {
   const author = src.userInfoResDto ?? null;
-  const authorId = author?.userId;
-
+  const authorId = author?.userId ?? src.userId;
   const isMine =
     viewerId != null &&
     authorId != null &&
@@ -98,6 +68,8 @@ export function toPostDetailVM(
   const sorted = [...(src.contents ?? [])].sort(
     (a, b) => (a?.sequence ?? 0) - (b?.sequence ?? 0)
   );
+  const checklistErr = src.checklistError ?? src.checkListError ?? [];
+  const checklistReasonVal = src.checklistReason ?? src.checkListReason ?? [];
 
   return {
     errorType: src.errorTag ?? "",
@@ -124,7 +96,7 @@ export function toPostDetailVM(
 
     isFollowed: author?.isFollowed ?? false,
 
-    checklistError: src.checklistError ?? [],
-    checklistReason: src.checklistReason ?? [],
+    checklistError: checklistErr,
+    checklistReason: checklistReasonVal,
   };
 }
