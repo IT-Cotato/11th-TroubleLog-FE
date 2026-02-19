@@ -1,3 +1,4 @@
+import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
 import ReportModal from "@/shared/ui/Modal/ReportModal";
 import { PostDetailContent } from "./components/PostDetailContent";
 import { PostDetailHeader } from "./components/PostDetailHeader";
@@ -9,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { extractIdFromSlug, makePostSlug } from "@/shared/lib/slug";
 import { usePostDetail } from "./hooks/usePostDetail";
+import { getResumeDraftMessage } from "@/shared/utils/prefillBuilder";
 import { usePostComments } from "./hooks/usePostComments";
 import { usePostLike } from "./hooks/usePostLike";
 import { usePostMenu } from "./hooks/usePostMenu";
@@ -60,6 +62,10 @@ export default function CommunityPostDetail() {
     likeCounts,
     setIsLiked,
     setLikeCounts,
+    resumePromptOpen,
+    resumePromptData,
+    confirmResumeEdit,
+    cancelResumePrompt,
   } = usePostDetail(effectiveId, detailCtx, navigate, {
     onLoadStart: useCallback(() => {
       onLoadStartRef.current();
@@ -372,6 +378,17 @@ export default function CommunityPostDetail() {
         >
           {toast.message}
         </div>
+      )}
+
+      {/* draft 이어쓰기 안내 모달 (window.confirm 대체) */}
+      {resumePromptOpen && resumePromptData && (
+        <ConfirmDeleteModal
+          title="이어쓰기"
+          description={getResumeDraftMessage(resumePromptData.myDetail.templateType)}
+          label="이어서 작성"
+          onClose={cancelResumePrompt}
+          onConfirm={confirmResumeEdit}
+        />
       )}
 
       {/* 신고 모달 */}

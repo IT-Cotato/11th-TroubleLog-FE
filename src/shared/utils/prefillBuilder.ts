@@ -1,3 +1,5 @@
+import type { ViewPostResponse } from "@/models/post.model";
+import { PATH } from "@/shared/config/paths";
 import { parseStar } from "./starParser";
 
 export interface DetailContentItem {
@@ -159,4 +161,35 @@ export function buildTemplatePrefill(detail: PostDetailLike | null | undefined):
         ? detail.checkListReason
         : [],
   };
+}
+
+/** 상세 응답 → 에디터 경로 및 navigate state (goEditWithPrefill, loadMineDraft 공통) */
+export function buildEditorNavigationState(
+  myDetail: ViewPostResponse,
+  postId: number
+): { path: string; state: object } {
+  const tt = String(myDetail.templateType ?? "").toUpperCase();
+  const isFreeform = tt === "FREE_FORM" || tt === "FREEFORM";
+  const path = isFreeform ? PATH.FREEFORM_WRITING : PATH.TEMP_WRITING;
+  const prefill = isFreeform
+    ? buildFreeformPrefill(myDetail)
+    : buildTemplatePrefill(myDetail);
+  const state = {
+    ...prefill,
+    postId,
+    mode: "edit",
+    from: "community-detail",
+    projectId: myDetail.projectId ?? undefined,
+    savePrefill:
+      prefill.savePrefill != null ? { ...prefill.savePrefill } : undefined,
+  };
+  return { path, state };
+}
+
+/** draft 이어쓰기 안내 메시지 (모달용) */
+export function getResumeDraftMessage(templateType?: string): string {
+  const tt = String(templateType ?? "").toUpperCase();
+  return tt === "FREE_FORM" || tt === "FREEFORM"
+    ? "이 문서는 자유형식 글 작성 중이에요. 이어서 작성할까요?"
+    : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?";
 }

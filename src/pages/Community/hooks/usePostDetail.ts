@@ -1,16 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { getCommunityPostDetail } from "@/api/community.api";
 import { getPostDetail } from "@/api/post.api";
 import type { ViewPostResponse } from "@/models/post.model";
 import { toCommunityPostVM } from "@/entities/trouble/mappers/communityPostDetail.mapper";
 import { toPostDetailVM } from "@/entities/trouble/mappers/myPostDetail.mapper";
-import { PATH } from "@/shared/config/paths";
 import { parseApiError } from "@/shared/utils/apiErrorParser";
-import {
-  buildFreeformPrefill,
-  buildTemplatePrefill,
-} from "@/shared/utils/prefillBuilder";
+import { PATH } from "@/shared/config/paths";
+import { buildEditorNavigationState } from "@/shared/utils/prefillBuilder";
 import type { UseDetailContextReturn } from "@/hooks/useDetailContext";
 import type { CommunityPostDetailProps } from "@/pages/Community/types";
 
@@ -23,6 +20,11 @@ export interface UsePostDetailOptions {
   resumePromptShownRef: React.MutableRefObject<Record<number, boolean>>;
 }
 
+export interface ResumePromptData {
+  myDetail: ViewPostResponse;
+  postId: number;
+}
+
 export interface UsePostDetailReturn {
   post: CommunityPostDetailProps | null;
   setPost: React.Dispatch<React.SetStateAction<CommunityPostDetailProps | null>>;
@@ -33,6 +35,11 @@ export interface UsePostDetailReturn {
   likeCounts: number;
   setIsLiked: React.Dispatch<React.SetStateAction<boolean>>;
   setLikeCounts: React.Dispatch<React.SetStateAction<number>>;
+  /** draft 이어쓰기 안내 모달 (window.confirm 대체) */
+  resumePromptOpen: boolean;
+  resumePromptData: ResumePromptData | null;
+  confirmResumeEdit: () => void;
+  cancelResumePrompt: () => void;
 }
 
 /**
@@ -56,6 +63,21 @@ export function usePostDetail(
   const [isCommunitySource, setIsCommunitySource] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCounts, setLikeCounts] = useState(0);
+  const [resumePromptData, setResumePromptData] = useState<ResumePromptData | null>(null);
+
+  const confirmResumeEdit = useCallback(() => {
+    if (!resumePromptData) return;
+    const { path, state } = buildEditorNavigationState(
+      resumePromptData.myDetail,
+      resumePromptData.postId
+    );
+    setResumePromptData(null);
+    navigate(path, { replace: true, state });
+  }, [resumePromptData, navigate]);
+
+  const cancelResumePrompt = useCallback(() => {
+    setResumePromptData(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,41 +124,8 @@ export function usePostDetail(
 
       if (!resumePromptShownRef.current[id]) {
         resumePromptShownRef.current[id] = true;
-        const ttRaw = myDetail.templateType;
-        const tt = String(ttRaw ?? "").toUpperCase();
-
-        const ok = window.confirm(
-          tt === "FREE_FORM" || tt === "FREEFORM"
-            ? "이 문서는 자유형식 글 작성 중이에요. 이어서 작성할까요?"
-            : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?"
-        );
-
         if (cancelled) return;
-        if (ok) {
-          const baseState =
-            tt === "FREE_FORM" || tt === "FREEFORM"
-              ? buildFreeformPrefill(myDetail)
-              : buildTemplatePrefill(myDetail);
-          const editorPath =
-            tt === "FREE_FORM" || tt === "FREEFORM"
-              ? PATH.FREEFORM_WRITING
-              : PATH.TEMP_WRITING;
-          if (cancelled) return;
-          navigate(editorPath, {
-            replace: true,
-            state: {
-              ...baseState,
-              postId: id,
-              mode: "edit",
-              from: "community-detail",
-              projectId: myDetail.projectId ?? undefined,
-              savePrefill:
-                baseState.savePrefill != null
-                  ? { ...baseState.savePrefill }
-                  : undefined,
-            },
-          });
-        }
+        setResumePromptData({ myDetail, postId: id });
       }
     };
 
@@ -311,5 +300,9 @@ export function usePostDetail(
     likeCounts,
     setIsLiked,
     setLikeCounts,
+    resumePromptOpen: resumePromptData != null,
+    resumePromptData,
+    confirmResumeEdit,
+    cancelResumePrompt,
   };
 }

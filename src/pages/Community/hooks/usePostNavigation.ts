@@ -2,11 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { getPostDetail } from "@/api/post.api";
 import { postFollow, postUnfollow } from "@/api/user.api";
+import type { ViewPostResponse } from "@/models/post.model";
 import { PATH } from "@/shared/config/paths";
-import {
-  buildFreeformPrefill,
-  buildTemplatePrefill,
-} from "@/shared/utils/prefillBuilder";
+import { buildEditorNavigationState } from "@/shared/utils/prefillBuilder";
 import type { CommunityPostDetailProps } from "@/pages/Community/types";
 
 const DEFAULT_HEADER_OFFSET = 100;
@@ -116,18 +114,10 @@ export function usePostNavigation(
     closeMenu();
     try {
       if (!Number.isFinite(effectiveId)) return;
-      const myDetail = await getPostDetail(effectiveId);
-      const tt = String((myDetail as { templateType?: string })?.templateType ?? "").toUpperCase();
-      const isFreeform = tt === "FREE_FORM" || tt === "FREEFORM";
-      const editorPath = isFreeform ? PATH.FREEFORM_WRITING : PATH.TEMP_WRITING;
-      const prefill = isFreeform
-        ? buildFreeformPrefill(myDetail)
-        : buildTemplatePrefill(myDetail);
+      const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
+      const { path, state } = buildEditorNavigationState(myDetail, effectiveId);
       queueMicrotask(() => {
-        navigate(editorPath, {
-          replace: true,
-          state: { ...prefill, postId: effectiveId, mode: "edit", from: "community-detail" },
-        });
+        navigate(path, { replace: true, state });
       });
     } catch {
       navigatingRef.current = false;
