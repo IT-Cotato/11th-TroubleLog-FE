@@ -30,13 +30,14 @@ import {
   getSummaryStatus,
   cancelSummary,
   editPost,
-  getTagsByKeyword,
   getPostDetail,
 } from "@/api/post.api";
 import { uploadImage } from "@/api/image.api";
 import { isAxiosError } from "axios";
 import { startRefresh } from "@/api/axios";
 import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
+import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
+import { ERROR_OPTIONS, toErrorLabel } from "@/shared/utils/errorCodeLabel";
 
 import { FiChevronUp } from "react-icons/fi";
 
@@ -67,34 +68,6 @@ type IncomingFreeformState = {
   postId?: number;
   mode?: "edit" | "create";
 };
-
-const errorOptions = [
-  "Build/Compile Error",
-  "Runtime Error",
-  "Dependency/Version Error",
-  "Network/API Error",
-  "Authentication/Authorization Error",
-  "Database Error",
-  "UI/Rendering Error",
-  "Configuration Error",
-  "Timeout/Error Handling",
-  "Third-Party Library Error",
-];
-
-const ERROR_CODE_TO_LABEL: Record<string, string> = {
-  BUILD_COMPILE_ERROR: "Build/Compile Error",
-  RUNTIME_ERROR: "Runtime Error",
-  DEPENDENCY_VERSION_ERROR: "Dependency/Version Error",
-  NETWORK_API_ERROR: "Network/API Error",
-  AUTHENTICATION_AUTHORIZATION_ERROR: "Authentication/Authorization Error",
-  DATABASE_ERROR: "Database Error",
-  UI_RENDERING_ERROR: "UI/Rendering Error",
-  CONFIGURATION_ERROR: "Configuration Error",
-  TIMEOUT_ERROR_HANDLING: "Timeout/Error Handling",
-  THIRD_PARTY_LIBRARY_ERROR: "Third-Party Library Error",
-};
-const toErrorLabel = (code?: string | null) =>
-  code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
 
 // 서버가 내려줄 수 있는 요약 상태들
 export type SummaryStatus =
@@ -360,35 +333,6 @@ export default function FreeFormWritePage() {
             summaryType: "NONE",
           } as any)
       );
-
-  // ------------ 태그 정규화 ------------
-  const canonicalizeTags = async (rawTags: string[]) => {
-    const out: string[] = [];
-    const seen = new Set<string>();
-    for (const raw of rawTags) {
-      const q = String(raw).replace(/^#\s*/, "").trim();
-      if (!q) continue;
-
-      const res: any = await getTagsByKeyword({ tagName: q });
-      const list: any[] = Array.isArray(res)
-        ? res
-        : res?.data ?? res?.content ?? res?.results ?? [];
-
-      const names = list
-        .map((t) => (typeof t === "string" ? t : t?.name ?? t))
-        .filter(Boolean) as string[];
-
-      const exact = names.find((n) => n.toLowerCase() === q.toLowerCase());
-      const pick = (exact ?? names[0]) as string | undefined;
-
-      const normalized = String(pick ?? q).trim();
-      if (!seen.has(normalized.toLowerCase())) {
-        seen.add(normalized.toLowerCase());
-        out.push(normalized);
-      }
-    }
-    return out;
-  };
 
   // ------------ 서버 폼 빌드 ------------
   const buildForm = (
@@ -1134,7 +1078,7 @@ export default function FreeFormWritePage() {
 
                         {/* 에러 종류 */}
                         <DropDownButton
-                          options={errorOptions}
+                          options={ERROR_OPTIONS}
                           placeholder={
                             selectedErrorType ?? "에러 종류를 선택하세요"
                           }
