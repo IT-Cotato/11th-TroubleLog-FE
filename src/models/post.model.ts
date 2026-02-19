@@ -65,6 +65,8 @@ export interface ViewPostResponse extends PostBasicResFields, PostServerMeta {
   contents: PostContent[];
   checkListError: number[];
   checkListReason: number[];
+  postSummaryId?: number;
+  summaryId?: number;
 }
 
 // 생성/수정
