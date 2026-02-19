@@ -113,7 +113,10 @@ export function usePostNavigation(
     navigatingRef.current = true;
     closeMenu();
     try {
-      if (!Number.isFinite(effectiveId)) return;
+      if (!Number.isFinite(effectiveId)) {
+        navigatingRef.current = false;
+        return;
+      }
       const myDetail: ViewPostResponse = await getPostDetail(effectiveId);
       const { path, state } = buildEditorNavigationState(myDetail, effectiveId);
       queueMicrotask(() => {
