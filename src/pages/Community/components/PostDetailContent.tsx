@@ -61,7 +61,6 @@ export function PostDetailContent({
                 sectionRefs.current[idx] = el;
               }}
               style={{ scrollMarginTop: headerOffset + 1 }}
-              className="scroll-mt-28 md:scroll-mt-[520px]"
             >
               <PostGuideMd
                 question={q}
