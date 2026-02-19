@@ -71,8 +71,10 @@ export function usePostDetail(
 
     const loadCommunity = async () => {
       const communityData = await getCommunityPostDetail(effectiveId);
+      if (cancelled) return;
       if (!communityData) throw new Error("빈 응답입니다.");
       const vm = toCommunityPostVM(communityData, detailCtx.viewerId);
+      if (cancelled) return;
       setPost(vm);
       setIsLiked(vm.isLiked);
       setLikeCounts(vm.likeCounts);
@@ -82,6 +84,7 @@ export function usePostDetail(
 
     const loadMineDraft = async (id: number) => {
       const myDetail = await getPostDetail(id);
+      if (cancelled) return;
       const completedAt = (myDetail as { completedAt?: string | null })?.completedAt ?? null;
       const isDraft = completedAt == null;
 
@@ -90,6 +93,7 @@ export function usePostDetail(
       }
 
       const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], detailCtx.viewerId);
+      if (cancelled) return;
       setPost(vmMine);
       setIsLiked(vmMine.isLiked);
       setLikeCounts(vmMine.likeCounts);
@@ -108,6 +112,7 @@ export function usePostDetail(
             : "이 문서는 가이드 템플릿 글 작성 중이에요. 이어서 작성할까요?"
         );
 
+        if (cancelled) return;
         if (ok) {
           const baseState =
             tt === "FREE_FORM" || tt === "FREEFORM"
@@ -117,6 +122,7 @@ export function usePostDetail(
             tt === "FREE_FORM" || tt === "FREEFORM"
               ? PATH.FREEFORM_WRITING
               : PATH.TEMP_WRITING;
+          if (cancelled) return;
           navigate(editorPath, {
             replace: true,
             state: {
@@ -149,12 +155,14 @@ export function usePostDetail(
 
         if (isVisibleFromList === false) {
           const myDetail = await getPostDetail(effectiveId);
+          if (cancelled) return;
           const completedAt = (myDetail as { completedAt?: string | null })?.completedAt ?? null;
           const isDraft = completedAt == null;
           if (isDraft) {
             await loadMineDraft(effectiveId);
           } else {
             const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], viewerId);
+            if (cancelled) return;
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
@@ -165,12 +173,14 @@ export function usePostDetail(
 
         if (from === "project") {
           const myDetail = await getPostDetail(effectiveId);
+          if (cancelled) return;
           const completedAt = (myDetail as { completedAt?: string | null })?.completedAt ?? null;
           const isDraft = completedAt == null;
           if (isDraft) {
             await loadMineDraft(effectiveId);
           } else {
             const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], viewerId);
+            if (cancelled) return;
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
@@ -192,6 +202,7 @@ export function usePostDetail(
 
         if (isMine && statusFromList === "created") {
           if (summaryIdFromList != null) {
+            if (cancelled) return;
             navigate(PATH.COMBINED_DETAIL(effectiveId, summaryIdFromList), {
               replace: true,
               state: { from: "community-detail", ownerId: viewerId ?? undefined },
@@ -200,12 +211,14 @@ export function usePostDetail(
           }
           try {
             const myDetail = await getPostDetail(effectiveId);
+            if (cancelled) return;
             const md = myDetail as { postSummaryId?: number; summaryId?: number };
             const sid =
               (typeof md?.postSummaryId === "number" && md.postSummaryId) ||
               (typeof md?.summaryId === "number" && md.summaryId) ||
               null;
             if (sid != null) {
+              if (cancelled) return;
               navigate(PATH.COMBINED_DETAIL(effectiveId, sid), {
                 replace: true,
                 state: { from: "community-detail", ownerId: viewerId ?? undefined },
@@ -228,7 +241,9 @@ export function usePostDetail(
             await loadCommunity();
           } else {
             const myDetail = await getPostDetail(effectiveId);
+            if (cancelled) return;
             const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], viewerId);
+            if (cancelled) return;
             setPost(vmMine);
             setIsLiked(vmMine.isLiked);
             setLikeCounts(vmMine.likeCounts);
@@ -240,6 +255,7 @@ export function usePostDetail(
         if (isMine) {
           try {
             const myDetail = await getPostDetail(effectiveId);
+            if (cancelled) return;
             const isDraft = (myDetail as { completedAt?: string | null })?.completedAt == null;
             if (isDraft) {
               await loadMineDraft(effectiveId);
@@ -247,6 +263,7 @@ export function usePostDetail(
             }
             if ((myDetail as { isVisible?: boolean })?.isVisible === false) {
               const vmMine = toPostDetailVM(myDetail as Parameters<typeof toPostDetailVM>[0], viewerId);
+              if (cancelled) return;
               setPost(vmMine);
               setIsLiked(vmMine.isLiked);
               setLikeCounts(vmMine.likeCounts);
@@ -255,6 +272,7 @@ export function usePostDetail(
             }
             await loadCommunity();
           } catch {
+            if (cancelled) return;
             await loadCommunity();
           }
         } else {
