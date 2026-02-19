@@ -13,7 +13,7 @@ import TemplateSelectModal from "@/shared/ui/Modal/TemplateSelectModal";
 import PostSuccessModal from "@/shared/ui/Modal/PostSuccessModal";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
-import { useProjectList } from "@/hooks/useProjectList";
+import { useProjectSelection } from "@/shared/hooks/useProjectSelection";
 import type {
   PostContentDto,
   SummaryTypeParam,
@@ -91,35 +91,21 @@ export default function FreeFormWritePage() {
 
   const [createdPostId, setCreatedPostId] = useState<number | null>(null);
 
-  // 프로젝트 목록
-  const { data: projectList = [], loading: projectsLoading } = useProjectList();
-  const projectNames = useMemo(
-    () => projectList.map((p) => p.name),
-    [projectList]
-  );
-  const nameToId = useMemo(
-    () => new Map(projectList.map((p) => [p.name, p.id])),
-    [projectList]
-  );
-  const projectNameById = (id?: number | null) =>
-    projectList.find((p) => p.id === id)?.name ?? "";
-
-  // 최초 진입 시 선택된 프로젝트 추론
-  const initialProjectId = useMemo(() => {
-    return (
+  const {
+    selectedProjectId: selectedProjectIdPage,
+    setSelectedProjectId: setSelectedProjectIdPage,
+    initialProjectId,
+    projectList,
+    projectNames,
+    nameToId,
+    projectNameById,
+    loading: projectsLoading,
+  } = useProjectSelection({
+    initialProjectId:
       location.state?.projectId ??
       location.state?.savePrefill?.projectId ??
-      null
-    );
-  }, [location.state]);
-
-  const [selectedProjectIdPage, setSelectedProjectIdPage] = useState<
-    number | null
-  >(null);
-  useEffect(() => {
-    if (initialProjectId != null)
-      setSelectedProjectIdPage(Number(initialProjectId));
-  }, [initialProjectId]);
+      null,
+  });
 
   // 이어쓰기(수정) 여부 + 대상 포스트
   const resumePostId = useMemo(() => {

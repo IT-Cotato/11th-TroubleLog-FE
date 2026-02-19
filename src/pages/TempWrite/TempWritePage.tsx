@@ -23,7 +23,7 @@ import type {
   SummaryTypeParam,
   StartLoadingResponse,
 } from "@/models/post.model";
-import { useProjectList } from "@/hooks/useProjectList";
+import { useProjectSelection } from "@/shared/hooks/useProjectSelection";
 import {
   createPost,
   startSummary,
@@ -160,11 +160,19 @@ const TempWritePage = () => {
   // 네비게이션 & 라우트 상태
   const navigate = useNavigate();
   const location = useLocation() as { state?: IncomingTemplateState };
-  const initialProjectId =
-    location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null;
-
-  // 프로젝트 목록
-  const { data: projectList = [], loading: projectsLoading } = useProjectList();
+  const {
+    selectedProjectId: selectedProjectIdPage,
+    setSelectedProjectId: setSelectedProjectIdPage,
+    initialProjectId,
+    projectList,
+    projectNames,
+    nameToId,
+    projectNameById,
+    loading: projectsLoading,
+  } = useProjectSelection({
+    initialProjectId:
+      location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null,
+  });
 
   // 기본 상태
   const [title, setTitle] = useState("");
@@ -173,28 +181,6 @@ const TempWritePage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedErrorType, setSelectedErrorType] = useState<string | null>(
     null
-  );
-
-  // 페이지 내 프로젝트 선택값
-  const [selectedProjectIdPage, setSelectedProjectIdPage] = useState<
-    number | null
-  >(null);
-  useEffect(() => {
-    if (initialProjectId != null)
-      setSelectedProjectIdPage(Number(initialProjectId));
-  }, [initialProjectId]);
-
-  const projectNames = useMemo(
-    () => projectList.map((p) => p.name),
-    [projectList]
-  );
-  const nameToId = useMemo(
-    () => new Map(projectList.map((p) => [p.name, p.id])),
-    [projectList]
-  );
-  const projectNameById = useCallback(
-    (id?: number | null) => projectList.find((p) => p.id === id)?.name ?? "",
-    [projectList]
   );
 
   const [draftPostId, setDraftPostId] = useState<number | null>(null);
