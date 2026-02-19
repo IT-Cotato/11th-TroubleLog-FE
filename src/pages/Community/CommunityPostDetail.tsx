@@ -23,6 +23,19 @@ export default function CommunityPostDetail() {
   const CONTENT_WIDTH_CLASS =
     "w-full sm:w-[520px] md:w-[680px] lg:w-[820px] xl:w-[960px]";
 
+  const [toast, setToast] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: "",
+  });
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((message: string) => {
+    setToast({ open: true, message });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToast({ open: false, message: "" });
+    }, 2000);
+  }, []);
+
   const { postId, slug } = useParams<{ postId?: string; slug?: string }>();
   const navigate = useNavigate();
 
@@ -62,6 +75,7 @@ export default function CommunityPostDetail() {
     isCommunitySource,
     viewerId: detailCtx.viewerId ?? null,
     setPost,
+    onEditError: () => showToast("댓글 수정에 실패했어요."),
   });
 
   onLoadStartRef.current = () => commentsApi.resetForNewPost();
@@ -136,13 +150,6 @@ export default function CommunityPostDetail() {
     goMyPage,
   } = nav;
 
-  // 공유 토스트
-  const [toast, setToast] = useState<{ open: boolean; message: string }>({
-    open: false,
-    message: "",
-  });
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const copyToClipboard = async (text: string) => {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
@@ -160,14 +167,6 @@ export default function CommunityPostDetail() {
     } finally {
       document.body.removeChild(ta);
     }
-  };
-
-  const showToast = (message: string) => {
-    setToast({ open: true, message });
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => {
-      setToast({ open: false, message: "" });
-    }, 2000);
   };
 
   useEffect(() => {

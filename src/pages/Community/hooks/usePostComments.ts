@@ -19,6 +19,8 @@ export interface UsePostCommentsOptions {
   isCommunitySource: boolean;
   viewerId: number | null;
   setPost: React.Dispatch<React.SetStateAction<CommunityPostDetailProps | null>>;
+  /** 댓글 수정 API 실패 시 호출 (에러 토스트 등) */
+  onEditError?: () => void;
 }
 
 export interface UsePostCommentsReturn {
@@ -46,7 +48,7 @@ export interface UsePostCommentsReturn {
 export function usePostComments(
   options: UsePostCommentsOptions
 ): UsePostCommentsReturn {
-  const { effectiveId, isCommunitySource, viewerId, setPost } = options;
+  const { effectiveId, isCommunitySource, viewerId, setPost, onEditError } = options;
 
   const [commentInput, setCommentInput] = useState("");
   const [comments, setComments] = useState<PostCommentProps[]>([]);
@@ -179,10 +181,10 @@ export function usePostComments(
           )
         );
       } catch {
-        // ignore
+        onEditError?.();
       }
     },
-    [effectiveId, isCommunitySource, viewerId]
+    [effectiveId, isCommunitySource, viewerId, onEditError]
   );
 
   const handleDelete = useCallback(
