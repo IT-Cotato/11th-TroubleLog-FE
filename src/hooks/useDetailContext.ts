@@ -35,7 +35,10 @@ export function useDetailContext(): UseDetailContextReturn {
   const qs = new URLSearchParams(location.search);
   const qsFrom = (qs.get("from") as DetailFromSource) || undefined;
   const qsOwnerId = qs.get("ownerId");
-  const ownerId = stateOwnerId ?? (qsOwnerId ? Number(qsOwnerId) : undefined);
+  const parsedQsOwnerId = qsOwnerId ? Number(qsOwnerId) : NaN;
+  const ownerId =
+    stateOwnerId ??
+    (Number.isFinite(parsedQsOwnerId) ? parsedQsOwnerId : undefined);
   const from = stateFrom ?? qsFrom;
 
   const stateScope = (location.state as Record<string, unknown>)?.searchScope as
