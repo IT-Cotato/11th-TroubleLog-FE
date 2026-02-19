@@ -1,7 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
-import DropDownButton from "@/shared/ui/Button/DropDownButton";
-import CategoryTag from "@/shared/ui/Editor/CategoryTag";
 import EditorBlock, { type BlockData } from "@/shared/ui/Editor/EditorBlock";
 import { questionData } from "@/features/template-write/lib/questionTemplate";
 import PostSaveModal, {
@@ -34,6 +32,7 @@ import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
 import { useWriteModals } from "@/shared/hooks/useWriteModals";
 import { useWriteSummaryFlow } from "@/shared/hooks/useWriteSummaryFlow";
 import { WriteToast } from "@/shared/ui/WriteToast";
+import { WritePageMetaSection } from "@/shared/components/WritePageMetaSection";
 import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
 // ---- 숫자 인덱스 변환 유틸 ----
@@ -863,50 +862,21 @@ const TempWritePage = () => {
           <WriteToast show={showSaveAlert} message="저장되었습니다." variant="success" />
           <WriteToast show={showCancelAlert} message="요약 작업이 중단되었어요." />
 
-          <div className="flex flex-col gap-6 sm:gap-10">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="제목을 입력하세요."
-              className="
-    w-[1100px] md:w-[870px]
-    text-2xl sm:text-3xl md:text-4xl lg:text-5xl
-    font-bold text-black outline-none leading-tight
-    whitespace-pre-wrap break-words
-    relative
-    border-none bg-transparent
-  "
-            />
-
-            <div className="flex flex-col gap-3 max-w-[1100px] md:max-w-[900px] lg:w-auto">
-              <div className="flex gap-3 items-center flex-wrap">
-                <DropDownButton
-                  options={projectNames}
-                  placeholder={
-                    projectsLoading
-                      ? "프로젝트 불러오는 중..."
-                      : projectNameById(selectedProjectIdPage) ||
-                        "프로젝트를 선택하세요"
-                  }
-                  width="w-full sm:w-[170px] md:w-[190px]"
-                  onSelect={(name: string) =>
-                    setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                  }
-                />
-
-                <DropDownButton
-                  options={ERROR_OPTIONS}
-                  placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
-                  width="w-full sm:w-[180px] lg:w-[220px]"
-                  onSelect={(v: string) => setSelectedErrorType(v)}
-                />
-              </div>
-
-              <div className="w-full sm:w-auto min-w-[180px]">
-                <CategoryTag value={selectedTags} onChange={setSelectedTags} />
-              </div>
-            </div>
-          </div>
+          <WritePageMetaSection
+            title={title}
+            onTitleChange={setTitle}
+            projectNames={projectNames}
+            projectsLoading={projectsLoading}
+            selectedProjectId={selectedProjectIdPage}
+            onProjectSelect={setSelectedProjectIdPage}
+            projectNameById={projectNameById}
+            nameToId={nameToId}
+            errorOptions={ERROR_OPTIONS}
+            selectedErrorType={selectedErrorType}
+            onErrorTypeSelect={setSelectedErrorType}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+          />
 
           <div className="flex flex-col pb-2">
             {reversedBlocks.map(({ block, originalIndex }) => (

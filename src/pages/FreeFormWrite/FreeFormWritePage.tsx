@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
-import DropDownButton from "@/shared/ui/Button/DropDownButton";
-import CategoryTag from "@/shared/ui/Editor/CategoryTag";
 import "@toast-ui/editor/dist/toastui-editor.css";
 import { Editor } from "@toast-ui/react-editor";
 import type EditorInstance from "@toast-ui/editor";
@@ -29,6 +27,7 @@ import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
 import { useWriteModals } from "@/shared/hooks/useWriteModals";
 import { useWriteSummaryFlow } from "@/shared/hooks/useWriteSummaryFlow";
 import { WriteToast } from "@/shared/ui/WriteToast";
+import { WritePageMetaSection } from "@/shared/components/WritePageMetaSection";
 import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
 import { FiChevronUp } from "react-icons/fi";
@@ -896,79 +895,31 @@ export default function FreeFormWritePage() {
             <WriteToast show={showCancelAlert} message="요약 작업이 중단되었어요." />
             <WriteToast show={showSubtitleAlert} message="소제목을 입력해주세요." />
 
-            {/* 제목/태그 + 상단 액션바 */}
-            <div className="flex flex-col items-start gap-[40px]">
-              <input
-                ref={titleInputRef}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="제목을 입력하세요."
-                className="
-    w-[1100px] md:w-[1030px]
-    text-2xl sm:text-3xl md:text-4xl lg:text-5xl
-    font-bold text-black outline-none leading-tight
-    whitespace-pre-wrap break-words
-    relative
-    border-none bg-transparent
-  "
-              />
-              <div className="flex w-full max-w-[1200px] justify-between gap-3 flex-wrap">
-                <div className="flex flex-col gap-4 w-full">
-                  <div className="flex items-end justify-between">
-                    <div className="flex flex-col gap-3 max-w-[1100px] md:max-w-[900px] lg:w-auto">
-                      <div className="flex gap-3 items-center flex-wrap">
-                        {/* 프로젝트 선택 */}
-                        <DropDownButton
-                          options={projectNames}
-                          placeholder={
-                            projectsLoading
-                              ? "프로젝트 불러오는 중..."
-                              : projectNameById(selectedProjectIdPage) ||
-                                "프로젝트를 선택하세요"
-                          }
-                          width="w-full sm:w-[170px] md:w-[190px]"
-                          onSelect={(name: string) =>
-                            setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                          }
-                        />
-
-                        {/* 에러 종류 */}
-                        <DropDownButton
-                          options={ERROR_OPTIONS}
-                          placeholder={
-                            selectedErrorType ?? "에러 종류를 선택하세요"
-                          }
-                          width="w-full sm:w-[180px] lg:w-[220px]"
-                          onSelect={(selectedError) =>
-                            setSelectedErrorType(selectedError)
-                          }
-                        />
-                      </div>
-
-                      {/* 태그 */}
-                      <div className="w-full sm:w-auto min-w-[200px]">
-                        <CategoryTag
-                          value={selectedTags}
-                          onChange={setSelectedTags}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 w-full lg:w-auto">
-                      <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                        <button
-                          onClick={handleEnd}
-                          disabled={isResume && !detailLoaded}
-                          className="pt-2 pr-6 pb-2 pl-6 bg-primary text-white rounded-full text-head-16-semibold hover:bg-purple-600 w-full sm:w-auto"
-                        >
-                          작성 완료
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <WritePageMetaSection
+              title={title}
+              onTitleChange={setTitle}
+              titleRef={titleInputRef}
+              projectNames={projectNames}
+              projectsLoading={projectsLoading}
+              selectedProjectId={selectedProjectIdPage}
+              onProjectSelect={setSelectedProjectIdPage}
+              projectNameById={projectNameById}
+              nameToId={nameToId}
+              errorOptions={ERROR_OPTIONS}
+              selectedErrorType={selectedErrorType}
+              onErrorTypeSelect={setSelectedErrorType}
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              actions={
+                <button
+                  onClick={handleEnd}
+                  disabled={isResume && !detailLoaded}
+                  className="pt-2 pr-6 pb-2 pl-6 bg-primary text-white rounded-full text-head-16-semibold hover:bg-purple-600 w-full sm:w-auto"
+                >
+                  작성 완료
+                </button>
+              }
+            />
 
             {/* 블록 리스트 */}
             {blocks.map((block) => (
