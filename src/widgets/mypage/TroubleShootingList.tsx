@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import SortButtonGroup from "@/entities/project/ui/SortButtonGroup";
 import TroubleShootingCard from "@/entities/trouble/ui/TroubleShootingCard";
 import { mapToTroubleShootingCard } from "@/entities/trouble/card-compat.mapper";
@@ -142,6 +142,10 @@ const TroubleShootingList = () => {
     }
   };
 
+  const handleSummaryDeleted = useCallback(() => {
+    reload();
+  }, [reload]);
+
   return (
     <div className="w-full max-w-[948px] mx-auto px-4 sm:px-0 flex flex-col gap-6 sm:gap-10 pb-16 sm:pb-[78px]">
       {/* 정렬 기준 선택 (우측 정렬 유지) */}
@@ -179,9 +183,14 @@ const TroubleShootingList = () => {
             (card as any).summaryType ?? baseVm.summaryType
           );
 
+          // '원본+요약본' 탭에서만 summaryId 유지 → 요약본 삭제 + 삭제 노출. 그 외 탭은 원본만으로 간주 → 삭제(원본 삭제)만 노출
           const vm = {
             ...baseVm,
             summaryType: summaryTypeLabel,
+            summaryId:
+              selectedStatus === "created"
+                ? baseVm.summaryId
+                : undefined,
           };
 
           return (
@@ -189,6 +198,7 @@ const TroubleShootingList = () => {
               key={(card as any).summaryId ?? card.id} // 요약본 탭에서 summaryId 기준으로 유니크 키 주면 더 안전
               {...vm}
               onDeleted={handleDeleted}
+              onSummaryDeleted={handleSummaryDeleted}
               onClick={() => {
                 const ownerIdForState = isMyPage
                   ? viewerId != null
@@ -209,6 +219,18 @@ const TroubleShootingList = () => {
                 }
 
                 const slug = makePostSlug(vm.title, card.id);
+
+                // 0) 내 글 + 작성중: 이어쓰기(가이드/자유형은 진입 후 상세 조회로 분기)
+                if (isMyPage && statusFromList === "inProgress") {
+                  navigate(PATH.TEMP_WRITING, {
+                    state: {
+                      from: "mypage",
+                      postId: card.id,
+                      projectId: (card as any).projectId,
+                    },
+                  });
+                  return;
+                }
 
                 // 1) 내 마이페이지 + '원본+요약본' 탭일 때만 합본 라우팅
                 if (isMyPage && selectedStatus === "created") {

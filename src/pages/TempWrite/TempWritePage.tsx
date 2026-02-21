@@ -1,7 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
-import DropDownButton from "@/shared/ui/Button/DropDownButton";
-import CategoryTag from "@/shared/ui/Editor/CategoryTag";
 import EditorBlock, { type BlockData } from "@/shared/ui/Editor/EditorBlock";
 import { questionData } from "@/features/template-write/lib/questionTemplate";
 import PostSaveModal, {
@@ -21,21 +19,21 @@ import {
 import type {
   PostContentDto,
   SummaryTypeParam,
-  StartLoadingResponse,
 } from "@/models/post.model";
-import { useProjectList } from "@/hooks/useProjectList";
-import {
-  createPost,
-  startSummary,
-  getSummaryStatus,
-  cancelSummary,
-  editPost,
-  getTagsByKeyword,
-  getPostDetail,
-} from "@/api/post.api";
+import { useProjectSelection } from "@/shared/hooks/useProjectSelection";
+import { createPost, editPost, getPostDetail } from "@/api/post.api";
 import { uploadImage } from "@/api/image.api";
-import { isAxiosError } from "axios";
-import { startRefresh } from "@/api/axios";
+import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
+import {
+  ERROR_OPTIONS,
+  toErrorLabel,
+} from "@/shared/utils/errorCodeLabel";
+import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
+import { useWriteModals } from "@/shared/hooks/useWriteModals";
+import { useWriteSummaryFlow } from "@/shared/hooks/useWriteSummaryFlow";
+import { WriteToast } from "@/shared/ui/WriteToast";
+import { WritePageMetaSection } from "@/shared/components/WritePageMetaSection";
+import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
 // ---- 숫자 인덱스 변환 유틸 ----
 const QI = { ERROR: 0, REASON: 1 } as const;
@@ -108,22 +106,6 @@ type IncomingTemplateState = {
   mode?: "edit" | "create";
 };
 
-// ---------- 에러 라벨/코드  ----------
-const ERROR_CODE_TO_LABEL: Record<string, string> = {
-  BUILD_COMPILE_ERROR: "Build/Compile Error",
-  RUNTIME_ERROR: "Runtime Error",
-  DEPENDENCY_VERSION_ERROR: "Dependency/Version Error",
-  NETWORK_API_ERROR: "Network/API Error",
-  AUTHENTICATION_AUTHORIZATION_ERROR: "Authentication/Authorization Error",
-  DATABASE_ERROR: "Database Error",
-  UI_RENDERING_ERROR: "UI/Rendering Error",
-  CONFIGURATION_ERROR: "Configuration Error",
-  TIMEOUT_ERROR_HANDLING: "Timeout/Error Handling",
-  THIRD_PARTY_LIBRARY_ERROR: "Third-Party Library Error",
-};
-const toErrorLabel = (code?: string | null) =>
-  code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
-
 // ---------- 체크리스트 ----------
 const enrichBlocksWithChecklist = (
   blocks: BlockData[],
@@ -173,11 +155,19 @@ const TempWritePage = () => {
   // 네비게이션 & 라우트 상태
   const navigate = useNavigate();
   const location = useLocation() as { state?: IncomingTemplateState };
-  const initialProjectId =
-    location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null;
-
-  // 프로젝트 목록
-  const { data: projectList = [], loading: projectsLoading } = useProjectList();
+  const {
+    selectedProjectId: selectedProjectIdPage,
+    setSelectedProjectId: setSelectedProjectIdPage,
+    initialProjectId,
+    projectList,
+    projectNames,
+    nameToId,
+    projectNameById,
+    loading: projectsLoading,
+  } = useProjectSelection({
+    initialProjectId:
+      location.state?.projectId ?? location.state?.savePrefill?.projectId ?? null,
+  });
 
   // 기본 상태
   const [title, setTitle] = useState("");
@@ -188,41 +178,25 @@ const TempWritePage = () => {
     null
   );
 
-  // 페이지 내 프로젝트 선택값
-  const [selectedProjectIdPage, setSelectedProjectIdPage] = useState<
-    number | null
-  >(null);
-  useEffect(() => {
-    if (initialProjectId != null)
-      setSelectedProjectIdPage(Number(initialProjectId));
-  }, [initialProjectId]);
-
-  const projectNames = useMemo(
-    () => projectList.map((p) => p.name),
-    [projectList]
-  );
-  const nameToId = useMemo(
-    () => new Map(projectList.map((p) => [p.name, p.id])),
-    [projectList]
-  );
-  const projectNameById = useCallback(
-    (id?: number | null) => projectList.find((p) => p.id === id)?.name ?? "",
-    [projectList]
-  );
-
   const [draftPostId, setDraftPostId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 모달/알림
-  const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
-  const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
-    useState(false);
-  const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-
-  const [showAlert, setShowAlert] = useState(false);
-  const [showSaveAlert, setShowSaveAlert] = useState(false);
-  const [showCancelAlert, setShowCancelAlert] = useState(false);
+  const {
+    isPostSaveModalOpen,
+    setIsPostSaveModalOpen,
+    isTemplateSelectModalOpen,
+    setIsTemplateSelectModalOpen,
+    isLoadingModalOpen,
+    setIsLoadingModalOpen,
+    isSuccessModalOpen,
+    setIsSuccessModalOpen,
+    showAlert,
+    setShowAlert,
+    showSaveAlert,
+    setShowSaveAlert,
+    showCancelAlert,
+    setShowCancelAlert,
+  } = useWriteModals();
 
   // 요약 상태
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
@@ -234,15 +208,6 @@ const TempWritePage = () => {
     null
   );
 
-  type SummaryStatus =
-    | "PENDING"
-    | "STARTED"
-    | "PREPROCESSING"
-    | "ANALYZING"
-    | "POSTPROCESSING"
-    | "COMPLETED"
-    | "FAILED"
-    | "CANCELLED";
   const [summaryStatus, setSummaryStatus] = useState<SummaryStatus | null>(
     null
   );
@@ -284,34 +249,75 @@ const TempWritePage = () => {
     null
   );
 
-  // 수정 모드 초기 진입 시 상세 조회에서 가져오기
+  // 수정 모드 초기 진입 시 상세 조회에서 가져오기 (템플릿 타입에 따라 자유형이면 자유형 페이지로 리다이렉트)
   useEffect(() => {
     (async () => {
       if (!isResume || !resumePostId) return;
       try {
         const d: any = await getPostDetail(resumePostId);
+        const templateType =
+          d?.templateType ?? d?.template ?? "";
+
+        if (String(templateType).toUpperCase() === "FREE_FORM") {
+          navigate(PATH.FREEFORM_WRITING, {
+            state: { postId: resumePostId, projectId: d?.projectId },
+            replace: true,
+          });
+          return;
+        }
+
         setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
-        // 서버 필드명 상이할 수 있어 둘 다 고려
+        setTitle(d?.title ?? "");
+        setSelectedTags(Array.isArray(d?.postTags) ? d.postTags : []);
+        setSelectedErrorType(
+          toErrorLabel(d?.errorTag) ?? d?.errorTag ?? null
+        );
+
+        const contents = Array.isArray(d?.contents) ? d.contents : [];
+        const rawBlocks = contents.map((c: any, idx: number) => ({
+          id: c.id ?? idx,
+          question: c.subTitle ?? "",
+          content: c.body ?? "",
+          isSaved: true,
+        }));
+        const errNums = Array.isArray(d?.checkListError)
+          ? d.checkListError
+          : Array.isArray(d?.checklistError)
+            ? d.checklistError
+            : [];
+        const reasonNums = Array.isArray(d?.checkListReason)
+          ? d.checkListReason
+          : Array.isArray(d?.checklistReason)
+            ? d.checklistReason
+            : [];
+        setBlocks(
+          rawBlocks.length > 0
+            ? enrichBlocksWithChecklist(rawBlocks, {
+                error: errNums,
+                reason: reasonNums,
+              })
+            : []
+        );
+
         const s = (d?.postStatus ?? d?.status) as
           | "WRITING"
           | "COMPLETED"
           | "SUMMARIZED"
           | undefined;
         setInitialPostStatus(s ?? null);
-        // ← 기존 introduction / starRating / visibility / projectId 등을 프리필에 저장
         setDetailPrefill({
           importance: Number(d?.starRating ?? 0),
           description: String(d?.introduction ?? ""),
           visibility: d?.isVisible ? "public" : "private",
           projectId: Number.isFinite(d?.projectId) ? Number(d.projectId) : null,
-          projectName: "", // 필요시 후속 조회로 채워도 무방
+          projectName: "",
           thumbnail: d?.thumbnailImageUrl ?? null,
         });
       } catch {
         /* ignore */
       }
     })();
-  }, [isResume, resumePostId]);
+  }, [isResume, resumePostId, navigate]);
 
   // ---------- 프리필 ----------
   useEffect(() => {
@@ -378,35 +384,6 @@ const TempWritePage = () => {
             summaryType: "NONE",
           } as any)
       );
-
-  // ---------- 태그 정규화 ----------
-  const canonicalizeTags = async (rawTags: string[]) => {
-    const out: string[] = [];
-    const seen = new Set<string>();
-    for (const raw of rawTags) {
-      const q = String(raw).replace(/^#\s*/, "").trim();
-      if (!q) continue;
-
-      const res: any = await getTagsByKeyword({ tagName: q });
-      const list: any[] = Array.isArray(res)
-        ? res
-        : res?.data ?? res?.content ?? res?.results ?? [];
-      const names = list
-        .map((t) => (typeof t === "string" ? t : t?.name ?? t))
-        .filter(Boolean);
-      const exact = names.find(
-        (n: string) => n.toLowerCase() === q.toLowerCase()
-      );
-      const pick = (exact ?? names[0]) as string | undefined;
-
-      const normalized = String(pick ?? q).trim();
-      if (!seen.has(normalized.toLowerCase())) {
-        seen.add(normalized.toLowerCase());
-        out.push(normalized);
-      }
-    }
-    return out;
-  };
 
   // 현재 화면 상태 + PostSaveModal에서 받은 meta로 수정 페이로드 만들기
   const buildEditFormFromMeta = async (
@@ -562,6 +539,22 @@ const TempWritePage = () => {
   //   }
   // };
 
+  const { runConfirmTemplate, closeLoadingModal } = useWriteSummaryFlow({
+    postId: createdPostId ?? resumePostId,
+    summaryTaskId,
+    summaryProgress,
+    setSummaryTaskId,
+    setSummaryProgress,
+    setSummaryStatus,
+    setStatusMessage,
+    setTemplateLabel,
+    setIsTemplateSelectModalOpen,
+    setIsLoadingModalOpen,
+    setCreatedPostId,
+    setShowCancelAlert,
+    cancelAlertDuration: 3000,
+  });
+
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
@@ -572,7 +565,6 @@ const TempWritePage = () => {
       const postId = createdPostId ?? resumePostId;
       if (!postId) throw new Error("Post가 아직 생성되지 않았어요.");
 
-      // 1) 요약 시작 전, 항상 최신 내용으로 수정 API 호출
       const effectiveMeta: PostSavePayload = {
         importance: previewMeta?.importance ?? detailPrefill?.importance ?? 0,
         description:
@@ -596,29 +588,12 @@ const TempWritePage = () => {
         throw new Error("프로젝트를 선택해주세요.");
       }
 
-      const editForm = await buildEditFormFromMeta(effectiveMeta, {
-        mode: "summary",
+      await runConfirmTemplate(type, label, async () => {
+        const form = await buildEditFormFromMeta(effectiveMeta, {
+          mode: "summary",
+        });
+        return toEditPostRequest(form) as any;
       });
-      await editPost(postId, toEditPostRequest(editForm) as any);
-
-      // 2) 수정 성공 후에만 요약 로딩 UI 오픈 및 요약 시작
-      setIsTemplateSelectModalOpen(false);
-      setIsLoadingModalOpen(true);
-      setSummaryProgress(0);
-      setSummaryStatus(null);
-      setStatusMessage("");
-      setTemplateLabel(label);
-
-      const res: StartLoadingResponse = await startSummary(postId, type);
-
-      const taskId =
-        (res as any).taskId ??
-        (res as any).data?.taskId ??
-        (res as any).content?.taskId;
-
-      if (!taskId) throw new Error("요약 작업 ID(taskId)를 찾을 수 없어요.");
-
-      setSummaryTaskId(taskId);
     } catch (e) {
       console.error(e);
       setIsLoadingModalOpen(false);
@@ -634,107 +609,28 @@ const TempWritePage = () => {
   };
 
   // ---------- 폴링 ----------
-  useEffect(() => {
-    if (
-      !isLoadingModalOpen ||
-      !(createdPostId ?? resumePostId) ||
-      !summaryTaskId
-    )
-      return;
-
-    let stopped = false;
-    let timer: number | null = null;
-
-    const tick = async () => {
-      const awaitRefreshIfAny = async () => {
-        const p = (window as any).__authRefreshPromise as Promise<
-          string | null
-        > | null;
-        if (p) {
-          try {
-            await p;
-          } catch {
-            /* ignore */
-          }
-        }
-      };
-
-      try {
-        const targetId = (createdPostId ?? resumePostId) as number;
-
-        await awaitRefreshIfAny();
-
-        const fetchOnce = () =>
-          getSummaryStatus(targetId, summaryTaskId, {
-            __skipGlobalAuthGuard: true,
-          });
-
-        let data: any;
-        try {
-          data = await fetchOnce();
-        } catch (e) {
-          if (isAxiosError(e) && e.response?.status === 401) {
-            const inflight = (window as any).__authRefreshPromise as Promise<
-              string | null
-            > | null;
-            const token = inflight ? await inflight : await startRefresh();
-            if (!token) throw e;
-
-            data = await getSummaryStatus(targetId, summaryTaskId, {
-              __skipGlobalAuthGuard: true,
-              headers: { Authorization: `Bearer ${token}` },
-            });
-          } else {
-            throw e;
-          }
-        }
-
-        const p = Math.max(0, Math.min(100, data?.progress ?? 0));
-        if (stopped) return;
-
-        setSummaryProgress(p);
-        if (data?.status) setSummaryStatus(data.status as SummaryStatus);
-
-        if (data?.currentStep) setStatusMessage(data.currentStep);
-        else if (data?.message) setStatusMessage(data.message);
-        else if (
-          data?.result &&
-          typeof data.result === "object" &&
-          "message" in (data.result as any)
-        ) {
-          setStatusMessage((data.result as any).message ?? "");
-        }
-
-        if (data?.status === "COMPLETED" || p >= 100) {
-          setSummaryProgress(100);
-          if (typeof data?.postSummaryId === "number") {
-            setCompletedSummaryId(data.postSummaryId);
-            setIsLoadingModalOpen(false);
-            setIsSuccessModalOpen(true);
-          } else {
-            setIsLoadingModalOpen(false);
-          }
-          if (timer !== null) {
-            clearInterval(timer);
-            timer = null;
-          }
-        }
-      } catch (err) {
-        console.error("poll tick error:", err);
+  const handlePollComplete = useCallback(
+    (postSummaryId?: number) => {
+      if (typeof postSummaryId === "number") {
+        setCompletedSummaryId(postSummaryId);
+        setIsLoadingModalOpen(false);
+        setIsSuccessModalOpen(true);
+      } else {
+        setIsLoadingModalOpen(false);
       }
-    };
+    },
+    []
+  );
 
-    tick();
-    timer = window.setInterval(tick, 1200);
-
-    return () => {
-      stopped = true;
-      if (timer !== null) {
-        clearInterval(timer);
-        timer = null;
-      }
-    };
-  }, [isLoadingModalOpen, createdPostId, resumePostId, summaryTaskId]);
+  useSummaryPolling({
+    postId: createdPostId ?? resumePostId,
+    summaryTaskId,
+    isActive: !!isLoadingModalOpen,
+    onProgress: setSummaryProgress,
+    onStatus: setSummaryStatus,
+    onMessage: setStatusMessage,
+    onComplete: handlePollComplete,
+  });
 
   const buildPreviewState = () => ({
     editorType: "TEMPLATE" as const,
@@ -768,27 +664,7 @@ const TempWritePage = () => {
     setTimeout(() => setShowAlert(false), 1000);
   };
 
-  const handleCloseLoading = async () => {
-    if (closingRef.current) return;
-    closingRef.current = true;
-    try {
-      const targetId = createdPostId ?? resumePostId;
-      if (summaryProgress < 100 && targetId && summaryTaskId) {
-        try {
-          await cancelSummary(targetId, summaryTaskId);
-        } catch (e) {
-          console.error("요약 작업 취소 실패:", e);
-        }
-      }
-      setIsLoadingModalOpen(false);
-      setSummaryTaskId(null);
-      setSummaryProgress(0);
-      setShowCancelAlert(true);
-      setTimeout(() => setShowCancelAlert(false), 3000);
-    } finally {
-      closingRef.current = false;
-    }
-  };
+  const handleCloseLoading = () => closeLoadingModal(closingRef);
 
   // ---------- 임시 저장 ----------
   const handleClickSave = async (): Promise<boolean> => {
@@ -1020,77 +896,28 @@ const TempWritePage = () => {
       <HeaderWoSearch />
       <div className="w-full max-w-[1680px] sm:pl-64 lg:pl-64 pt-8 sm:pt-12">
         <div className="mx-auto w-full max-w-[1680px] flex flex-col gap-8 sm:gap-9">
-          {showAlert && (
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-              제목, 프로젝트, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요.
-            </div>
-          )}
-          {showSaveAlert && (
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[92vw] bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-              저장되었습니다.
-            </div>
-          )}
-          {showCancelAlert && (
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[92vw] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-              요약 작업이 중단되었어요.
-            </div>
-          )}
+          <WriteToast
+            show={showAlert}
+            message="제목, 프로젝트, 에러 종류, 첫 번째 블록 내용을 모두 입력해주세요."
+          />
+          <WriteToast show={showSaveAlert} message="저장되었습니다." variant="success" />
+          <WriteToast show={showCancelAlert} message="요약 작업이 중단되었어요." />
 
-          <div className="flex flex-col gap-6 sm:gap-10">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="제목을 입력하세요."
-              className="
-    w-[1100px] md:w-[870px]
-    text-2xl sm:text-3xl md:text-4xl lg:text-5xl
-    font-bold text-black outline-none leading-tight
-    whitespace-pre-wrap break-words
-    relative
-    border-none bg-transparent
-  "
-            />
-
-            <div className="flex flex-col gap-3 max-w-[1100px] md:max-w-[900px] lg:w-auto">
-              <div className="flex gap-3 items-center flex-wrap">
-                <DropDownButton
-                  options={projectNames}
-                  placeholder={
-                    projectsLoading
-                      ? "프로젝트 불러오는 중..."
-                      : projectNameById(selectedProjectIdPage) ||
-                        "프로젝트를 선택하세요"
-                  }
-                  width="w-full sm:w-[170px] md:w-[190px]"
-                  onSelect={(name: string) =>
-                    setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                  }
-                />
-
-                <DropDownButton
-                  options={[
-                    "Build/Compile Error",
-                    "Runtime Error",
-                    "Dependency/Version Error",
-                    "Network/API Error",
-                    "Authentication/Authorization Error",
-                    "Database Error",
-                    "UI/Rendering Error",
-                    "Configuration Error",
-                    "Timeout/Error Handling",
-                    "Third-Party Library Error",
-                  ]}
-                  placeholder={selectedErrorType ?? "에러 종류를 선택하세요"}
-                  width="w-full sm:w-[180px] lg:w-[220px]"
-                  onSelect={(v: string) => setSelectedErrorType(v)}
-                />
-              </div>
-
-              <div className="w-full sm:w-auto min-w-[180px]">
-                <CategoryTag value={selectedTags} onChange={setSelectedTags} />
-              </div>
-            </div>
-          </div>
+          <WritePageMetaSection
+            title={title}
+            onTitleChange={setTitle}
+            projectNames={projectNames}
+            projectsLoading={projectsLoading}
+            selectedProjectId={selectedProjectIdPage}
+            onProjectSelect={setSelectedProjectIdPage}
+            projectNameById={projectNameById}
+            nameToId={nameToId}
+            errorOptions={ERROR_OPTIONS}
+            selectedErrorType={selectedErrorType}
+            onErrorTypeSelect={setSelectedErrorType}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+          />
 
           <div className="flex flex-col pb-2">
             {reversedBlocks.map(({ block, originalIndex }) => (

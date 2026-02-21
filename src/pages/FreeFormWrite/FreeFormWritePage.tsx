@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
-import DropDownButton from "@/shared/ui/Button/DropDownButton";
-import CategoryTag from "@/shared/ui/Editor/CategoryTag";
 import "@toast-ui/editor/dist/toastui-editor.css";
 import { Editor } from "@toast-ui/react-editor";
 import type EditorInstance from "@toast-ui/editor";
@@ -13,30 +11,24 @@ import TemplateSelectModal from "@/shared/ui/Modal/TemplateSelectModal";
 import PostSuccessModal from "@/shared/ui/Modal/PostSuccessModal";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
-import { useProjectList } from "@/hooks/useProjectList";
-import type {
-  PostContentDto,
-  SummaryTypeParam,
-  StartLoadingResponse,
-} from "@/models/post.model";
+import { useProjectSelection } from "@/shared/hooks/useProjectSelection";
+import type { PostContentDto, SummaryTypeParam } from "@/models/post.model";
 import {
   toCreatePostRequest,
   toEditPostRequest,
   type PostForm,
 } from "@/entities/trouble/mappers/postMapper";
-import {
-  createPost,
-  startSummary,
-  getSummaryStatus,
-  cancelSummary,
-  editPost,
-  getTagsByKeyword,
-  getPostDetail,
-} from "@/api/post.api";
+import { createPost, editPost, getPostDetail } from "@/api/post.api";
 import { uploadImage } from "@/api/image.api";
-import { isAxiosError } from "axios";
-import { startRefresh } from "@/api/axios";
 import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
+import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
+import { ERROR_OPTIONS, toErrorLabel } from "@/shared/utils/errorCodeLabel";
+import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
+import { useWriteModals } from "@/shared/hooks/useWriteModals";
+import { useWriteSummaryFlow } from "@/shared/hooks/useWriteSummaryFlow";
+import { WriteToast } from "@/shared/ui/WriteToast";
+import { WritePageMetaSection } from "@/shared/components/WritePageMetaSection";
+import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
 
 import { FiChevronUp } from "react-icons/fi";
 
@@ -68,45 +60,6 @@ type IncomingFreeformState = {
   mode?: "edit" | "create";
 };
 
-const errorOptions = [
-  "Build/Compile Error",
-  "Runtime Error",
-  "Dependency/Version Error",
-  "Network/API Error",
-  "Authentication/Authorization Error",
-  "Database Error",
-  "UI/Rendering Error",
-  "Configuration Error",
-  "Timeout/Error Handling",
-  "Third-Party Library Error",
-];
-
-const ERROR_CODE_TO_LABEL: Record<string, string> = {
-  BUILD_COMPILE_ERROR: "Build/Compile Error",
-  RUNTIME_ERROR: "Runtime Error",
-  DEPENDENCY_VERSION_ERROR: "Dependency/Version Error",
-  NETWORK_API_ERROR: "Network/API Error",
-  AUTHENTICATION_AUTHORIZATION_ERROR: "Authentication/Authorization Error",
-  DATABASE_ERROR: "Database Error",
-  UI_RENDERING_ERROR: "UI/Rendering Error",
-  CONFIGURATION_ERROR: "Configuration Error",
-  TIMEOUT_ERROR_HANDLING: "Timeout/Error Handling",
-  THIRD_PARTY_LIBRARY_ERROR: "Third-Party Library Error",
-};
-const toErrorLabel = (code?: string | null) =>
-  code ? ERROR_CODE_TO_LABEL[code] ?? code : null;
-
-// 서버가 내려줄 수 있는 요약 상태들
-export type SummaryStatus =
-  | "PENDING"
-  | "STARTED"
-  | "PREPROCESSING"
-  | "ANALYZING"
-  | "POSTPROCESSING"
-  | "COMPLETED"
-  | "FAILED"
-  | "CANCELLED";
-
 export default function FreeFormWritePage() {
   // ------------ 기본 상태 ------------
   const navigate = useNavigate();
@@ -130,35 +83,21 @@ export default function FreeFormWritePage() {
 
   const [createdPostId, setCreatedPostId] = useState<number | null>(null);
 
-  // 프로젝트 목록
-  const { data: projectList = [], loading: projectsLoading } = useProjectList();
-  const projectNames = useMemo(
-    () => projectList.map((p) => p.name),
-    [projectList]
-  );
-  const nameToId = useMemo(
-    () => new Map(projectList.map((p) => [p.name, p.id])),
-    [projectList]
-  );
-  const projectNameById = (id?: number | null) =>
-    projectList.find((p) => p.id === id)?.name ?? "";
-
-  // 최초 진입 시 선택된 프로젝트 추론
-  const initialProjectId = useMemo(() => {
-    return (
+  const {
+    selectedProjectId: selectedProjectIdPage,
+    setSelectedProjectId: setSelectedProjectIdPage,
+    initialProjectId,
+    projectList,
+    projectNames,
+    nameToId,
+    projectNameById,
+    loading: projectsLoading,
+  } = useProjectSelection({
+    initialProjectId:
       location.state?.projectId ??
       location.state?.savePrefill?.projectId ??
-      null
-    );
-  }, [location.state]);
-
-  const [selectedProjectIdPage, setSelectedProjectIdPage] = useState<
-    number | null
-  >(null);
-  useEffect(() => {
-    if (initialProjectId != null)
-      setSelectedProjectIdPage(Number(initialProjectId));
-  }, [initialProjectId]);
+      null,
+  });
 
   // 이어쓰기(수정) 여부 + 대상 포스트
   const resumePostId = useMemo(() => {
@@ -194,16 +133,23 @@ export default function FreeFormWritePage() {
   // }, [isResume, resumePostId]);
 
   // ------------ 모달/알림 ------------
-  const [isPostSaveModalOpen, setIsPostSaveModalOpen] = useState(false);
-  const [isTemplateSelectModalOpen, setIsTemplateSelectModalOpen] =
-    useState(false);
-  const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-
-  const [showAlert, setShowAlert] = useState(false);
+  const {
+    isPostSaveModalOpen,
+    setIsPostSaveModalOpen,
+    isTemplateSelectModalOpen,
+    setIsTemplateSelectModalOpen,
+    isLoadingModalOpen,
+    setIsLoadingModalOpen,
+    isSuccessModalOpen,
+    setIsSuccessModalOpen,
+    showAlert,
+    setShowAlert,
+    showSaveAlert,
+    setShowSaveAlert,
+    showCancelAlert,
+    setShowCancelAlert,
+  } = useWriteModals();
   const [showBlockAlert, setShowBlockAlert] = useState(false);
-  const [showSaveAlert, setShowSaveAlert] = useState(false);
-  const [showCancelAlert, setShowCancelAlert] = useState(false);
   const [showSubtitleAlert, setShowSubtitleAlert] = useState(false);
 
   // ------------ 요약/상태 ------------
@@ -360,35 +306,6 @@ export default function FreeFormWritePage() {
             summaryType: "NONE",
           } as any)
       );
-
-  // ------------ 태그 정규화 ------------
-  const canonicalizeTags = async (rawTags: string[]) => {
-    const out: string[] = [];
-    const seen = new Set<string>();
-    for (const raw of rawTags) {
-      const q = String(raw).replace(/^#\s*/, "").trim();
-      if (!q) continue;
-
-      const res: any = await getTagsByKeyword({ tagName: q });
-      const list: any[] = Array.isArray(res)
-        ? res
-        : res?.data ?? res?.content ?? res?.results ?? [];
-
-      const names = list
-        .map((t) => (typeof t === "string" ? t : t?.name ?? t))
-        .filter(Boolean) as string[];
-
-      const exact = names.find((n) => n.toLowerCase() === q.toLowerCase());
-      const pick = (exact ?? names[0]) as string | undefined;
-
-      const normalized = String(pick ?? q).trim();
-      if (!seen.has(normalized.toLowerCase())) {
-        seen.add(normalized.toLowerCase());
-        out.push(normalized);
-      }
-    }
-    return out;
-  };
 
   // ------------ 서버 폼 빌드 ------------
   const buildForm = (
@@ -638,7 +555,22 @@ export default function FreeFormWritePage() {
   //   }
   // };
 
-  // 템플릿 확정 → 요약 시작
+  const { runConfirmTemplate, closeLoadingModal } = useWriteSummaryFlow({
+    postId: createdPostId ?? resumePostId,
+    summaryTaskId,
+    summaryProgress,
+    setSummaryTaskId,
+    setSummaryProgress,
+    setSummaryStatus,
+    setStatusMessage,
+    setTemplateLabel,
+    setIsTemplateSelectModalOpen,
+    setIsLoadingModalOpen,
+    setCreatedPostId,
+    setShowCancelAlert,
+    cancelAlertDuration: 1000,
+  });
+
   const handleConfirmTemplate = async (
     type: SummaryTypeParam,
     label: string
@@ -649,7 +581,6 @@ export default function FreeFormWritePage() {
       const postId = createdPostId ?? resumePostId;
       if (!postId) throw new Error("Post가 아직 생성되지 않았어요.");
 
-      // 1) 요약 시작 전, 최신 내용으로 반드시 수정 API 호출
       const effectiveMeta: PostSavePayload = {
         importance: previewMeta?.importance ?? detailPrefill?.importance ?? 0,
         description:
@@ -677,27 +608,12 @@ export default function FreeFormWritePage() {
         throw new Error("프로젝트를 선택해주세요.");
       }
 
-      const editForm = await buildEditFormFromMeta(effectiveMeta, {
-        mode: "summary",
+      await runConfirmTemplate(type, label, async () => {
+        const form = await buildEditFormFromMeta(effectiveMeta, {
+          mode: "summary",
+        });
+        return toEditPostRequest(form) as any;
       });
-      await editPost(postId, toEditPostRequest(editForm) as any);
-
-      // 2) 수정 성공 후에만 요약 로딩 UI 오픈 및 요약 시작
-      setIsTemplateSelectModalOpen(false);
-      setIsLoadingModalOpen(true);
-      setSummaryProgress(0);
-      setSummaryStatus(null);
-      setStatusMessage("");
-      setTemplateLabel(label);
-
-      const res: StartLoadingResponse = await startSummary(postId, type);
-      const taskId =
-        (res as any).taskId ??
-        (res as any).data?.taskId ??
-        (res as any).content?.taskId;
-      if (!taskId) throw new Error("요약 작업 ID(taskId)를 찾을 수 없어요.");
-
-      setSummaryTaskId(taskId);
     } catch (e) {
       console.error(e);
       setIsLoadingModalOpen(false);
@@ -713,110 +629,28 @@ export default function FreeFormWritePage() {
   };
 
   // 폴링
-  useEffect(() => {
-    if (
-      !isLoadingModalOpen ||
-      !(createdPostId ?? resumePostId) ||
-      !summaryTaskId
-    )
-      return;
-
-    let stopped = false;
-    let timer: number | null = null;
-
-    const tick = async () => {
-      // 리프레시 진행 중이면 먼저 대기
-      const awaitRefreshIfAny = async () => {
-        const p = (window as any).__authRefreshPromise as Promise<
-          string | null
-        > | null;
-        if (p) {
-          try {
-            await p;
-          } catch {
-            /* ignore */
-          }
-        }
-      };
-
-      try {
-        const targetId = (createdPostId ?? resumePostId) as number;
-
-        await awaitRefreshIfAny();
-
-        const fetchOnce = () =>
-          getSummaryStatus(targetId, summaryTaskId, {
-            __skipGlobalAuthGuard: true, // 전역 가드 스킵(자체 처리)
-          });
-
-        let data: any;
-        try {
-          data = await fetchOnce();
-        } catch (e) {
-          // 401이면 리프레시 후 1회 재시도
-          if (isAxiosError(e) && e.response?.status === 401) {
-            const inflight = (window as any).__authRefreshPromise as Promise<
-              string | null
-            > | null;
-            const token = inflight ? await inflight : await startRefresh();
-            if (!token) throw e; // 실패 → 상위에서 처리(모달 닫기 등)
-
-            data = await getSummaryStatus(targetId, summaryTaskId, {
-              __skipGlobalAuthGuard: true,
-              headers: { Authorization: `Bearer ${token}` },
-            });
-          } else {
-            throw e;
-          }
-        }
-
-        if (stopped) return;
-
-        const p = Math.max(0, Math.min(100, data?.progress ?? 0));
-        setSummaryProgress(p);
-        if (data?.status) setSummaryStatus(data.status as SummaryStatus);
-
-        if (data?.currentStep) setStatusMessage(data.currentStep);
-        else if (data?.message) setStatusMessage(data.message);
-        else if (
-          data?.result &&
-          typeof data.result === "object" &&
-          "message" in (data.result as any)
-        ) {
-          setStatusMessage((data.result as any).message ?? "");
-        }
-
-        if (data?.status === "COMPLETED" || p >= 100) {
-          setSummaryProgress(100);
-
-          if (typeof data?.postSummaryId === "number") {
-            setCompletedSummaryId(data.postSummaryId);
-            setIsLoadingModalOpen(false);
-            setIsSuccessModalOpen(true);
-          } else {
-            setIsLoadingModalOpen(false);
-          }
-          if (timer !== null) {
-            clearInterval(timer);
-            timer = null;
-          }
-        }
-      } catch (err) {
-        console.error("poll tick error:", err);
+  const handlePollComplete = useCallback(
+    (postSummaryId?: number) => {
+      if (typeof postSummaryId === "number") {
+        setCompletedSummaryId(postSummaryId);
+        setIsLoadingModalOpen(false);
+        setIsSuccessModalOpen(true);
+      } else {
+        setIsLoadingModalOpen(false);
       }
-    };
+    },
+    []
+  );
 
-    tick();
-    timer = window.setInterval(tick, 1200);
-
-    return () => {
-      stopped = true;
-      if (timer !== null) {
-        clearInterval(timer);
-        timer = null;
-      }
-    };
-  }, [isLoadingModalOpen, createdPostId, resumePostId, summaryTaskId]);
+  useSummaryPolling({
+    postId: createdPostId ?? resumePostId,
+    summaryTaskId,
+    isActive: !!isLoadingModalOpen,
+    onProgress: setSummaryProgress,
+    onStatus: setSummaryStatus,
+    onMessage: setStatusMessage,
+    onComplete: handlePollComplete,
+  });
 
   // 나중에 하기(요약 건너뛰고 미리보기/프로젝트로 이동)
   const handleLater = async () => {
@@ -842,28 +676,7 @@ export default function FreeFormWritePage() {
     setStatusMessage("프로젝트를 먼저 선택해주세요.");
   };
 
-  // 로딩 모달 닫기(요약 취소)
-  const handleCloseLoading = async () => {
-    if (closingRef.current) return;
-    closingRef.current = true;
-    try {
-      const targetId = createdPostId ?? resumePostId;
-      if (summaryProgress < 100 && targetId && summaryTaskId) {
-        try {
-          await cancelSummary(targetId, summaryTaskId);
-        } catch (e) {
-          console.error("요약 작업 취소 실패:", e);
-        }
-      }
-      setIsLoadingModalOpen(false);
-      setSummaryTaskId(null);
-      setSummaryProgress(0);
-      setShowCancelAlert(true);
-      setTimeout(() => setShowCancelAlert(false), 1000);
-    } finally {
-      closingRef.current = false;
-    }
-  };
+  const handleCloseLoading = () => closeLoadingModal(closingRef);
 
   // 저장 가능 여부(버튼 비활성화용)
   const canSave = useMemo(() => {
@@ -1070,105 +883,43 @@ export default function FreeFormWritePage() {
         <div className="container mx-auto px-8 sm:px-12 lg:px-16">
           <div className="flex-1 flex w-full max-w-[1200px] mx-auto flex-col gap-3">
             {/* Alerts */}
-            {showAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                제목, 프로젝트, 에러 종류, 첫 블록 내용을 모두 입력해주세요.
-              </div>
-            )}
-            {showBlockAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                첫 번째 블록의 내용이 비어있습니다.
-              </div>
-            )}
-            {showSaveAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-white border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                저장되었습니다.
-              </div>
-            )}
-            {showCancelAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                요약 작업이 중단되었어요.
-              </div>
-            )}
-            {showSubtitleAlert && (
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-purple-100 border border-purple-400 text-purple-700 px-4 py-2 rounded-md shadow-lg transition-all duration-300 ease-in-out">
-                소제목을 입력해주세요.
-              </div>
-            )}
+            <WriteToast
+              show={showAlert}
+              message="제목, 프로젝트, 에러 종류, 첫 블록 내용을 모두 입력해주세요."
+            />
+            <WriteToast
+              show={showBlockAlert}
+              message="첫 번째 블록의 내용이 비어있습니다."
+            />
+            <WriteToast show={showSaveAlert} message="저장되었습니다." variant="success" />
+            <WriteToast show={showCancelAlert} message="요약 작업이 중단되었어요." />
+            <WriteToast show={showSubtitleAlert} message="소제목을 입력해주세요." />
 
-            {/* 제목/태그 + 상단 액션바 */}
-            <div className="flex flex-col items-start gap-[40px]">
-              <input
-                ref={titleInputRef}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="제목을 입력하세요."
-                className="
-    w-[1100px] md:w-[1030px]
-    text-2xl sm:text-3xl md:text-4xl lg:text-5xl
-    font-bold text-black outline-none leading-tight
-    whitespace-pre-wrap break-words
-    relative
-    border-none bg-transparent
-  "
-              />
-              <div className="flex w-full max-w-[1200px] justify-between gap-3 flex-wrap">
-                <div className="flex flex-col gap-4 w-full">
-                  <div className="flex items-end justify-between">
-                    <div className="flex flex-col gap-3 max-w-[1100px] md:max-w-[900px] lg:w-auto">
-                      <div className="flex gap-3 items-center flex-wrap">
-                        {/* 프로젝트 선택 */}
-                        <DropDownButton
-                          options={projectNames}
-                          placeholder={
-                            projectsLoading
-                              ? "프로젝트 불러오는 중..."
-                              : projectNameById(selectedProjectIdPage) ||
-                                "프로젝트를 선택하세요"
-                          }
-                          width="w-full sm:w-[170px] md:w-[190px]"
-                          onSelect={(name: string) =>
-                            setSelectedProjectIdPage(nameToId.get(name) ?? null)
-                          }
-                        />
-
-                        {/* 에러 종류 */}
-                        <DropDownButton
-                          options={errorOptions}
-                          placeholder={
-                            selectedErrorType ?? "에러 종류를 선택하세요"
-                          }
-                          width="w-full sm:w-[180px] lg:w-[220px]"
-                          onSelect={(selectedError) =>
-                            setSelectedErrorType(selectedError)
-                          }
-                        />
-                      </div>
-
-                      {/* 태그 */}
-                      <div className="w-full sm:w-auto min-w-[200px]">
-                        <CategoryTag
-                          value={selectedTags}
-                          onChange={setSelectedTags}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 w-full lg:w-auto">
-                      <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                        <button
-                          onClick={handleEnd}
-                          disabled={isResume && !detailLoaded}
-                          className="pt-2 pr-6 pb-2 pl-6 bg-primary text-white rounded-full text-head-16-semibold hover:bg-purple-600 w-full sm:w-auto"
-                        >
-                          작성 완료
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <WritePageMetaSection
+              title={title}
+              onTitleChange={setTitle}
+              titleRef={titleInputRef}
+              projectNames={projectNames}
+              projectsLoading={projectsLoading}
+              selectedProjectId={selectedProjectIdPage}
+              onProjectSelect={setSelectedProjectIdPage}
+              projectNameById={projectNameById}
+              nameToId={nameToId}
+              errorOptions={ERROR_OPTIONS}
+              selectedErrorType={selectedErrorType}
+              onErrorTypeSelect={setSelectedErrorType}
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              actions={
+                <button
+                  onClick={handleEnd}
+                  disabled={isResume && !detailLoaded}
+                  className="pt-2 pr-6 pb-2 pl-6 bg-primary text-white rounded-full text-head-16-semibold hover:bg-purple-600 w-full sm:w-auto"
+                >
+                  작성 완료
+                </button>
+              }
+            />
 
             {/* 블록 리스트 */}
             {blocks.map((block) => (

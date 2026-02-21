@@ -143,24 +143,26 @@ export default function HomePage() {
       }
 
       // 2) 요약본이 하나도 없는 원본
-      //    → "원본(요약 전)" 1개만
+      //    → "원본(요약 전)" 1개만 — 케밥은 '삭제(원본 삭제)'만 노출
       if (!hasSummaries) {
         result.push({
           ...card,
           status: originalStatus, // SUMMARIZED 이면서 요약본이 없는 경우도 완료로 처리
           _kind: "original", // 원본(요약 전)
+          summaryId: undefined,
         });
         continue;
       }
 
       // 3) 요약본이 있는 포스트(status: created)
-      //    - 원본(요약 후) 1개 (작성 완료 표시, 요약 타입 표시는 제거)
-      //    - 원본+요약본 N개 (요약 타입 표시, 상태는 created)
+      //    - 원본(요약 후) 1개 (작성 완료 표시) — 케밥은 '삭제(원본 삭제)'만 노출
+      //    - 원본+요약본 N개 (요약 타입 표시) — 케밥은 '요약본 삭제' + '삭제'
       result.push({
         ...card,
         status: originalStatus,
         summaryType: undefined,
         _kind: "original", // 원본(요약 후)
+        summaryId: undefined,
       });
 
       for (const summary of summaries) {
@@ -473,6 +475,7 @@ export default function HomePage() {
                     {...card}
                     compact
                     onDeleted={handleRecentDeleted}
+                    onSummaryDeleted={recentsReload}
                     onClick={() => {
                       const ownerId = card.authorId ?? undefined;
 
