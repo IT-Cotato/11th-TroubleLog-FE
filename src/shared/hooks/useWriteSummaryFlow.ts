@@ -46,7 +46,6 @@ export function useWriteSummaryFlow(
     setTemplateLabel,
     setIsTemplateSelectModalOpen,
     setIsLoadingModalOpen,
-    setCreatedPostId,
     setShowCancelAlert,
     cancelAlertDuration = 3000,
   } = options;
@@ -82,7 +81,6 @@ export function useWriteSummaryFlow(
         setIsLoadingModalOpen(false);
         setIsTemplateSelectModalOpen(true);
         setSummaryTaskId(null);
-        setCreatedPostId(null);
         setSummaryProgress(0);
         setSummaryStatus(null);
         setStatusMessage("요약 시작에 실패했어요. 잠시 후 다시 시도해주세요.");
@@ -97,7 +95,6 @@ export function useWriteSummaryFlow(
       setTemplateLabel,
       setIsTemplateSelectModalOpen,
       setIsLoadingModalOpen,
-      setCreatedPostId,
     ]
   );
 
