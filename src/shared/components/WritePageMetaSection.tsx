@@ -14,7 +14,7 @@ export interface WritePageMetaSectionProps {
   nameToId: Map<string, number>;
   errorOptions: string[];
   selectedErrorType: string | null;
-  onErrorTypeSelect: (v: string) => void;
+  onErrorTypeSelect: (v: string | null) => void;
   selectedTags: string[];
   onTagsChange: React.Dispatch<React.SetStateAction<string[]>>;
   /** 우측 액션(예: 작성 완료 버튼). FreeForm 등에서 사용 */
