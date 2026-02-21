@@ -13,12 +13,7 @@ export async function canonicalizeTags(rawTags: string[]): Promise<string[]> {
     if (!q) continue;
 
     const res = await getTagsByKeyword({ tagName: q });
-    const resList: unknown = Array.isArray(res)
-      ? res
-      : (res as { data?: unknown })?.data ??
-        (res as { content?: unknown })?.content ??
-        (res as { results?: unknown })?.results;
-    const list: unknown[] = Array.isArray(resList) ? resList : [];
+    const list = Array.isArray(res) ? res : [];
     const names = list
       .map((t) =>
         typeof t === "string" ? t : (t as { name?: string })?.name ?? t
