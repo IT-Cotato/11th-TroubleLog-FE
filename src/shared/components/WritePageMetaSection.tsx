@@ -76,12 +76,12 @@ export function WritePageMetaSection({
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder="제목을 입력하세요."
-        className={`w-[1100px] md:w-[870px] ${TITLE_CLASS}`}
+        className={`w-full max-w-full md:max-w-[870px] ${TITLE_CLASS}`}
       />
-      <div className="flex flex-col gap-3 max-w-[1100px] md:max-w-[900px] lg:w-auto">
+      <div className="flex flex-col gap-3 max-w-[900px] md:max-w-[1100px] lg:w-auto">
         {actions ? (
           <div className="flex items-end justify-between gap-3 flex-wrap">
-            <div className="flex flex-col gap-3 max-w-[1100px] md:max-w-[900px] lg:w-auto">
+            <div className="flex flex-col gap-3 max-w-[900px] md:max-w-[1100px] lg:w-auto">
               {metaContent}
             </div>
             <div className="flex gap-2 w-full lg:w-auto">
