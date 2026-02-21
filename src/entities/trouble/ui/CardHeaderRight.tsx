@@ -74,7 +74,11 @@ export default function CardHeaderRight({
   }
 
   options.push({
-    label: deleting ? "삭제 중..." : "삭제",
+    label: deleting
+      ? "삭제 중..."
+      : hasSummary
+        ? "삭제"
+        : "삭제(원본 삭제)",
     onClick: () => {
       if (!deleting) onDelete?.();
     },

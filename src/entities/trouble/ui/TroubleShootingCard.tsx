@@ -294,16 +294,20 @@ const TroubleShootingCard = ({
             <KebabDropdown
               options={
                 [
-                  // 요약본이 있고, 내가 쓴 글이면서 요약 상태일 때만 요약 삭제 노출
+                  // 원본+요약본: 요약본 삭제 옵션 노출
                   summaryId &&
-                    shouldShowSummaryType && {
+                    isMine && {
                       label: summaryDeleting
                         ? "요약본 삭제 중..."
                         : "요약본 삭제",
                       onClick: summaryDeleting ? () => {} : handleDeleteSummary,
                     },
                   {
-                    label: deleting ? "삭제 중..." : "문서 삭제",
+                    label: deleting
+                      ? "삭제 중..."
+                      : summaryId
+                        ? "삭제"
+                        : "삭제(원본 삭제)",
                     onClick: deleting ? () => {} : handleDelete,
                   },
                 ].filter(Boolean) as { label: string; onClick: () => void }[]

@@ -249,34 +249,75 @@ const TempWritePage = () => {
     null
   );
 
-  // 수정 모드 초기 진입 시 상세 조회에서 가져오기
+  // 수정 모드 초기 진입 시 상세 조회에서 가져오기 (템플릿 타입에 따라 자유형이면 자유형 페이지로 리다이렉트)
   useEffect(() => {
     (async () => {
       if (!isResume || !resumePostId) return;
       try {
         const d: any = await getPostDetail(resumePostId);
+        const templateType =
+          d?.templateType ?? d?.template ?? "";
+
+        if (String(templateType).toUpperCase() === "FREE_FORM") {
+          navigate(PATH.FREEFORM_WRITING, {
+            state: { postId: resumePostId, projectId: d?.projectId },
+            replace: true,
+          });
+          return;
+        }
+
         setCurrentThumbnail(d?.thumbnailImageUrl ?? null);
-        // 서버 필드명 상이할 수 있어 둘 다 고려
+        setTitle(d?.title ?? "");
+        setSelectedTags(Array.isArray(d?.postTags) ? d.postTags : []);
+        setSelectedErrorType(
+          toErrorLabel(d?.errorTag) ?? d?.errorTag ?? null
+        );
+
+        const contents = Array.isArray(d?.contents) ? d.contents : [];
+        const rawBlocks = contents.map((c: any, idx: number) => ({
+          id: c.id ?? idx,
+          question: c.subTitle ?? "",
+          content: c.body ?? "",
+          isSaved: true,
+        }));
+        const errNums = Array.isArray(d?.checkListError)
+          ? d.checkListError
+          : Array.isArray(d?.checklistError)
+            ? d.checklistError
+            : [];
+        const reasonNums = Array.isArray(d?.checkListReason)
+          ? d.checkListReason
+          : Array.isArray(d?.checklistReason)
+            ? d.checklistReason
+            : [];
+        setBlocks(
+          rawBlocks.length > 0
+            ? enrichBlocksWithChecklist(rawBlocks, {
+                error: errNums,
+                reason: reasonNums,
+              })
+            : []
+        );
+
         const s = (d?.postStatus ?? d?.status) as
           | "WRITING"
           | "COMPLETED"
           | "SUMMARIZED"
           | undefined;
         setInitialPostStatus(s ?? null);
-        // ← 기존 introduction / starRating / visibility / projectId 등을 프리필에 저장
         setDetailPrefill({
           importance: Number(d?.starRating ?? 0),
           description: String(d?.introduction ?? ""),
           visibility: d?.isVisible ? "public" : "private",
           projectId: Number.isFinite(d?.projectId) ? Number(d.projectId) : null,
-          projectName: "", // 필요시 후속 조회로 채워도 무방
+          projectName: "",
           thumbnail: d?.thumbnailImageUrl ?? null,
         });
       } catch {
         /* ignore */
       }
     })();
-  }, [isResume, resumePostId]);
+  }, [isResume, resumePostId, navigate]);
 
   // ---------- 프리필 ----------
   useEffect(() => {
