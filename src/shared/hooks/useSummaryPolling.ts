@@ -87,9 +87,21 @@ export function useSummaryPolling({
           onMessage((data.result as any).message ?? "");
         }
 
-        if (data?.status === "COMPLETED" || p >= 100) {
-          onProgress(100);
-          onComplete(typeof data?.postSummaryId === "number" ? data.postSummaryId : undefined);
+        const isTerminal =
+          data?.status === "COMPLETED" ||
+          data?.status === "FAILED" ||
+          data?.status === "CANCELLED" ||
+          p >= 100;
+
+        if (isTerminal) {
+          if (data?.status === "COMPLETED" || p >= 100) {
+            onProgress(100);
+            onComplete(
+              typeof data?.postSummaryId === "number" ? data.postSummaryId : undefined
+            );
+          } else {
+            onComplete(undefined);
+          }
           if (timer !== null) {
             clearInterval(timer);
             timer = null;
