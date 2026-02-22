@@ -5,7 +5,7 @@ import CardTitleSection from "@/entities/trouble/ui/CardTitleSection";
 import TagList from "@/entities/trouble/ui/TagList";
 import type { StatusType, VisibilityType } from "@/types/project";
 import { PATH } from "@/shared/config/paths";
-import { useCallback, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { hardDeletePost, hardDeleteSummary } from "@/api/post.api";
 import { usePrefetch } from "@/shared/hooks/usePrefetch";
 
@@ -39,7 +39,7 @@ export interface TroublogCardProps {
   onSummaryDeleted?: (summaryId: number) => void;
 }
 
-export default function TroublogCard({
+function TroublogCard({
   id,
   isMine,
   status,
@@ -219,3 +219,5 @@ export default function TroublogCard({
     </div>
   );
 }
+
+export default memo(TroublogCard);

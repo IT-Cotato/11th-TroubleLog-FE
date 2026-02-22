@@ -11,6 +11,8 @@ import starIcon from "@/assets/icons/star.svg";
 import heartIcon from "@/assets/icons/heart.svg";
 import commentIcon from "@/assets/icons/comment.svg";
 import { hardDeletePost, hardDeleteSummary } from "@/api/post.api";
+import { PATH } from "@/shared/config/paths";
+import { usePrefetch } from "@/shared/hooks/usePrefetch";
 
 import emptyThumbnail from "@/assets/images/thumbnail_empty.png";
 
@@ -65,6 +67,7 @@ const TroubleShootingCard = ({
   summaryId,
   onSummaryDeleted,
 }: TroubleShootingCardProps) => {
+  const prefetch = usePrefetch();
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [summaryDeleting, setSummaryDeleting] = useState(false);
@@ -149,6 +152,9 @@ const TroubleShootingCard = ({
           : ""
       }`}
       onClick={handleRootClick}
+      onMouseEnter={
+        isClickable ? () => prefetch(PATH.COMMUNITY_POST_ID(id)) : undefined
+      }
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
       onKeyDown={handleRootKeyDown}
@@ -273,6 +279,7 @@ const TroubleShootingCard = ({
         <img
           src={thumbnailUrl || emptyThumbnail}
           alt="thumbnail"
+          loading="lazy"
           className="w-full h-full object-cover rounded-[16px]"
         />
       </div>

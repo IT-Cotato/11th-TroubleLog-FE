@@ -11,6 +11,7 @@ import type {
   ProjectListItem,
   CreateProjectRequest,
 } from "@/types/project.model";
+import { createInflightDedupedFetcher } from "@/shared/lib/inflightDedup";
 import useTroubleCards from "@/features/mypage/useTroubleCards";
 import { PATH } from "@/shared/config/paths";
 import { useNavigate } from "react-router-dom";
@@ -23,15 +24,10 @@ import { mapSummaryType } from "@/entities/trouble/lib/troubleMapping";
 
 const PAGE_SIZE = 10;
 
-type ProjectPageResp = {
-  content: ProjectListItem[];
-  hasNext?: boolean;
-  isLast?: boolean;
-  totalPages?: number;
-  totalElements?: number;
-  page?: number;
-  size?: number;
-};
+const fetchProjectPageOnce = createInflightDedupedFetcher(
+  (page: number, size: number) => `${page}:${size}`,
+  (page, size) => getProjectList(page, size)
+);
 
 export default function HomePage() {
   const hydrated = useAuthHydrated();
@@ -46,18 +42,6 @@ export default function HomePage() {
 
   const navigate = useNavigate();
   const viewerId = useViewerId();
-
-  const inflight = new Map<string, Promise<ProjectPageResp>>();
-
-  function fetchPageOnce(page: number, size: number) {
-    const key = `${page}:${size}`;
-    if (!inflight.has(key)) {
-      const p = getProjectList(page, size).finally(() => inflight.delete(key));
-      inflight.set(key, p);
-    }
-
-    return inflight.get(key)!;
-  }
 
   const goGuide = useCallback(
     (projectId?: number) => {
@@ -198,7 +182,7 @@ export default function HomePage() {
       setLoadError(null);
       try {
         const res = useOnce
-          ? await fetchPageOnce(nextPage, PAGE_SIZE)
+          ? await fetchProjectPageOnce(nextPage, PAGE_SIZE)
           : await getProjectList(nextPage, PAGE_SIZE);
 
         const pageHasNext =

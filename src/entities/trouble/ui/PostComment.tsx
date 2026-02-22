@@ -90,6 +90,7 @@ function PostComment({
                 >
                   <img
                     src={profile || image}
+                    loading="lazy"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = image;
