@@ -279,6 +279,7 @@ const TroubleShootingCard = ({
         <img
           src={thumbnailUrl || emptyThumbnail}
           alt="thumbnail"
+          loading="lazy"
           className="w-full h-full object-cover rounded-[16px]"
         />
       </div>

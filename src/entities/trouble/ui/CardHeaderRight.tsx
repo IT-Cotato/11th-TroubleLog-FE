@@ -43,6 +43,7 @@ export default function CardHeaderRight({
       <img
         src={authorProfileImageUrl || image}
         alt="작성자 프로필"
+        loading="lazy"
         className="w-7 h-7 sm:w-9 sm:h-9 rounded-full ring-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/50"
         role="button"
         tabIndex={0}
