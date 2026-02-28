@@ -1,3 +1,4 @@
+import { createReport } from "@/api/report.api";
 import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
 import ReportModal from "@/shared/ui/Modal/ReportModal";
 import { PostDetailContent } from "./components/PostDetailContent";
@@ -29,6 +30,7 @@ export default function CommunityPostDetail() {
     open: false,
     message: "",
   });
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = useCallback((message: string) => {
     setToast({ open: true, message });
@@ -392,20 +394,71 @@ export default function CommunityPostDetail() {
       )}
 
       {/* 신고 모달 */}
-      {reportModalOpen && (
+      {reportModalOpen && reportTarget && post && (
         <ReportModal
           onClose={() => {
             setReportModalOpen(false);
             setReportTarget(null);
           }}
-          onSubmit={(reason) => {
-            // TODO: 신고 API 연동
-            void reason;
-            void reportTarget;
+          loading={reportSubmitting}
+          onSubmit={async (reportType, copyrightImgUrl) => {
+            let reportedUserId: number | undefined;
+            const targetType = reportTarget.type === "post" ? "POST" : "COMMENT";
+            const targetId =
+              reportTarget.type === "post"
+                ? reportTarget.postId
+                : Number(reportTarget.commentId);
 
-            showToast("신고가 접수되었습니다.");
-            setReportModalOpen(false);
-            setReportTarget(null);
+            if (reportTarget.type === "post") {
+              reportedUserId = post.authorId;
+            } else {
+              const comment = comments.find((c) => c.id === reportTarget.commentId);
+              reportedUserId = comment?.userId;
+            }
+
+            if (reportedUserId == null || !Number.isFinite(reportedUserId)) {
+              showToast("신고 대상을 찾을 수 없어요.");
+              return;
+            }
+            if (reportTarget.type === "comment" && !Number.isFinite(targetId)) {
+              showToast("잘못된 댓글 정보예요.");
+              return;
+            }
+            const viewerId = detailCtx.viewerId ?? null;
+            if (viewerId != null && reportedUserId === viewerId) {
+              showToast("자기 자신은 신고할 수 없어요.");
+              return;
+            }
+
+            try {
+              setReportSubmitting(true);
+              await createReport({
+                reportedUserId,
+                targetType,
+                targetId,
+                reportType,
+                ...(copyrightImgUrl && { copyrightImgUrl }),
+              });
+              showToast("신고가 접수되었습니다.");
+              setReportModalOpen(false);
+              setReportTarget(null);
+            } catch (err: unknown) {
+              const res = (err as { response?: { status?: number; data?: { error?: { status?: string } } } })
+                ?.response;
+              const httpConflict = res?.status === 409;
+              const bodyConflict = res?.data?.error?.status === "CONFLICT";
+              const serverMsg = (err as { response?: { data?: { error?: { message?: string } } } })
+                ?.response?.data?.error?.message;
+              const msg =
+                httpConflict || bodyConflict
+                  ? "이미 신고했거나 신고할 수 없는 대상이에요."
+                  : serverMsg ?? "신고 접수에 실패했어요. 잠시 후 다시 시도해주세요.";
+              showToast(msg);
+              setReportModalOpen(false);
+              setReportTarget(null);
+            } finally {
+              setReportSubmitting(false);
+            }
           }}
         />
       )}
