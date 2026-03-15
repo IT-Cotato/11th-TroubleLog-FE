@@ -16,6 +16,9 @@ interface MyPageStore {
   selectedTag: string | null;
   setSelectedTag: (tag: string | null) => void;
   resetSelectedTag: () => void;
+
+  refetchSidebarTrigger: number;
+  triggerSidebarRefetch: () => void;
 }
 
 export const useMyPageStore = create<MyPageStore>((set) => ({
@@ -30,4 +33,8 @@ export const useMyPageStore = create<MyPageStore>((set) => ({
   selectedTag: null,
   setSelectedTag: (tag) => set({ selectedTag: tag }),
   resetSelectedTag: () => set({ selectedTag: null }),
+
+  refetchSidebarTrigger: 0,
+  triggerSidebarRefetch: () =>
+    set((s) => ({ refetchSidebarTrigger: s.refetchSidebarTrigger + 1 })),
 }));
