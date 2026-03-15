@@ -425,10 +425,10 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       )}
 
       {/* 팔로우 취소 재확인 모달 (타인 프로필에서만) */}
-      {!props.isMyPage && unfollowModalOpen && userInfo?.nickname && (
+      {!props.isMyPage && unfollowModalOpen && userInfo?.userId != null && (
         <ConfirmDeleteModal
-          title={`${userInfo.nickname}님의 팔로우를 취소하시겠습니까?`}
-          description={`원하는 경우 ${userInfo.nickname} 님을 다시 팔로우할 수 있습니다.`}
+          title={`${userInfo.nickname || "이 사용자"}님의 팔로우를 취소하시겠습니까?`}
+          description={`원하는 경우 ${userInfo.nickname || "이 사용자"} 님을 다시 팔로우할 수 있습니다.`}
           label={followLoading ? "처리 중..." : "팔로우 취소"}
           loading={followLoading}
           confirmButtonClassName="bg-primary"
