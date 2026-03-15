@@ -8,6 +8,8 @@ interface FollowingProps {
   profileUrl: string;
   isFollowed: boolean;
   onFollowClick: () => void;
+  /** 팔로우 요청 진행 중일 때 버튼 비활성화 (중복 요청 방지) */
+  followButtonDisabled?: boolean;
 }
 
 const FollowingBtn = ({
@@ -17,6 +19,7 @@ const FollowingBtn = ({
   profileUrl,
   isFollowed,
   onFollowClick,
+  followButtonDisabled = false,
 }: FollowingProps) => {
   const nav = useNavigate();
   const goProfile = () => nav(`/user/mypage/${userId}`);
@@ -46,8 +49,10 @@ const FollowingBtn = ({
 
       {/* 오른쪽: 팔로우 버튼 */}
       <button
+        type="button"
         onClick={onFollowClick}
-        className={`h-9 sm:h-10 px-3 sm:px-4 rounded-[10px] text-white text-sm sm:text-base ${
+        disabled={followButtonDisabled}
+        className={`h-9 sm:h-10 px-3 sm:px-4 rounded-[10px] text-white text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed ${
           isFollowed ? "bg-subColor1" : "bg-primary"
         }`}
       >

@@ -21,6 +21,7 @@ const MyFollowing = () => {
     nickname: string;
   } | null>(null);
   const [unfollowLoading, setUnfollowLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const { id } = useParams();
   const viewerId = useViewerId();
@@ -76,6 +77,8 @@ const MyFollowing = () => {
   };
 
   const handleFollow = async (userId: number) => {
+    if (followLoading) return;
+    setFollowLoading(true);
     try {
       await postFollow(userId);
       setFollowList((prev) =>
@@ -86,6 +89,8 @@ const MyFollowing = () => {
       triggerSidebarRefetch();
     } catch (e) {
       console.error("팔로우 실패", e);
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -148,6 +153,7 @@ const MyFollowing = () => {
             isFollowed={user.isFollowed}
             profileUrl={user.profileUrl}
             onFollowClick={() => handleFollowClick(user.userId)}
+            followButtonDisabled={!user.isFollowed && followLoading}
           />
         ))}
 
