@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import HeaderWoSearch from "@/layouts/Header/HeaderWoSearch";
 import TagList from "@/entities/trouble/ui/TagList";
+import { PATH } from "@/shared/config/paths";
 import PostGuideMd from "@/entities/trouble/ui/PostGuideMd";
 import { getPostSummary } from "@/api/post.api";
 import type { GetSummaryResponse } from "@/models/post.model";
@@ -23,6 +24,7 @@ function fetchSummaryOnce(id: number) {
 
 export default function PostSummaryDetail() {
   const { summaryId } = useParams<{ summaryId: string }>();
+  const navigate = useNavigate();
 
   const [data, setData] = useState<GetSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,7 +146,14 @@ export default function PostSummaryDetail() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-[12px] sm:gap-[16px]">
-                    <TagList tags={data.postTags ?? []} variant="post" />
+                    <TagList
+                      tags={data.postTags ?? []}
+                      variant="post"
+                      onTagClick={(tag) => {
+                        const searchParams = new URLSearchParams({ query: tag });
+                        navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
+                      }}
+                    />
                     <div className="text-body-16-regular text-gray3">·</div>
                     <time className="text-body-20-regular text-gray3">
                       {new Date(data.summaryCreatedAt).toLocaleDateString()}

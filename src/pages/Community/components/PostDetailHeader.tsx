@@ -1,10 +1,12 @@
 import type { RefObject } from "react";
+import { useNavigate } from "react-router-dom";
 import TagList from "@/entities/trouble/ui/TagList";
 import KebabDropdown from "@/shared/ui/Menu/KebabDropdown";
 import KebabMenuButton from "@/shared/ui/Menu/KebabMenuButton";
 import imageIcon from "@/assets/icons/image.svg";
 import starIcon from "@/assets/icons/star.svg";
 import type { CommunityPostDetailProps } from "@/pages/Community/types";
+import { PATH } from "@/shared/config/paths";
 
 export interface PostDetailHeaderProps {
   post: CommunityPostDetailProps;
@@ -32,6 +34,13 @@ export function PostDetailHeader({
   onReport,
   onAuthorClick,
 }: PostDetailHeaderProps) {
+  const navigate = useNavigate();
+
+  const handleTagClick = (tag: string) => {
+    const searchParams = new URLSearchParams({ query: tag });
+    navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
+  };
+
   return (
     <div className="flex w-full pt-20 sm:pt-[180px] pb-[18px] items-center border-b border-gray1">
       <div className="flex flex-col items-start gap-8 sm:gap-[44px] w-full">
@@ -69,7 +78,7 @@ export function PostDetailHeader({
             <div className="text-head-48 break-words">{post.title}</div>
           </div>
           <div className="flex flex-wrap items-center gap-[12px] sm:gap-[16px]">
-            <TagList tags={post.tags} variant="post" />
+            <TagList tags={post.tags} variant="post" onTagClick={handleTagClick} />
             <div className="text-body-16-regular text-gray3">·</div>
             <div className="text-body-20-regular text-gray3">{post.date}</div>
           </div>
