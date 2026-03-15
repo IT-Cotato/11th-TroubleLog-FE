@@ -9,15 +9,24 @@ import {
 } from "@/api/user.api";
 import { useLocation, useParams } from "react-router-dom";
 import { useViewerId } from "@/store/auth";
+import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
+import { useMyPageStore } from "@/store/useMyPageStore";
 
 const MyFollowing = () => {
   const [followList, setFollowList] = useState<FollowingData[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [unfollowTarget, setUnfollowTarget] = useState<{
+    userId: number;
+    nickname: string;
+  } | null>(null);
+  const [unfollowLoading, setUnfollowLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const { id } = useParams();
   const viewerId = useViewerId();
   const { pathname } = useLocation();
+  const triggerSidebarRefetch = useMyPageStore((s) => s.triggerSidebarRefetch);
 
   // path tail 한 번만 계산
   const pathTail = useMemo(() => pathname.split("/").pop(), [pathname]);
@@ -55,23 +64,58 @@ const MyFollowing = () => {
     fetchData();
   }, [targetUserId, pathTail]);
 
-  const handleFollowClick = async (id: number) => {
+  const handleFollowClick = (userId: number) => {
+    const target = followList.find((user) => user.userId === userId);
+    if (!target) return;
+
+    if (target.isFollowed) {
+      setUnfollowTarget({ userId, nickname: target.nickname ?? "" });
+      return;
+    }
+
+    handleFollow(userId);
+  };
+
+  const handleFollow = async (userId: number) => {
+    if (followLoading) return;
+    setFollowLoading(true);
     try {
-      const target = followList.find((user) => user.userId === id);
-      if (!target) return;
-
-      if (target.isFollowed) await postUnfollow(id);
-      else await postFollow(id);
-
+      await postFollow(userId);
       setFollowList((prev) =>
         prev.map((user) =>
-          user.userId === id ? { ...user, isFollowed: !user.isFollowed } : user
+          user.userId === userId ? { ...user, isFollowed: true } : user
         )
       );
+      triggerSidebarRefetch();
     } catch (e) {
-      console.error("팔로우 상태 변경 실패", e);
+      console.error("팔로우 실패", e);
+    } finally {
+      setFollowLoading(false);
     }
   };
+
+  const handleConfirmUnfollow = async () => {
+    if (!unfollowTarget) return;
+    setUnfollowLoading(true);
+    try {
+      await postUnfollow(unfollowTarget.userId);
+      setFollowList((prev) =>
+        prev.map((user) =>
+          user.userId === unfollowTarget.userId
+            ? { ...user, isFollowed: false }
+            : user
+        )
+      );
+      triggerSidebarRefetch();
+      setUnfollowTarget(null);
+    } catch (e) {
+      console.error("팔로우 취소 실패", e);
+    } finally {
+      setUnfollowLoading(false);
+    }
+  };
+
+  const closeUnfollowModal = () => setUnfollowTarget(null);
 
   const emptyMessage =
     pathTail === "following"
@@ -109,6 +153,7 @@ const MyFollowing = () => {
             isFollowed={user.isFollowed}
             profileUrl={user.profileUrl}
             onFollowClick={() => handleFollowClick(user.userId)}
+            followButtonDisabled={!user.isFollowed && followLoading}
           />
         ))}
 
@@ -118,6 +163,19 @@ const MyFollowing = () => {
           <div className="w-full h-[64px] sm:h-[84px] bg-gray-100 rounded-[8px]" />
           <div className="w-full h-[64px] sm:h-[84px] bg-gray-100 rounded-[8px]" />
         </>
+      )}
+
+      {/* 팔로우 취소 재확인 모달 */}
+      {unfollowTarget && (
+        <ConfirmDeleteModal
+          title={`${unfollowTarget.nickname}님의 팔로우를 취소하시겠습니까?`}
+          description={`원하는 경우 ${unfollowTarget.nickname} 님을 다시 팔로우할 수 있습니다.`}
+          label={unfollowLoading ? "처리 중..." : "팔로우 취소"}
+          loading={unfollowLoading}
+          confirmButtonClassName="bg-primary"
+          onClose={closeUnfollowModal}
+          onConfirm={handleConfirmUnfollow}
+        />
       )}
     </div>
   );

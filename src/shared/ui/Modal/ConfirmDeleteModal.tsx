@@ -9,6 +9,7 @@ interface ConfirmDeleteModalProps {
   description: string;
   label?: string;
   loading?: boolean;
+  confirmButtonClassName?: string;
 }
 
 export default function ConfirmDeleteModal({
@@ -18,6 +19,7 @@ export default function ConfirmDeleteModal({
   description,
   label,
   loading = false,
+  confirmButtonClassName,
 }: ConfirmDeleteModalProps) {
   const buttonLabel = label ?? (loading ? "삭제 중..." : "삭제");
 
@@ -37,11 +39,22 @@ export default function ConfirmDeleteModal({
 
       <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 sm:gap-[17px] w-full justify-center">
         <CancelButton onClick={onClose} disabled={loading} />
-        <SaveButton
-          onClick={onConfirm}
-          label={buttonLabel}
-          disabled={loading}
-        />
+        {confirmButtonClassName ? (
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className={`flex px-5 sm:px-10 py-3.5 sm:py-4 justify-center items-center rounded-xl text-white text-head-18-semibold sm:text-head-20-semibold disabled:opacity-60 disabled:cursor-not-allowed ${confirmButtonClassName}`}
+          >
+            {loading ? "처리 중..." : buttonLabel}
+          </button>
+        ) : (
+          <SaveButton
+            onClick={onConfirm}
+            label={buttonLabel}
+            disabled={loading}
+          />
+        )}
       </div>
     </BaseModal>
   );

@@ -12,6 +12,7 @@ import { getUserInfo, postFollow, postUnfollow } from "@/api/user.api";
 import type { UserInfoData } from "@/models/user.model";
 import githubIcon from "@/assets/icons/githubIcon.svg";
 import { useViewerId } from "@/store/auth";
+import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
 
 const SUBPATH = {
   FOLLOWING: "following",
@@ -63,10 +64,12 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
     resetSelectedTag,
     setViewedUser,
     resetViewedUser,
+    refetchSidebarTrigger,
   } = useMyPageStore();
 
   const [userInfo, setUserInfo] = useState<DisplayUser | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
+  const [unfollowModalOpen, setUnfollowModalOpen] = useState(false);
 
   // 내/타인에 따라 베이스 경로를 정확히 설정
   const basePath = props.isMyPage
@@ -105,7 +108,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
 
   useEffect(() => {
     refetch();
-  }, [refetch]);
+  }, [refetch, refetchSidebarTrigger]);
 
   useEffect(() => () => resetViewedUser(), [resetViewedUser]);
 
@@ -174,6 +177,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
   const handleUnfollow = async (targetId: number) => {
     if (!userInfo || followLoading) return;
     setFollowLoading(true);
+    setUnfollowModalOpen(false);
     setUserInfo((prev) =>
       prev
         ? {
@@ -201,6 +205,11 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
       setFollowLoading(false);
     }
   };
+
+  const openUnfollowModal = () => setUnfollowModalOpen(true);
+  const closeUnfollowModal = () => setUnfollowModalOpen(false);
+  const confirmUnfollow = () =>
+    userInfo?.userId != null && handleUnfollow(userInfo.userId);
 
   return (
     <div className="flex w-full md:w-[296px] flex-col items-start gap-8 sm:gap-12 xl:gap-[140px] md:sticky md:top-24 mb-12 sm:mb-16 lg:mb-24">
@@ -268,7 +277,7 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
               <FollowButton
                 label="팔로잉"
                 colorClass="bg-subColor1"
-                onClick={() => id && handleUnfollow(Number(id))}
+                onClick={openUnfollowModal}
               />
             ) : (
               <FollowButton
@@ -413,6 +422,19 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
             </div>
           </div>
         </>
+      )}
+
+      {/* 팔로우 취소 재확인 모달 (타인 프로필에서만) */}
+      {!props.isMyPage && unfollowModalOpen && userInfo?.userId != null && (
+        <ConfirmDeleteModal
+          title={`${userInfo.nickname || "이 사용자"}님의 팔로우를 취소하시겠습니까?`}
+          description={`원하는 경우 ${userInfo.nickname || "이 사용자"} 님을 다시 팔로우할 수 있습니다.`}
+          label={followLoading ? "처리 중..." : "팔로우 취소"}
+          loading={followLoading}
+          confirmButtonClassName="bg-primary"
+          onClose={closeUnfollowModal}
+          onConfirm={confirmUnfollow}
+        />
       )}
     </div>
   );
