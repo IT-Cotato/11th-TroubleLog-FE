@@ -498,7 +498,14 @@ export default function CombinedDetailPage() {
                   {vm.header.title}
                 </div>
                 <div className="flex flex-wrap items-center gap-3 sm:gap-[16px] min-w-0">
-                  <TagList tags={vm.header.tags} variant="post" />
+                  <TagList
+                    tags={vm.header.tags}
+                    variant="post"
+                    onTagClick={(tag) => {
+                      const searchParams = new URLSearchParams({ query: tag });
+                      navigate(`${PATH.SEARCH}?${searchParams.toString()}`);
+                    }}
+                  />
                   <div className="text-body-16-regular text-gray3">·</div>
                   <div className="text-body-20-regular text-gray3">
                     {vm.header.date}
