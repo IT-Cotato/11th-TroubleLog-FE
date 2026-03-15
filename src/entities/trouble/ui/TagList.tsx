@@ -34,10 +34,10 @@ export default function TagList({
     <div
       className={`flex flex-nowrap items-center overflow-hidden ${wrapperClass}`}
     >
-      {tags.map((tag) =>
+      {tags.map((tag, index) =>
         onTagClick ? (
           <button
-            key={tag}
+            key={`${tag}-${index}`}
             type="button"
             className={getTagClass()}
             title={tag}
@@ -46,7 +46,7 @@ export default function TagList({
             #{tag}
           </button>
         ) : (
-          <div key={tag} className={getTagClass()} title={tag}>
+          <div key={`${tag}-${index}`} className={getTagClass()} title={tag}>
             #{tag}
           </div>
         ),
