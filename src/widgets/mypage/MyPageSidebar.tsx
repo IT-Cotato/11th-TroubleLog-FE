@@ -208,7 +208,8 @@ const MyPageSideBar = (props: MyPageSideBarProps) => {
 
   const openUnfollowModal = () => setUnfollowModalOpen(true);
   const closeUnfollowModal = () => setUnfollowModalOpen(false);
-  const confirmUnfollow = () => id && handleUnfollow(Number(id));
+  const confirmUnfollow = () =>
+    userInfo?.userId != null && handleUnfollow(userInfo.userId);
 
   return (
     <div className="flex w-full md:w-[296px] flex-col items-start gap-8 sm:gap-12 xl:gap-[140px] md:sticky md:top-24 mb-12 sm:mb-16 lg:mb-24">
