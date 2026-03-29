@@ -5,7 +5,6 @@ import { questionData } from "@/features/template-write/lib/questionTemplate";
 import PostSaveModal, {
   type PostSavePayload,
 } from "../../shared/ui/Modal/PostSaveModal";
-import PostLoadingModal from "../../shared/ui/Modal/PostLoadingModal";
 import TemplateSelectModal from "../../shared/ui/Modal/TemplateSelectModal";
 import PostSuccessModal from "../../shared/ui/Modal/PostSuccessModal";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -28,7 +27,7 @@ import {
   ERROR_OPTIONS,
   toErrorLabel,
 } from "@/shared/utils/errorCodeLabel";
-import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
+import { useSummaryJobStore } from "@/store/useSummaryJobStore";
 import { useWriteModals } from "@/shared/hooks/useWriteModals";
 import { useWriteSummaryFlow } from "@/shared/hooks/useWriteSummaryFlow";
 import { WriteToast } from "@/shared/ui/WriteToast";
@@ -186,8 +185,6 @@ const TempWritePage = () => {
     setIsPostSaveModalOpen,
     isTemplateSelectModalOpen,
     setIsTemplateSelectModalOpen,
-    isLoadingModalOpen,
-    setIsLoadingModalOpen,
     isSuccessModalOpen,
     setIsSuccessModalOpen,
     showAlert,
@@ -203,20 +200,16 @@ const TempWritePage = () => {
   const [createdPostId, setCreatedPostId] = useState<number | null>(null);
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
   const [summaryProgress, setSummaryProgress] = useState(0);
-  const [templateLabel, setTemplateLabel] = useState<string>("");
   const [completedSummaryId, setCompletedSummaryId] = useState<number | null>(
     null
   );
 
-  const [summaryStatus, setSummaryStatus] = useState<SummaryStatus | null>(
-    null
-  );
-  const [statusMessage, setStatusMessage] = useState<string>("");
+  const [, setSummaryStatus] = useState<SummaryStatus | null>(null);
+  const [, setStatusMessage] = useState<string>("");
 
   // 더블클릭 가드
   const [isCreating, setIsCreating] = useState(false);
   const [isStartingSummary, setIsStartingSummary] = useState(false);
-  const closingRef = useRef(false);
 
   // 이어쓰기(수정) 판단
   const resumePostId = useMemo(() => {
@@ -539,7 +532,7 @@ const TempWritePage = () => {
   //   }
   // };
 
-  const { runConfirmTemplate, closeLoadingModal } = useWriteSummaryFlow({
+  const { runConfirmTemplate } = useWriteSummaryFlow({
     postId: createdPostId ?? resumePostId,
     summaryTaskId,
     summaryProgress,
@@ -547,9 +540,7 @@ const TempWritePage = () => {
     setSummaryProgress,
     setSummaryStatus,
     setStatusMessage,
-    setTemplateLabel,
     setIsTemplateSelectModalOpen,
-    setIsLoadingModalOpen,
     setCreatedPostId,
     setShowCancelAlert,
     cancelAlertDuration: 3000,
@@ -596,7 +587,7 @@ const TempWritePage = () => {
       });
     } catch (e) {
       console.error(e);
-      setIsLoadingModalOpen(false);
+      useSummaryJobStore.getState().reset();
       setIsTemplateSelectModalOpen(true);
       setSummaryTaskId(null);
       setCreatedPostId(null);
@@ -608,29 +599,34 @@ const TempWritePage = () => {
     }
   };
 
-  // ---------- 폴링 ----------
-  const handlePollComplete = useCallback(
-    (postSummaryId?: number) => {
-      if (typeof postSummaryId === "number") {
-        setCompletedSummaryId(postSummaryId);
-        setIsLoadingModalOpen(false);
-        setIsSuccessModalOpen(true);
-      } else {
-        setIsLoadingModalOpen(false);
-      }
-    },
-    []
-  );
+  const summaryPostId = createdPostId ?? resumePostId;
+  const jobPhase = useSummaryJobStore((s) => s.phase);
 
-  useSummaryPolling({
-    postId: createdPostId ?? resumePostId,
-    summaryTaskId,
-    isActive: !!isLoadingModalOpen,
-    onProgress: setSummaryProgress,
-    onStatus: setSummaryStatus,
-    onMessage: setStatusMessage,
-    onComplete: handlePollComplete,
-  });
+  useEffect(() => {
+    if (jobPhase !== "completed") return;
+    const st = useSummaryJobStore.getState();
+    if (st.postId !== summaryPostId) return;
+    if (!summaryTaskId || st.taskId !== summaryTaskId) return;
+
+    if (typeof st.postSummaryId === "number") {
+      setCompletedSummaryId(st.postSummaryId);
+      setSummaryTaskId(null);
+      setIsSuccessModalOpen(true);
+      useSummaryJobStore.getState().reset();
+    } else {
+      setSummaryTaskId(null);
+      useSummaryJobStore.getState().reset();
+    }
+  }, [jobPhase, summaryPostId, summaryTaskId]);
+
+  useEffect(() => {
+    if (jobPhase !== "failed") return;
+    const st = useSummaryJobStore.getState();
+    if (st.postId !== summaryPostId) return;
+    if (!summaryTaskId || st.taskId !== summaryTaskId) return;
+    setSummaryTaskId(null);
+    useSummaryJobStore.getState().reset();
+  }, [jobPhase, summaryPostId, summaryTaskId]);
 
   const buildPreviewState = () => ({
     editorType: "TEMPLATE" as const,
@@ -663,8 +659,6 @@ const TempWritePage = () => {
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 1000);
   };
-
-  const handleCloseLoading = () => closeLoadingModal(closingRef);
 
   // ---------- 임시 저장 ----------
   const handleClickSave = async (): Promise<boolean> => {
@@ -1010,16 +1004,6 @@ const TempWritePage = () => {
                 setIsTemplateSelectModalOpen(false);
                 setIsPostSaveModalOpen(true);
               }}
-            />
-          )}
-
-          {isLoadingModalOpen && (
-            <PostLoadingModal
-              onClose={handleCloseLoading}
-              progress={summaryProgress}
-              templateLabel={templateLabel}
-              status={summaryStatus ?? undefined}
-              serverMessage={statusMessage}
             />
           )}
 

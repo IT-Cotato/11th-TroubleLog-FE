@@ -1,8 +1,12 @@
 import { useCallback } from "react";
 import { editPost, startSummary, cancelSummary } from "@/api/post.api";
 import type { EditPostRequest } from "@/models/post.model";
-import type { SummaryTypeParam, StartLoadingResponse } from "@/models/post.model";
+import type {
+  SummaryTypeParam,
+  StartLoadingResponse,
+} from "@/models/post.model";
 import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
+import { useSummaryJobStore } from "@/store/useSummaryJobStore";
 
 export interface UseWriteSummaryFlowOptions {
   postId: number | null;
@@ -12,9 +16,7 @@ export interface UseWriteSummaryFlowOptions {
   setSummaryProgress: (v: number) => void;
   setSummaryStatus: (v: SummaryStatus | null) => void;
   setStatusMessage: (v: string) => void;
-  setTemplateLabel: (v: string) => void;
   setIsTemplateSelectModalOpen: (v: boolean) => void;
-  setIsLoadingModalOpen: (v: boolean) => void;
   setCreatedPostId: (v: number | null) => void;
   setShowCancelAlert: (v: boolean) => void;
   /** ms to show cancel toast after closing loading modal. Default 3000. */
@@ -22,18 +24,18 @@ export interface UseWriteSummaryFlowOptions {
 }
 
 export interface UseWriteSummaryFlowResult {
-  /** 요약 시작: 수정 API 호출 후 startSummary, 모달/상태 업데이트. getEditRequestBody는 페이지에서 buildEditFormFromMeta 등으로 생성한 EditPostRequest 반환 */
+  /** 요약 시작 */
   runConfirmTemplate: (
     type: SummaryTypeParam,
     label: string,
-    getEditRequestBody: () => Promise<EditPostRequest>
+    getEditRequestBody: () => Promise<EditPostRequest>,
   ) => Promise<void>;
-  /** 로딩 모달 닫기(요약 취소). closingRef는 페이지에서 관리해 중복 호출 방지 */
-  closeLoadingModal: (closingRef: { current: boolean }) => Promise<void>;
+  /** 요약 작업 취소(백엔드 취소 API + 전역 상태 초기화). 플로팅 UI 등에서 사용 */
+  cancelSummaryJob: (closingRef: { current: boolean }) => Promise<void>;
 }
 
 export function useWriteSummaryFlow(
-  options: UseWriteSummaryFlowOptions
+  options: UseWriteSummaryFlowOptions,
 ): UseWriteSummaryFlowResult {
   const {
     postId,
@@ -43,9 +45,7 @@ export function useWriteSummaryFlow(
     setSummaryProgress,
     setSummaryStatus,
     setStatusMessage,
-    setTemplateLabel,
     setIsTemplateSelectModalOpen,
-    setIsLoadingModalOpen,
     setShowCancelAlert,
     cancelAlertDuration = 3000,
   } = options;
@@ -54,7 +54,7 @@ export function useWriteSummaryFlow(
     async (
       type: SummaryTypeParam,
       label: string,
-      getEditRequestBody: () => Promise<EditPostRequest>
+      getEditRequestBody: () => Promise<EditPostRequest>,
     ) => {
       if (!postId) return;
       try {
@@ -62,11 +62,9 @@ export function useWriteSummaryFlow(
         await editPost(postId, body);
 
         setIsTemplateSelectModalOpen(false);
-        setIsLoadingModalOpen(true);
         setSummaryProgress(0);
         setSummaryStatus(null);
         setStatusMessage("");
-        setTemplateLabel(label);
 
         const res: StartLoadingResponse = await startSummary(postId, type);
         const taskId =
@@ -76,9 +74,14 @@ export function useWriteSummaryFlow(
 
         if (!taskId) throw new Error("요약 작업 ID(taskId)를 찾을 수 없어요.");
         setSummaryTaskId(taskId);
+        useSummaryJobStore.getState().startJob({
+          postId,
+          taskId,
+          templateLabel: label,
+        });
       } catch (e) {
         console.error(e);
-        setIsLoadingModalOpen(false);
+        useSummaryJobStore.getState().reset();
         setIsTemplateSelectModalOpen(true);
         setSummaryTaskId(null);
         setSummaryProgress(0);
@@ -92,25 +95,28 @@ export function useWriteSummaryFlow(
       setSummaryProgress,
       setSummaryStatus,
       setStatusMessage,
-      setTemplateLabel,
       setIsTemplateSelectModalOpen,
-      setIsLoadingModalOpen,
-    ]
+    ],
   );
 
-  const closeLoadingModal = useCallback(
+  const cancelSummaryJob = useCallback(
     async (closingRef: { current: boolean }) => {
       if (closingRef.current) return;
       closingRef.current = true;
       try {
-        if (summaryProgress < 100 && postId && summaryTaskId) {
+        const job = useSummaryJobStore.getState();
+        const progressForCancel =
+          job.postId === postId && job.taskId === summaryTaskId
+            ? job.progress
+            : summaryProgress;
+        if (progressForCancel < 100 && postId && summaryTaskId) {
           try {
             await cancelSummary(postId, summaryTaskId);
           } catch (e) {
             console.error("요약 작업 취소 실패:", e);
           }
         }
-        setIsLoadingModalOpen(false);
+        useSummaryJobStore.getState().reset();
         setSummaryTaskId(null);
         setSummaryProgress(0);
         setShowCancelAlert(true);
@@ -123,13 +129,12 @@ export function useWriteSummaryFlow(
       postId,
       summaryTaskId,
       summaryProgress,
-      setIsLoadingModalOpen,
       setSummaryTaskId,
       setSummaryProgress,
       setShowCancelAlert,
       cancelAlertDuration,
-    ]
+    ],
   );
 
-  return { runConfirmTemplate, closeLoadingModal };
+  return { runConfirmTemplate, cancelSummaryJob };
 }
