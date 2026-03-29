@@ -6,7 +6,6 @@ import type EditorInstance from "@toast-ui/editor";
 import PostSaveModal, {
   type PostSavePayload,
 } from "@/shared/ui/Modal/PostSaveModal";
-import PostLoadingModal from "@/shared/ui/Modal/PostLoadingModal";
 import TemplateSelectModal from "@/shared/ui/Modal/TemplateSelectModal";
 import PostSuccessModal from "@/shared/ui/Modal/PostSuccessModal";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
@@ -23,7 +22,8 @@ import { uploadImage } from "@/api/image.api";
 import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
 import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
 import { ERROR_OPTIONS, toErrorLabel } from "@/shared/utils/errorCodeLabel";
-import { useSummaryPolling } from "@/shared/hooks/useSummaryPolling";
+import { useSummaryJobStore } from "@/store/useSummaryJobStore";
+import { useSummaryCompletionSnackbarStore } from "@/store/useSummaryCompletionSnackbarStore";
 import { useWriteModals } from "@/shared/hooks/useWriteModals";
 import { useWriteSummaryFlow } from "@/shared/hooks/useWriteSummaryFlow";
 import { WriteToast } from "@/shared/ui/WriteToast";
@@ -138,8 +138,6 @@ export default function FreeFormWritePage() {
     setIsPostSaveModalOpen,
     isTemplateSelectModalOpen,
     setIsTemplateSelectModalOpen,
-    isLoadingModalOpen,
-    setIsLoadingModalOpen,
     isSuccessModalOpen,
     setIsSuccessModalOpen,
     showAlert,
@@ -156,11 +154,8 @@ export default function FreeFormWritePage() {
   const [previewMeta, setPreviewMeta] = useState<PostSavePayload | null>(null);
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null);
   const [summaryProgress, setSummaryProgress] = useState(0);
-  const [summaryStatus, setSummaryStatus] = useState<SummaryStatus | null>(
-    null
-  );
-  const [statusMessage, setStatusMessage] = useState<string>("");
-  const [templateLabel, setTemplateLabel] = useState("");
+  const [, setSummaryStatus] = useState<SummaryStatus | null>(null);
+  const [, setStatusMessage] = useState<string>("");
   const [completedSummaryId, setCompletedSummaryId] = useState<number | null>(
     null
   );
@@ -168,7 +163,6 @@ export default function FreeFormWritePage() {
   const [nextAction, setNextAction] = useState<"SUMMARY" | "SAVE" | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isStartingSummary, setIsStartingSummary] = useState(false);
-  const closingRef = useRef(false);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
 
   // 썸네일 상태
@@ -555,7 +549,7 @@ export default function FreeFormWritePage() {
   //   }
   // };
 
-  const { runConfirmTemplate, closeLoadingModal } = useWriteSummaryFlow({
+  const { runConfirmTemplate } = useWriteSummaryFlow({
     postId: createdPostId ?? resumePostId,
     summaryTaskId,
     summaryProgress,
@@ -563,9 +557,7 @@ export default function FreeFormWritePage() {
     setSummaryProgress,
     setSummaryStatus,
     setStatusMessage,
-    setTemplateLabel,
     setIsTemplateSelectModalOpen,
-    setIsLoadingModalOpen,
     setCreatedPostId,
     setShowCancelAlert,
     cancelAlertDuration: 1000,
@@ -616,7 +608,7 @@ export default function FreeFormWritePage() {
       });
     } catch (e) {
       console.error(e);
-      setIsLoadingModalOpen(false);
+      useSummaryJobStore.getState().reset();
       setIsTemplateSelectModalOpen(true);
       setSummaryTaskId(null);
       setCreatedPostId(null);
@@ -628,29 +620,36 @@ export default function FreeFormWritePage() {
     }
   };
 
-  // 폴링
-  const handlePollComplete = useCallback(
-    (postSummaryId?: number) => {
-      if (typeof postSummaryId === "number") {
-        setCompletedSummaryId(postSummaryId);
-        setIsLoadingModalOpen(false);
-        setIsSuccessModalOpen(true);
-      } else {
-        setIsLoadingModalOpen(false);
-      }
-    },
-    []
-  );
+  const summaryPostId = createdPostId ?? resumePostId;
+  const jobPhase = useSummaryJobStore((s) => s.phase);
 
-  useSummaryPolling({
-    postId: createdPostId ?? resumePostId,
-    summaryTaskId,
-    isActive: !!isLoadingModalOpen,
-    onProgress: setSummaryProgress,
-    onStatus: setSummaryStatus,
-    onMessage: setStatusMessage,
-    onComplete: handlePollComplete,
-  });
+  useEffect(() => {
+    if (jobPhase !== "completed") return;
+    const st = useSummaryJobStore.getState();
+    if (st.postId !== summaryPostId) return;
+    if (!summaryTaskId || st.taskId !== summaryTaskId) return;
+
+    if (typeof st.postSummaryId === "number") {
+      setCompletedSummaryId(st.postSummaryId);
+      setSummaryTaskId(null);
+      setIsSuccessModalOpen(true);
+      useSummaryCompletionSnackbarStore.getState().consume();
+      useSummaryJobStore.getState().reset();
+    } else {
+      setSummaryTaskId(null);
+      useSummaryCompletionSnackbarStore.getState().consume();
+      useSummaryJobStore.getState().reset();
+    }
+  }, [jobPhase, summaryPostId, summaryTaskId]);
+
+  useEffect(() => {
+    if (jobPhase !== "failed") return;
+    const st = useSummaryJobStore.getState();
+    if (st.postId !== summaryPostId) return;
+    if (!summaryTaskId || st.taskId !== summaryTaskId) return;
+    setSummaryTaskId(null);
+    useSummaryJobStore.getState().reset();
+  }, [jobPhase, summaryPostId, summaryTaskId]);
 
   // 나중에 하기(요약 건너뛰고 미리보기/프로젝트로 이동)
   const handleLater = async () => {
@@ -675,8 +674,6 @@ export default function FreeFormWritePage() {
     setIsPostSaveModalOpen(true);
     setStatusMessage("프로젝트를 먼저 선택해주세요.");
   };
-
-  const handleCloseLoading = () => closeLoadingModal(closingRef);
 
   // 저장 가능 여부(버튼 비활성화용)
   const canSave = useMemo(() => {
@@ -1059,16 +1056,6 @@ export default function FreeFormWritePage() {
                   setIsTemplateSelectModalOpen(false);
                   setIsPostSaveModalOpen(true);
                 }}
-              />
-            )}
-
-            {isLoadingModalOpen && (
-              <PostLoadingModal
-                onClose={handleCloseLoading}
-                progress={summaryProgress}
-                templateLabel={templateLabel}
-                status={summaryStatus ?? undefined}
-                serverMessage={statusMessage}
               />
             )}
 

@@ -3,6 +3,8 @@ import type { PropsWithChildren } from "react";
 import AlertSSEProvider from "./sse";
 import { startRefresh } from "@/api/axios";
 import { useAuthHydrated } from "@/store/auth";
+import { SummaryJobPoller } from "@/widgets/summary/SummaryJobPoller";
+import { GlobalSummaryFloatingButton } from "@/widgets/summary/GlobalSummaryFloatingButton";
 
 /**
  * 전역 부트스트랩:
@@ -59,7 +61,11 @@ export function AppProviders({ children }: PropsWithChildren) {
   return (
     <Suspense fallback={<GlobalLoadingFallback />}>
       <AuthBootstrap>
-        <AlertSSEProvider>{children}</AlertSSEProvider>
+        <AlertSSEProvider>
+          <SummaryJobPoller />
+          {children}
+          <GlobalSummaryFloatingButton />
+        </AlertSSEProvider>
       </AuthBootstrap>
     </Suspense>
   );

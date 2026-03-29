@@ -1,0 +1,12 @@
+@keyframes summary-fab-shimmer {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.summary-fab-shimmer-ring {
+  animation: summary-fab-shimmer 2.4s linear infinite;
+}
