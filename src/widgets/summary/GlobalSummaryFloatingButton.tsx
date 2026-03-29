@@ -113,12 +113,6 @@ export function GlobalSummaryFloatingButton() {
           marginTop: "-1px",
         }}
       >
-        {isRunning && (
-          <span
-            className="summary-fab-shimmer-ring pointer-events-none absolute inset-1 rounded-full border-2 border-white/25 border-t-white"
-            aria-hidden
-          />
-        )}
         <span className="relative z-[1] flex items-center justify-center">
           <TroublogMarkIcon />
         </span>

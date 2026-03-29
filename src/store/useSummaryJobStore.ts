@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { SummaryStatus } from "@/shared/ui/Modal/PostLoadingModal";
+import { useSummaryCompletionSnackbarStore } from "@/store/useSummaryCompletionSnackbarStore";
 
 export type SummaryJobPhase = "idle" | "running" | "completed" | "failed";
 
@@ -46,7 +47,7 @@ const initial = (): Omit<
   postSummaryId: undefined,
 });
 
-export const useSummaryJobStore = create<SummaryJobState>((set) => ({
+export const useSummaryJobStore = create<SummaryJobState>((set, get) => ({
   ...initial(),
 
   startJob: ({ postId, taskId, templateLabel }) =>
@@ -75,12 +76,20 @@ export const useSummaryJobStore = create<SummaryJobState>((set) => ({
           : s.statusMessage,
     })),
 
-  markComplete: (postSummaryId) =>
+  markComplete: (postSummaryId) => {
+    const postId = get().postId;
     set({
       phase: "completed",
       progress: 100,
       postSummaryId,
-    }),
+    });
+    if (typeof postSummaryId === "number" && postId != null) {
+      useSummaryCompletionSnackbarStore.getState().offer({
+        postId,
+        summaryId: postSummaryId,
+      });
+    }
+  },
 
   markFailed: () => set({ phase: "failed" }),
 

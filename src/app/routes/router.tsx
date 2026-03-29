@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PATH } from "@/shared/config/paths";
 import TermsPublicPage from "@/pages/Login/TermsPublicPage";
+import RootLayout from "@/app/layouts/RootLayout";
 
 // 레이지 import (코드 스플리팅)
 const MainLayout = lazy(() => import("@/layouts/MainLayout"));
@@ -63,10 +64,13 @@ const AuthGuardPage = lazy(() => import("@/pages/Error/AuthGuardPage"));
 
 export const router = createBrowserRouter(
   [
-    { path: PATH.LANDING, element: <IntroLandingPage /> },
+    {
+      element: <RootLayout />,
+      children: [
+        { path: PATH.LANDING, element: <IntroLandingPage /> },
 
-    // 로그인/회원가입
-    { path: PATH.ROOT, element: <LoginPage /> },
+        // 로그인/회원가입
+        { path: PATH.ROOT, element: <LoginPage /> },
     { path: PATH.LOGIN, element: <LoginPage /> },
     { path: PATH.SIGNUP, element: <SignPageOne /> },
     { path: PATH.SIGNUP_DETAIL, element: <SignPageTwo /> },
@@ -184,8 +188,10 @@ export const router = createBrowserRouter(
     },
     { path: PATH.COMBINED_DETAIL(), element: <CombinedDetailPage /> },
 
-    // fallback
-    { path: "*", element: <NotFoundPage /> },
+        // fallback
+        { path: "*", element: <NotFoundPage /> },
+      ],
+    },
   ],
   { basename: "/" }
 );

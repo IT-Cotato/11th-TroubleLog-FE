@@ -23,6 +23,7 @@ import ConfirmDeleteModal from "@/shared/ui/Modal/ConfirmDeleteModal";
 import { canonicalizeTags } from "@/shared/utils/canonicalizeTags";
 import { ERROR_OPTIONS, toErrorLabel } from "@/shared/utils/errorCodeLabel";
 import { useSummaryJobStore } from "@/store/useSummaryJobStore";
+import { useSummaryCompletionSnackbarStore } from "@/store/useSummaryCompletionSnackbarStore";
 import { useWriteModals } from "@/shared/hooks/useWriteModals";
 import { useWriteSummaryFlow } from "@/shared/hooks/useWriteSummaryFlow";
 import { WriteToast } from "@/shared/ui/WriteToast";
@@ -632,9 +633,11 @@ export default function FreeFormWritePage() {
       setCompletedSummaryId(st.postSummaryId);
       setSummaryTaskId(null);
       setIsSuccessModalOpen(true);
+      useSummaryCompletionSnackbarStore.getState().consume();
       useSummaryJobStore.getState().reset();
     } else {
       setSummaryTaskId(null);
+      useSummaryCompletionSnackbarStore.getState().consume();
       useSummaryJobStore.getState().reset();
     }
   }, [jobPhase, summaryPostId, summaryTaskId]);
